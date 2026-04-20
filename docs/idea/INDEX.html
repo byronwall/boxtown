@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recipe Site Box Map</title>
+  <style>
+    :root {
+      --bg: #0f1221;
+      --panel: #171a2b;
+      --panel-2: #1f2440;
+      --text: #eef2ff;
+      --muted: #b5bfdc;
+      --accent: #89b4ff;
+      --accent-2: #a7f3d0;
+      --shadow: rgba(0, 0, 0, 0.25);
+      --border: rgba(255, 255, 255, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: radial-gradient(circle at top, #1f2b52 0%, var(--bg) 55%);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+
+    #app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10, 13, 26, 0.72);
+      backdrop-filter: blur(10px);
+      position: relative;
+      z-index: 5;
+    }
+
+    .toolbar__title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .toolbar__title h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      font-weight: 700;
+    }
+
+    .toolbar__title p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .toolbar__controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,0.24);
+      background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+    }
+
+    .viewport {
+      position: relative;
+      overflow: hidden;
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      background:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      background-position: -1px -1px;
+    }
+
+    .edge {
+      stroke: rgba(255,255,255,0.22);
+      stroke-width: 1.2;
+      fill: none;
+      pointer-events: none;
+    }
+
+    .edge.hidden {
+      opacity: 0;
+    }
+
+    .node rect {
+      fill: var(--panel);
+      stroke: var(--border);
+      stroke-width: 1;
+      rx: 12;
+      ry: 12;
+      filter: drop-shadow(0 10px 18px var(--shadow));
+      transition: fill 120ms ease, stroke 120ms ease;
+    }
+
+    .node.page rect {
+      fill: #22335f;
+      stroke: rgba(137, 180, 255, 0.45);
+    }
+
+    .node.assembly rect {
+      fill: #21314f;
+      stroke: rgba(167, 243, 208, 0.32);
+    }
+
+    .node.component rect {
+      fill: #24253a;
+      stroke: rgba(255,255,255,0.13);
+    }
+
+    .node:hover rect {
+      fill: var(--panel-2);
+      stroke: rgba(255,255,255,0.35);
+    }
+
+    .node {
+      transition: opacity 140ms ease, filter 140ms ease;
+    }
+
+    .node rect,
+    .node text {
+      transition: opacity 140ms ease;
+    }
+
+    .node text {
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .node .label {
+      font-weight: 700;
+      fill: var(--text);
+    }
+
+    .node .meta {
+      fill: var(--muted);
+      opacity: 0.92;
+    }
+
+    .tooltip {
+      position: absolute;
+      min-width: 240px;
+      max-width: 320px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(12, 16, 31, 0.96);
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 18px 38px rgba(0,0,0,0.35);
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.45;
+      z-index: 10;
+      pointer-events: none;
+      transform: translate(14px, 14px);
+      opacity: 0;
+      transition: opacity 100ms ease;
+    }
+
+    .tooltip.visible {
+      opacity: 1;
+    }
+
+    .tooltip h2 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .tooltip .kind {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .tooltip p {
+      margin: 6px 0;
+      color: var(--muted);
+    }
+
+    .legend {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      z-index: 4;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(10, 13, 26, 0.82);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      max-width: min(90vw, 640px);
+      backdrop-filter: blur(8px);
+    }
+
+    .legend__item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .legend__swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .legend__swatch.page { background: #22335f; }
+    .legend__swatch.assembly { background: #21314f; }
+    .legend__swatch.component { background: #24253a; }
+
+    .footer-note {
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      z-index: 4;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(10, 13, 26, 0.82);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+      backdrop-filter: blur(8px);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="toolbar">
+      <div class="toolbar__title">
+        <h1>Recipe Website Architecture Map</h1>
+        <p>Hierarchy stays flat. Related boxes are nudged together. Edges are optional.</p>
+      </div>
+      <div class="toolbar__controls">
+        <button id="toggleEdges">Show Edges</button>
+        <button id="shuffle">Reflow Layout</button>
+      </div>
+    </div>
+
+    <div class="viewport" id="viewport">
+      <svg id="scene" viewBox="0 0 1600 960" preserveAspectRatio="xMidYMid meet">
+        <g id="edges"></g>
+        <g id="nodes"></g>
+      </svg>
+
+      <div class="legend">
+        <span class="legend__item"><span class="legend__swatch page"></span>Page</span>
+        <span class="legend__item"><span class="legend__swatch assembly"></span>Assembly</span>
+        <span class="legend__item"><span class="legend__swatch component"></span>Component</span>
+      </div>
+
+      <div class="footer-note">Hover any box for purpose and implementation notes.</div>
+      <div class="tooltip" id="tooltip"></div>
+    </div>
+  </div>
+
+  <script>
+    const WIDTH = 1600;
+    const HEIGHT = 960;
+    const CENTER_X = WIDTH / 2;
+    const CENTER_Y = HEIGHT / 2;
+
+    const data = {
+      nodes: [
+        {
+          id: 'page-home',
+          label: 'Home',
+          kind: 'page',
+          depth: 0,
+          purpose: 'Landing page that introduces the brand, featured recipes, and seasonal content.',
+          implementation: 'SSR page with hero, search prompt, featured collections, and personalized modules.',
+        },
+        {
+          id: 'page-recipes',
+          label: 'Recipes',
+          kind: 'page',
+          depth: 0,
+          purpose: 'Browse and filter the full recipe library.',
+          implementation: 'Server-rendered index backed by search facets, sort options, and pagination.',
+        },
+        {
+          id: 'page-recipe-detail',
+          label: 'Recipe Detail',
+          kind: 'page',
+          depth: 0,
+          purpose: 'Display a single recipe with ingredients, steps, timing, and related content.',
+          implementation: 'Dynamic route with structured content blocks and analytics events.',
+        },
+        {
+          id: 'page-profile',
+          label: 'Profile',
+          kind: 'page',
+          depth: 0,
+          purpose: 'Show saved recipes, preferences, and meal plans.',
+          implementation: 'Authenticated dashboard view with local settings and user-specific data.',
+        },
+
+        {
+          id: 'asm-home-hero',
+          label: 'Hero Assembly',
+          kind: 'assembly',
+          depth: 1,
+          purpose: 'Combines headline, search prompt, CTA, and featured image for the home page.',
+          implementation: 'Composable container that wires analytics, layout, and responsive slots.',
+        },
+        {
+          id: 'asm-home-featured',
+          label: 'Featured Recipes',
+          kind: 'assembly',
+          depth: 1,
+          purpose: 'Presents a curated set of recipe cards for quick exploration.',
+          implementation: 'Grid assembly that fetches recipe summaries and renders card variants.',
+        },
+        {
+          id: 'asm-recipes-filterbar',
+          label: 'Filter Bar',
+          kind: 'assembly',
+          depth: 1,
+          purpose: 'Lets visitors filter by diet, cook time, cuisine, and difficulty.',
+          implementation: 'Sticky control row synced to query state and faceted search params.',
+        },
+        {
+          id: 'asm-recipes-results',
+          label: 'Results Grid',
+          kind: 'assembly',
+          depth: 1,
+          purpose: 'Displays recipe cards after search or filtering.',
+          implementation: 'Virtualized grid with pagination fallback and responsive columns.',
+        },
+        {
+          id: 'asm-detail-overview',
+          label: 'Recipe Overview',
+          kind: 'assembly',
+          depth: 1,
+          purpose: 'Combines title, hero media, metadata, and quick actions.',
+          implementation: 'Top content assembly using structured recipe data and media assets.',
+        },
+        {
+          id: 'asm-detail-instructions',
+          label: 'Instructions Block',
+          kind: 'assembly',
+          depth: 1,
+          purpose: 'Groups ingredients, steps, notes, and nutrition content.',
+          implementation: 'Sectioned container with anchors and semantic content rendering.',
+        },
+        {
+          id: 'asm-profile-saved',
+          label: 'Saved Recipes',
+          kind: 'assembly',
+          depth: 1,
+          purpose: 'Shows bookmarked or favorited recipes for the current user.',
+          implementation: 'User-specific listing with cache-aware fetching and empty states.',
+        },
+        {
+          id: 'asm-profile-planner',
+          label: 'Meal Planner',
+          kind: 'assembly',
+          depth: 1,
+          purpose: 'Supports weekly planning and shopping list generation.',
+          implementation: 'Interactive planner backed by saved recipes and user preferences.',
+        },
+
+        {
+          id: 'cmp-search-input',
+          label: 'Search Input',
+          kind: 'component',
+          depth: 2,
+          purpose: 'Free-text search entry for recipe lookup.',
+          implementation: 'Controlled input with debounced updates and keyboard support.',
+        },
+        {
+          id: 'cmp-cta-button',
+          label: 'CTA Button',
+          kind: 'component',
+          depth: 2,
+          purpose: 'Primary action button used for exploration and conversion.',
+          implementation: 'Shared button component with visual variants and tracking hooks.',
+        },
+        {
+          id: 'cmp-recipe-card',
+          label: 'Recipe Card',
+          kind: 'component',
+          depth: 2,
+          purpose: 'Compact summary for a recipe with image, title, and metadata.',
+          implementation: 'Reusable card component used in multiple assemblies and pages.',
+        },
+        {
+          id: 'cmp-filter-chip',
+          label: 'Filter Chip',
+          kind: 'component',
+          depth: 2,
+          purpose: 'Displays an active or selectable filter option.',
+          implementation: 'Small interactive chip component tied to search facet state.',
+        },
+        {
+          id: 'cmp-sort-select',
+          label: 'Sort Select',
+          kind: 'component',
+          depth: 2,
+          purpose: 'Lets users change sorting such as newest or fastest.',
+          implementation: 'Shared dropdown component with accessible listbox behavior.',
+        },
+        {
+          id: 'cmp-ingredient-list',
+          label: 'Ingredient List',
+          kind: 'component',
+          depth: 2,
+          purpose: 'Renders ingredients with quantities and optional unit scaling.',
+          implementation: 'Semantic list component with quantity formatting helpers.',
+        },
+        {
+          id: 'cmp-step-list',
+          label: 'Step List',
+          kind: 'component',
+          depth: 2,
+          purpose: 'Shows the ordered recipe instructions for cooking.',
+          implementation: 'Ordered content renderer with timer and completion affordances.',
+        },
+        {
+          id: 'cmp-rating-stars',
+          label: 'Rating Stars',
+          kind: 'component',
+          depth: 2,
+          purpose: 'Shows community rating and review count.',
+          implementation: 'Compact display component with average score formatting.',
+        },
+        {
+          id: 'cmp-save-toggle',
+          label: 'Save Toggle',
+          kind: 'component',
+          depth: 2,
+          purpose: 'Allows users to save or unsave a recipe.',
+          implementation: 'Optimistic mutation component with auth guard and state sync.',
+        },
+        {
+          id: 'cmp-calendar-grid',
+          label: 'Calendar Grid',
+          kind: 'component',
+          depth: 2,
+          purpose: 'Visual week planner for meal scheduling.',
+          implementation: 'Drag-friendly layout component backed by planner state.',
+        },
+        {
+          id: 'cmp-shopping-list',
+          label: 'Shopping List',
+          kind: 'component',
+          depth: 2,
+          purpose: 'Aggregates ingredients across selected meals.',
+          implementation: 'Grouped checklist component with pantry-aware grouping.',
+        },
+      ],
+      links: [
+        // hierarchy
+        ['page-home', 'asm-home-hero'],
+        ['page-home', 'asm-home-featured'],
+        ['page-recipes', 'asm-recipes-filterbar'],
+        ['page-recipes', 'asm-recipes-results'],
+        ['page-recipe-detail', 'asm-detail-overview'],
+        ['page-recipe-detail', 'asm-detail-instructions'],
+        ['page-profile', 'asm-profile-saved'],
+        ['page-profile', 'asm-profile-planner'],
+
+        ['asm-home-hero', 'cmp-search-input'],
+        ['asm-home-hero', 'cmp-cta-button'],
+        ['asm-home-featured', 'cmp-recipe-card'],
+        ['asm-recipes-filterbar', 'cmp-filter-chip'],
+        ['asm-recipes-filterbar', 'cmp-sort-select'],
+        ['asm-recipes-results', 'cmp-recipe-card'],
+        ['asm-detail-overview', 'cmp-rating-stars'],
+        ['asm-detail-overview', 'cmp-save-toggle'],
+        ['asm-detail-instructions', 'cmp-ingredient-list'],
+        ['asm-detail-instructions', 'cmp-step-list'],
+        ['asm-profile-saved', 'cmp-recipe-card'],
+        ['asm-profile-saved', 'cmp-save-toggle'],
+        ['asm-profile-planner', 'cmp-calendar-grid'],
+        ['asm-profile-planner', 'cmp-shopping-list'],
+
+        // cross links / reuse
+        ['page-home', 'page-recipes'],
+        ['page-recipes', 'page-recipe-detail'],
+        ['page-profile', 'page-recipe-detail'],
+        ['cmp-search-input', 'asm-recipes-filterbar'],
+        ['cmp-recipe-card', 'asm-detail-overview'],
+        ['cmp-save-toggle', 'cmp-recipe-card'],
+        ['cmp-shopping-list', 'cmp-ingredient-list'],
+        ['cmp-calendar-grid', 'cmp-recipe-card'],
+      ],
+    };
+
+    const sizeByDepth = {
+      0: { width: 220, height: 92, fontSize: 22, metaSize: 12 },
+      1: { width: 170, height: 74, fontSize: 16, metaSize: 11 },
+      2: { width: 126, height: 56, fontSize: 12, metaSize: 10 },
+    };
+
+    const nodesById = new Map();
+    for (const node of data.nodes) {
+      const size = sizeByDepth[node.depth] ?? sizeByDepth[2];
+      nodesById.set(node.id, {
+        ...node,
+        ...size,
+        x: CENTER_X + (Math.random() - 0.5) * 320,
+        y: CENTER_Y + (Math.random() - 0.5) * 220,
+        vx: 0,
+        vy: 0,
+      });
+    }
+
+    const adjacency = new Map();
+    for (const node of data.nodes) adjacency.set(node.id, new Set());
+    for (const [a, b] of data.links) {
+      adjacency.get(a)?.add(b);
+      adjacency.get(b)?.add(a);
+    }
+
+    const scene = document.getElementById('scene');
+    const edgesLayer = document.getElementById('edges');
+    const nodesLayer = document.getElementById('nodes');
+    const tooltip = document.getElementById('tooltip');
+    const viewport = document.getElementById('viewport');
+    const toggleEdgesButton = document.getElementById('toggleEdges');
+    const shuffleButton = document.getElementById('shuffle');
+
+    let showEdges = false;
+    let pointer = { x: 0, y: 0 };
+    let hoveredNodeId = null;
+
+    const edgeEls = [];
+    for (const [sourceId, targetId] of data.links) {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('class', 'edge hidden');
+      edgesLayer.appendChild(path);
+      edgeEls.push({ sourceId, targetId, el: path });
+    }
+
+    const nodeEls = [];
+    for (const node of nodesById.values()) {
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('class', `node ${node.kind}`);
+      g.dataset.id = node.id;
+
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('width', String(node.width));
+      rect.setAttribute('height', String(node.height));
+
+      const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      label.setAttribute('class', 'label');
+      label.setAttribute('x', String(node.width / 2));
+      label.setAttribute('y', String(node.height / 2 - 4));
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('dominant-baseline', 'middle');
+      label.setAttribute('font-size', String(node.fontSize));
+      label.textContent = node.label;
+
+      const meta = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      meta.setAttribute('class', 'meta');
+      meta.setAttribute('x', String(node.width / 2));
+      meta.setAttribute('y', String(node.height - 16));
+      meta.setAttribute('text-anchor', 'middle');
+      meta.setAttribute('font-size', String(node.metaSize));
+      meta.textContent = node.kind;
+
+      g.appendChild(rect);
+      g.appendChild(label);
+      g.appendChild(meta);
+      nodesLayer.appendChild(g);
+      nodeEls.push({ node, el: g });
+
+      g.addEventListener('mouseenter', () => {
+        hoveredNodeId = node.id;
+        showTooltip(node);
+      });
+      g.addEventListener('mouseleave', () => {
+        hoveredNodeId = null;
+        hideTooltip();
+      });
+      g.addEventListener('mousemove', onPointerMove);
+    }
+
+    viewport.addEventListener('mousemove', onPointerMove);
+
+    toggleEdgesButton.addEventListener('click', () => {
+      showEdges = !showEdges;
+      toggleEdgesButton.textContent = showEdges ? 'Hide Edges' : 'Show Edges';
+      render();
+    });
+
+    shuffleButton.addEventListener('click', () => {
+      resetPositions();
+    });
+
+    function onPointerMove(event) {
+      const rect = viewport.getBoundingClientRect();
+      pointer.x = event.clientX - rect.left;
+      pointer.y = event.clientY - rect.top;
+      if (tooltip.classList.contains('visible')) {
+        positionTooltip();
+      }
+    }
+
+    function showTooltip(node) {
+      tooltip.innerHTML = `
+        <div class="kind">${node.kind} · depth ${node.depth}</div>
+        <h2>${escapeHtml(node.label)}</h2>
+        <p><strong>Purpose:</strong> ${escapeHtml(node.purpose)}</p>
+        <p><strong>Implementation:</strong> ${escapeHtml(node.implementation)}</p>
+      `;
+      tooltip.classList.add('visible');
+      positionTooltip();
+    }
+
+    function hideTooltip() {
+      tooltip.classList.remove('visible');
+    }
+
+    function positionTooltip() {
+      const pad = 12;
+      const box = tooltip.getBoundingClientRect();
+      const viewportRect = viewport.getBoundingClientRect();
+      let left = pointer.x + 16;
+      let top = pointer.y + 16;
+
+      if (left + box.width > viewportRect.width - pad) {
+        left = pointer.x - box.width - 16;
+      }
+      if (top + box.height > viewportRect.height - pad) {
+        top = pointer.y - box.height - 16;
+      }
+
+      tooltip.style.left = `${Math.max(pad, left)}px`;
+      tooltip.style.top = `${Math.max(pad, top)}px`;
+    }
+
+    function resetPositions() {
+      const pages = [...nodesById.values()].filter(n => n.depth === 0);
+      const radius = 280;
+      pages.forEach((node, index) => {
+        const angle = (-Math.PI / 2) + (index / pages.length) * Math.PI * 2;
+        node.x = CENTER_X + Math.cos(angle) * radius;
+        node.y = CENTER_Y + Math.sin(angle) * radius;
+        node.vx = 0;
+        node.vy = 0;
+      });
+
+      const assemblies = [...nodesById.values()].filter(n => n.depth === 1);
+      assemblies.forEach((node, index) => {
+        const parentId = [...adjacency.get(node.id)].find(id => nodesById.get(id)?.depth === 0);
+        const parent = parentId ? nodesById.get(parentId) : null;
+        const angle = (index % 5) * (Math.PI / 2.5);
+        node.x = (parent?.x ?? CENTER_X) + Math.cos(angle) * 150;
+        node.y = (parent?.y ?? CENTER_Y) + Math.sin(angle) * 110;
+        node.vx = 0;
+        node.vy = 0;
+      });
+
+      const components = [...nodesById.values()].filter(n => n.depth === 2);
+      components.forEach((node, index) => {
+        const parentId = [...adjacency.get(node.id)].find(id => nodesById.get(id)?.depth === 1);
+        const parent = parentId ? nodesById.get(parentId) : null;
+        const angle = (index % 6) * (Math.PI / 3);
+        node.x = (parent?.x ?? CENTER_X) + Math.cos(angle) * 110;
+        node.y = (parent?.y ?? CENTER_Y) + Math.sin(angle) * 80;
+        node.vx = 0;
+        node.vy = 0;
+      });
+    }
+
+    function getRelatedSet(coreId) {
+      if (!coreId) return new Set();
+
+      const related = new Set([coreId]);
+      const queue = [{ id: coreId, distance: 0 }];
+      const maxDistance = 2;
+
+      while (queue.length) {
+        const current = queue.shift();
+        if (!current) continue;
+        if (current.distance >= maxDistance) continue;
+
+        for (const neighborId of adjacency.get(current.id) ?? []) {
+          if (related.has(neighborId)) continue;
+          related.add(neighborId);
+          queue.push({ id: neighborId, distance: current.distance + 1 });
+        }
+      }
+
+      return related;
+    }
+
+    function getCoreNeighbors(coreId) {
+      if (!coreId) return [];
+      return [...(adjacency.get(coreId) ?? [])]
+        .map(id => nodesById.get(id))
+        .filter(Boolean);
+    }
+
+    function nudgeHoveredCluster() {
+      if (!hoveredNodeId) return;
+
+      const core = nodesById.get(hoveredNodeId);
+      if (!core) return;
+
+      const directNeighbors = getCoreNeighbors(core.id);
+      if (!directNeighbors.length) return;
+
+      const clusterNodes = [core, ...directNeighbors];
+      const clusterCenterX = clusterNodes.reduce((sum, node) => sum + node.x, 0) / clusterNodes.length;
+      const clusterCenterY = clusterNodes.reduce((sum, node) => sum + node.y, 0) / clusterNodes.length;
+
+      const touchingThreshold = 170;
+      for (const node of directNeighbors) {
+        const dx = node.x - clusterCenterX;
+        const dy = node.y - clusterCenterY;
+        const distance = Math.hypot(dx, dy) || 0.001;
+
+        if (distance > touchingThreshold) {
+          const pull = (distance - touchingThreshold) * 0.012;
+          node.vx += -(dx / distance) * pull;
+          node.vy += -(dy / distance) * pull;
+        }
+      }
+    }
+
+    function applyHoverState() {
+      const related = getRelatedSet(hoveredNodeId);
+
+      for (const { node, el } of nodeEls) {
+        const isActive = hoveredNodeId && related.has(node.id);
+        const isDimmed = hoveredNodeId && !related.has(node.id);
+        const isCore = hoveredNodeId === node.id;
+
+        let opacity = 1;
+        let scale = 1;
+        let zIndex = 0;
+
+        if (isDimmed) {
+          opacity = 0.22;
+          scale = 0.98;
+        } else if (isActive) {
+          opacity = 1;
+          scale = isCore ? 1.045 : 1.02;
+          zIndex = isCore ? 3 : 2;
+        }
+
+        el.style.opacity = String(opacity);
+        el.style.transformBox = 'fill-box';
+        el.style.transformOrigin = 'center';
+        el.style.filter = isActive
+          ? 'drop-shadow(0 18px 30px rgba(0,0,0,0.32))'
+          : isDimmed
+            ? 'drop-shadow(0 4px 10px rgba(0,0,0,0.14))'
+            : 'none';
+        el.dataset.scale = String(scale);
+        el.dataset.zIndex = String(zIndex);
+      }
+
+      for (const { sourceId, targetId, el } of edgeEls) {
+        const isRelatedEdge = hoveredNodeId && related.has(sourceId) && related.has(targetId);
+        const shouldShow = showEdges || isRelatedEdge;
+        el.setAttribute('class', `edge${shouldShow ? '' : ' hidden'}`);
+        el.style.opacity = hoveredNodeId ? (isRelatedEdge ? '0.55' : '0.05') : '';
+      }
+
+      if (hoveredNodeId) {
+        const sorted = [...nodeEls].sort((a, b) => Number(a.el.dataset.zIndex || 0) - Number(b.el.dataset.zIndex || 0));
+        for (const item of sorted) {
+          nodesLayer.appendChild(item.el);
+        }
+      }
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function applyForces() {
+      nudgeHoveredCluster();
+      const nodes = [...nodesById.values()];
+
+      // gentle drift toward depth-based rings so the hierarchy stays visually grouped
+      for (const node of nodes) {
+        const dx = node.x - CENTER_X;
+        const dy = node.y - CENTER_Y;
+        const distance = Math.hypot(dx, dy) || 1;
+        const targetRadius = node.depth === 0 ? 300 : node.depth === 1 ? 180 : 72;
+        const radialError = distance - targetRadius;
+        const radialStrength = node.depth === 0 ? 0.0015 : node.depth === 1 ? 0.0012 : 0.0009;
+
+        node.vx += -(dx / distance) * radialError * radialStrength;
+        node.vy += -(dy / distance) * radialError * radialStrength;
+      }
+
+      // hierarchy and cross links try to make nodes touch, not overlap heavily
+      for (const [aId, bId] of data.links) {
+        const a = nodesById.get(aId);
+        const b = nodesById.get(bId);
+        if (!a || !b) continue;
+
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const distance = Math.hypot(dx, dy) || 0.001;
+        const touchDistance = (Math.max(a.width, a.height) + Math.max(b.width, b.height)) * 0.52;
+        const diff = distance - touchDistance;
+        const strength = 0.0045;
+        const force = diff * strength;
+
+        const fx = (dx / distance) * force;
+        const fy = (dy / distance) * force;
+        a.vx += fx;
+        a.vy += fy;
+        b.vx -= fx;
+        b.vy -= fy;
+      }
+
+      // collision / anti-overlap using AABB-ish push apart
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i];
+          const b = nodes[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const overlapX = (a.width + b.width) / 2 + 10 - Math.abs(dx);
+          const overlapY = (a.height + b.height) / 2 + 10 - Math.abs(dy);
+
+          if (overlapX > 0 && overlapY > 0) {
+            if (overlapX < overlapY) {
+              const push = overlapX * 0.05 * Math.sign(dx || 1);
+              a.vx -= push;
+              b.vx += push;
+            } else {
+              const push = overlapY * 0.05 * Math.sign(dy || 1);
+              a.vy -= push;
+              b.vy += push;
+            }
+          }
+        }
+      }
+
+      // related nodes share a slight gravity toward their local centroid
+      for (const node of nodes) {
+        const neighbors = [...(adjacency.get(node.id) ?? [])].map(id => nodesById.get(id)).filter(Boolean);
+        if (!neighbors.length) continue;
+        const avgX = neighbors.reduce((sum, n) => sum + n.x, 0) / neighbors.length;
+        const avgY = neighbors.reduce((sum, n) => sum + n.y, 0) / neighbors.length;
+        node.vx += (avgX - node.x) * 0.0008;
+        node.vy += (avgY - node.y) * 0.0008;
+      }
+
+      for (const node of nodes) {
+        node.vx *= 0.88;
+        node.vy *= 0.88;
+        node.x += node.vx;
+        node.y += node.vy;
+
+        const halfW = node.width / 2;
+        const halfH = node.height / 2;
+        node.x = clamp(node.x, halfW + 28, WIDTH - halfW - 28);
+        node.y = clamp(node.y, halfH + 28, HEIGHT - halfH - 28);
+      }
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function render() {
+      for (const { sourceId, targetId, el } of edgeEls) {
+        const a = nodesById.get(sourceId);
+        const b = nodesById.get(targetId);
+        if (!a || !b) continue;
+        const d = `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
+        el.setAttribute('d', d);
+        el.setAttribute('class', `edge${showEdges ? '' : ' hidden'}`);
+      }
+
+      applyHoverState();
+
+      for (const { node, el } of nodeEls) {
+        const scale = Number(el.dataset.scale || 1);
+        const x = node.x - node.width / 2;
+        const y = node.y - node.height / 2;
+        el.setAttribute('transform', `translate(${x}, ${y}) scale(${scale})`);
+      }
+    }
+
+    function tick() {
+      applyForces();
+      render();
+      requestAnimationFrame(tick);
+    }
+
+    resetPositions();
+    render();
+    tick();
+  </script>
+</body>
+</html>
