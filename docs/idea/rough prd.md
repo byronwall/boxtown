@@ -1,129 +1,119 @@
 Hi,
 
-A few things stand out, but nothing fatal. The concept reads well.
+Below is a rough PRD that starts with the original ask, captures what was actually built, and then reframes it into a more general-purpose product ideation and management tool.
 
-![](initial-screen.png)
+PRD: Spatial Product Map
 
-- What looks good
-  - The size hierarchy is clear.
-    - Pages read as primary.
-    - Assemblies read as secondary.
-    - Components read as tertiary.
-  - The “flat boxes, no default edges” idea works.
-    - It feels cleaner than a traditional node-link diagram.
-    - The layout still hints at relationships through proximity.
-  - The visual styling is cohesive.
-    - Good contrast.
-    - Good box sizing.
-    - The depth scaling feels intuitive.
-- What looks a bit off
-  - Some ownership relationships feel ambiguous.
-    - Results Grid sits between Home and Recipes, so it is not immediately obvious that it belongs to Recipes.
-    - Recipe Overview visually feels closer to Saved Recipes than to Recipe Detail.
-  - A few related boxes are close, but not clearly “touching.”
-    - Since touching is part of the concept language, a viewer may expect stricter adjacency for primary parent-child relationships.
-  - Cross-link gravity may be overpowering hierarchy in a few spots.
-    - Reused components are pulling assemblies into mixed clusters.
-    - That helps with reuse discovery, but weakens page-centered grouping.
-  - The overall composition is a little center-heavy.
-    - Most items are packed into one dense central blob.
-    - The page nodes do not form very distinct territories.
+1. Overview
 
-So the main issue is not aesthetics. It is semantic readability:
+The initial request was for a lightweight index.html prototype that visualizes a hierarchy as flat boxes, allows links between boxes, and avoids rendering edges by default. Relationships should instead be communicated through spatial proximity, with related boxes touching or clustering tightly. Deeper items should appear smaller, and hover should reveal richer explanatory details.
 
-- hierarchy is visible,
-- but parentage is sometimes less clear than reuse proximity.
+What was created is a single-page HTML prototype that:
 
-I would still call this a successful first pass.
+- renders pages, assemblies, and components as flat labeled rectangles,
+- sizes boxes by depth,
+- supports hierarchical and cross-link relationships,
+- uses a force-based layout so related items cluster,
+- hides edges by default,
+- reveals details on hover,
+- and now adds hover-focus behavior that elevates related items, dims unrelated items, and pulls related nodes into a tighter temporary cluster.
 
-PRD-style summary
+The broader opportunity is to evolve this into a general-purpose spatial planning tool for product architecture, roadmap ideation, system design, and dependency management.
 
-Working title
+⸻
 
-Recipe Site Structural Map
+2. Original user problem
 
-Objective
+The original problem was not really “draw a graph.” It was closer to this:
 
-Provide a compact visual map of a website’s information architecture and UI composition using flat rectangular boxes instead of a traditional edge-heavy diagram.
+- Users need a way to think about product structure spatially.
+  - Hierarchies matter.
+  - Cross-links matter.
+  - But traditional node-link diagrams get noisy fast.
+- Users want a view that feels more like clustering and composition than diagramming.
+  - Related things should visually gather.
+  - Ownership and reuse should be legible.
+  - The user should not need to inspect a web of lines to understand the shape.
+- Users also want lightweight metadata.
+  - Each box should have a readable label.
+  - More details should appear on demand, not all at once.
 
-The visualization should help a viewer quickly understand:
+⸻
 
-- which pages exist,
-- which assemblies belong to those pages,
-- which components support those assemblies,
-- where components are reused across multiple areas.
+3. Original request distilled into requirements
 
-Users
+Functional intent
 
-- Product designers reviewing page structure.
-- Frontend engineers discussing composition and reuse.
-- Technical leads aligning on architecture.
-- Stakeholders who need a readable high-level map without reading code.
+- Visualize hierarchical items as flat boxes.
+- Support explicit links between arbitrary boxes.
+- Do not show edges by default.
+- Use proximity and contact as the main signal of relationship.
+- Make deeper nodes smaller.
+- Show labels directly on the boxes.
+- Reveal more information on hover.
+- Seed with a test dataset representing a recipe website.
 
-Core concept
+Initial information model
 
-The diagram represents a hierarchy and a relationship graph at the same time.
+- Page
+  - largest unit
+- Assembly
+  - intermediate unit
+- Component
+  - smallest unit
 
-- Hierarchy
-  - Pages are top-level objects.
-  - Assemblies are grouped beneath pages.
-  - Components sit beneath assemblies.
-- Links
-  - Nodes may also have non-hierarchical links.
-  - These indicate reuse, dependency, or shared behavior.
-- Visual rule
-  - Edges are not shown by default.
-  - Relationships are primarily communicated through spatial proximity and contact.
+Initial interaction model
 
-Functional requirements
+- Passive browsing first
+  - user sees the structure at a glance
+- Hover for detail
+  - user sees purpose and implementation
+- Optional diagnostic mode
+  - user can show edges when needed
 
-- Node model
-  - Each node must have:
-    - label,
-    - type,
-    - depth,
-    - descriptive metadata.
-  - Supported node types:
-    - Page
-    - Assembly
-    - Component
-- Sizing by depth
-  - Node size decreases with depth.
-  - Pages are largest.
-  - Assemblies are medium.
-  - Components are smallest.
+⸻
+
+4. What was actually built
+
+Prototype scope
+
+A single static HTML page with plain CSS and JavaScript.
+
+Implemented features
+
+- Data-driven node model
+  - id
+  - label
+  - kind
+  - depth
+  - purpose
+  - implementation
+- Relationship model
+  - hierarchy links
+  - cross-links / reuse links
+- Visual encoding
+  - pages, assemblies, and components have distinct sizes
+  - each type has slightly different coloring
+  - labels and type metadata are always visible
 - Layout behavior
-  - Related nodes should be positioned as close as possible.
-  - Parent-child relationships should strongly prefer direct adjacency.
-  - Linked nodes should be attracted to one another even when no edge is shown.
-  - Nodes should avoid overlapping.
-  - The layout should preserve a generally readable hierarchy while still revealing reuse clusters.
-- Edge visibility
-  - Relationship edges exist in the model.
-  - Edges are hidden by default.
-  - A control allows edges to be toggled on for debugging or inspection.
-- Hover details
-  - Hovering a node reveals additional metadata.
-  - Metadata includes:
-    - purpose,
-    - implementation notes,
-    - node type,
-    - depth.
+  - nodes initialize into rough depth-based zones
+  - force-based attraction keeps linked items close
+  - collision logic reduces overlap
+  - related nodes tend to cluster without needing visible edges
+- Interaction
+  - hover tooltip with richer metadata
+  - edge toggle
+  - reflow / shuffle button
+- Enhanced hover UX
+  - hovered node becomes focal point
+  - related items are elevated
+  - unrelated items dim
+  - related edges can surface during hover
+  - direct neighbors are nudged inward to tighten the active cluster
 
-Interaction requirements
+Sample dataset
 
-- Default state
-  - Clean diagram with labels visible and no edges shown.
-- Hover
-  - Reveal contextual details in a tooltip.
-- Reflow
-  - Allow the user to reshuffle or recompute layout.
-- Edge toggle
-  - Allow the user to inspect the underlying graph when needed.
-
-Data model used in the prototype
-
-The sample dataset models a recipe website.
+The prototype models a recipe product structure:
 
 - Pages
   - Home
@@ -152,42 +142,309 @@ The sample dataset models a recipe website.
   - Calendar Grid
   - Shopping List
 
-The dataset includes both:
+⸻
 
-- strict hierarchy links,
-- cross-links representing reuse across pages and assemblies.
+5. Product vision for a generalized version
 
-Visual design principles
+Turn the prototype into a spatial workspace for thinking about a product as a system.
 
-Area Decision Reason
-Shape Flat rounded rectangles Keeps the diagram calm and legible
-Scale Smaller boxes at deeper levels Reinforces hierarchy without extra decoration
-Color Type-based color family Helps distinguish pages, assemblies, and components
-Labels Always visible Makes the map useful at a glance
-Details Tooltip on hover Preserves simplicity while exposing depth on demand
-Edges Hidden by default Prevents clutter and keeps focus on structure
+The generalized product should help teams:
 
-Success criteria
+- ideate new product concepts,
+- map product areas and features,
+- express ownership and hierarchy,
+- capture dependencies and reuse,
+- manage the relationship between vision, UX, implementation, and delivery.
 
-The visualization is successful if a user can:
+The key idea is:
 
-- identify the major pages in under a few seconds,
-- understand which assemblies belong to which pages,
-- notice component reuse without needing visible edges,
-- inspect deeper detail through hover,
-- optionally reveal the full graph for verification.
+- a product is represented as a spatial network of typed boxes,
+- proximity is meaningful,
+- hierarchy is preserved,
+- metadata is rich,
+- and the experience is optimized for exploration, not just documentation.
 
-Known tradeoff
+⸻
 
-Because proximity is doing the work normally done by edges:
+6. Target users
 
-- reuse can sometimes compete with strict parent-child grouping,
-- and some nodes may drift into visually ambiguous positions.
+Primary
 
-That tradeoff is acceptable for exploration, but the next refinement should bias primary hierarchy more strongly than secondary links.
+- Product managers
+- Designers
+- Engineering leads
+- Founders / early-stage product teams
 
-My recommendation for the next iteration:
+Secondary
 
-- strengthen parent-child attraction,
-- weaken cross-link attraction slightly,
-- and introduce subtle page “territories” so each page owns a more recognizable local cluster.
+- Frontend and platform engineers
+- Staff+ engineers doing system mapping
+- Delivery leads / program managers
+- Cross-functional teams during planning workshops
+
+⸻
+
+7. Core jobs to be done
+
+Ideation
+
+- “Help me map out a product concept and its major areas.”
+
+Structuring
+
+- “Help me break pages/features into sub-areas, components, flows, or systems.”
+
+Dependency understanding
+
+- “Show what is reused, shared, or tightly coupled.”
+
+Planning
+
+- “Help me understand what belongs together and what impacts what.”
+
+Communication
+
+- “Give me a clean artifact I can use with engineering, design, and stakeholders.”
+
+⸻
+
+8. Proposed generalized object model
+
+Object Type Purpose Example
+Product Area Top-level domain or business area Search, Checkout, Profile
+Surface / Screen User-facing surface Home, Pricing, Dashboard
+Feature Functional capability Saved Items, Recommendations
+Flow Multi-step journey Onboarding, Purchase Flow
+Module / Assembly Composite UX or technical grouping Filter Bar, Hero, Billing Panel
+Component Reusable UI or logic block Card, Button, Sort Select
+Entity / Data Object Important domain object Recipe, Order, User, Subscription
+System / Service Technical dependency Auth Service, Search Index
+Initiative / Milestone Planning object Q3 Checkout Refresh
+Team / Owner Ownership object Growth Team, Platform Team
+
+This should be configurable rather than hardcoded.
+
+⸻
+
+9. Core feature set for v1
+
+A. Spatial map canvas
+
+- Render typed boxes on a zoomable/pannable canvas.
+- Support parent-child hierarchy.
+- Support lateral links and dependencies.
+- Use clustering and proximity as the default relational signal.
+- Keep edges optional.
+
+B. Typed nodes
+
+- User can create node types.
+- Each type has:
+  - label,
+  - size rules,
+  - color/style,
+  - icon or badge,
+  - metadata schema.
+
+C. Relationship types
+
+- Parent-child
+- Reuse
+- Dependency
+- Ownership
+- Data flow
+- Delivery linkage
+
+These should support different weights in layout and highlight behavior.
+
+D. Hover and focus interactions
+
+- Hover highlights the focal node and related cluster.
+- Non-related items dim.
+- Related items rise visually.
+- The active cluster can tighten temporarily.
+- Tooltip or side panel reveals metadata.
+
+E. Detail model
+
+Each node should support:
+
+- title
+- type
+- summary
+- purpose
+- implementation notes
+- owner
+- status
+- tags
+- links to docs/issues/code
+- priority or strategic importance
+
+F. Layout controls
+
+- Auto-layout
+- Re-cluster
+- Lock node position
+- Show/hide edges
+- Show only selected relationship types
+- Depth-aware scaling
+
+⸻
+
+10. Candidate v2 capabilities
+
+Planning and management
+
+- Status on nodes
+  - idea, planned, in progress, shipped, deprecated
+- Priority and effort
+- Roadmap grouping
+- Team ownership overlays
+- Quarter or milestone tagging
+
+Product operations
+
+- Filter by owner, status, area, tag
+- Search nodes
+- Save multiple views
+  - architecture view
+  - roadmap view
+  - ownership view
+  - dependency risk view
+
+Collaboration
+
+- Comments / annotations
+- Shared workspaces
+- Presence / multiplayer editing
+- Snapshot history
+
+Integrations
+
+- Jira / Linear
+- Figma
+- GitHub
+- Notion / docs
+- analytics links
+
+⸻
+
+11. UX principles
+
+Default to visual calm
+
+- Avoid edge-heavy diagrams on first load.
+- Keep labels readable.
+- Put metadata behind hover/focus or side panel.
+
+Preserve meaning through space
+
+- Parent-child relationships should feel local and grounded.
+- Cross-links should inform, not dominate.
+- Clusters should feel intentional.
+
+Let users move from abstract to concrete
+
+- Start with structure.
+- Then reveal metadata.
+- Then reveal dependencies.
+- Then reveal delivery state.
+
+Optimize for product thinking, not just documentation
+
+- Fast box creation.
+- Fast restructuring.
+- Easy regrouping.
+- Easy comparison of multiple mental models.
+
+⸻
+
+12. Non-goals for the first real version
+
+- Full BPMN-style process modeling
+- Pixel-precise design tooling
+- Replacing Jira/Figma/Notion entirely
+- Complex graph analytics as a primary workflow
+
+The goal is a thinking and coordination surface, not a full enterprise modeling suite.
+
+⸻
+
+13. Success criteria
+
+Usability
+
+- A user can create a useful product map in under 15 minutes.
+- A viewer can understand the top-level product shape in under 30 seconds.
+
+Clarity
+
+- Ownership and hierarchy are readable without edges enabled.
+- Reuse and dependencies are discoverable on hover/focus.
+
+Product value
+
+- Teams use the map during planning, design reviews, and architecture discussions.
+- The artifact becomes something people maintain rather than a one-off workshop output.
+
+⸻
+
+14. Risks and tradeoffs
+
+Risk: clustering can blur ownership
+
+- Reuse links may pull items away from their parent areas.
+- Mitigation:
+  - stronger parent-child weighting,
+  - lighter reuse weighting,
+  - optional “territories” or containers for top-level groups.
+
+Risk: too much metadata turns boxes into cards
+
+- Mitigation:
+  - keep boxes compact,
+  - move detail into hover or side panel.
+
+Risk: becomes another diagramming tool
+
+- Mitigation:
+  - lean into product-specific object types,
+  - ownership/status overlays,
+  - relationship-aware clustering,
+  - view presets for planning and architecture.
+
+⸻
+
+15. Suggested MVP framing
+
+If you want to make this real, I would position the MVP as:
+
+Spatial Product Map MVP
+
+A canvas-based tool for mapping product structure, feature relationships, and reusable building blocks without relying on cluttered node-link diagrams.
+
+MVP includes
+
+- typed nodes,
+- hierarchical + lateral relationships,
+- auto-clustering layout,
+- hover focus and dimming,
+- edge toggle,
+- metadata side panel,
+- filters by type/status/owner,
+- save/load map data.
+
+MVP excludes
+
+- real-time collaboration,
+- external integrations,
+- advanced permissions,
+- heavy workflow automation.
+
+⸻
+
+16. One-sentence product pitch
+
+A visual workspace for mapping products as connected clusters of features, flows, systems, and components—so teams can ideate, structure, and manage complexity without drowning in diagram lines.
+
+If you want, I can turn this into a tighter one-page PRD with sections like Goals, User Stories, Requirements, and Open Questions.
