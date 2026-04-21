@@ -33,12 +33,14 @@ Run inside `app/`:
 ## Key Paths
 
 - App entry: `app/src/app.tsx`
+- Style brief: `docs/design-brief-industrial-ui.md` (consult and follow for all frontend work)
 - Shared UI wrappers: `app/src/components/ui/`
 - Theme + recipes: `app/src/theme/`
 - Panda config: `app/panda.config.ts`
 
 ## UI Conventions
 
+- Treat `docs/design-brief-industrial-ui.md` as a key frontend document. Consult it before making frontend changes and follow it unless the user explicitly directs otherwise.
 - Prefer simplified shared wrappers when they fit:
   - `SimpleDialog`
   - `SimplePopover`

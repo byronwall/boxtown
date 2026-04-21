@@ -53,6 +53,7 @@ export function useSpatialMapCanvasController(
   const [hoveredNodeId, setHoveredNodeId] = createSignal<string | null>(null);
   const [showEdges, setShowEdges] = createSignal(false);
   const [inspectorOpen, setInspectorOpen] = createSignal(true);
+  const [addNodesOpen, setAddNodesOpen] = createSignal(false);
   const [camera, setCamera] = createSignal(createDefaultCamera());
   const [isPanning, setIsPanning] = createSignal(false);
   const adjacency = createMemo(() => buildAdjacencyMap(data()));
@@ -273,6 +274,7 @@ export function useSpatialMapCanvasController(
 
   return {
     camera,
+    addNodesOpen,
     edgeState,
     inspectorOpen,
     isPanning,
@@ -283,6 +285,8 @@ export function useSpatialMapCanvasController(
     showEdges,
     sourceNodesById,
     zoomPercent,
+    closeAddNodesFlow: () => setAddNodesOpen(false),
+    openAddNodesFlow: () => setAddNodesOpen(true),
     setInspectorOpen,
     setSelectedNodeId,
     toggleEdges: () => setShowEdges((current) => !current),

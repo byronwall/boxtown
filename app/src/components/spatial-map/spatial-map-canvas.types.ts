@@ -41,6 +41,7 @@ export interface SceneInteractionHandlers {
 }
 
 export interface SpatialMapCanvasController {
+  addNodesOpen: Accessor<boolean>;
   camera: Accessor<CameraState>;
   edgeState: Accessor<EdgeVisualState[]>;
   inspectorOpen: Accessor<boolean>;
@@ -55,11 +56,13 @@ export interface SpatialMapCanvasController {
   showEdges: Accessor<boolean>;
   sourceNodesById: Accessor<Map<string, MapNode>>;
   zoomPercent: Accessor<string>;
+  closeAddNodesFlow: () => void;
   setInspectorOpen: (value: boolean | ((current: boolean) => boolean)) => void;
   setSelectedNodeId: (value: string | null | ((current: string | null) => string | null)) => void;
   toggleEdges: () => void;
   reflowLayout: () => void;
   fitCameraToNodes: () => void;
+  openAddNodesFlow: () => void;
   setViewportRef: (element: HTMLDivElement) => void;
   setSvgRef: (element: SVGSVGElement) => void;
   viewportHandlers: ViewportPointerHandlers;

@@ -77,6 +77,14 @@
   overflow: hidden;
 }
 
+.spatial-map-topbar-copy > * {
+  flex-shrink: 0;
+}
+
+.spatial-map-topbar-copy > :last-child {
+  min-width: 0;
+}
+
 .spatial-map-eyebrow,
 .spatial-map-kicker,
 .spatial-map-inspector-row-label,
@@ -96,6 +104,25 @@
   border: 1px solid rgba(37, 95, 58, 0.35);
   background: rgba(37, 95, 58, 0.08);
   color: var(--spatial-map-accent-strong);
+}
+
+.spatial-map-backlink {
+  display: inline-flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 10px;
+  border: 1px solid rgba(24, 29, 26, 0.18);
+  background: rgba(255, 255, 255, 0.42);
+  color: var(--spatial-map-copy);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.spatial-map-backlink:hover {
+  background: rgba(255, 255, 255, 0.62);
 }
 
 .spatial-map-title {
@@ -124,6 +151,31 @@
 .spatial-map-control-strip {
   align-content: center;
   align-items: center;
+}
+
+.spatial-map-empty {
+  position: absolute;
+  inset: 78px auto auto 22px;
+  max-width: 360px;
+  padding: 16px 18px;
+  border: 1px solid var(--spatial-map-panel-border);
+  background: rgba(246, 248, 244, 0.9);
+  box-shadow: 0 16px 40px rgba(23, 27, 24, 0.14);
+  pointer-events: none;
+}
+
+.spatial-map-empty-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.spatial-map-empty-copy {
+  margin: 0;
+  color: var(--spatial-map-copy-muted);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .spatial-map-inspector-row-value,
@@ -346,23 +398,49 @@
 }
 
 .spatial-map-inspector-toggle {
-  position: absolute;
-  top: 12px;
-  left: 0;
-  z-index: 3;
-  transform: translateX(-50%);
-  writing-mode: vertical-rl;
-  rotate: 180deg;
-  padding: 7px 6px;
-  border: 1px solid var(--spatial-map-panel-border);
-  background: rgba(227, 231, 225, 0.98);
-  color: var(--spatial-map-copy-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--spatial-map-panel-border-strong);
+  background: rgba(231, 235, 228, 0.98);
+  color: var(--spatial-map-copy);
   font-family: inherit;
-  font-size: 11px;
+  font-size: 15px;
   line-height: 1;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-weight: 700;
   cursor: pointer;
+  appearance: none;
+  flex-shrink: 0;
+}
+
+.spatial-map-inspector-toggle:hover {
+  background: rgba(221, 229, 220, 0.98);
+}
+
+.spatial-map-inspector-toggle:focus-visible {
+  outline: none;
+  border-color: rgba(23, 62, 39, 0.56);
+  box-shadow: inset 0 0 0 1px rgba(23, 62, 39, 0.34);
+}
+
+.spatial-map-inspector-toggle.is-toolbar {
+  align-self: stretch;
+}
+
+.spatial-map-inspector-header .spatial-map-inspector-toggle {
+  justify-self: end;
+}
+
+.spatial-map-inspector-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  transform: translateX(-0.5px);
 }
 
 .spatial-map-inspector {
@@ -389,8 +467,16 @@
 
 .spatial-map-inspector-header {
   width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
   padding-bottom: 6px;
   border-bottom: 1px solid rgba(34, 41, 36, 0.12);
+}
+
+.spatial-map-inspector-header-copy {
+  min-width: 0;
 }
 
 .spatial-map-inspector-title {
@@ -450,6 +536,106 @@
 .spatial-map-inspector-block-body {
   font-size: 12px;
   line-height: 1.45;
+}
+
+.spatial-map-add-nodes-rail {
+  width: 360px;
+}
+
+.spatial-map-add-nodes-textarea {
+  resize: vertical;
+  min-height: 112px;
+  border: 1px solid rgba(34, 41, 36, 0.18);
+  border-radius: 0;
+  background: rgba(244, 246, 242, 0.92);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.spatial-map-question-title,
+.spatial-map-run-step-label {
+  color: var(--spatial-map-copy);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.spatial-map-question-helper,
+.spatial-map-run-step-detail {
+  margin: 3px 0 0;
+  color: var(--spatial-map-copy-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.spatial-map-answer-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.spatial-map-answer-option,
+.spatial-map-follow-up-card {
+  width: 100%;
+  border: 1px solid rgba(34, 41, 36, 0.16);
+  background: rgba(233, 237, 231, 0.96);
+  color: var(--spatial-map-copy);
+  text-align: left;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 9px 8px;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    transform 120ms ease;
+}
+
+.spatial-map-answer-option:hover,
+.spatial-map-follow-up-card:hover {
+  border-color: rgba(23, 62, 39, 0.44);
+  background: rgba(223, 230, 221, 0.98);
+}
+
+.spatial-map-answer-option.is-selected,
+.spatial-map-follow-up-card:focus-visible,
+.spatial-map-answer-option:focus-visible {
+  outline: none;
+  border-color: rgba(23, 62, 39, 0.6);
+  box-shadow: inset 2px 0 0 rgba(23, 62, 39, 0.92);
+  background: rgba(212, 222, 211, 0.98);
+}
+
+.spatial-map-run-step {
+  border: 1px solid rgba(34, 41, 36, 0.12);
+  background: rgba(244, 246, 242, 0.68);
+  padding: 7px 8px;
+}
+
+.spatial-map-run-step-status {
+  color: var(--spatial-map-copy-dim);
+  font-size: 10px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.spatial-map-run-step.is-active {
+  border-color: rgba(37, 95, 58, 0.34);
+  background: rgba(230, 237, 229, 0.9);
+}
+
+.spatial-map-run-step.is-completed {
+  border-color: rgba(34, 41, 36, 0.16);
+}
+
+.spatial-map-run-step.is-failed,
+.spatial-map-add-nodes-error {
+  border-color: rgba(126, 41, 41, 0.28);
+  background: rgba(246, 235, 235, 0.82);
 }
 
 .spatial-map-relation-title {
@@ -540,16 +726,6 @@
     flex-direction: column;
   }
 
-  .spatial-map-inspector-toggle {
-    top: auto;
-    bottom: 12px;
-    left: auto;
-    right: 12px;
-    transform: none;
-    writing-mode: initial;
-    rotate: 0deg;
-  }
-
   .spatial-map-inspector {
     position: absolute;
     right: 0;
@@ -558,5 +734,13 @@
     width: min(88vw, 340px);
     z-index: 2;
     box-shadow: -12px 0 0 rgba(17, 22, 19, 0.08);
+  }
+
+  .spatial-map-add-nodes-rail {
+    width: min(92vw, 360px);
+  }
+
+  .spatial-map-answer-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
