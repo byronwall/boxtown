@@ -7,11 +7,16 @@ export const globalCss = {
       "--global-color-focus-ring": "colors.colorPalette.solid.bg",
     },
     html: {
-      colorPalette: "gray",
+      colorPalette: "green",
+      backgroundColor: "colors.gray.2",
     },
     body: {
-      background: "canvas",
+      minHeight: "100vh",
+      background:
+        "radial-gradient(circle at top, token(colors.green.a4) 0%, transparent 34%), linear-gradient(180deg, token(colors.gray.1) 0%, token(colors.green.1) 100%)",
       color: "fg.default",
+      textRendering: "optimizeLegibility",
+      WebkitFontSmoothing: "antialiased",
     },
   },
 };

@@ -78,6 +78,9 @@ export function SpatialMapCanvas(props: SpatialMapCanvasProps) {
   const selectedNodeRelations = createMemo(() =>
     describeRelations(props.data.links, sourceNodesById(), selectedNode()),
   );
+  const zoomPercent = createMemo(() =>
+    `${Math.round((VIEWPORT_WIDTH / camera().width) * 100)}%`,
+  );
   const orderedNodes = createMemo(() => {
     const hovered = hoveredNodeId();
     const selected = selectedNodeId();
@@ -98,9 +101,9 @@ export function SpatialMapCanvas(props: SpatialMapCanvasProps) {
           opacity: isDimmed ? 0.22 : 1,
           scale: isCore ? 1.045 : isActive ? 1.02 : isDimmed ? 0.985 : 1,
           filter: isActive
-            ? "drop-shadow(0 18px 30px rgba(0,0,0,0.32))"
+            ? "drop-shadow(0 20px 28px rgba(56, 88, 65, 0.18))"
             : isDimmed
-              ? "drop-shadow(0 4px 10px rgba(0,0,0,0.14))"
+              ? "drop-shadow(0 6px 12px rgba(56, 88, 65, 0.08))"
               : "none",
         };
       });
@@ -305,35 +308,49 @@ export function SpatialMapCanvas(props: SpatialMapCanvasProps) {
     setSelectedNodeId(nodeId);
   };
 
+  const handleSceneClick = (event: MouseEvent) => {
+    if (suppressNodeClick) {
+      return;
+    }
+
+    const target = event.target;
+    if (target instanceof Element && target.closest(".spatial-map-node")) {
+      return;
+    }
+
+    setHoveredNodeId(null);
+    setSelectedNodeId(null);
+  };
+
   return (
     <Box class={`spatial-map-shell${inspectorOpen() ? "" : " spatial-map-shell--collapsed"}`}>
       <Box class="spatial-map-main">
         <Box class="spatial-map-stage">
           <Box class="spatial-map-topbar">
-            <VStack alignItems="start" gap="1">
-              <Box
-                as="h1"
-                textStyle={{ base: "xl", md: "2xl" }}
-                fontWeight="bold"
-                letterSpacing="tight"
-                margin="0"
-              >
-                Recipe Website Architecture Map
-              </Box>
-              <Text as="p" textStyle="sm" color="rgba(223, 231, 247, 0.72)" margin="0">
-                Full-screen architecture view. Hover to preview relationships, click any box to inspect it.
+            <HStack gap="3" alignItems="center" class="spatial-map-topbar-copy">
+              <Text as="span" class="spatial-map-eyebrow">
+                System map / operator view
               </Text>
-            </VStack>
+              <Box as="h1" class="spatial-map-title">
+                Recipe Architecture Grid
+              </Box>
+            </HStack>
 
-            <HStack gap="2" flexWrap="wrap">
+            <HStack gap="1.5" flexWrap="wrap" justifyContent="flex-end" class="spatial-map-control-strip">
               <Button
+                colorPalette="green"
                 variant="outline"
+                size="xs"
+                class="spatial-map-button"
                 onClick={() => setShowEdges((current) => !current)}
               >
                 {showEdges() ? "Hide Edges" : "Show Edges"}
               </Button>
               <Button
-                variant="solid"
+                colorPalette="green"
+                variant="surface"
+                size="xs"
+                class="spatial-map-button spatial-map-button--strong"
                 onClick={() =>
                   setPositionedNodes((current) =>
                     resetLayout(current, adjacency()),
@@ -342,8 +359,17 @@ export function SpatialMapCanvas(props: SpatialMapCanvasProps) {
               >
                 Reflow Layout
               </Button>
-              <Button variant="plain" onClick={fitCameraToNodes}>
-                Fit to Screen (`F`)
+              <Text as="span" class="spatial-map-zoom-readout">
+                Zoom {zoomPercent()}
+              </Text>
+              <Button
+                colorPalette="green"
+                variant="plain"
+                size="xs"
+                class="spatial-map-button"
+                onClick={fitCameraToNodes}
+              >
+                Fit View <span class="spatial-map-shortcut">F</span>
               </Button>
             </HStack>
           </Box>
@@ -363,6 +389,7 @@ export function SpatialMapCanvas(props: SpatialMapCanvasProps) {
               class="spatial-map-scene"
               viewBox={`${camera().x} ${camera().y} ${camera().width} ${camera().height}`}
               preserveAspectRatio="xMidYMid slice"
+              onClick={handleSceneClick}
             >
               <g>
                 <For each={edgeState()}>
@@ -438,17 +465,6 @@ export function SpatialMapCanvas(props: SpatialMapCanvasProps) {
                 </For>
               </g>
             </svg>
-
-            <Box class="spatial-map-stage-footer">
-              <HStack gap="3" flexWrap="wrap">
-                <LegendItem color="#22335f" borderColor="rgba(137, 180, 255, 0.45)" label="Page" />
-                <LegendItem color="#21314f" borderColor="rgba(167, 243, 208, 0.32)" label="Assembly" />
-                <LegendItem color="#262739" borderColor="rgba(255, 255, 255, 0.14)" label="Component" />
-              </HStack>
-              <Text as="span" textStyle="xs" color="rgba(223, 231, 247, 0.7)">
-                Selected: {selectedNode()?.label ?? "None"}
-              </Text>
-            </Box>
           </Box>
         </Box>
 
@@ -460,32 +476,25 @@ export function SpatialMapCanvas(props: SpatialMapCanvasProps) {
             aria-expanded={inspectorOpen()}
             aria-controls="spatial-map-inspector"
           >
-            {inspectorOpen() ? "Hide inspector" : "Show inspector"}
+            {inspectorOpen() ? "Hide panel" : "Open panel"}
           </button>
 
           <aside
             id="spatial-map-inspector"
             class={`spatial-map-inspector${inspectorOpen() ? "" : " is-collapsed"}`}
           >
-            <VStack alignItems="start" gap="5" h="full">
-              <VStack alignItems="start" gap="2">
+            <VStack alignItems="start" gap="2" h="full">
+              <VStack alignItems="start" gap="1" class="spatial-map-inspector-header">
                 <Text as="span" textStyle="xs" class="spatial-map-kicker">
-                  Inspector
+                  Inspector rail
                 </Text>
-                <Box
-                  as="h2"
-                  margin="0"
-                  fontSize="2xl"
-                  lineHeight="1.1"
-                  fontWeight="semibold"
-                  letterSpacing="tight"
-                >
+                <Box as="h2" class="spatial-map-inspector-title">
                   {selectedNode()?.label ?? "Select an item"}
                 </Box>
-                <Text as="p" margin="0" color="rgba(223, 231, 247, 0.72)">
+                <Text as="p" class="spatial-map-inspector-copy">
                   {selectedNode()
-                    ? "Click another box to compare nodes without losing context."
-                    : "Choose any box in the map to inspect its metadata and connections."}
+                    ? "Lock another node to compare structure without losing current context."
+                    : "Choose any node to inspect metadata, role, and network relationships."}
                 </Text>
               </VStack>
 
@@ -510,7 +519,7 @@ export function SpatialMapCanvas(props: SpatialMapCanvasProps) {
               </Box>
 
               <Box class="spatial-map-inspector-section">
-                <Text as="h3" margin="0 0 10px" fontSize="sm" fontWeight="semibold">
+                <Text as="h3" margin="0 0 6px" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-section-title">
                   Connections
                 </Text>
                 <InspectorRelationList
@@ -536,31 +545,6 @@ export function SpatialMapCanvas(props: SpatialMapCanvasProps) {
   );
 }
 
-interface LegendItemProps {
-  color: string;
-  borderColor: string;
-  label: string;
-}
-
-function LegendItem(props: LegendItemProps) {
-  return (
-    <HStack gap="2" alignItems="center">
-      <Box
-        boxSize="3.5"
-        borderRadius="sm"
-        borderWidth="1px"
-        style={{
-          background: props.color,
-          "border-color": props.borderColor,
-        }}
-      />
-      <Text as="span" textStyle="xs">
-        {props.label}
-      </Text>
-    </HStack>
-  );
-}
-
 interface InspectorRowProps {
   label: string;
   value: string;
@@ -569,15 +553,14 @@ interface InspectorRowProps {
 
 function InspectorRow(props: InspectorRowProps) {
   return (
-    <HStack justifyContent="space-between" alignItems="start" gap="4">
-      <Text as="span" textStyle="xs" color="rgba(223, 231, 247, 0.54)">
+    <HStack justifyContent="space-between" alignItems="start" gap="3" class="spatial-map-inspector-row">
+      <Text as="span" textStyle="xs" class="spatial-map-inspector-row-label">
         {props.label}
       </Text>
       <Text
         as="span"
         textStyle="sm"
-        color="rgba(238, 245, 255, 0.92)"
-        fontFamily={props.mono ? "monospace" : undefined}
+        class={props.mono ? "spatial-map-inspector-row-value is-mono" : "spatial-map-inspector-row-value"}
         textAlign="right"
       >
         {props.value}
@@ -593,11 +576,17 @@ interface InspectorBlockProps {
 
 function InspectorBlock(props: InspectorBlockProps) {
   return (
-    <VStack alignItems="start" gap="1.5">
-      <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold">
+    <VStack alignItems="start" gap="1" class="spatial-map-inspector-block">
+      <Text
+        as="h3"
+        margin="0"
+        fontSize="sm"
+        fontWeight="semibold"
+        class="spatial-map-inspector-block-title"
+      >
         {props.title}
       </Text>
-      <Text as="p" margin="0" color="rgba(223, 231, 247, 0.78)" lineHeight="1.6">
+      <Text as="p" margin="0" class="spatial-map-inspector-block-body">
         {props.body}
       </Text>
     </VStack>
@@ -614,30 +603,35 @@ interface InspectorRelationListProps {
 
 function InspectorRelationList(props: InspectorRelationListProps) {
   return (
-    <VStack alignItems="start" gap="2" mt="3">
-      <Text as="h4" margin="0" fontSize="xs" fontWeight="semibold" color="rgba(223, 231, 247, 0.58)">
+    <VStack alignItems="start" gap="1" mt="2">
+      <Text
+        as="h4"
+        margin="0"
+        fontSize="xs"
+        fontWeight="semibold"
+        class="spatial-map-relation-title"
+      >
         {props.title}
       </Text>
       <For each={props.items}>
         {(item) => (
-          <Box
-            as="button"
+          <button
             type="button"
             class={`spatial-map-relation-card${props.selectedNodeId === item.node.id ? " is-selected" : ""}`}
             onClick={() => props.onSelect(item.node.id)}
             aria-pressed={props.selectedNodeId === item.node.id}
           >
-            <Text as="div" margin="0" fontSize="sm" fontWeight="semibold">
+            <Text as="div" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-relation-name">
               {item.node.label}
             </Text>
-            <Text as="div" margin="2px 0 0" fontSize="xs" color="rgba(223, 231, 247, 0.58)">
+            <Text as="div" margin="2px 0 0" fontSize="xs" class="spatial-map-relation-meta">
               {item.kind} · {item.node.type} · depth {item.node.depth}
             </Text>
-          </Box>
+          </button>
         )}
       </For>
       {props.items.length === 0 ? (
-        <Text as="p" margin="0" fontSize="sm" color="rgba(223, 231, 247, 0.48)">
+        <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
           {props.emptyLabel}
         </Text>
       ) : null}
@@ -690,7 +684,7 @@ function getFitCamera(nodes: PositionedMapNode[], aspectRatio: number): CameraSt
   const maxX = Math.max(...nodes.map((node) => node.x + node.width / 2));
   const minY = Math.min(...nodes.map((node) => node.y - node.height / 2));
   const maxY = Math.max(...nodes.map((node) => node.y + node.height / 2));
-  const padding = 140;
+  const padding = 56;
   const boundsWidth = Math.max(maxX - minX + padding * 2, 320);
   const boundsHeight = Math.max(maxY - minY + padding * 2, 240);
   const boundsCenterX = (minX + maxX) / 2;
