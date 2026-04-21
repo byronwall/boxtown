@@ -1,4 +1,4 @@
-import { For, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
+import { For, Show, createMemo, createSignal, onCleanup, onMount, untrack } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, HStack, VStack } from "styled-system/jsx";
 import { token } from "styled-system/tokens";
@@ -785,14 +785,14 @@ export const DesignSystemOverview = (props: DesignSystemOverviewProps) => {
 
     const runCollection = () => {
       const foundRuntimeVars = collectAndApplyCssVars();
-      if (foundRuntimeVars && colorCssVars().length > 0) return true;
+      if (foundRuntimeVars && untrack(colorCssVars).length > 0) return true;
       return false;
     };
 
     runCollection();
     const intervalId = window.setInterval(() => {
       pollCount += 1;
-      const done = runCollection();
+      const done = untrack(runCollection);
       if (done || pollCount >= maxPolls) {
         window.clearInterval(intervalId);
       }
