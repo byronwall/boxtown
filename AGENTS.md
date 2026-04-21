@@ -13,6 +13,8 @@
 - Avoid `fetch()` in UI components for app data.
 - Prefer `~/components/ui/*` wrappers over ad-hoc route-local composition.
 - Keep reusable UI out of `app/src/routes/`.
+- Aim for roughly `200-300` LOC per file you create or substantially expand.
+- If code you are writing is trending beyond that range, proactively refactor it into smaller modules/components/helpers before it exceeds the limit instead of leaving an oversized file behind.
 
 ## Commands
 
