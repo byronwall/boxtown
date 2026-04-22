@@ -35,6 +35,7 @@ Run inside `app/`:
 - App entry: `app/src/app.tsx`
 - Style brief: `docs/design-brief-industrial-ui.md` (consult and follow for all frontend work)
 - Shared UI wrappers: `app/src/components/ui/`
+- Router action URL helper: `app/src/lib/router/action-url.ts`
 - Theme + recipes: `app/src/theme/`
 - Panda config: `app/panda.config.ts`
 
@@ -68,6 +69,15 @@ Run inside `app/`:
 - Keep server-only logic on the server.
 - Keep component render trees deterministic between server and first client render.
 - For wrappers, ensure external props are forwarded to the actual rendered slot.
+
+## Router Actions + Forms
+
+- For UI-triggered writes in this app, prefer real `<form method="post">` submissions wired to server actions over imperative `useAction(...)` calls.
+- Define action handlers for form-backed mutations to accept `FormData` and give the action a stable name.
+- When using action URLs in forms, normalize them with `normalizeActionUrl(...)` from `app/src/lib/router/action-url.ts` before passing them to `action=`.
+- Use `useSubmission()` or `useSubmissions()` to drive pending/result/error UI for form-backed actions.
+- After handling a successful `submission.result`, call `submission.clear()` so dialogs and inspector tools do not replay stale success state.
+- Treat “button click does nothing” on an action flow as a likely transport issue first. Verify the browser is not posting to `http://_server/`.
 
 ## AI SDK + Structured Data
 

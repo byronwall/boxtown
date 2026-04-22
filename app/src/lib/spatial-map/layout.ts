@@ -1,8 +1,4 @@
-import type {
-  PositionedMapNode,
-  SpatialMapData,
-  NodeSize,
-} from "~/lib/spatial-map/types";
+import type { PositionedMapNode, SpatialMapData, NodeSize } from "./types";
 
 export const VIEWPORT_WIDTH = 1600;
 export const VIEWPORT_HEIGHT = 960;
@@ -62,6 +58,26 @@ export function createInitialLayout(data: SpatialMapData): PositionedMapNode[] {
   }));
 
   return resetLayout(positionedNodes, adjacency);
+}
+
+export function filterSpatialMapDataByRelatedNodes(
+  data: SpatialMapData,
+  coreId: string | null,
+  maxDistance = 2,
+): SpatialMapData {
+  if (!coreId) {
+    return data;
+  }
+
+  const adjacency = buildAdjacencyMap(data);
+  const visibleNodeIds = getRelatedSet(adjacency, coreId, maxDistance);
+
+  return {
+    nodes: data.nodes.filter((node) => visibleNodeIds.has(node.id)),
+    links: data.links.filter(
+      (link) => visibleNodeIds.has(link.source) && visibleNodeIds.has(link.target),
+    ),
+  };
 }
 
 export function resetLayout(

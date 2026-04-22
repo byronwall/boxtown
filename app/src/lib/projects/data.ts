@@ -43,3 +43,94 @@ export const createProject = action(
   },
   "create-project",
 );
+
+export const deleteProject = action(
+  async (formData: FormData) => {
+    "use server";
+    const { deleteProjectOnDisk } = await import("./data.server");
+
+    const projectId = formData.get("projectId");
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+
+    await deleteProjectOnDisk(projectId);
+
+    throw redirect("/", {
+      revalidate: [getProjects.key],
+    });
+  },
+  "delete-project",
+);
+
+export const updateProjectNodeContext = action(
+  async (formData: FormData) => {
+    "use server";
+    const { updateProjectNodeContextOnDisk } = await import("./data.server");
+
+    const projectId = formData.get("projectId");
+    const nodeId = formData.get("nodeId");
+    const context = formData.get("context");
+
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+    if (typeof nodeId !== "string" || nodeId.trim().length === 0) {
+      throw new Error("A node id is required.");
+    }
+
+    return updateProjectNodeContextOnDisk({
+      projectId,
+      nodeId,
+      context: typeof context === "string" ? context : "",
+    });
+  },
+  "update-project-node-context",
+);
+
+export const createProjectContextNode = action(
+  async (formData: FormData) => {
+    "use server";
+    const { createContextNodeOnDisk } = await import("./data.server");
+
+    const projectId = formData.get("projectId");
+    const label = formData.get("label");
+    const context = formData.get("context");
+    const splitByHeadingLevel = formData.get("splitByHeadingLevel");
+
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+    if (typeof label !== "string" || label.trim().length === 0) {
+      throw new Error("A node label is required.");
+    }
+
+    return createContextNodeOnDisk({
+      projectId,
+      label,
+      context: typeof context === "string" ? context : "",
+      splitByHeadingLevel: splitByHeadingLevel === "true",
+    });
+  },
+  "create-project-context-node",
+);
+
+export const deleteProjectNode = action(
+  async (formData: FormData) => {
+    "use server";
+    const { deleteProjectNodeOnDisk } = await import("./data.server");
+
+    const projectId = formData.get("projectId");
+    const nodeId = formData.get("nodeId");
+
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+    if (typeof nodeId !== "string" || nodeId.trim().length === 0) {
+      throw new Error("A node id is required.");
+    }
+
+    return deleteProjectNodeOnDisk({ projectId, nodeId });
+  },
+  "delete-project-node",
+);

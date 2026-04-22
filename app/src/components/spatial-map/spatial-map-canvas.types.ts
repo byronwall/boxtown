@@ -35,6 +35,7 @@ export interface ViewportPointerHandlers {
 export interface SceneInteractionHandlers {
   onBackgroundClick: JSX.EventHandlerUnion<SVGSVGElement, MouseEvent>;
   onNodeClick: (nodeId: string) => void;
+  onNodeIsolateClick: (nodeId: string) => void;
   onNodePointerDown: (nodeId: string) => void;
   onNodePointerEnter: (nodeId: string) => void;
   onNodePointerLeave: (nodeId: string) => void;
@@ -43,7 +44,11 @@ export interface SceneInteractionHandlers {
 export interface SpatialMapCanvasController {
   addNodesOpen: Accessor<boolean>;
   camera: Accessor<CameraState>;
+  contextNoteConversionOpen: Accessor<boolean>;
   edgeState: Accessor<EdgeVisualState[]>;
+  isolatedNodeId: Accessor<string | null>;
+  isolationLabel: Accessor<string | null>;
+  isolationModeActive: Accessor<boolean>;
   inspectorOpen: Accessor<boolean>;
   isPanning: Accessor<boolean>;
   orderedNodes: Accessor<NodeVisualState[]>;
@@ -57,12 +62,16 @@ export interface SpatialMapCanvasController {
   sourceNodesById: Accessor<Map<string, MapNode>>;
   zoomPercent: Accessor<string>;
   closeAddNodesFlow: () => void;
+  closeContextNoteConversionFlow: () => void;
+  clearIsolation: () => void;
+  isolateNode: (nodeId: string) => void;
   setInspectorOpen: (value: boolean | ((current: boolean) => boolean)) => void;
   setSelectedNodeId: (value: string | null | ((current: string | null) => string | null)) => void;
   toggleEdges: () => void;
   reflowLayout: () => void;
   fitCameraToNodes: () => void;
   openAddNodesFlow: () => void;
+  openContextNoteConversionFlow: () => void;
   setViewportRef: (element: HTMLDivElement) => void;
   setSvgRef: (element: SVGSVGElement) => void;
   viewportHandlers: ViewportPointerHandlers;

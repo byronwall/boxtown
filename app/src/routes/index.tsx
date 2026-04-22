@@ -1,6 +1,7 @@
 import { createAsync, useSubmission } from "@solidjs/router";
 import { ProjectIndexPage } from "~/components/projects/ProjectIndexPage";
 import { createProject, getProjects } from "~/lib/projects/data";
+import { normalizeActionUrl } from "~/lib/router/action-url";
 
 export default function HomeRoute() {
   const projects = createAsync(() => getProjects());
@@ -9,7 +10,7 @@ export default function HomeRoute() {
   return (
     <ProjectIndexPage
       projects={projects() ?? []}
-      createProjectAction={createProject}
+      createProjectActionUrl={normalizeActionUrl(createProject.url)}
       createProjectSubmission={{ pending: !!createProjectSubmission.pending }}
     />
   );

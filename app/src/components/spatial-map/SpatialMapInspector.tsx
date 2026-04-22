@@ -1,11 +1,68 @@
-import { For } from "solid-js";
+import { useSubmission } from "@solidjs/router";
+import { For, Show, createEffect, createMemo, createSignal, onMount } from "solid-js";
 import { Box, HStack, VStack } from "styled-system/jsx";
+import { MarkdownRenderer } from "~/components/markdown-renderer";
+import { Button } from "~/components/ui/button";
+import * as Field from "~/components/ui/field";
+import { SimpleDialog } from "~/components/ui/simple-dialog";
+import { Textarea } from "~/components/ui/textarea";
+import { toaster } from "~/components/ui/toast";
+import { updateProjectNodeContext } from "~/lib/projects/data";
+import type { ProjectRecord } from "~/lib/projects/types";
+import { normalizeActionUrl } from "~/lib/router/action-url";
 import { Text } from "~/components/ui/text";
 import type { MapNode } from "~/lib/spatial-map/types";
 import { useSpatialMap } from "./SpatialMapContext";
+import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 
-export function SpatialMapInspector() {
+interface SpatialMapInspectorProps {
+  projectId: string;
+  onProjectUpdated?: (project: ProjectRecord) => void;
+}
+
+export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const spatialMap = useSpatialMap();
+  const saveContextSubmission = useSubmission(updateProjectNodeContext, (input) => {
+    const formData = input[0];
+    return (
+      formData instanceof FormData &&
+      formData.get("projectId") === props.projectId &&
+      formData.get("nodeId") === spatialMap.selectedNodeId()
+    );
+  });
+  const selectedNode = createMemo(() => spatialMap.selectedNode());
+  const [contextDraft, setContextDraft] = createSignal("");
+  const [editingContext, setEditingContext] = createSignal(false);
+  const [contextDialogOpen, setContextDialogOpen] = createSignal(false);
+  const [isHydrated, setIsHydrated] = createSignal(false);
+  const contextFormId = "spatial-map-context-form";
+  const isContextOnlyNode = createMemo(() => selectedNode()?.contextMode === "context-only");
+
+  onMount(() => {
+    setIsHydrated(true);
+  });
+
+  createEffect(() => {
+    setContextDraft(selectedNode()?.context ?? "");
+    setEditingContext(false);
+    setContextDialogOpen(false);
+  });
+
+  createEffect(() => {
+    const result = saveContextSubmission.result;
+    if (!result || saveContextSubmission.pending) {
+      return;
+    }
+
+    const label = result.spatialMap.nodes.find((node) => node.id === spatialMap.selectedNodeId())?.label;
+    props.onProjectUpdated?.(result);
+    setEditingContext(false);
+    toaster.success({
+      title: "Context updated",
+      description: `${label ?? "This node"} now includes the latest markdown context.`,
+    });
+    saveContextSubmission.clear();
+  });
 
   return (
     <Box class="spatial-map-inspector-rail">
@@ -34,21 +91,209 @@ export function SpatialMapInspector() {
           <Box class="spatial-map-inspector-section">
             <InspectorRow label="ID" value={spatialMap.selectedNode()?.id ?? "None"} mono />
             <InspectorRow label="Type" value={spatialMap.selectedNode()?.type ?? "Unknown"} />
+            <InspectorRow label="Mode" value={selectedNode()?.contextMode ?? "Unknown"} />
             <InspectorRow label="Depth" value={String(spatialMap.selectedNode()?.depth ?? 0)} />
+            <Show when={selectedNode()}>
+              {(node) => (
+                <HStack justifyContent="space-between" gap="2" flexWrap="wrap">
+                  <Show when={isContextOnlyNode()}>
+                    <Button
+                      size="xs"
+                      class="spatial-map-button spatial-map-button--strong"
+                      colorPalette="green"
+                      variant="surface"
+                      onClick={() => spatialMap.openContextNoteConversionFlow()}
+                    >
+                      Convert to Proper Node
+                    </Button>
+                  </Show>
+                  <SpatialMapDeleteNodeControl
+                    projectId={props.projectId}
+                    node={node()}
+                    onProjectUpdated={props.onProjectUpdated}
+                  />
+                </HStack>
+              )}
+            </Show>
           </Box>
+
+          <Show when={isHydrated() && isContextOnlyNode() && selectedNode()}>
+            {(node) => (
+              <Box class="spatial-map-inspector-section">
+                <HStack justifyContent="space-between" alignItems="center" gap="3">
+                  <Text
+                    as="h3"
+                    margin="0"
+                    fontSize="sm"
+                    fontWeight="semibold"
+                    class="spatial-map-inspector-section-title is-heading"
+                  >
+                    Raw Context
+                  </Text>
+                  <Button
+                    size="xs"
+                    variant="surface"
+                    class="spatial-map-button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(node().rawContext);
+                        toaster.success({
+                          title: "Raw context copied",
+                          description: "The original note content is now in your clipboard.",
+                        });
+                      } catch {
+                        toaster.error({
+                          title: "Copy failed",
+                          description: "The raw context could not be copied from this browser session.",
+                        });
+                      }
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </HStack>
+                <RawContextPreview context={node().rawContext} />
+              </Box>
+            )}
+          </Show>
 
           <Box class="spatial-map-inspector-section">
             <InspectorBlock
               title="Purpose"
-              body={spatialMap.selectedNode()?.purpose ?? "No purpose available for this item."}
+              body={selectedNode()?.purpose ?? "No purpose available for this item."}
             />
             <InspectorBlock
               title="Implementation"
               body={
-                spatialMap.selectedNode()?.implementation ??
+                selectedNode()?.implementation ??
                 "No implementation notes available for this item."
               }
             />
+          </Box>
+
+          <Box class="spatial-map-inspector-section">
+            <HStack justifyContent="space-between" alignItems="center" gap="3">
+              <Text
+                as="h3"
+                margin="0"
+                fontSize="sm"
+                fontWeight="semibold"
+                class="spatial-map-inspector-section-title is-heading"
+              >
+                Context
+              </Text>
+              <Show when={selectedNode()}>
+                {(node) => (
+                  <HStack gap="2">
+                    <Button
+                      size="xs"
+                      variant="surface"
+                      class="spatial-map-button"
+                      onClick={() => setContextDialogOpen(true)}
+                    >
+                      Expand
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant={editingContext() ? "outline" : "surface"}
+                      class="spatial-map-button"
+                      onClick={() => setEditingContext((current) => !current)}
+                    >
+                      {editingContext() ? "Preview" : "Edit"}
+                    </Button>
+                    <ContextPreviewDialog
+                      open={contextDialogOpen()}
+                      onOpenChange={setContextDialogOpen}
+                      nodeLabel={node().label}
+                      context={node().context}
+                    />
+                  </HStack>
+                )}
+              </Show>
+            </HStack>
+
+            <Show
+              when={selectedNode()}
+              fallback={
+                <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+                  Select a node to view or edit its markdown context.
+                </Text>
+              }
+            >
+              {(node) => (
+                <Show
+                  when={editingContext()}
+                  fallback={
+                    <Show
+                      when={!isContextOnlyNode() || isHydrated()}
+                      fallback={
+                        <Box class="spatial-map-context-empty">
+                          <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+                            Context preview will appear once the note finishes hydrating.
+                          </Text>
+                        </Box>
+                      }
+                    >
+                      <ContextPreview
+                        context={node().context}
+                        plainText={node().contextMode === "context-only"}
+                      />
+                    </Show>
+                  }
+                >
+                  <form
+                    id={contextFormId}
+                    action={normalizeActionUrl(updateProjectNodeContext.url)}
+                    method="post"
+                  >
+                    <VStack alignItems="stretch" gap="3">
+                      <input type="hidden" name="projectId" value={props.projectId} />
+                      <input type="hidden" name="nodeId" value={node().id} />
+                      <Field.Root>
+                        <Field.Label>Markdown Context</Field.Label>
+                        <Textarea
+                          name="context"
+                          class="spatial-map-context-textarea"
+                          value={contextDraft()}
+                          onInput={(event) => setContextDraft(event.currentTarget.value)}
+                          rows={14}
+                          placeholder={
+                            "# Context\n\nDrop loose notes, copied snippets, requirements, or AI working material here."
+                          }
+                        />
+                        <Field.HelperText>
+                          Stored as plain text and rendered as markdown when not editing.
+                        </Field.HelperText>
+                      </Field.Root>
+
+                      <HStack justifyContent="flex-end" gap="2">
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          type="button"
+                          class="spatial-map-button"
+                          onClick={() => {
+                            setContextDraft(selectedNode()?.context ?? "");
+                            setEditingContext(false);
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          form={contextFormId}
+                          size="xs"
+                          class="spatial-map-button spatial-map-button--strong"
+                          loading={saveContextSubmission.pending}
+                        >
+                          Save Context
+                        </Button>
+                      </HStack>
+                    </VStack>
+                  </form>
+                </Show>
+              )}
+            </Show>
           </Box>
 
           <Box class="spatial-map-inspector-section">
@@ -75,6 +320,98 @@ export function SpatialMapInspector() {
         </VStack>
       </aside>
     </Box>
+  );
+}
+
+function ContextPreview(props: { context: string; class?: string; plainText?: boolean }) {
+  const hasContent = () => props.context.trim().length > 0;
+
+  return (
+    <Show
+      when={hasContent()}
+      fallback={
+        <Box class="spatial-map-context-empty">
+          <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+            No context yet. Switch to edit mode to drop in markdown notes, pasted material, or AI working context.
+          </Text>
+        </Box>
+      }
+    >
+      <Show
+        when={!props.plainText}
+        fallback={
+          <Box class={`spatial-map-context-markdown${props.class ? ` ${props.class}` : ""}`}>
+            <Text as="pre" margin="0" fontSize="sm" class="spatial-map-raw-context">
+              {props.context}
+            </Text>
+          </Box>
+        }
+      >
+        <Box class={`spatial-map-context-markdown${props.class ? ` ${props.class}` : ""}`}>
+          <MarkdownRenderer>{props.context}</MarkdownRenderer>
+        </Box>
+      </Show>
+    </Show>
+  );
+}
+
+function RawContextPreview(props: { context: string }) {
+  const hasContent = () => props.context.trim().length > 0;
+
+  return (
+    <Show
+      when={hasContent()}
+      fallback={
+        <Box class="spatial-map-context-empty">
+          <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+            No raw context was captured for this node.
+          </Text>
+        </Box>
+      }
+    >
+      <Box class="spatial-map-context-markdown">
+        <Text
+          as="pre"
+          margin="0"
+          fontSize="sm"
+          class="spatial-map-raw-context"
+        >
+          {props.context}
+        </Text>
+      </Box>
+    </Show>
+  );
+}
+
+function ContextPreviewDialog(props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  nodeLabel: string;
+  context: string;
+}) {
+  return (
+    <SimpleDialog
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      title={`${props.nodeLabel} Context`}
+      description="Large markdown view for longer context notes and working material."
+      maxW="min(800px, 90vw)"
+      contentClass="spatial-map-context-dialog"
+      footer={
+        <HStack justifyContent="flex-end">
+          <Button
+            size="sm"
+            variant="outline"
+            class="spatial-map-button"
+            onClick={() => props.onOpenChange(false)}
+          >
+            Close
+          </Button>
+        </HStack>
+      }
+    >
+      <ContextPreview context={props.context} class="is-dialog" />
+    </SimpleDialog>
   );
 }
 

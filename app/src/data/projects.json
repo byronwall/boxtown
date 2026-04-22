@@ -13,7 +13,10 @@
           "type": "page",
           "depth": 0,
           "purpose": "Landing page that introduces the brand, featured recipes, and seasonal content.",
-          "implementation": "SSR page with hero, search prompt, featured collections, and personalized modules."
+          "implementation": "SSR page with hero, search prompt, featured collections, and personalized modules.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "page-recipes",
@@ -21,7 +24,10 @@
           "type": "page",
           "depth": 0,
           "purpose": "Browse and filter the full recipe library.",
-          "implementation": "Server-rendered index backed by search facets, sort options, and pagination."
+          "implementation": "Server-rendered index backed by search facets, sort options, and pagination.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "page-recipe-detail",
@@ -29,7 +35,10 @@
           "type": "page",
           "depth": 0,
           "purpose": "Display a single recipe with ingredients, steps, timing, and related content.",
-          "implementation": "Dynamic route with structured content blocks and analytics events."
+          "implementation": "Dynamic route with structured content blocks and analytics events.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "page-profile",
@@ -37,7 +46,10 @@
           "type": "page",
           "depth": 0,
           "purpose": "Show saved recipes, preferences, and meal plans.",
-          "implementation": "Authenticated dashboard view with local settings and user-specific data."
+          "implementation": "Authenticated dashboard view with local settings and user-specific data.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "asm-home-hero",
@@ -45,7 +57,10 @@
           "type": "assembly",
           "depth": 1,
           "purpose": "Combines headline, search prompt, CTA, and featured image for the home page.",
-          "implementation": "Composable container that wires analytics, layout, and responsive slots."
+          "implementation": "Composable container that wires analytics, layout, and responsive slots.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "asm-home-featured",
@@ -53,7 +68,10 @@
           "type": "assembly",
           "depth": 1,
           "purpose": "Presents a curated set of recipe cards for quick exploration.",
-          "implementation": "Grid assembly that fetches recipe summaries and renders card variants."
+          "implementation": "Grid assembly that fetches recipe summaries and renders card variants.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "asm-recipes-filterbar",
@@ -61,7 +79,10 @@
           "type": "assembly",
           "depth": 1,
           "purpose": "Lets visitors filter by diet, cook time, cuisine, and difficulty.",
-          "implementation": "Sticky control row synced to query state and faceted search params."
+          "implementation": "Sticky control row synced to query state and faceted search params.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "asm-recipes-results",
@@ -69,7 +90,10 @@
           "type": "assembly",
           "depth": 1,
           "purpose": "Displays recipe cards after search or filtering.",
-          "implementation": "Virtualized grid with pagination fallback and responsive columns."
+          "implementation": "Virtualized grid with pagination fallback and responsive columns.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "asm-detail-overview",
@@ -77,7 +101,10 @@
           "type": "assembly",
           "depth": 1,
           "purpose": "Combines title, hero media, metadata, and quick actions.",
-          "implementation": "Top content assembly using structured recipe data and media assets."
+          "implementation": "Top content assembly using structured recipe data and media assets.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "asm-detail-instructions",
@@ -85,7 +112,10 @@
           "type": "assembly",
           "depth": 1,
           "purpose": "Groups ingredients, steps, notes, and nutrition content.",
-          "implementation": "Sectioned container with anchors and semantic content rendering."
+          "implementation": "Sectioned container with anchors and semantic content rendering.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "asm-profile-saved",
@@ -93,7 +123,10 @@
           "type": "assembly",
           "depth": 1,
           "purpose": "Shows bookmarked or favorited recipes for the current user.",
-          "implementation": "User-specific listing with cache-aware fetching and empty states."
+          "implementation": "User-specific listing with cache-aware fetching and empty states.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "asm-profile-planner",
@@ -101,7 +134,10 @@
           "type": "assembly",
           "depth": 1,
           "purpose": "Supports weekly planning and shopping list generation.",
-          "implementation": "Interactive planner backed by saved recipes and user preferences."
+          "implementation": "Interactive planner backed by saved recipes and user preferences.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "cmp-search-input",
@@ -109,7 +145,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Free-text search entry for recipe lookup.",
-          "implementation": "Controlled input with debounced updates and keyboard support."
+          "implementation": "Controlled input with debounced updates and keyboard support.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "cmp-cta-button",
@@ -117,7 +156,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Primary action button used for exploration and conversion.",
-          "implementation": "Shared button component with visual variants and tracking hooks."
+          "implementation": "Shared button component with visual variants and tracking hooks.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "cmp-recipe-card",
@@ -125,7 +167,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Compact summary for a recipe with image, title, and metadata.",
-          "implementation": "Reusable card component used in multiple assemblies and pages."
+          "implementation": "Reusable card component used in multiple assemblies and pages.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "cmp-filter-chip",
@@ -133,7 +178,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Displays an active or selectable filter option.",
-          "implementation": "Small interactive chip component tied to search facet state."
+          "implementation": "Small interactive chip component tied to search facet state.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "cmp-sort-select",
@@ -141,7 +189,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Lets users change sorting such as newest or fastest.",
-          "implementation": "Shared dropdown component with accessible listbox behavior."
+          "implementation": "Shared dropdown component with accessible listbox behavior.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "cmp-ingredient-list",
@@ -149,7 +200,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Renders ingredients with quantities and optional unit scaling.",
-          "implementation": "Semantic list component with quantity formatting helpers."
+          "implementation": "Semantic list component with quantity formatting helpers.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "cmp-step-list",
@@ -157,7 +211,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Shows the ordered recipe instructions for cooking.",
-          "implementation": "Ordered content renderer with timer and completion affordances."
+          "implementation": "Ordered content renderer with timer and completion affordances.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "cmp-rating-stars",
@@ -165,7 +222,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Shows community rating and review count.",
-          "implementation": "Compact display component with average score formatting."
+          "implementation": "Compact display component with average score formatting.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "cmp-save-toggle",
@@ -173,7 +233,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Allows users to save or unsave a recipe.",
-          "implementation": "Optimistic mutation component with auth guard and state sync."
+          "implementation": "Optimistic mutation component with auth guard and state sync.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "cmp-calendar-grid",
@@ -181,7 +244,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Visual week planner for meal scheduling.",
-          "implementation": "Drag-friendly layout component backed by planner state."
+          "implementation": "Drag-friendly layout component backed by planner state.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "cmp-shopping-list",
@@ -189,7 +255,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Aggregates ingredients across selected meals.",
-          "implementation": "Grouped checklist component with pantry-aware grouping."
+          "implementation": "Grouped checklist component with pantry-aware grouping.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "page-ai-recipes",
@@ -197,7 +266,10 @@
           "type": "page",
           "depth": 0,
           "purpose": "Provides a standalone experiment page for generating recipe ideas with AI from a simple guided prompt.",
-          "implementation": "Create a dedicated route under the home navigation with minimal page chrome and lightweight discovery entry points."
+          "implementation": "Create a dedicated route under the home navigation with minimal page chrome and lightweight discovery entry points.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "assembly-prompt-builder",
@@ -205,7 +277,10 @@
           "type": "assembly",
           "depth": 1,
           "purpose": "Collects the user's meal idea, constraints, and preferences before recipe generation.",
-          "implementation": "Compose a compact form with selectable constraints and submit the payload to the generation backend."
+          "implementation": "Compose a compact form with selectable constraints and submit the payload to the generation backend.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "assembly-result-preview",
@@ -213,7 +288,10 @@
           "type": "assembly",
           "depth": 1,
           "purpose": "Shows the generated recipe draft with core ingredients, steps, and save actions.",
-          "implementation": "Render structured recipe output returned by the API and expose lightweight actions for retrying or saving."
+          "implementation": "Render structured recipe output returned by the API and expose lightweight actions for retrying or saving.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "component-prompt-form",
@@ -221,7 +299,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Captures the main recipe request, serving size, and optional guidance text.",
-          "implementation": "Use validated text and field inputs that serialize into a structured generation request body."
+          "implementation": "Use validated text and field inputs that serialize into a structured generation request body.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "component-constraint-chip",
@@ -229,7 +310,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Lets users add compact constraints such as diet, cuisine, or cook time to the AI request.",
-          "implementation": "Implement selectable chips that map to normalized prompt modifiers and request filters."
+          "implementation": "Implement selectable chips that map to normalized prompt modifiers and request filters.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "service-generate-api",
@@ -237,7 +321,10 @@
           "type": "service",
           "depth": 2,
           "purpose": "Generates structured recipe drafts from prompt and preference inputs.",
-          "implementation": "Expose a backend endpoint that calls the model, applies schema validation, and returns recipe JSON for the page."
+          "implementation": "Expose a backend endpoint that calls the model, applies schema validation, and returns recipe JSON for the page.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "service-draft-store",
@@ -245,7 +332,10 @@
           "type": "service",
           "depth": 2,
           "purpose": "Persists generated recipes so users can revisit or save promising AI drafts.",
-          "implementation": "Store generated recipe payloads with user context and status metadata through a simple persistence API."
+          "implementation": "Store generated recipe payloads with user context and status metadata through a simple persistence API.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "assembly-variant-controls",
@@ -253,7 +343,10 @@
           "type": "assembly",
           "depth": 1,
           "purpose": "Groups simple sliders so users can request recipe variants without rewriting the prompt.",
-          "implementation": "Renders spiciness, complexity, and prep-time controls and feeds their normalized values into generation requests."
+          "implementation": "Renders spiciness, complexity, and prep-time controls and feeds their normalized values into generation requests.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "component-spice-slider",
@@ -261,7 +354,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Lets users set the desired spiciness level for generated recipes.",
-          "implementation": "Uses a single range input with labeled endpoints and passes a numeric heat preference into the prompt payload."
+          "implementation": "Uses a single range input with labeled endpoints and passes a numeric heat preference into the prompt payload.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "component-complexity-slider",
@@ -269,7 +365,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Lets users tune how simple or advanced the generated cooking process should be.",
-          "implementation": "Captures a low-to-high complexity value that the generation flow maps to technique and step sophistication."
+          "implementation": "Captures a low-to-high complexity value that the generation flow maps to technique and step sophistication.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "component-prep-slider",
@@ -277,7 +376,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Lets users target a shorter or longer prep time before generating a recipe.",
-          "implementation": "Collects a preferred prep-time range and sends it as a bounded timing hint to the generation API."
+          "implementation": "Collects a preferred prep-time range and sends it as a bounded timing hint to the generation API.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "component-variant-summary",
@@ -285,7 +387,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Shows the selected variant settings alongside the generated recipe draft for quick confirmation.",
-          "implementation": "Reads the active slider values and renders a compact summary in the preview header."
+          "implementation": "Reads the active slider values and renders a compact summary in the preview header.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "component-open-detail-link",
@@ -293,7 +398,10 @@
           "type": "component",
           "depth": 2,
           "purpose": "Lets users continue from the AI preview into the full recipe detail experience.",
-          "implementation": "Builds a route to the generated draft detail view after a draft has been stored or published."
+          "implementation": "Builds a route to the generated draft detail view after a draft has been stored or published.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         },
         {
           "id": "service-draft-publish-api",
@@ -301,7 +409,10 @@
           "type": "service",
           "depth": 2,
           "purpose": "Promotes a generated draft into a canonical recipe record that can be opened, saved, and revisited.",
-          "implementation": "Accepts draft content plus variant metadata, creates a detail-page-ready record, and syncs it with saved-recipe flows."
+          "implementation": "Accepts draft content plus variant metadata, creates a detail-page-ready record, and syncs it with saved-recipe flows.",
+          "context": "",
+          "rawContext": "",
+          "contextMode": "structured"
         }
       ],
       "links": [
@@ -598,6 +709,220 @@
         {
           "source": "component-variant-summary",
           "target": "assembly-variant-controls",
+          "kind": "related"
+        }
+      ]
+    }
+  },
+  {
+    "id": "ideal-cli-tool",
+    "name": "Ideal CLI tool",
+    "description": "Blank project ready for grid editing, structure mapping, and future AI-assisted details.",
+    "createdAt": "2026-04-22T01:49:03.302Z",
+    "updatedAt": "2026-04-22T04:15:22.502Z",
+    "spatialMap": {
+      "nodes": [
+        {
+          "id": "note-initial-idea",
+          "label": "Initial idea",
+          "type": "note",
+          "depth": 2,
+          "purpose": "Loose context, notes, and markdown content that needs a home in the map.",
+          "implementation": "Freeform markdown note stored directly on the node for AI or human editing.",
+          "context": "High-level framing and design principles that didn't map into the extracted nodes:\n\n- One execution model + two presentations\n  - One consistent execution model for all commands.\n  - Two presentations: human-readable default mode and a deterministic machine mode (e.g., --json).\n  - Position: treat the CLI both as a product surface for humans and as a protocol surface for agents.\n\n- Short Happy Path & Scoped Detail principles\n  - Short Happy Path: most common task should have one obvious command with minimal flags and sensible defaults.\n  - Scoped Detail: advanced/selectors live only on the commands that need them; don’t make query-specific flags global.\n\n- Prompt-or-Fail behavior\n  - If input is missing and a TTY exists, prompt interactively.\n  - If input is missing and no TTY exists, fail immediately with a structured error.\n\n- Additional UX/dev recommendations not captured elsewhere\n  - Replace tool-specific examples with named design principles (teach patterns, not a single vendor’s CLI).\n  - Encourage help output to include examples.\n  - Include diagnostics/discovery helper commands as part of the CLI surface: tool doctor, tool completion, tool config resolved, tool version, tool help, tool schema <command> (these were recommended as discovery/diagnostic commands).\n\n- Operational and LLM-skill-specific rules and recommendations that supplement the formal contracts\n  - Separate stdout and stderr.\n  - Fail fast in non-TTY mode when required input is missing.\n  - Structured JSON errors and examples in help output.\n  - Strong recommendations (but not strictly captured as nodes): include tool doctor, completion, config resolved; include source attribution for resolved config values; include examples in help output.\n\n- Shipping checklist and review rubric (operational checklist items not fully captured as nodes)\n  - Interface: noun-verb shape, correct flag categories, no ambiguous flags.\n  - Human mode: scannable default output, examples in help, prompt only in TTY.\n  - Agent mode: --json valid on stdout only, diagnostics/logs not on stdout, JSON schema available, structured errors.\n  - Reliability: documented retry behavior, idempotency where needed, documented exit codes, timeout returns last known state.\n  - Data volume: support --limit/--cursor for lists, streaming emits NDJSON events, stream ends with terminal result or error event.\n  - Operations: document config precedence, inspect resolved config with source, mark command stability (stable/beta/experimental).\n\n- Short snippets / examples called out as operationally useful but not strictly encoded in nodes\n  - Prompt-or-fail example behavior (TTY vs non-TTY) and suggested resolved-config inspection output format with source attribution.\n  - Recommendation that examples and suggested invocations be included in structured JSON errors to aid automation (e.g., suggested_invocation field).",
+          "rawContext": "Hi,\r\n\r\nThis feedback is good. It tightens the original guidance in exactly the places where “good CLI UX” becomes “reliable CLI contract for humans and agents.”\r\n\r\nThe biggest changes I’d make are:\r\n\r\n* promote **retry safety, schemas, streaming, pagination, and stability** from “nice to have” to **required contract**\r\n* split flags into **non-overlapping categories**\r\n* define the operational contract precisely enough that a team can **review a command against it before shipping**\r\n\r\n## Revised position\r\n\r\nThe new north star should be:\r\n\r\n* **one execution model**\r\n\r\n  * same core command semantics for everyone\r\n\r\n* **two presentations**\r\n\r\n  * human-readable default mode\r\n  * deterministic machine mode\r\n\r\n* **one explicit contract**\r\n\r\n  * output, exit codes, retry behavior, async behavior, pagination, config precedence, and schema all documented and testable\r\n\r\nThat is stronger than “good CLI UX.” It is closer to:\r\n\r\n* **CLI as product surface for humans**\r\n* **CLI as protocol surface for agents**\r\n\r\n---\r\n\r\n## Key corrections to the earlier guidance\r\n\r\n### 1. `--yes` and `--dry-run` should not be universal\r\n\r\nThe reviewers are right.\r\n\r\nThese are not formatting flags. They are **mutation-control flags** and should only appear on commands that can change state.\r\n\r\n#### Better flag categorization\r\n\r\n| Category              | Flags                                             | Applies to             |\r\n| --------------------- | ------------------------------------------------- | ---------------------- |\r\n| Global output/control | `--json`, `--quiet`, `--verbose`, `--no-color`    | every command          |\r\n| Resource selectors    | `--id`, `--name`, `--env`, `--target`, `--filter` | command-local          |\r\n| Collection controls   | `--limit`, `--cursor`                             | list/query commands    |\r\n| Mutation controls     | `--dry-run`, `--yes`, `--idempotency-key`         | mutating commands only |\r\n| Async controls        | `--wait`, `--timeout`                             | async commands only    |\r\n\r\nThat removes ambiguity immediately.\r\n\r\n### 2. “Meaningful exit codes” needs a standard table\r\n\r\nAgreed. Without a table, teams will improvise.\r\n\r\n#### Recommended minimal exit code contract\r\n\r\n| Code  | Meaning       | Notes                                                  |\r\n| ----- | ------------- | ------------------------------------------------------ |\r\n| `0`   | success       | completed successfully                                 |\r\n| `1`   | runtime error | unexpected failure, dependency failure, internal error |\r\n| `2`   | usage error   | bad args, missing required args, invalid flag combos   |\r\n| `3`   | auth error    | unauthenticated or unauthorized                        |\r\n| `4`   | not found     | target resource does not exist                         |\r\n| `5`   | conflict      | already exists, state conflict, idempotency conflict   |\r\n| `124` | timeout       | command timed out while waiting                        |\r\n\r\nA few notes:\r\n\r\n* `124` is a good choice for timeout because it matches common Unix expectations.\r\n* If you need more detail, put it in the structured JSON error, not by exploding the exit-code matrix.\r\n\r\n### 3. `--schema` / `explain` should be first-class\r\n\r\nAlso agreed.\r\n\r\nFor agentic use, this is not optional polish. It is part of discoverability and safe tool use.\r\n\r\n#### Requirement\r\n\r\nEvery command should support one of:\r\n\r\n* `tool schema <command>`\r\n* `tool <command> --schema`\r\n* `tool explain <command> --json`\r\n\r\nThe output should describe:\r\n\r\n* command name\r\n* purpose\r\n* required arguments\r\n* optional arguments\r\n* types\r\n* enums\r\n* defaults\r\n* whether the command is mutating\r\n* whether the command is retry-safe\r\n* supported output modes\r\n* exit codes\r\n* JSON response schema\r\n* examples\r\n\r\n#### Strong recommendation\r\n\r\nUse **JSON Schema** for inputs and outputs.\r\n\r\nAt minimum:\r\n\r\n```json\r\n{\r\n  \"command\": \"deploy\",\r\n  \"summary\": \"Create a deployment for a service\",\r\n  \"mutating\": true,\r\n  \"retry\": {\r\n    \"safe_with_idempotency_key\": true\r\n  },\r\n  \"input_schema\": {\r\n    \"type\": \"object\",\r\n    \"properties\": {\r\n      \"service\": { \"type\": \"string\" },\r\n      \"env\": { \"type\": \"string\" },\r\n      \"wait\": { \"type\": \"boolean\", \"default\": false },\r\n      \"timeout\": { \"type\": \"string\", \"default\": \"10m\" },\r\n      \"idempotency_key\": { \"type\": \"string\" }\r\n    },\r\n    \"required\": [\"service\"]\r\n  },\r\n  \"output_schema\": {\r\n    \"type\": \"object\",\r\n    \"properties\": {\r\n      \"ok\": { \"type\": \"boolean\" },\r\n      \"status\": {\r\n        \"type\": \"string\",\r\n        \"enum\": [\"pending\", \"running\", \"succeeded\", \"failed\", \"canceled\"]\r\n      },\r\n      \"deployment_id\": { \"type\": \"string\" }\r\n    },\r\n    \"required\": [\"ok\", \"status\"]\r\n  },\r\n  \"exit_codes\": {\r\n    \"0\": \"success\",\r\n    \"2\": \"usage error\",\r\n    \"3\": \"auth error\",\r\n    \"124\": \"timeout\"\r\n  }\r\n}\r\n```\r\n\r\nFor an internal LLM skill, I would make this **mandatory**.\r\n\r\n---\r\n\r\n## What was missing and should now be required\r\n\r\n### 1. Idempotency and retry safety\r\n\r\nThis is the biggest gap.\r\n\r\nAgents retry. Networks fail. Long-running operations get disconnected. If the CLI does not clearly define retry behavior, you get duplicates and corrupted workflows.\r\n\r\n#### Required contract\r\n\r\nEvery command should declare one of:\r\n\r\n* **read-only, safe to retry**\r\n* **mutating but retry-safe with idempotency key**\r\n* **mutating and not retry-safe**\r\n* **conditionally retry-safe** with documented conditions\r\n\r\n#### Design rules\r\n\r\n* Reads:\r\n\r\n  * always safe to retry\r\n\r\n* Creates / deploys / submits:\r\n\r\n  * should support `--idempotency-key`\r\n\r\n* Updates:\r\n\r\n  * ideally support optimistic concurrency or conditional update semantics\r\n\r\n* Deletes:\r\n\r\n  * should be idempotent where possible\r\n  * deleting an already-deleted resource should either:\r\n\r\n    * succeed as a no-op, or\r\n    * return a documented not-found contract\r\n\r\n#### Mutation flag set\r\n\r\n```txt\r\n--dry-run\r\n--yes\r\n--idempotency-key <key>\r\n```\r\n\r\nThat is a strong default for mutating commands.\r\n\r\n### 2. Streaming contract for long-running commands\r\n\r\nThe earlier guidance liked streaming but did not define it. That needs to be fixed.\r\n\r\n#### Rule\r\n\r\nIf `--json` is used on a streaming command, stdout must emit **NDJSON** where every line is a complete JSON object.\r\n\r\nThat avoids broken parsers and gives both humans-with-tools and agents a stable stream to consume.\r\n\r\n#### Event shape\r\n\r\nEach event should include:\r\n\r\n* `type`\r\n* `timestamp`\r\n* `operation_id`\r\n* payload fields appropriate to the event type\r\n\r\n#### Recommended event types\r\n\r\n* `log`\r\n* `progress`\r\n* `warning`\r\n* `result`\r\n* `error`\r\n\r\n#### Example NDJSON stream\r\n\r\n```json\r\n{\"type\":\"progress\",\"timestamp\":\"2026-04-21T15:00:00Z\",\"operation_id\":\"op_123\",\"status\":\"pending\",\"message\":\"deployment created\"}\r\n{\"type\":\"log\",\"timestamp\":\"2026-04-21T15:00:03Z\",\"operation_id\":\"op_123\",\"stream\":\"build\",\"message\":\"installing dependencies\"}\r\n{\"type\":\"progress\",\"timestamp\":\"2026-04-21T15:00:20Z\",\"operation_id\":\"op_123\",\"status\":\"running\",\"percent\":45}\r\n{\"type\":\"result\",\"timestamp\":\"2026-04-21T15:01:10Z\",\"operation_id\":\"op_123\",\"ok\":true,\"status\":\"succeeded\",\"deployment_id\":\"dep_123\",\"url\":\"https://example.com\"}\r\n```\r\n\r\n#### Important streaming rule\r\n\r\n* the final line must be either:\r\n\r\n  * `type: \"result\"`\r\n  * or `type: \"error\"`\r\n\r\nThat gives agents a reliable terminal event.\r\n\r\n### 3. Pagination contract\r\n\r\nAlso a real omission.\r\n\r\nAny list-style command can overwhelm an agent if it dumps everything.\r\n\r\n#### Required flags for collection commands\r\n\r\n```txt\r\n--limit <n>\r\n--cursor <token>\r\n```\r\n\r\nYou can support `--page` too, but cursor pagination is usually better for APIs and automation.\r\n\r\n#### Required JSON list envelope\r\n\r\n```json\r\n{\r\n  \"ok\": true,\r\n  \"items\": [\r\n    { \"id\": \"1\", \"name\": \"alpha\" },\r\n    { \"id\": \"2\", \"name\": \"beta\" }\r\n  ],\r\n  \"next_cursor\": \"eyJpZCI6IjIifQ==\",\r\n  \"has_more\": true,\r\n  \"total\": 200\r\n}\r\n```\r\n\r\nNotes:\r\n\r\n* `total` is optional if expensive or unknown\r\n* `next_cursor` should be null or omitted when no more results exist\r\n\r\n### 4. Configuration precedence\r\n\r\nThis should be explicit, not implied.\r\n\r\n#### Standard precedence\r\n\r\n```txt\r\nflags > environment variables > config file > defaults\r\n```\r\n\r\nThat should be consistent across the CLI.\r\n\r\n#### Strong recommendation\r\n\r\nProvide a way to inspect resolved config and its source, for example:\r\n\r\n```bash\r\ntool config resolved --json\r\n```\r\n\r\nExample output:\r\n\r\n```json\r\n{\r\n  \"service\": { \"value\": \"api\", \"source\": \"flag\" },\r\n  \"env\": { \"value\": \"prod\", \"source\": \"env\" },\r\n  \"region\": { \"value\": \"us-east-1\", \"source\": \"config\" },\r\n  \"timeout\": { \"value\": \"10m\", \"source\": \"default\" }\r\n}\r\n```\r\n\r\nThis is disproportionately valuable in debugging agent behavior.\r\n\r\n### 5. Async operation contract\r\n\r\nThe reviewers are right that `--wait` alone is not enough.\r\n\r\n#### Required async flags\r\n\r\n```txt\r\n--wait\r\n--timeout <duration>\r\n```\r\n\r\n#### Required semantics\r\n\r\n* no `--wait`\r\n\r\n  * return immediately with operation metadata\r\n\r\n* with `--wait`\r\n\r\n  * block until terminal state or timeout\r\n\r\n* on timeout\r\n\r\n  * exit `124`\r\n  * emit a partial result describing last known state\r\n\r\n#### Example timeout result\r\n\r\n```json\r\n{\r\n  \"ok\": false,\r\n  \"error\": {\r\n    \"code\": \"timeout\",\r\n    \"message\": \"operation did not complete within 10m\"\r\n  },\r\n  \"operation\": {\r\n    \"id\": \"op_123\",\r\n    \"status\": \"running\",\r\n    \"last_updated_at\": \"2026-04-21T15:10:00Z\"\r\n  }\r\n}\r\n```\r\n\r\nThat is much more usable than a generic timeout string.\r\n\r\n### 6. Stability and versioning signals\r\n\r\nAnother good catch.\r\n\r\nIf agents depend on a command, they need to know whether it is stable.\r\n\r\n#### Recommended convention\r\n\r\n* stable commands:\r\n\r\n  * top-level normal namespace\r\n\r\n* unstable commands:\r\n\r\n  * `beta`\r\n  * or `experimental`\r\n\r\nExamples:\r\n\r\n```bash\r\ntool deploy\r\ntool beta deploy-v2\r\ntool experimental workflow plan\r\n```\r\n\r\n#### Required signals\r\n\r\nIn help and schema, mark:\r\n\r\n* `stability: \"stable\" | \"beta\" | \"experimental\"`\r\n\r\nFor beta/experimental commands:\r\n\r\n* print a warning in human mode\r\n* include stability in JSON/schema output\r\n\r\nExample:\r\n\r\n```json\r\n{\r\n  \"command\": \"beta deploy-v2\",\r\n  \"stability\": \"beta\"\r\n}\r\n```\r\n\r\n---\r\n\r\n## Replace tool-specific examples with named design principles\r\n\r\nThis is a good editorial correction.\r\n\r\nRailway can still be an example, but the skill should teach **principles**, not “copy Railway.”\r\n\r\nHere is the abstracted set I’d use.\r\n\r\n### 1. Short Happy Path Principle\r\n\r\n* the most common task should have one obvious command\r\n* minimal required flags\r\n* sensible defaults\r\n\r\nExample pattern:\r\n\r\n```bash\r\ntool deploy\r\n```\r\n\r\n### 2. Scoped Detail Principle\r\n\r\n* advanced selectors live only on the commands that need them\r\n* do not make query-specific flags global\r\n\r\nExample:\r\n\r\n```bash\r\ntool logs --service api --since 1h --filter error\r\n```\r\n\r\n### 3. Explicit Async Boundary Principle\r\n\r\n* async behavior must be opt-in or clearly surfaced\r\n* detached vs waiting behavior must be explicit\r\n\r\nExample:\r\n\r\n```bash\r\ntool deploy --wait --timeout 10m\r\n```\r\n\r\n### 4. Human Default, Machine Contract Principle\r\n\r\n* default output is readable for humans\r\n* `--json` is precise and stable for machines\r\n\r\n### 5. Prompt-or-Fail Principle\r\n\r\n* if input is missing and TTY exists, prompt\r\n* if input is missing and no TTY exists, fail immediately with structured error\r\n\r\n### 6. Retry Safety Principle\r\n\r\n* every mutating command must document retry behavior\r\n* idempotency must be explicit\r\n\r\n### 7. Streaming as Events Principle\r\n\r\n* streamed machine output must be NDJSON events\r\n* final event must be terminal\r\n\r\n### 8. Bounded Collection Principle\r\n\r\n* list commands must paginate\r\n* agents must never be forced to ingest unbounded results\r\n\r\n### 9. Configuration Transparency Principle\r\n\r\n* config resolution order is fixed\r\n* resolved values can be inspected with source attribution\r\n\r\n### 10. Stability Signaling Principle\r\n\r\n* stable vs beta vs experimental must be visible in both docs and machine-readable schema\r\n\r\n---\r\n\r\n## Updated recommended command contract\r\n\r\nHere is the version I’d standardize internally.\r\n\r\n### Global flags\r\n\r\n```txt\r\n--json\r\n--quiet\r\n--verbose\r\n--no-color\r\n```\r\n\r\nThese change presentation, not behavior.\r\n\r\n### Mutating-command flags\r\n\r\n```txt\r\n--dry-run\r\n--yes\r\n--idempotency-key <key>\r\n```\r\n\r\n### Collection flags\r\n\r\n```txt\r\n--limit <n>\r\n--cursor <token>\r\n```\r\n\r\n### Async flags\r\n\r\n```txt\r\n--wait\r\n--timeout <duration>\r\n```\r\n\r\n### Discovery and diagnostics commands\r\n\r\n```bash\r\ntool help\r\ntool version\r\ntool doctor\r\ntool completion\r\ntool schema <command>\r\ntool config resolved\r\n```\r\n\r\n---\r\n\r\n## Recommended output contracts\r\n\r\n### Human success output\r\n\r\nKeep it short and status-oriented.\r\n\r\n```txt\r\nDeployment started\r\nService: api\r\nEnvironment: production\r\nOperation ID: op_123\r\nUse: tool operations get op_123 --wait\r\n```\r\n\r\n### JSON success output\r\n\r\n```json\r\n{\r\n  \"ok\": true,\r\n  \"status\": \"pending\",\r\n  \"operation_id\": \"op_123\",\r\n  \"service\": \"api\",\r\n  \"environment\": \"production\"\r\n}\r\n```\r\n\r\n### Human error output\r\n\r\n```txt\r\nError: missing required argument --service\r\nTry: tool deploy --service api\r\n```\r\n\r\n### JSON error output\r\n\r\n```json\r\n{\r\n  \"ok\": false,\r\n  \"error\": {\r\n    \"code\": \"missing_argument\",\r\n    \"message\": \"missing required argument --service\",\r\n    \"missing\": [\"service\"],\r\n    \"suggested_invocation\": \"tool deploy --service api\"\r\n  }\r\n}\r\n```\r\n\r\n---\r\n\r\n## Updated guidance for your internal LLM skill\r\n\r\nIf this is going into a reusable internal skill, I would make these hard requirements.\r\n\r\n### Required rules\r\n\r\n* separate `stdout` and `stderr`\r\n* support `--json`\r\n* fail fast in non-TTY mode when required input is missing\r\n* provide structured JSON errors\r\n* define and document exit codes\r\n* define retry behavior per command\r\n* support `--idempotency-key` for mutating retryable commands\r\n* paginate collection commands\r\n* use NDJSON for streaming machine output\r\n* provide a machine-readable schema\r\n* define config precedence\r\n* define async timeout behavior\r\n* label unstable commands explicitly\r\n\r\n### Strongly recommended rules\r\n\r\n* include `tool doctor`\r\n* include `tool completion`\r\n* include `tool config resolved`\r\n* include examples in help output\r\n* include source attribution for resolved config values\r\n\r\n---\r\n\r\n## Shipping checklist for each new command\r\n\r\nThis is probably the most useful operational addition.\r\n\r\n### Interface\r\n\r\n* [ ] Does the command have a clear `noun verb` shape?\r\n* [ ] Are flags in the right category: global, selector, collection, mutation, async?\r\n* [ ] Are there any ambiguous or overlapping flags?\r\n\r\n### Human mode\r\n\r\n* [ ] Is default output easy to scan?\r\n* [ ] Does help include examples?\r\n* [ ] Does the command prompt only in TTY mode?\r\n\r\n### Agent mode\r\n\r\n* [ ] Does `--json` produce valid JSON only on stdout?\r\n* [ ] Are diagnostics and logs kept off stdout?\r\n* [ ] Is the JSON schema available?\r\n* [ ] Are structured errors returned?\r\n\r\n### Reliability\r\n\r\n* [ ] Is retry behavior documented?\r\n* [ ] Does the command support idempotency where needed?\r\n* [ ] Are exit codes documented and consistent?\r\n* [ ] Does timeout behavior return last known state?\r\n\r\n### Data volume\r\n\r\n* [ ] If the command lists items, does it support `--limit` and `--cursor`?\r\n* [ ] If the command streams, does it emit NDJSON with typed events?\r\n* [ ] Does the stream end with a terminal `result` or `error` event?\r\n\r\n### Operations\r\n\r\n* [ ] Is config precedence documented?\r\n* [ ] Can users inspect resolved config and its source?\r\n* [ ] Is the command marked stable/beta/experimental?\r\n\r\n---\r\n\r\n## Bottom line\r\n\r\nThe earlier guidance was directionally right, but these reviewer comments make it much more production-ready.\r\n\r\nThe most important upgrades are:\r\n\r\n* **move from UX advice to protocol contract**\r\n* **treat schema, idempotency, pagination, and streaming as required**\r\n* **split flags into strict categories**\r\n* **define exact exit-code, timeout, and stability conventions**\r\n\r\nIf you want to operationalize this internally, the best next step is to convert it into a **one-page CLI standard** plus a **command review rubric** that teams must satisfy before shipping.\r\n",
+          "contextMode": "context-only"
+        },
+        {
+          "id": "standard-cli-contract-standard",
+          "label": "CLI contract standard",
+          "type": "standard",
+          "depth": 3,
+          "purpose": "Define the CLI as a single product and protocol contract that is reviewable before commands ship.",
+          "implementation": "Standardize one execution model with human-readable default output, deterministic machine mode, and documented rules for output, exit codes, retry behavior, async behavior, pagination, config precedence, and schema discovery.",
+          "context": "kind: standard\nscope: whole CLI\ncore-model:\n  execution_model: one\n  presentations:\n    - human-readable default mode\n    - deterministic machine mode\n  contract_surfaces:\n    - output\n    - exit codes\n    - retry behavior\n    - async behavior\n    - pagination\n    - config precedence\n    - schema\nrationale:\n  - treat CLI as product surface for humans\n  - treat CLI as protocol surface for agents\noperational_goal: teams can review a command against the contract before shipping",
+          "rawContext": "evidence:\n  - \"one execution model\"\n  - \"two presentations\"\n  - \"one explicit contract\"\n  - \"CLI as product surface for humans\"\n  - \"CLI as protocol surface for agents\"\n  - \"convert it into a one-page CLI standard\"",
+          "contextMode": "structured"
+        },
+        {
+          "id": "taxonomy-flag-taxonomy",
+          "label": "Flag taxonomy",
+          "type": "taxonomy",
+          "depth": 4,
+          "purpose": "Separate flags into non-overlapping categories so command behavior and presentation are unambiguous.",
+          "implementation": "Use global output flags on every command, keep selectors command-local, and expose collection, mutation, and async flags only on commands where they semantically apply.",
+          "context": "kind: taxonomy\ncategories:\n  global_output_control:\n    flags: [--json, --quiet, --verbose, --no-color]\n    applies_to: every command\n  resource_selectors:\n    flags: [--id, --name, --env, --target, --filter]\n    applies_to: command-local\n  collection_controls:\n    flags: [--limit, --cursor]\n    applies_to: list/query commands\n  mutation_controls:\n    flags: [--dry-run, --yes, --idempotency-key]\n    applies_to: mutating commands only\n  async_controls:\n    flags: [--wait, --timeout]\n    applies_to: async commands only\nkey_rule: --yes and --dry-run are mutation-control flags, not universal formatting flags",
+          "rawContext": "evidence:\n  - \"--yes and --dry-run should not be universal\"\n  - \"These are not formatting flags. They are mutation-control flags\"\nexamples:\n  mutation_flags: \"--dry-run --yes --idempotency-key <key>\"\n  async_flags: \"--wait --timeout <duration>\"",
+          "contextMode": "structured"
+        },
+        {
+          "id": "contract-exit-code-table",
+          "label": "Exit code table",
+          "type": "contract",
+          "depth": 4,
+          "purpose": "Provide a fixed minimal exit-code contract so teams and automations can rely on consistent process outcomes.",
+          "implementation": "Reserve codes 0, 1, 2, 3, 4, 5, and 124 for success, runtime error, usage error, auth error, not found, conflict, and timeout, while putting detailed failure semantics in structured JSON errors.",
+          "context": "kind: contract\ncodes:\n  \"0\": success\n  \"1\": runtime error\n  \"2\": usage error\n  \"3\": auth error\n  \"4\": not found\n  \"5\": conflict\n  \"124\": timeout\nguidance:\n  - keep matrix small and stable\n  - place extra detail in JSON error payloads\nunix_alignment: 124 chosen to match common timeout expectations",
+          "rawContext": "evidence:\n  - \"Meaningful exit codes needs a standard table\"\n  - \"Without a table, teams will improvise\"\n  - \"124 is a good choice for timeout because it matches common Unix expectations\"",
+          "contextMode": "structured"
+        },
+        {
+          "id": "contract-schema-discovery",
+          "label": "Schema discovery",
+          "type": "contract",
+          "depth": 4,
+          "purpose": "Make command discoverability machine-readable so humans and agents can inspect safe invocation rules before execution.",
+          "implementation": "Require a schema or explain surface for every command and publish JSON Schema-backed input, output, exit code, and capability metadata.",
+          "context": "kind: contract\ndiscovery_entrypoints:\n  - tool schema <command>\n  - tool <command> --schema\n  - tool explain <command> --json\nrequired_fields:\n  - command name\n  - purpose\n  - required arguments\n  - optional arguments\n  - types\n  - enums\n  - defaults\n  - mutating\n  - retry-safe\n  - supported output modes\n  - exit codes\n  - JSON response schema\n  - examples\nrecommendation: use JSON Schema for inputs and outputs\nagent_use: mandatory for internal LLM skill",
+          "rawContext": "evidence:\n  - \"--schema / explain should be first-class\"\n  - \"For agentic use, this is not optional polish\"\nexample_fields:\n  - \"mutating\": true\n  - \"retry.safe_with_idempotency_key\": true\n  - \"output_schema\"\n  - \"exit_codes\"",
+          "contextMode": "structured"
+        },
+        {
+          "id": "contract-retry-safety",
+          "label": "Retry safety",
+          "type": "contract",
+          "depth": 4,
+          "purpose": "Define retriable behavior per command so agents can recover from failures without creating duplicates or corrupting state.",
+          "implementation": "Classify every command by retry safety, support idempotency keys for retryable mutations, and document idempotent delete and conditional update semantics.",
+          "context": "kind: contract\nrequired_classes:\n  - read-only, safe to retry\n  - mutating but retry-safe with idempotency key\n  - mutating and not retry-safe\n  - conditionally retry-safe\nrules:\n  reads: always safe to retry\n  creates_deploys_submits: should support --idempotency-key\n  updates: prefer optimistic concurrency or conditional semantics\n  deletes: should be idempotent where possible\nmutation_flag_set:\n  - --dry-run\n  - --yes\n  - --idempotency-key <key>\nrationale: agents retry and network disconnects are normal",
+          "rawContext": "evidence:\n  - \"Idempotency and retry safety\"\n  - \"Agents retry. Networks fail. Long-running operations get disconnected.\"\n  - \"If the CLI does not clearly define retry behavior, you get duplicates and corrupted workflows\"",
+          "contextMode": "structured"
+        },
+        {
+          "id": "contract-streaming-ndjson",
+          "label": "Streaming NDJSON",
+          "type": "contract",
+          "depth": 4,
+          "purpose": "Make long-running machine output incrementally parseable and reliably terminal for automation.",
+          "implementation": "When `--json` is used on streaming commands, emit NDJSON objects on stdout with typed events and guarantee that the final line is a terminal `result` or `error` event.",
+          "context": "kind: contract\ntrigger: streaming command in machine mode\nstdout_format: NDJSON\nrequired_event_fields:\n  - type\n  - timestamp\n  - operation_id\nrecommended_event_types:\n  - log\n  - progress\n  - warning\n  - result\n  - error\nterminal_rule:\n  final_line_must_be:\n    - type: result\n    - type: error",
+          "rawContext": "evidence:\n  - \"If --json is used on a streaming command, stdout must emit NDJSON\"\n  - \"The final line must be either type: result or type: error\"\nexample_event_types: \"log, progress, warning, result, error\"",
+          "contextMode": "structured"
+        },
+        {
+          "id": "contract-pagination-contract",
+          "label": "Pagination contract",
+          "type": "contract",
+          "depth": 4,
+          "purpose": "Bound collection output so list commands stay safe for humans, agents, and large datasets.",
+          "implementation": "Require cursor-based collection flags and return a list envelope with items and continuation metadata instead of dumping unbounded results.",
+          "context": "kind: contract\nrequired_flags:\n  - --limit <n>\n  - --cursor <token>\noptional_alternative:\n  - --page\nrequired_json_envelope:\n  fields:\n    - ok\n    - items\n    - next_cursor\n    - has_more\n    - total (optional)\nnotes:\n  - cursor pagination preferred for APIs and automation\n  - next_cursor should be null or omitted when exhausted\nrationale: agents should not ingest unbounded results",
+          "rawContext": "evidence:\n  - \"Pagination contract\"\n  - \"Any list-style command can overwhelm an agent if it dumps everything\"\n  - \"Bounded Collection Principle\"\nexample_fields: \"items, next_cursor, has_more, total\"",
+          "contextMode": "structured"
+        },
+        {
+          "id": "contract-config-precedence",
+          "label": "Config precedence",
+          "type": "contract",
+          "depth": 4,
+          "purpose": "Make configuration resolution predictable and debuggable across invocation environments.",
+          "implementation": "Enforce a fixed precedence order of flags over environment variables over config files over defaults and expose resolved config with per-field source attribution.",
+          "context": "kind: contract\nprecedence:\n  1: flags\n  2: environment variables\n  3: config file\n  4: defaults\ndebug_surface:\n  command: tool config resolved --json\n  output_fields:\n    - value\n    - source\nbenefit: simplifies debugging of human and agent behavior",
+          "rawContext": "evidence:\n  - \"Configuration precedence\"\n  - \"This should be explicit, not implied\"\n  - \"This is disproportionately valuable in debugging agent behavior\"\nexample_source_values: \"flag, env, config, default\"",
+          "contextMode": "structured"
+        },
+        {
+          "id": "contract-async-contract",
+          "label": "Async contract",
+          "type": "contract",
+          "depth": 4,
+          "purpose": "Specify detached versus waiting behavior so async commands have predictable timeout and completion semantics.",
+          "implementation": "Support `--wait` and `--timeout`, return operation metadata immediately when not waiting, and on timeout exit 124 while returning the last known operation state.",
+          "context": "kind: contract\nrequired_flags:\n  - --wait\n  - --timeout <duration>\nsemantics:\n  without_wait: return immediately with operation metadata\n  with_wait: block until terminal state or timeout\n  on_timeout:\n    exit_code: 124\n    return: partial result with last known state\nexample_timeout_payload_fields:\n  - ok: false\n  - error.code: timeout\n  - operation.id\n  - operation.status\n  - operation.last_updated_at",
+          "rawContext": "evidence:\n  - \"--wait alone is not enough\"\n  - \"no --wait: return immediately with operation metadata\"\n  - \"on timeout: exit 124; emit a partial result describing last known state\"",
+          "contextMode": "structured"
+        },
+        {
+          "id": "contract-stability-signals",
+          "label": "Stability signals",
+          "type": "contract",
+          "depth": 4,
+          "purpose": "Expose whether commands are stable, beta, or experimental so dependent users and agents can judge risk.",
+          "implementation": "Use namespace and metadata conventions for unstable commands and surface stability in help, schema, and machine-readable output with human-mode warnings for non-stable commands.",
+          "context": "kind: contract\nlevels:\n  - stable\n  - beta\n  - experimental\nconventions:\n  stable: top-level normal namespace\n  unstable_namespaces:\n    - beta\n    - experimental\nrequired_signals:\n  surfaces:\n    - help\n    - schema\n    - JSON output\n  field: stability\nhuman_mode_behavior: print warning for beta or experimental commands",
+          "rawContext": "evidence:\n  - \"Stability and versioning signals\"\n  - \"If agents depend on a command, they need to know whether it is stable\"\nexamples:\n  - \"tool deploy\"\n  - \"tool beta deploy-v2\"\n  - \"tool experimental workflow plan\"",
+          "contextMode": "structured"
+        }
+      ],
+      "links": [
+        {
+          "source": "standard-cli-contract-standard",
+          "target": "taxonomy-flag-taxonomy",
+          "kind": "contains"
+        },
+        {
+          "source": "standard-cli-contract-standard",
+          "target": "contract-exit-code-table",
+          "kind": "contains"
+        },
+        {
+          "source": "standard-cli-contract-standard",
+          "target": "contract-schema-discovery",
+          "kind": "contains"
+        },
+        {
+          "source": "standard-cli-contract-standard",
+          "target": "contract-retry-safety",
+          "kind": "contains"
+        },
+        {
+          "source": "standard-cli-contract-standard",
+          "target": "contract-streaming-ndjson",
+          "kind": "contains"
+        },
+        {
+          "source": "standard-cli-contract-standard",
+          "target": "contract-pagination-contract",
+          "kind": "contains"
+        },
+        {
+          "source": "standard-cli-contract-standard",
+          "target": "contract-config-precedence",
+          "kind": "contains"
+        },
+        {
+          "source": "standard-cli-contract-standard",
+          "target": "contract-async-contract",
+          "kind": "contains"
+        },
+        {
+          "source": "standard-cli-contract-standard",
+          "target": "contract-stability-signals",
+          "kind": "contains"
+        },
+        {
+          "source": "taxonomy-flag-taxonomy",
+          "target": "contract-retry-safety",
+          "kind": "related"
+        },
+        {
+          "source": "taxonomy-flag-taxonomy",
+          "target": "contract-pagination-contract",
+          "kind": "related"
+        },
+        {
+          "source": "taxonomy-flag-taxonomy",
+          "target": "contract-async-contract",
+          "kind": "related"
+        },
+        {
+          "source": "contract-schema-discovery",
+          "target": "contract-exit-code-table",
+          "kind": "related"
+        },
+        {
+          "source": "contract-schema-discovery",
+          "target": "contract-stability-signals",
+          "kind": "related"
+        },
+        {
+          "source": "contract-retry-safety",
+          "target": "contract-async-contract",
+          "kind": "related"
+        },
+        {
+          "source": "contract-streaming-ndjson",
+          "target": "contract-async-contract",
           "kind": "related"
         }
       ]

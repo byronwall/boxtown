@@ -6,10 +6,11 @@ import {
   VIEWPORT_WIDTH,
   buildAdjacencyMap,
   createInitialLayout,
+  filterSpatialMapDataByRelatedNodes,
   stepLayout,
-} from "~/lib/spatial-map/layout";
-import type { PositionedMapNode } from "~/lib/spatial-map/types";
-import { parseSpatialMapData } from "~/lib/spatial-map/validate";
+} from "./layout";
+import type { PositionedMapNode } from "./types";
+import { parseSpatialMapData } from "./validate";
 
 const dataPath = path.join(process.cwd(), "src", "data", "spatial-map.json");
 const parsedData = parseSpatialMapData(
@@ -77,6 +78,21 @@ describe("spatial map layout", () => {
 
     expect(next).toHaveLength(initial.length);
     expect(next.every((node) => Number.isFinite(node.x) && Number.isFinite(node.y))).toBe(true);
+  });
+
+  it("filters isolation mode down to the same related neighborhood used by focus", () => {
+    const coreId = parsedData.nodes[0]?.id ?? null;
+    const adjacency = buildAdjacencyMap(parsedData);
+    const filtered = filterSpatialMapDataByRelatedNodes(parsedData, coreId, 1);
+    const relatedSet = coreId ? new Set([coreId, ...(adjacency.get(coreId) ?? [])]) : new Set();
+
+    expect(filtered.nodes.length).toBeGreaterThan(0);
+    expect(filtered.nodes.every((node) => coreId && relatedSet.has(node.id))).toBe(true);
+    expect(
+      filtered.links.every(
+        (link) => coreId && relatedSet.has(link.source) && relatedSet.has(link.target),
+      ),
+    ).toBe(true);
   });
 });
 

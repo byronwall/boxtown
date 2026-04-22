@@ -1,4 +1,4 @@
-import { Show } from "solid-js";
+import { lazy, Show } from "solid-js";
 import { Box } from "styled-system/jsx";
 import type { ProjectRecord } from "~/lib/projects/types";
 
@@ -8,6 +8,12 @@ import { SpatialMapProvider, useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapInspector } from "./SpatialMapInspector";
 import { SpatialMapScene } from "./SpatialMapScene";
 import { SpatialMapToolbar } from "./SpatialMapToolbar";
+
+const ContextNoteConversionRail = lazy(() =>
+  import("./context-note-conversion-flow/ContextNoteConversionRail").then((module) => ({
+    default: module.ContextNoteConversionRail,
+  })),
+);
 
 interface SpatialMapHeaderProps {
   eyebrow?: string;
@@ -48,7 +54,11 @@ function SpatialMapCanvasLayout(props: {
     <Box class={`spatial-map-shell${controller.inspectorOpen() ? "" : " spatial-map-shell--collapsed"}`}>
       <Box class="spatial-map-main">
         <Box class="spatial-map-stage">
-          <SpatialMapToolbar {...props.header} />
+          <SpatialMapToolbar
+            {...props.header}
+            projectId={props.project.id}
+            onProjectUpdated={props.onProjectUpdated}
+          />
           <SpatialMapScene />
           <Show when={!props.hasNodes}>
             <Box class="spatial-map-empty">
@@ -67,7 +77,20 @@ function SpatialMapCanvasLayout(props: {
           when={!controller.addNodesOpen()}
           fallback={<AddNodesFlowRail project={props.project} onProjectUpdated={props.onProjectUpdated} />}
         >
-          <SpatialMapInspector />
+          <Show
+            when={!controller.contextNoteConversionOpen()}
+            fallback={
+              <ContextNoteConversionRail
+                project={props.project}
+                onProjectUpdated={props.onProjectUpdated}
+              />
+            }
+          >
+            <SpatialMapInspector
+              projectId={props.project.id}
+              onProjectUpdated={props.onProjectUpdated}
+            />
+          </Show>
         </Show>
       </Box>
     </Box>

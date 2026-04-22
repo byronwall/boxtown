@@ -9,11 +9,11 @@ import {
 import {
   buildAdjacencyMap,
   createInitialLayout,
+  filterSpatialMapDataByRelatedNodes,
   getRelatedSet,
-  resetLayout,
   VIEWPORT_WIDTH,
 } from "~/lib/spatial-map/layout";
-import type { SpatialMapData } from "~/lib/spatial-map/types";
+import type { PositionedMapNode, SpatialMapData } from "~/lib/spatial-map/types";
 
 import type {
   CameraState,
@@ -51,9 +51,11 @@ export function useSpatialMapCanvasController(
     data().nodes[0]?.id ?? null,
   );
   const [hoveredNodeId, setHoveredNodeId] = createSignal<string | null>(null);
+  const [isolatedNodeId, setIsolatedNodeId] = createSignal<string | null>(null);
   const [showEdges, setShowEdges] = createSignal(false);
   const [inspectorOpen, setInspectorOpen] = createSignal(true);
   const [addNodesOpen, setAddNodesOpen] = createSignal(false);
+  const [contextNoteConversionOpen, setContextNoteConversionOpen] = createSignal(false);
   const [camera, setCamera] = createSignal(createDefaultCamera());
   const [isPanning, setIsPanning] = createSignal(false);
   const adjacency = createMemo(() => buildAdjacencyMap(data()));
@@ -62,6 +64,10 @@ export function useSpatialMapCanvasController(
   );
   const sourceNodesById = createMemo(
     () => new Map(data().nodes.map((node) => [node.id, node])),
+  );
+  const isolationModeActive = createMemo(() => Boolean(isolatedNodeId()));
+  const visibleData = createMemo(() =>
+    filterSpatialMapDataByRelatedNodes(data(), isolatedNodeId()),
   );
 
   let viewportRef: HTMLDivElement | undefined;
@@ -74,6 +80,9 @@ export function useSpatialMapCanvasController(
   const relatedSet = createMemo(() => getRelatedSet(adjacency(), activeNodeId()));
   const selectedNode = createMemo(() =>
     selectedNodeId() ? sourceNodesById().get(selectedNodeId() ?? "") ?? null : null,
+  );
+  const isolationLabel = createMemo(() =>
+    isolatedNodeId() ? sourceNodesById().get(isolatedNodeId() ?? "")?.label ?? null : null,
   );
   const selectedNodeRelations = createMemo(() =>
     describeRelations(data().links, sourceNodesById(), selectedNode()),
@@ -101,11 +110,20 @@ export function useSpatialMapCanvasController(
   );
 
   createEffect(() => {
-    const nextData = data();
-    setPositionedNodes(createInitialLayout(nextData));
+    const nextData = visibleData();
+    const sourceData = data();
+    const nextLayout = createInitialLayout(nextData);
+    setPositionedNodes(nextLayout);
     setHoveredNodeId(null);
-    setSelectedNodeId(nextData.nodes[0]?.id ?? null);
-    queueMicrotask(() => fitCameraToNodes());
+    setIsolatedNodeId((current) =>
+      current && sourceData.nodes.some((node) => node.id === current) ? current : null,
+    );
+    setSelectedNodeId((current) =>
+      current && sourceData.nodes.some((node) => node.id === current)
+        ? current
+        : sourceData.nodes[0]?.id ?? null,
+    );
+    queueMicrotask(() => fitCameraToLayout(nextLayout));
   });
 
   const getViewportAspectRatio = () => {
@@ -118,6 +136,10 @@ export function useSpatialMapCanvasController(
 
   const fitCameraToNodes = () => {
     setCamera(getFitCamera(positionedNodes(), getViewportAspectRatio()));
+  };
+
+  const fitCameraToLayout = (nodes: PositionedMapNode[]) => {
+    setCamera(getFitCamera(nodes, getViewportAspectRatio()));
   };
 
   const getWorldPoint = (clientX: number, clientY: number) => {
@@ -245,6 +267,19 @@ export function useSpatialMapCanvasController(
     }
   };
 
+  const applyIsolation = (nodeId: string | null) => {
+    setHoveredNodeId(null);
+    setIsolatedNodeId(nodeId);
+    if (nodeId) {
+      setSelectedNodeId(nodeId);
+    }
+
+    const nextData = filterSpatialMapDataByRelatedNodes(data(), nodeId);
+    const nextLayout = createInitialLayout(nextData);
+    setPositionedNodes(nextLayout);
+    queueMicrotask(() => fitCameraToLayout(nextLayout));
+  };
+
   const handleBackgroundClick: SpatialMapCanvasController["sceneHandlers"]["onBackgroundClick"] = (event) => {
     if (suppressNodeClick) {
       return;
@@ -275,7 +310,11 @@ export function useSpatialMapCanvasController(
   return {
     camera,
     addNodesOpen,
+    contextNoteConversionOpen,
     edgeState,
+    isolatedNodeId,
+    isolationLabel,
+    isolationModeActive,
     inspectorOpen,
     isPanning,
     orderedNodes,
@@ -286,11 +325,25 @@ export function useSpatialMapCanvasController(
     sourceNodesById,
     zoomPercent,
     closeAddNodesFlow: () => setAddNodesOpen(false),
-    openAddNodesFlow: () => setAddNodesOpen(true),
+    closeContextNoteConversionFlow: () => setContextNoteConversionOpen(false),
+    clearIsolation: () => applyIsolation(null),
+    openAddNodesFlow: () => {
+      setContextNoteConversionOpen(false);
+      setAddNodesOpen(true);
+    },
+    openContextNoteConversionFlow: () => {
+      setAddNodesOpen(false);
+      setContextNoteConversionOpen(true);
+    },
+    isolateNode: (nodeId) => applyIsolation(nodeId),
     setInspectorOpen,
     setSelectedNodeId,
     toggleEdges: () => setShowEdges((current) => !current),
-    reflowLayout: () => setPositionedNodes((current) => resetLayout(current, adjacency())),
+    reflowLayout: () => {
+      const nextLayout = createInitialLayout(visibleData());
+      setPositionedNodes(nextLayout);
+      queueMicrotask(() => fitCameraToLayout(nextLayout));
+    },
     fitCameraToNodes,
     setViewportRef: (element) => {
       viewportRef = element;
@@ -309,6 +362,7 @@ export function useSpatialMapCanvasController(
     sceneHandlers: {
       onBackgroundClick: handleBackgroundClick,
       onNodeClick: handleNodeSelection,
+      onNodeIsolateClick: (nodeId) => applyIsolation(nodeId),
       onNodePointerDown: handleNodeSelection,
       onNodePointerEnter: setHoveredNodeId,
       onNodePointerLeave: (nodeId) =>

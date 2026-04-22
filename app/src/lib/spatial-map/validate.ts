@@ -25,7 +25,7 @@ function parseMapNode(input: unknown): MapNode {
     throw new Error("Each node must be an object.");
   }
 
-  const { id, label, type, depth, purpose, implementation } = input;
+  const { id, label, type, depth, purpose, implementation, context, rawContext, contextMode } = input;
   if (!isNonEmptyString(id)) throw new Error("Node id must be a non-empty string.");
   if (!isNonEmptyString(label)) throw new Error("Node label must be a non-empty string.");
   if (!isNonEmptyString(type)) throw new Error("Node type must be a non-empty string.");
@@ -38,8 +38,39 @@ function parseMapNode(input: unknown): MapNode {
   if (!isNonEmptyString(implementation)) {
     throw new Error("Node implementation must be a non-empty string.");
   }
+  if (context !== undefined && typeof context !== "string") {
+    throw new Error("Node context must be a string when provided.");
+  }
+  if (rawContext !== undefined && typeof rawContext !== "string") {
+    throw new Error("Node rawContext must be a string when provided.");
+  }
+  if (
+    contextMode !== undefined &&
+    contextMode !== "context-only" &&
+    contextMode !== "structured"
+  ) {
+    throw new Error('Node contextMode must be "context-only" or "structured" when provided.');
+  }
 
-  return { id, label, type, depth, purpose, implementation };
+  const resolvedContext = typeof context === "string" ? context : "";
+  const resolvedContextMode =
+    typeof contextMode === "string"
+      ? contextMode
+      : type === "note"
+        ? "context-only"
+        : "structured";
+
+  return {
+    id,
+    label,
+    type,
+    depth,
+    purpose,
+    implementation,
+    context: resolvedContext,
+    rawContext: typeof rawContext === "string" ? rawContext : resolvedContext,
+    contextMode: resolvedContextMode,
+  };
 }
 
 function parseMapLink(input: unknown): MapLink {

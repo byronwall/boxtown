@@ -19,6 +19,14 @@
   --spatial-map-neutral-fill-hover: #e5e7e1;
   --spatial-map-neutral-stroke: #7d817b;
   --spatial-map-neutral-stroke-hover: #696e68;
+  --spatial-map-steel-fill: #d8dde0;
+  --spatial-map-steel-fill-hover: #cbd3d8;
+  --spatial-map-steel-stroke: #6c7882;
+  --spatial-map-steel-stroke-hover: #59656f;
+  --spatial-map-amber-fill: #e6dcc6;
+  --spatial-map-amber-fill-hover: #dbcfb4;
+  --spatial-map-amber-stroke: #877454;
+  --spatial-map-amber-stroke-hover: #726143;
   --spatial-map-accent: #255f3a;
   --spatial-map-accent-strong: #173e27;
   height: 100dvh;
@@ -155,13 +163,15 @@
 
 .spatial-map-empty {
   position: absolute;
-  inset: 78px auto auto 22px;
-  max-width: 360px;
+  top: calc(50% + 27px);
+  left: 50%;
+  width: min(360px, calc(100% - 32px));
   padding: 16px 18px;
   border: 1px solid var(--spatial-map-panel-border);
   background: rgba(246, 248, 244, 0.9);
   box-shadow: 0 16px 40px rgba(23, 27, 24, 0.14);
   pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
 .spatial-map-empty-title {
@@ -222,6 +232,16 @@
 
 .spatial-map-button--strong {
   border-width: 1px;
+}
+
+.spatial-map-button--danger {
+  border-color: rgba(126, 41, 41, 0.34) !important;
+  color: #6d1f1f !important;
+  background: rgba(239, 224, 224, 0.92) !important;
+}
+
+.spatial-map-button--danger:hover {
+  background: rgba(233, 214, 214, 0.96) !important;
 }
 
 .spatial-map-shortcut {
@@ -295,12 +315,12 @@
   transition: opacity 120ms ease, filter 120ms ease;
 }
 
-.spatial-map-node rect,
+.spatial-map-node-body,
 .spatial-map-node text {
   transition: opacity 120ms ease, fill 120ms ease, stroke 120ms ease, transform 120ms ease;
 }
 
-.spatial-map-node rect {
+.spatial-map-node-body {
   rx: 0;
   ry: 0;
   stroke-width: 1.4;
@@ -309,36 +329,58 @@
   stroke: var(--spatial-map-node-stroke, var(--spatial-map-neutral-stroke));
 }
 
-.spatial-map-node--page rect,
-.spatial-map-node--area rect {
+.spatial-map-node--page .spatial-map-node-body,
+.spatial-map-node--area .spatial-map-node-body {
   --spatial-map-node-fill: var(--spatial-map-blue-fill);
   --spatial-map-node-fill-hover: var(--spatial-map-blue-fill-hover);
   --spatial-map-node-stroke: var(--spatial-map-blue-stroke);
   --spatial-map-node-stroke-hover: var(--spatial-map-blue-stroke-hover);
 }
 
-.spatial-map-node--assembly rect,
-.spatial-map-node--module rect {
+.spatial-map-node--assembly .spatial-map-node-body,
+.spatial-map-node--module .spatial-map-node-body {
   --spatial-map-node-fill: var(--spatial-map-green-fill);
   --spatial-map-node-fill-hover: var(--spatial-map-green-fill-hover);
   --spatial-map-node-stroke: var(--spatial-map-green-stroke);
   --spatial-map-node-stroke-hover: var(--spatial-map-green-stroke-hover);
 }
 
-.spatial-map-node--component rect {
+.spatial-map-node--component .spatial-map-node-body {
   --spatial-map-node-fill: var(--spatial-map-neutral-fill);
   --spatial-map-node-fill-hover: var(--spatial-map-neutral-fill-hover);
   --spatial-map-node-stroke: var(--spatial-map-neutral-stroke);
   --spatial-map-node-stroke-hover: var(--spatial-map-neutral-stroke-hover);
 }
 
-.spatial-map-node:hover rect,
-.spatial-map-node.is-hovered rect {
+.spatial-map-node--contract .spatial-map-node-body,
+.spatial-map-node--standard .spatial-map-node-body {
+  --spatial-map-node-fill: var(--spatial-map-neutral-fill);
+  --spatial-map-node-fill-hover: var(--spatial-map-neutral-fill-hover);
+  --spatial-map-node-stroke: var(--spatial-map-neutral-stroke);
+  --spatial-map-node-stroke-hover: var(--spatial-map-neutral-stroke-hover);
+}
+
+.spatial-map-node--taxonomy .spatial-map-node-body {
+  --spatial-map-node-fill: var(--spatial-map-steel-fill);
+  --spatial-map-node-fill-hover: var(--spatial-map-steel-fill-hover);
+  --spatial-map-node-stroke: var(--spatial-map-steel-stroke);
+  --spatial-map-node-stroke-hover: var(--spatial-map-steel-stroke-hover);
+}
+
+.spatial-map-node--note .spatial-map-node-body {
+  --spatial-map-node-fill: var(--spatial-map-amber-fill);
+  --spatial-map-node-fill-hover: var(--spatial-map-amber-fill-hover);
+  --spatial-map-node-stroke: var(--spatial-map-amber-stroke);
+  --spatial-map-node-stroke-hover: var(--spatial-map-amber-stroke-hover);
+}
+
+.spatial-map-node:hover .spatial-map-node-body,
+.spatial-map-node.is-hovered .spatial-map-node-body {
   fill: var(--spatial-map-node-fill-hover, var(--spatial-map-node-fill));
   stroke: var(--spatial-map-node-stroke-hover, var(--spatial-map-node-stroke));
 }
 
-.spatial-map-node.is-selected rect {
+.spatial-map-node.is-selected .spatial-map-node-body {
   stroke: #0f2f1d;
   stroke-width: 2;
 }
@@ -367,26 +409,61 @@
   user-select: none;
 }
 
-.spatial-map-node-hover {
-  pointer-events: none;
+.spatial-map-node-actions {
   opacity: 0;
   transform: scale(0.94);
   transition: opacity 100ms ease, transform 100ms ease;
 }
 
-.spatial-map-node-hover circle {
+.spatial-map-node-action {
+  cursor: pointer;
+}
+
+.spatial-map-node-action rect {
   fill: rgba(15, 47, 29, 0.96);
+  stroke: rgba(230, 238, 228, 0.72);
+  stroke-width: 1;
 }
 
-.spatial-map-node-hover text {
+.spatial-map-node-action text {
   fill: #f5f8f3;
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 700;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  user-select: none;
 }
 
-.spatial-map-node.is-hovered .spatial-map-node-hover {
+.spatial-map-node-action.is-active rect {
+  fill: #244e37;
+  stroke: #0f2f1d;
+}
+
+.spatial-map-node.is-hovered .spatial-map-node-actions,
+.spatial-map-node.is-selected .spatial-map-node-actions {
   opacity: 1;
   transform: scale(1);
+}
+
+.spatial-map-isolation-readout {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--spatial-map-panel-border-strong);
+  background: rgba(231, 235, 228, 0.98);
+  color: var(--spatial-map-copy);
+  font-family:
+    "IBM Plex Mono",
+    "SFMono-Regular",
+    "SF Mono",
+    "Roboto Mono",
+    "Consolas",
+    "Liberation Mono",
+    monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .spatial-map-inspector-rail {
@@ -513,6 +590,11 @@
   background: rgba(244, 246, 242, 0.72);
 }
 
+.spatial-map-inspector-section-title.is-heading {
+  color: var(--spatial-map-copy);
+  letter-spacing: 0.02em;
+}
+
 .spatial-map-inspector-row {
   padding-bottom: 4px;
   border-bottom: 1px solid rgba(34, 41, 36, 0.08);
@@ -542,6 +624,7 @@
   width: 360px;
 }
 
+.spatial-map-context-textarea,
 .spatial-map-add-nodes-textarea {
   resize: vertical;
   min-height: 112px;
@@ -550,6 +633,127 @@
   background: rgba(244, 246, 242, 0.92);
   font-family: inherit;
   font-size: 12px;
+  line-height: 1.5;
+}
+
+.spatial-map-context-textarea {
+  min-height: 180px;
+}
+
+.spatial-map-context-empty,
+.spatial-map-context-markdown {
+  border: 1px solid rgba(34, 41, 36, 0.14);
+  background:
+    linear-gradient(180deg, rgba(248, 249, 246, 0.92) 0%, rgba(235, 238, 232, 0.96) 100%);
+}
+
+.spatial-map-context-empty {
+  padding: 10px;
+}
+
+.spatial-map-context-markdown {
+  max-height: 360px;
+  overflow: auto;
+  padding: 10px 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+  min-width: 0;
+}
+
+.spatial-map-context-dialog {
+  width: min(800px, 90vw);
+  max-width: min(800px, 90vw) !important;
+  max-height: calc(100vh - 32px) !important;
+}
+
+.spatial-map-context-markdown.is-dialog {
+  width: 100%;
+  max-width: 100%;
+  max-height: none;
+  min-height: min(720px, calc(100vh - 220px));
+  overflow: visible;
+  padding: 8px 0 0;
+  font-size: 15px;
+  line-height: 1.7;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.spatial-map-context-markdown :where(h1, h2, h3, h4, h5, h6) {
+  margin: 0 0 10px;
+  color: var(--spatial-map-copy);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.spatial-map-context-markdown.is-dialog :where(h1, h2, h3, h4, h5, h6) {
+  margin-bottom: 14px;
+  line-height: 1.15;
+}
+
+.spatial-map-context-markdown :where(h1, h2) {
+  text-transform: uppercase;
+}
+
+.spatial-map-context-markdown :where(p, ul, ol, blockquote, pre, table) {
+  margin: 0 0 10px;
+}
+
+.spatial-map-context-markdown.is-dialog :where(p, li, blockquote, h1, h2, h3, h4, h5, h6) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.spatial-map-context-markdown :where(ul, ol) {
+  padding-left: 18px;
+}
+
+.spatial-map-context-markdown :where(li) {
+  margin: 0 0 4px;
+}
+
+.spatial-map-context-markdown :where(a) {
+  color: var(--spatial-map-accent-strong);
+}
+
+.spatial-map-context-markdown :where(hr) {
+  border: 0;
+  border-top: 1px solid rgba(34, 41, 36, 0.16);
+  margin: 12px 0;
+}
+
+.spatial-map-context-markdown :where(blockquote) {
+  padding: 8px 10px;
+  border-left: 2px solid rgba(23, 62, 39, 0.44);
+  background: rgba(224, 230, 222, 0.72);
+  color: var(--spatial-map-copy-muted);
+}
+
+.spatial-map-context-markdown :where(table) {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.spatial-map-context-markdown :where(th, td) {
+  border: 1px solid rgba(34, 41, 36, 0.12);
+  padding: 6px 7px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.spatial-map-context-markdown :where(th) {
+  background: rgba(220, 226, 219, 0.8);
+}
+
+.spatial-map-context-markdown.is-dialog :where(p, ul, ol, blockquote, pre, table) {
+  margin-bottom: 14px;
+}
+
+.spatial-map-raw-context {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   line-height: 1.5;
 }
 
@@ -572,6 +776,21 @@
 .spatial-map-answer-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+}
+
+.spatial-map-candidate-tree {
+  padding-top: 2px;
+}
+
+.spatial-map-candidate-tree-row {
+  width: 100%;
+  padding: 8px 8px 8px 0;
+  border: 1px solid rgba(34, 41, 36, 0.14);
+  background: rgba(232, 236, 230, 0.88);
+}
+
+.spatial-map-candidate-tree-row:has([data-scope="checkbox"][data-part="control"]) {
+  padding-left: 8px;
 }
 
 .spatial-map-answer-option,
@@ -636,6 +855,12 @@
 .spatial-map-add-nodes-error {
   border-color: rgba(126, 41, 41, 0.28);
   background: rgba(246, 235, 235, 0.82);
+}
+
+.spatial-map-candidate-tree [data-scope="checkbox"][data-part="root"][data-state="checked"] .spatial-map-candidate-tree-row,
+.spatial-map-candidate-tree [data-scope="checkbox"][data-part="root"][data-state="indeterminate"] .spatial-map-candidate-tree-row {
+  border-color: rgba(23, 62, 39, 0.42);
+  background: rgba(223, 230, 221, 0.96);
 }
 
 .spatial-map-relation-title {

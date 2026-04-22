@@ -1,12 +1,32 @@
+import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { GeneratedNodeBatch } from "~/lib/add-nodes/types";
 import type { SpatialMapData } from "~/lib/spatial-map/types";
 import { parseSpatialMapData } from "~/lib/spatial-map/validate";
+import { splitMarkdownIntoHeadingSections } from "./context-node-markdown";
 import type { ProjectRecord, ProjectSummary } from "./types";
 
 interface CreateProjectInput {
   name?: string;
+}
+
+interface UpdateProjectNodeContextInput {
+  projectId: string;
+  nodeId: string;
+  context: string;
+}
+
+interface CreateContextNodeInput {
+  projectId: string;
+  label: string;
+  context: string;
+  splitByHeadingLevel?: boolean;
+}
+
+interface DeleteProjectNodeInput {
+  projectId: string;
+  nodeId: string;
 }
 
 interface SerializedProjectRecord {
@@ -17,9 +37,6 @@ interface SerializedProjectRecord {
   updatedAt: unknown;
   spatialMap: unknown;
 }
-
-const DATA_DIR = path.join(process.cwd(), "src", "data");
-const PROJECTS_FILE = path.join(DATA_DIR, "projects.json");
 
 export function createBlankSpatialMapData(): SpatialMapData {
   return {
@@ -74,6 +91,17 @@ export async function createProjectOnDisk(
   return nextRecord;
 }
 
+export async function deleteProjectOnDisk(projectId: string): Promise<void> {
+  const records = await readProjectRecordsFromDisk();
+  const nextRecords = records.filter((record) => record.id !== projectId);
+
+  if (nextRecords.length === records.length) {
+    throw new Error("Project not found.");
+  }
+
+  await writeProjectRecordsToDisk(nextRecords);
+}
+
 export function mergeGeneratedSpatialMapData(
   current: SpatialMapData,
   generated: GeneratedNodeBatch,
@@ -92,6 +120,8 @@ export function mergeGeneratedSpatialMapData(
     nextNodes.push({
       ...node,
       id: stableId,
+      contextMode: node.contextMode ?? (node.type === "note" ? "context-only" : "structured"),
+      rawContext: node.rawContext ?? node.context,
     });
   }
 
@@ -148,8 +178,219 @@ export async function appendGeneratedNodesToProjectOnDisk(input: {
   return nextRecord;
 }
 
+export async function updateProjectNodeContextOnDisk(
+  input: UpdateProjectNodeContextInput,
+): Promise<ProjectRecord> {
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
+
+  if (nodeIndex === -1) {
+    throw new Error("Node not found.");
+  }
+
+  const nextNodes = current.spatialMap.nodes.map((node, index) =>
+    index === nodeIndex ? { ...node, context: input.context } : node,
+  );
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: nextNodes,
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return nextRecord;
+}
+
+export async function createContextNodeOnDisk(
+  input: CreateContextNodeInput,
+): Promise<{ nodeId: string; project: ProjectRecord; createdNodeCount: number }> {
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));
+  const baseLabel = input.label.trim();
+  const createdNodes = input.splitByHeadingLevel
+    ? createContextNodeTree({
+        label: baseLabel,
+        markdown: input.context,
+        existingIds,
+      })
+    : createSingleContextNode({
+        label: baseLabel,
+        context: input.context,
+        existingIds,
+      });
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: [...current.spatialMap.nodes, ...createdNodes.nodes],
+      links: [...current.spatialMap.links, ...createdNodes.links],
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return {
+    nodeId: createdNodes.rootNodeId,
+    project: nextRecord,
+    createdNodeCount: createdNodes.nodes.length,
+  };
+}
+
+function createSingleContextNode(input: {
+  label: string;
+  context: string;
+  existingIds: Set<string>;
+}) {
+  const nodeId = reserveUniqueNodeId(input.label, "note", input.existingIds);
+
+  return {
+    rootNodeId: nodeId,
+    nodes: [
+      createContextNoteNode({
+        id: nodeId,
+        label: input.label,
+        depth: 2,
+        context: input.context,
+      }),
+    ],
+    links: [],
+  };
+}
+
+function createContextNodeTree(input: {
+  label: string;
+  markdown: string;
+  existingIds: Set<string>;
+}) {
+  const { preamble, sections } = splitMarkdownIntoHeadingSections(input.markdown);
+  if (sections.length === 0) {
+    return createSingleContextNode({
+      label: input.label,
+      context: input.markdown,
+      existingIds: input.existingIds,
+    });
+  }
+
+  const rootNodeId = reserveUniqueNodeId(input.label, "note", input.existingIds);
+  const nodes = [
+    createContextNoteNode({
+      id: rootNodeId,
+      label: input.label,
+      depth: 2,
+      context: preamble,
+    }),
+  ];
+  const sectionNodeIds: string[] = [];
+  const sectionDepths: number[] = [];
+  const links: SpatialMapData["links"] = [];
+
+  for (const section of sections) {
+    const nodeId = reserveUniqueNodeId(section.label, "note", input.existingIds);
+    const parentNodeId =
+      section.parentIndex === null ? rootNodeId : sectionNodeIds[section.parentIndex] ?? rootNodeId;
+    const parentDepth =
+      section.parentIndex === null ? 2 : sectionDepths[section.parentIndex] ?? 2;
+    const nodeDepth = parentDepth + 1;
+
+    sectionNodeIds.push(nodeId);
+    sectionDepths.push(nodeDepth);
+    nodes.push(
+      createContextNoteNode({
+        id: nodeId,
+        label: section.label,
+        depth: nodeDepth,
+        context: section.context,
+      }),
+    );
+    links.push({
+      source: parentNodeId,
+      target: nodeId,
+      kind: "hierarchy",
+    });
+  }
+
+  return {
+    rootNodeId,
+    nodes,
+    links,
+  };
+}
+
+function createContextNoteNode(input: {
+  id: string;
+  label: string;
+  depth: number;
+  context: string;
+}) {
+  return {
+    id: input.id,
+    label: input.label,
+    type: "note",
+    depth: input.depth,
+    purpose: "Loose context, notes, and markdown content that needs a home in the map.",
+    implementation: "Freeform markdown note stored directly on the node for AI or human editing.",
+    context: input.context,
+    rawContext: input.context,
+    contextMode: "context-only" as const,
+  };
+}
+
+export async function deleteProjectNodeOnDisk(
+  input: DeleteProjectNodeInput,
+): Promise<ProjectRecord> {
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const nodeExists = current.spatialMap.nodes.some((node) => node.id === input.nodeId);
+
+  if (!nodeExists) {
+    throw new Error("Node not found.");
+  }
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      nodes: current.spatialMap.nodes.filter((node) => node.id !== input.nodeId),
+      links: current.spatialMap.links.filter(
+        (link) => link.source !== input.nodeId && link.target !== input.nodeId,
+      ),
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return nextRecord;
+}
+
 async function readProjectRecordsFromDisk(): Promise<ProjectRecord[]> {
-  const raw = await readFile(PROJECTS_FILE, "utf8");
+  const raw = await readFile(getProjectsFilePath(), "utf8");
   const parsed = JSON.parse(raw);
 
   if (!Array.isArray(parsed)) {
@@ -160,8 +401,9 @@ async function readProjectRecordsFromDisk(): Promise<ProjectRecord[]> {
 }
 
 async function writeProjectRecordsToDisk(records: ProjectRecord[]) {
-  await mkdir(DATA_DIR, { recursive: true });
-  await writeFile(PROJECTS_FILE, `${JSON.stringify(records, null, 2)}\n`, "utf8");
+  const dataDir = resolveProjectDataDir();
+  await mkdir(dataDir, { recursive: true });
+  await writeFile(path.join(dataDir, "projects.json"), `${JSON.stringify(records, null, 2)}\n`, "utf8");
 }
 
 function parseProjectRecord(value: SerializedProjectRecord): ProjectRecord {
@@ -229,4 +471,30 @@ function createUniqueNodeId(label: string, type: string, existingIds: Set<string
   }
 
   return `${baseId}-${suffix}`;
+}
+
+function reserveUniqueNodeId(label: string, type: string, existingIds: Set<string>) {
+  const nodeId = createUniqueNodeId(label, type, existingIds);
+  existingIds.add(nodeId);
+  return nodeId;
+}
+
+function resolveProjectDataDir() {
+  const cwd = process.cwd();
+  const candidates = [
+    path.join(cwd, "src", "data"),
+    path.join(cwd, "app", "src", "data"),
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return candidates[0];
+}
+
+function getProjectsFilePath() {
+  return path.join(resolveProjectDataDir(), "projects.json");
 }

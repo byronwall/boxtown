@@ -52,6 +52,7 @@ const generatedNodeBatchSchema = z.object({
         depth: z.number().int().min(0),
         purpose: z.string().min(1),
         implementation: z.string().min(1),
+        context: z.string().default(""),
       }),
     )
     .min(1)

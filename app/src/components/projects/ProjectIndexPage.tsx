@@ -8,10 +8,11 @@ import { Heading } from "~/components/ui/heading";
 import { Input } from "~/components/ui/input";
 import { Text } from "~/components/ui/text";
 import type { ProjectSummary } from "~/lib/projects/types";
+import { ProjectDeleteControl } from "./ProjectDeleteControl";
 
 interface ProjectIndexPageProps {
   projects: ProjectSummary[];
-  createProjectAction: any;
+  createProjectActionUrl: string;
   createProjectSubmission?: { pending: boolean };
 }
 
@@ -119,7 +120,7 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
                 </Card.Description>
               </Card.Header>
               <Card.Body px="4" py="3">
-                <form action={props.createProjectAction} method="post">
+                <form action={props.createProjectActionUrl} method="post">
                   <VStack alignItems="stretch" gap="3">
                     <Field.Root>
                       <Field.Label fontSize="xs" textTransform="uppercase" letterSpacing="0.16em" fontFamily={monoFont}>
@@ -196,75 +197,87 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
               >
                 <For each={props.projects}>
                   {(project) => (
-                    <A href={`/projects/${project.id}`} style={{ display: "block", "text-decoration": "none" }}>
-                      <Box
-                        h="full"
+                    <Box
+                      h="full"
+                      borderBottomWidth="1px"
+                      borderRightWidth={{ base: "0", xl: "1px" }}
+                      borderColor="#596057"
+                      bg="#e8ebe5"
+                    >
+                      <HStack
+                        justifyContent="space-between"
+                        alignItems="center"
+                        gap="3"
+                        px="4"
+                        py="2"
                         borderBottomWidth="1px"
-                        borderRightWidth={{ base: "0", xl: "1px" }}
-                        borderColor="#596057"
-                        bg="#e8ebe5"
-                        transition="background-color 120ms ease"
-                        _hover={{ bg: "#edf0eb" }}
+                        borderColor="#6a7168"
+                        bg="#dde2db"
                       >
-                        <Grid
-                          gridTemplateColumns={{ base: "1fr", md: "minmax(0, 1fr) auto" }}
-                          gap="0"
-                          h="full"
+                        <Text
+                          as="div"
+                          textStyle="xs"
+                          textTransform="uppercase"
+                          letterSpacing="0.18em"
+                          fontFamily={monoFont}
+                          color="#4a524a"
                         >
-                          <Box px="4" py="3" borderBottomWidth={{ base: "1px", md: "0" }} borderRightWidth={{ base: "0", md: "1px" }} borderColor="#6a7168">
-                            <HStack justifyContent="space-between" alignItems="start" gap="3">
-                              <Box minW="0">
-                                <Text
-                                  as="div"
-                                  textStyle="xs"
-                                  textTransform="uppercase"
-                                  letterSpacing="0.18em"
-                                  fontFamily={monoFont}
-                                  color="#4a524a"
-                                >
-                                  {project.id}
-                                </Text>
-                                <Heading as="h3" textStyle="md" mt="1" lineHeight="1.05">
-                                  {project.name}
-                                </Heading>
-                                <Text mt="2" textStyle="sm" color="#414740">
-                                  {project.description}
-                                </Text>
-                              </Box>
-                              <Text
-                                as="span"
-                                textStyle="xs"
-                                px="2"
-                                py="1"
-                                borderWidth="1px"
-                                borderColor="#5a6258"
-                                fontFamily={monoFont}
-                                textTransform="uppercase"
-                                color="#1e4f39"
-                                whiteSpace="nowrap"
-                              >
-                                Grid
-                              </Text>
-                            </HStack>
-                          </Box>
-
+                          {project.id}
+                        </Text>
+                        <ProjectDeleteControl projectId={project.id} projectName={project.name} />
+                      </HStack>
+                      <A href={`/projects/${project.id}`} style={{ display: "block", "text-decoration": "none" }}>
+                        <Box transition="background-color 120ms ease" _hover={{ bg: "#edf0eb" }}>
                           <Grid
-                            minW={{ base: "unset", md: "220px" }}
-                            gridTemplateColumns="repeat(2, minmax(0, 1fr))"
-                            gridTemplateRows="repeat(2, minmax(0, 1fr))"
+                            gridTemplateColumns={{ base: "1fr", md: "minmax(0, 1fr) auto" }}
+                            gap="0"
+                            h="full"
                           >
-                            <ProjectStat label="Nodes" value={String(project.nodeCount)} />
-                            <ProjectStat label="Links" value={String(project.linkCount)} />
-                            <ProjectStat
-                              label="Updated"
-                              value={dateFormatter.format(new Date(project.updatedAt))}
-                              compact
-                            />
-                            <ProjectStat label="Route" value="Open" compact accent />
+                            <Box px="4" py="3" borderBottomWidth={{ base: "1px", md: "0" }} borderRightWidth={{ base: "0", md: "1px" }} borderColor="#6a7168">
+                              <HStack justifyContent="space-between" alignItems="start" gap="3">
+                                <Box minW="0">
+                                  <Heading as="h3" textStyle="md" lineHeight="1.05">
+                                    {project.name}
+                                  </Heading>
+                                  <Text mt="2" textStyle="sm" color="#414740">
+                                    {project.description}
+                                  </Text>
+                                </Box>
+                                <Text
+                                  as="span"
+                                  textStyle="xs"
+                                  px="2"
+                                  py="1"
+                                  borderWidth="1px"
+                                  borderColor="#5a6258"
+                                  fontFamily={monoFont}
+                                  textTransform="uppercase"
+                                  color="#1e4f39"
+                                  whiteSpace="nowrap"
+                                >
+                                  Grid
+                                </Text>
+                              </HStack>
+                            </Box>
+
+                            <Grid
+                              minW={{ base: "unset", md: "220px" }}
+                              gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+                              gridTemplateRows="repeat(2, minmax(0, 1fr))"
+                            >
+                              <ProjectStat label="Nodes" value={String(project.nodeCount)} />
+                              <ProjectStat label="Links" value={String(project.linkCount)} />
+                              <ProjectStat
+                                label="Updated"
+                                value={dateFormatter.format(new Date(project.updatedAt))}
+                                compact
+                              />
+                              <ProjectStat label="Route" value="Open" compact accent />
+                            </Grid>
                           </Grid>
-                        </Grid>
-                      </Box>
-                    </A>
+                        </Box>
+                      </A>
+                    </Box>
                   )}
                 </For>
               </Grid>

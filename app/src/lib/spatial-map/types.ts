@@ -5,6 +5,9 @@ export interface MapNode {
   depth: number;
   purpose: string;
   implementation: string;
+  context: string;
+  rawContext: string;
+  contextMode: "context-only" | "structured";
 }
 
 export interface MapLink {

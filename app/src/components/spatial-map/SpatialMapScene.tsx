@@ -43,6 +43,8 @@ export function SpatialMapScene() {
               <SpatialMapNode
                 item={item}
                 onClick={controller.sceneHandlers.onNodeClick}
+                onIsolateClick={controller.sceneHandlers.onNodeIsolateClick}
+                isIsolationTarget={controller.isolatedNodeId() === item.node.id}
                 onPointerDown={controller.sceneHandlers.onNodePointerDown}
                 onPointerEnter={controller.sceneHandlers.onNodePointerEnter}
                 onPointerLeave={controller.sceneHandlers.onNodePointerLeave}
@@ -58,6 +60,8 @@ export function SpatialMapScene() {
 function SpatialMapNode(props: {
   item: NodeVisualState;
   onClick: (nodeId: string) => void;
+  onIsolateClick: (nodeId: string) => void;
+  isIsolationTarget: boolean;
   onPointerDown: (nodeId: string) => void;
   onPointerEnter: (nodeId: string) => void;
   onPointerLeave: (nodeId: string) => void;
@@ -82,7 +86,11 @@ function SpatialMapNode(props: {
       onPointerEnter={() => props.onPointerEnter(props.item.node.id)}
       onPointerLeave={() => props.onPointerLeave(props.item.node.id)}
     >
-      <rect width={props.item.node.width} height={props.item.node.height} />
+      <rect
+        class="spatial-map-node-body"
+        width={props.item.node.width}
+        height={props.item.node.height}
+      />
       <text
         class="label"
         x={props.item.node.width / 2}
@@ -103,13 +111,42 @@ function SpatialMapNode(props: {
         {props.item.node.type}
       </text>
       <g
-        class="spatial-map-node-hover"
-        transform={`translate(${props.item.node.width - 14}, 14)`}
+        class="spatial-map-node-actions"
+        transform={`translate(${props.item.node.width - 18}, 18)`}
       >
-        <circle r="9" />
-        <text text-anchor="middle" dominant-baseline="central">
-          i
-        </text>
+        <g
+          class={`spatial-map-node-action${props.isIsolationTarget ? " is-active" : ""}`}
+          role="button"
+          tabindex="0"
+          aria-label={props.isIsolationTarget ? "Isolation active" : "Isolate related nodes"}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+          }}
+          onClick={(event) => {
+            event.stopPropagation();
+            props.onIsolateClick(props.item.node.id);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+              props.onIsolateClick(props.item.node.id);
+            }
+          }}
+        >
+          <rect
+            class="spatial-map-node-action-body"
+            x="-16"
+            y="-10"
+            width="32"
+            height="20"
+            rx="0"
+            ry="0"
+          />
+          <text text-anchor="middle" dominant-baseline="central">
+            {props.isIsolationTarget ? "ON" : "ISO"}
+          </text>
+        </g>
       </g>
     </g>
   );
