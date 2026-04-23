@@ -2,6 +2,7 @@ import { createMemo, For, Show } from "solid-js";
 import { Box, HStack, VStack } from "styled-system/jsx";
 
 import type { MapNode, SpatialMapData } from "~/lib/spatial-map/types";
+import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
 
 interface SpatialMapTreeItem {
@@ -82,29 +83,38 @@ function SpatialMapTreeNode(props: {
 
   return (
     <Box class="spatial-map-tree-node">
-      <button
-        type="button"
-        role="treeitem"
-        aria-level={props.depth + 1}
-        aria-expanded={children().length > 0 ? true : undefined}
-        aria-selected={isSelected()}
-        class={`spatial-map-tree-row spatial-map-tree-row--${props.item.node.type}${isSelected() ? " is-selected" : ""}`}
-        style={{ "--spatial-map-tree-indent": `${props.depth * 24}px` }}
-        onClick={() => spatialMap.setSelectedNodeId(props.item.node.id)}
-      >
-        <span class="spatial-map-tree-rail" aria-hidden="true" />
-        <span class="spatial-map-tree-copy">
-          <span class="spatial-map-tree-label">{props.item.node.label}</span>
-          <span class="spatial-map-tree-purpose">{props.item.node.purpose}</span>
-        </span>
-        <HStack gap="1" class="spatial-map-tree-meta">
-          <span>{props.item.node.type}</span>
-          <span>D{props.item.node.depth}</span>
-          <span>
-            {children().length} {children().length === 1 ? "child" : "children"}
+      <SpatialMapImageDropTarget nodeId={props.item.node.id} class="spatial-map-tree-drop-target">
+        <div
+          role="treeitem"
+          tabindex="0"
+          aria-level={props.depth + 1}
+          aria-expanded={children().length > 0 ? true : undefined}
+          aria-selected={isSelected()}
+          class={`spatial-map-tree-row spatial-map-tree-row--${props.item.node.type}${isSelected() ? " is-selected" : ""}`}
+          style={{ "--spatial-map-tree-indent": `${props.depth * 24}px` }}
+          onClick={() => spatialMap.setSelectedNodeId(props.item.node.id)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              spatialMap.setSelectedNodeId(props.item.node.id);
+            }
+          }}
+        >
+          <span class="spatial-map-tree-rail" aria-hidden="true" />
+          <span class="spatial-map-tree-copy">
+            <span class="spatial-map-tree-label">{props.item.node.label}</span>
+            <span class="spatial-map-tree-purpose">{props.item.node.purpose}</span>
+            <SpatialMapImageStrip node={props.item.node} variant="tree" />
           </span>
-        </HStack>
-      </button>
+          <HStack gap="1" class="spatial-map-tree-meta">
+            <span>{props.item.node.type}</span>
+            <span>D{props.item.node.depth}</span>
+            <span>
+              {children().length} {children().length === 1 ? "child" : "children"}
+            </span>
+          </HStack>
+        </div>
+      </SpatialMapImageDropTarget>
 
       <Show when={children().length > 0}>
         <VStack alignItems="stretch" gap="1" class="spatial-map-tree-children" role="group">

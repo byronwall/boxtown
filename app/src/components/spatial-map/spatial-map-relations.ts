@@ -5,7 +5,11 @@ import type {
 } from "~/lib/spatial-map/types";
 import { getLinkLabel } from "~/lib/spatial-map/links";
 
-import type { EdgeVisualState, NodeVisualState } from "./spatial-map-canvas.types";
+import type {
+  EdgeVisualState,
+  NodeVisualState,
+  TransitionVisualState,
+} from "./spatial-map-canvas.types";
 
 export interface RelationMapItem {
   kind: string;
@@ -47,6 +51,7 @@ export function createOrderedNodeState(options: {
   positionedNodes: PositionedMapNode[];
   relatedSet: Set<string>;
   selectedNodeId: string | null;
+  transitionVisualState?: Map<string, TransitionVisualState>;
 }): NodeVisualState[] {
   const {
     activeNodeId,
@@ -54,21 +59,22 @@ export function createOrderedNodeState(options: {
     positionedNodes,
     relatedSet,
     selectedNodeId,
+    transitionVisualState,
   } = options;
 
   return positionedNodes.map((node) => {
-    const isActive = Boolean(activeNodeId && relatedSet.has(node.id));
     const isDimmed = Boolean(activeNodeId && !relatedSet.has(node.id));
     const isHovered = hoveredNodeId === node.id;
     const isSelected = selectedNodeId === node.id;
-    const isCore = isHovered || isSelected;
+    const transitionState = transitionVisualState?.get(node.id);
+    const baseOpacity = isDimmed ? 0.22 : 1;
 
     return {
       node,
       isHovered,
       isSelected,
-      opacity: isDimmed ? 0.22 : 1,
-      scale: isCore ? 1.045 : isActive ? 1.02 : isDimmed ? 0.985 : 1,
+      opacity: baseOpacity * (transitionState?.opacity ?? 1),
+      scale: 1,
     };
   });
 }
@@ -79,8 +85,16 @@ export function createEdgeState(options: {
   nodesById: Map<string, PositionedMapNode>;
   relatedSet: Set<string>;
   showEdges: boolean;
+  transitionVisualState?: Map<string, TransitionVisualState>;
 }): EdgeVisualState[] {
-  const { activeNodeId, links, nodesById, relatedSet, showEdges } = options;
+  const {
+    activeNodeId,
+    links,
+    nodesById,
+    relatedSet,
+    showEdges,
+    transitionVisualState,
+  } = options;
 
   return links.flatMap((link, index) => {
     const source = nodesById.get(link.source);
@@ -103,11 +117,16 @@ export function createEdgeState(options: {
         ? 0.38
         : 0;
 
+    const transitionOpacity = Math.min(
+      transitionVisualState?.get(link.source)?.opacity ?? 1,
+      transitionVisualState?.get(link.target)?.opacity ?? 1,
+    );
+
     return [
       {
         linkId: `${link.source}-${link.target}-${getLinkLabel(link)}-${index}`,
         path: `M ${source.x} ${source.y} L ${target.x} ${target.y}`,
-        opacity: visible ? opacity : 0,
+        opacity: visible ? opacity * transitionOpacity : 0,
       },
     ];
   });

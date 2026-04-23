@@ -41,20 +41,12 @@ const questionSetSchema = z.object({
     .max(4),
 });
 
-const generatedLinkSchema = z.union([
-  z.object({
-    source: z.string().min(1),
-    target: z.string().min(1),
-    parentChild: z.literal(true),
-    relationship: z.undefined().optional(),
-  }),
-  z.object({
-    source: z.string().min(1),
-    target: z.string().min(1),
-    parentChild: z.literal(false),
-    relationship: z.enum(["related", "dependency", "reuse"]),
-  }),
-]);
+const generatedLinkSchema = z.object({
+  source: z.string().min(1),
+  target: z.string().min(1),
+  parentChild: z.boolean(),
+  relationship: z.enum(["related", "dependency", "reuse"]).optional(),
+});
 
 const generatedNodeBatchSchema = z.object({
   summary: z.string().min(1),
@@ -267,12 +259,37 @@ function sanitizeSuggestions(suggestions: FollowUpSuggestion[]) {
   }));
 }
 
+function sanitizeGeneratedBatch(batch: z.infer<typeof generatedNodeBatchSchema>): GeneratedNodeBatch {
+  return {
+    ...batch,
+    nodes: batch.nodes.map((node) => ({
+      ...node,
+      rawContext: "",
+      contextMode: "structured" as const,
+    })),
+    links: batch.links.map((link) =>
+      link.parentChild
+        ? {
+            source: link.source,
+            target: link.target,
+            parentChild: true,
+          }
+        : {
+            source: link.source,
+            target: link.target,
+            parentChild: false,
+            relationship: link.relationship ?? "related",
+          },
+    ),
+  };
+}
+
 export function parseQuestionSet(input: unknown) {
   return questionSetSchema.parse(input);
 }
 
 export function parseGeneratedNodeBatch(input: unknown) {
-  return generatedNodeBatchSchema.parse(input);
+  return sanitizeGeneratedBatch(generatedNodeBatchSchema.parse(input));
 }
 
 export function parseFollowUpSuggestions(input: unknown) {
@@ -413,7 +430,7 @@ async function runCompletionPhase(runId: string) {
       throw new Error("Add-nodes run is no longer available.");
     }
 
-    const generated = await runStructuredPrompt({
+    const generatedResult = await runStructuredPrompt({
       modelId: getHeavyModel(),
       prompt: buildNodeGenerationPrompt({
         project: state.project,
@@ -425,9 +442,10 @@ async function runCompletionPhase(runId: string) {
       schema: generatedNodeBatchSchema,
       reasoningEffort: "medium",
     });
+    const generated = sanitizeGeneratedBatch(generatedResult);
 
     patchAddNodesRun(runId, (run) => {
-      run.state.generatedBatch = generated as GeneratedNodeBatch;
+      run.state.generatedBatch = generated;
       completeStep(
         run.snapshot,
         "generate-nodes",
@@ -438,7 +456,7 @@ async function runCompletionPhase(runId: string) {
 
     const persistedProject = await appendGeneratedNodesToProjectOnDisk({
       projectId: snapshot.projectId,
-      generated: generated as GeneratedNodeBatch,
+      generated,
     });
 
     patchAddNodesRun(runId, (run) => {

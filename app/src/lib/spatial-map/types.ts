@@ -8,7 +8,7 @@ export interface MapNode {
   context: string;
   rawContext: string;
   contextMode: "context-only" | "structured";
-  images: MapNodeImage[];
+  images?: MapNodeImage[];
 }
 
 export interface MapNodeImage {

@@ -12,6 +12,7 @@ import type { ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
 import { Text } from "~/components/ui/text";
 import type { MapNode } from "~/lib/spatial-map/types";
+import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 
@@ -116,6 +117,42 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
               )}
             </Show>
           </Box>
+
+          <Show when={selectedNode()}>
+            {(node) => (
+              <SpatialMapImageDropTarget
+                nodeId={node().id}
+                class="spatial-map-inspector-section spatial-map-image-drop-panel"
+              >
+                <HStack justifyContent="space-between" alignItems="center" gap="3">
+                  <Text
+                    as="h3"
+                    margin="0"
+                    fontSize="sm"
+                    fontWeight="semibold"
+                    class="spatial-map-inspector-section-title is-heading"
+                  >
+                    Images
+                  </Text>
+                  <Text as="span" margin="0" fontSize="xs" class="spatial-map-empty-state">
+                    Drop or paste
+                  </Text>
+                </HStack>
+                <Show
+                  when={(node().images ?? []).length > 0}
+                  fallback={
+                    <Box class="spatial-map-context-empty">
+                      <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+                        Drop image files here, onto the canvas node, or paste while this node is selected.
+                      </Text>
+                    </Box>
+                  }
+                >
+                  <SpatialMapImageStrip node={node()} variant="inspector" />
+                </Show>
+              </SpatialMapImageDropTarget>
+            )}
+          </Show>
 
           <Show when={isHydrated() && isContextOnlyNode() && selectedNode()}>
             {(node) => (

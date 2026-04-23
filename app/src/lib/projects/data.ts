@@ -88,6 +88,33 @@ export const updateProjectNodeContext = action(
   "update-project-node-context",
 );
 
+export const addProjectNodeImages = action(
+  async (formData: FormData) => {
+    "use server";
+    const { addProjectNodeImagesOnDisk } = await import("./data.server");
+
+    const projectId = formData.get("projectId");
+    const nodeId = formData.get("nodeId");
+    const images = formData
+      .getAll("images")
+      .filter((value): value is File => value instanceof File && value.size > 0);
+
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+    if (typeof nodeId !== "string" || nodeId.trim().length === 0) {
+      throw new Error("A node id is required.");
+    }
+
+    return addProjectNodeImagesOnDisk({
+      projectId,
+      nodeId,
+      images,
+    });
+  },
+  "add-project-node-images",
+);
+
 export const createProjectContextNode = action(
   async (formData: FormData) => {
     "use server";

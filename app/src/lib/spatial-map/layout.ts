@@ -1,4 +1,5 @@
 import type { PositionedMapNode, SpatialMapData, NodeSize } from "./types";
+import { alignLayoutBorders } from "./border-alignment";
 
 export const VIEWPORT_WIDTH = 1600;
 export const VIEWPORT_HEIGHT = 960;
@@ -71,6 +72,32 @@ export function filterSpatialMapDataByRelatedNodes(
 
   const adjacency = buildAdjacencyMap(data);
   const visibleNodeIds = getRelatedSet(adjacency, coreId, maxDistance);
+
+  return {
+    nodes: data.nodes.filter((node) => visibleNodeIds.has(node.id)),
+    links: data.links.filter(
+      (link) => visibleNodeIds.has(link.source) && visibleNodeIds.has(link.target),
+    ),
+  };
+}
+
+export function filterSpatialMapDataForIsolation(
+  data: SpatialMapData,
+  coreId: string | null,
+  options: { includeLinked?: boolean; maxLinkedDistance?: number } = {},
+): SpatialMapData {
+  if (!coreId) {
+    return data;
+  }
+
+  const visibleNodeIds = getIsolationContinuitySet(data, coreId);
+
+  if (options.includeLinked) {
+    const adjacency = buildAdjacencyMap(data);
+    for (const nodeId of getRelatedSet(adjacency, coreId, options.maxLinkedDistance)) {
+      visibleNodeIds.add(nodeId);
+    }
+  }
 
   return {
     nodes: data.nodes.filter((node) => visibleNodeIds.has(node.id)),
@@ -153,6 +180,103 @@ export function getRelatedSet(
   }
 
   return related;
+}
+
+export function getDescendantSet(data: SpatialMapData, coreId: string | null): Set<string> {
+  if (!coreId) {
+    return new Set();
+  }
+
+  const { childrenByParentId } = buildHierarchyIndex(data);
+  const descendants = new Set([coreId]);
+  const queue = [coreId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    if (!currentId) {
+      continue;
+    }
+
+    for (const childId of childrenByParentId.get(currentId) ?? []) {
+      if (descendants.has(childId)) {
+        continue;
+      }
+
+      descendants.add(childId);
+      queue.push(childId);
+    }
+  }
+
+  return descendants;
+}
+
+export function getIsolationContinuitySet(
+  data: SpatialMapData,
+  coreId: string | null,
+): Set<string> {
+  if (!coreId) {
+    return new Set();
+  }
+
+  const { childrenByParentId, parentsByChildId } = buildHierarchyIndex(data);
+  const visibleNodeIds = new Set([coreId]);
+  const descendantQueue = [coreId];
+  const ancestorQueue = [coreId];
+
+  while (descendantQueue.length > 0) {
+    const currentId = descendantQueue.shift();
+    if (!currentId) {
+      continue;
+    }
+
+    for (const childId of childrenByParentId.get(currentId) ?? []) {
+      if (visibleNodeIds.has(childId)) {
+        continue;
+      }
+
+      visibleNodeIds.add(childId);
+      descendantQueue.push(childId);
+    }
+  }
+
+  while (ancestorQueue.length > 0) {
+    const currentId = ancestorQueue.shift();
+    if (!currentId) {
+      continue;
+    }
+
+    for (const parentId of parentsByChildId.get(currentId) ?? []) {
+      if (visibleNodeIds.has(parentId)) {
+        continue;
+      }
+
+      visibleNodeIds.add(parentId);
+      ancestorQueue.push(parentId);
+    }
+  }
+
+  return visibleNodeIds;
+}
+
+function buildHierarchyIndex(data: SpatialMapData) {
+  const childrenByParentId = new Map<string, Set<string>>();
+  const parentsByChildId = new Map<string, Set<string>>();
+
+  for (const link of data.links) {
+    if (!link.parentChild) {
+      continue;
+    }
+
+    const children = childrenByParentId.get(link.source) ?? new Set<string>();
+    children.add(link.target);
+    childrenByParentId.set(link.source, children);
+
+    const parents = parentsByChildId.get(link.target) ?? new Set<string>();
+    parents.add(link.source);
+    parentsByChildId.set(link.target, parents);
+  }
+
+  return { childrenByParentId, parentsByChildId };
 }
 
 export function stepLayout(
@@ -282,10 +406,19 @@ export function solveStaticLayout(
   nextNodes = packLayout(nextNodes, adjacency);
   nextNodes = sealLayout(nextNodes, adjacency);
   nextNodes = rebalanceLayoutAspect(nextNodes);
+  nextNodes = fillViewportLayout(nextNodes);
   nextNodes = sealLayout(nextNodes, adjacency);
   nextNodes = snapLayoutToGrid(nextNodes, 4);
   nextNodes = resolveOverlaps(nextNodes);
   nextNodes = sealLayout(nextNodes, adjacency);
+  nextNodes = alignLayoutBorders(nextNodes, adjacency);
+  nextNodes = fillViewportLayout(nextNodes, {
+    targetWidthRatio: 0.64,
+    targetHeightRatio: 0.5,
+  });
+  nextNodes = alignLayoutBorders(nextNodes, adjacency);
+  nextNodes = snapLayoutToGrid(nextNodes, 4);
+  nextNodes = resolveOverlaps(nextNodes);
 
   return nextNodes.map((node) => ({ ...node, vx: 0, vy: 0 }));
 }
@@ -714,17 +847,24 @@ function scorePackedCandidate(
   const perimeter = bounds.width + bounds.height;
   const desiredAspect = VIEWPORT_WIDTH / VIEWPORT_HEIGHT;
   const aspect = bounds.width / Math.max(bounds.height, 1);
-  const aspectPenalty = Math.abs(Math.log(aspect / desiredAspect)) * 520;
+  const aspectError = Math.log(aspect / desiredAspect);
+  const aspectPenalty = Math.abs(aspectError) * 660 + Math.max(0, -aspectError) * 520;
   const contact = measureSharedBorder(placedNodes, node, candidate);
-  const widthReward = bounds.width / VIEWPORT_WIDTH;
-  const heightOverflowPenalty = Math.max(0, bounds.height / VIEWPORT_HEIGHT - 0.82) * 320;
+  const widthRatio = bounds.width / VIEWPORT_WIDTH;
+  const heightRatio = bounds.height / VIEWPORT_HEIGHT;
+  const widthUnderfillPenalty = Math.max(0, 0.76 - widthRatio) * 760;
+  const heightUnderfillPenalty = Math.max(0, 0.56 - heightRatio) * 160;
+  const heightOverflowPenalty = Math.max(0, heightRatio - 0.78) * 620;
+  const viewportFillReward = Math.min(widthRatio, 0.9) * 230 + Math.min(heightRatio, 0.72) * 70;
 
   return (
-    distanceToTarget * 0.3 +
-    area * 0.001 +
-    perimeter * 0.03 +
+    distanceToTarget * 0.22 +
+    area * 0.00035 +
+    perimeter * 0.018 +
     aspectPenalty -
-    widthReward * 120 +
+    viewportFillReward +
+    widthUnderfillPenalty +
+    heightUnderfillPenalty +
     heightOverflowPenalty -
     contact.sharedBorder * 5 -
     contact.touchingNeighbors * 80
@@ -869,6 +1009,43 @@ function rebalanceLayoutAspect(nodes: PositionedMapNode[]) {
       y: position.y,
     };
   });
+}
+
+function fillViewportLayout(
+  nodes: PositionedMapNode[],
+  options: { targetWidthRatio?: number; targetHeightRatio?: number } = {},
+) {
+  const bounds = getLayoutBounds(nodes);
+  const availableWidth = VIEWPORT_WIDTH - 40;
+  const availableHeight = VIEWPORT_HEIGHT - 40;
+  const targetWidth = availableWidth * (options.targetWidthRatio ?? 0.72);
+  const targetHeight = availableHeight * (options.targetHeightRatio ?? 0.62);
+  const scaleX = clamp(
+    targetWidth / Math.max(bounds.width, 1),
+    1,
+    availableWidth / bounds.width,
+  );
+  const scaleY = clamp(
+    targetHeight / Math.max(bounds.height, 1),
+    1,
+    availableHeight / bounds.height,
+  );
+
+  if (scaleX <= 1.01 && scaleY <= 1.01) {
+    return nodes;
+  }
+
+  const centerX = (bounds.minX + bounds.maxX) / 2;
+  const centerY = (bounds.minY + bounds.maxY) / 2;
+
+  return recenterLayout(
+    nodes.map((node) => ({
+      ...node,
+      x: centerX + (node.x - centerX) * scaleX,
+      y: centerY + (node.y - centerY) * scaleY,
+    })),
+    20,
+  );
 }
 
 function getLayoutBounds(nodes: PositionedMapNode[]) {

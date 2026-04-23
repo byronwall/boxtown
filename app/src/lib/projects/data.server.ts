@@ -1,9 +1,10 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import type { GeneratedNodeBatch } from "~/lib/add-nodes/types";
 import { createParentChildLink, getLinkKey } from "~/lib/spatial-map/links";
-import type { SpatialMapData } from "~/lib/spatial-map/types";
+import type { MapNodeImage, SpatialMapData } from "~/lib/spatial-map/types";
 import { parseSpatialMapData } from "~/lib/spatial-map/validate";
 import { splitMarkdownIntoHeadingSections } from "./context-node-markdown";
 import type { ProjectRecord, ProjectSummary } from "./types";
@@ -29,6 +30,12 @@ interface CreateContextNodeInput {
 interface DeleteProjectNodeInput {
   projectId: string;
   nodeId: string;
+}
+
+interface AddProjectNodeImagesInput {
+  projectId: string;
+  nodeId: string;
+  images: File[];
 }
 
 interface SerializedProjectRecord {
@@ -205,6 +212,69 @@ export async function updateProjectNodeContextOnDisk(
   const nextRecord: ProjectRecord = {
     ...current,
     updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: nextNodes,
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return nextRecord;
+}
+
+export async function addProjectNodeImagesOnDisk(
+  input: AddProjectNodeImagesInput,
+): Promise<ProjectRecord> {
+  const imageFiles = input.images.filter((file) => file.size > 0);
+  if (imageFiles.length === 0) {
+    throw new Error("At least one image file is required.");
+  }
+
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
+
+  if (nodeIndex === -1) {
+    throw new Error("Node not found.");
+  }
+
+  const now = new Date().toISOString();
+  const imageDir = getProjectNodeImageDir(input.projectId, input.nodeId);
+  await mkdir(imageDir, { recursive: true });
+
+  const storedImages: MapNodeImage[] = [];
+  for (const file of imageFiles) {
+    const extension = getImageFileExtension(file);
+    const imageId = randomUUID();
+    const filename = `${imageId}${extension}`;
+    await writeFile(path.join(imageDir, filename), Buffer.from(await file.arrayBuffer()));
+    storedImages.push({
+      id: imageId,
+      src: `/api/projects/${encodeURIComponent(input.projectId)}/images/${encodeURIComponent(input.nodeId)}/${encodeURIComponent(filename)}`,
+      filename,
+      originalName: sanitizeImageOriginalName(file.name),
+      mimeType: file.type,
+      size: file.size,
+      createdAt: now,
+    });
+  }
+
+  const nextNodes = current.spatialMap.nodes.map((node, index) =>
+    index === nodeIndex
+      ? { ...node, images: [...(node.images ?? []), ...storedImages] }
+      : node,
+  );
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: now,
     spatialMap: {
       ...current.spatialMap,
       nodes: nextNodes,
@@ -483,6 +553,51 @@ function reserveUniqueNodeId(label: string, type: string, existingIds: Set<strin
   const nodeId = createUniqueNodeId(label, type, existingIds);
   existingIds.add(nodeId);
   return nodeId;
+}
+
+const IMAGE_EXTENSIONS_BY_MIME_TYPE: Record<string, string> = {
+  "image/avif": ".avif",
+  "image/gif": ".gif",
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+};
+
+function getImageFileExtension(file: File) {
+  const extension = IMAGE_EXTENSIONS_BY_MIME_TYPE[file.type];
+  if (!extension) {
+    throw new Error("Only AVIF, GIF, JPEG, PNG, and WebP images are supported.");
+  }
+
+  return extension;
+}
+
+function sanitizeImageOriginalName(name: string) {
+  const sanitized = name.trim().replace(/[^\w. -]+/g, "_").slice(0, 160);
+  return sanitized || "image";
+}
+
+export function getProjectNodeImageFilePath(input: {
+  projectId: string;
+  nodeId: string;
+  filename: string;
+}) {
+  const imageDir = getProjectNodeImageDir(input.projectId, input.nodeId);
+  const filePath = path.join(imageDir, input.filename);
+
+  if (!filePath.startsWith(`${imageDir}${path.sep}`)) {
+    throw new Error("Invalid image path.");
+  }
+
+  return filePath;
+}
+
+function getProjectNodeImageDir(projectId: string, nodeId: string) {
+  return path.join(resolveProjectDataDir(), "images", safePathSegment(projectId), safePathSegment(nodeId));
+}
+
+function safePathSegment(value: string) {
+  return value.replace(/[^a-zA-Z0-9_-]+/g, "_") || "unknown";
 }
 
 function resolveProjectDataDir() {

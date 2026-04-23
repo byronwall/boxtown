@@ -18,6 +18,11 @@ export interface NodeVisualState {
   scale: number;
 }
 
+export interface TransitionVisualState {
+  opacity: number;
+  scale: number;
+}
+
 export interface EdgeVisualState {
   linkId: string;
   path: string;
@@ -35,8 +40,9 @@ export interface ViewportPointerHandlers {
 
 export interface SceneInteractionHandlers {
   onBackgroundClick: JSX.EventHandlerUnion<SVGSVGElement, MouseEvent>;
+  onBackgroundDoubleClick: JSX.EventHandlerUnion<SVGSVGElement, MouseEvent>;
   onNodeClick: (nodeId: string) => void;
-  onNodeIsolateClick: (nodeId: string) => void;
+  onNodeDoubleClick: (nodeId: string) => void;
   onNodePointerDown: (nodeId: string) => void;
   onNodePointerEnter: (nodeId: string) => void;
   onNodePointerLeave: (nodeId: string) => void;
@@ -61,6 +67,7 @@ export interface SpatialMapCanvasController {
   }>;
   selectedNode: Accessor<MapNode | null>;
   showEdges: Accessor<boolean>;
+  showLinkedInIsolation: Accessor<boolean>;
   sourceNodesById: Accessor<Map<string, MapNode>>;
   availableDepthLevels: Accessor<number[]>;
   visibleData: Accessor<SpatialMapData>;
@@ -75,6 +82,7 @@ export interface SpatialMapCanvasController {
   setSelectedNodeId: (value: string | null | ((current: string | null) => string | null)) => void;
   setViewMode: (value: SpatialMapViewMode) => void;
   setVisibleDepthLevel: (value: number) => void;
+  toggleLinkedInIsolation: () => void;
   toggleEdges: () => void;
   reflowLayout: () => void;
   fitCameraToNodes: () => void;

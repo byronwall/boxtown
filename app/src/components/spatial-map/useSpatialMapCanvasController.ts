@@ -4,12 +4,13 @@ import {
   createSignal,
   onCleanup,
   onMount,
+  untrack,
   type Accessor,
 } from "solid-js";
 import {
   buildAdjacencyMap,
   createInitialLayout,
-  filterSpatialMapDataByRelatedNodes,
+  filterSpatialMapDataForIsolation,
   getRelatedSet,
   VIEWPORT_HEIGHT,
   VIEWPORT_WIDTH,
@@ -35,6 +36,16 @@ import {
   createOrderedNodeState,
   describeRelations,
 } from "./spatial-map-relations";
+import {
+  createLayoutTransitionItems,
+  easeInOutCubic,
+  getLayoutTransitionAnchor,
+  hasLayoutTransitionWork,
+  interpolateCamera,
+  interpolateNumber,
+  interpolatePositionedNode,
+  LAYOUT_TRANSITION_DURATION_MS,
+} from "./spatial-map-layout-transition";
 
 interface PanSession {
   pointerId: number;
@@ -53,11 +64,13 @@ export function useSpatialMapCanvasController(
   data: Accessor<SpatialMapData>,
 ): SpatialMapCanvasController {
   const [positionedNodes, setPositionedNodes] = createSignal(createInitialLayout(data()));
-  const [selectedNodeId, setSelectedNodeId] = createSignal<string | null>(
-    data().nodes[0]?.id ?? null,
+  const [transitionVisualState, setTransitionVisualState] = createSignal(
+    new Map<string, { opacity: number; scale: number }>(),
   );
+  const [selectedNodeId, setSelectedNodeId] = createSignal<string | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = createSignal<string | null>(null);
   const [isolatedNodeId, setIsolatedNodeId] = createSignal<string | null>(null);
+  const [showLinkedInIsolation, setShowLinkedInIsolation] = createSignal(false);
   const [showEdges, setShowEdges] = createSignal(false);
   const [inspectorOpen, setInspectorOpen] = createSignal(true);
   const [addNodesOpen, setAddNodesOpen] = createSignal(false);
@@ -78,7 +91,9 @@ export function useSpatialMapCanvasController(
   );
   const isolationModeActive = createMemo(() => Boolean(isolatedNodeId()));
   const isolatedData = createMemo(() =>
-    filterSpatialMapDataByRelatedNodes(data(), isolatedNodeId()),
+    filterSpatialMapDataForIsolation(data(), isolatedNodeId(), {
+      includeLinked: showLinkedInIsolation(),
+    }),
   );
   const availableDepthLevels = createMemo(() =>
     Array.from({ length: getDepthLevelCount(isolatedData()) }, (_, index) => index + 1),
@@ -90,6 +105,11 @@ export function useSpatialMapCanvasController(
   let viewportRef: HTMLDivElement | undefined;
   let cameraSnapshot = initialCamera;
   let cameraFrame: number | undefined;
+  let cameraTweenFrame: number | undefined;
+  let layoutTransitionFrame: number | undefined;
+  let layoutTransitionTarget: PositionedMapNode[] | undefined;
+  let layoutTransitionInitialized = false;
+  let pendingTransitionAnchorId: string | null = null;
   let resizeObserver: ResizeObserver | undefined;
   let panSession: PanSession | undefined;
   let suppressNodeClick = false;
@@ -100,7 +120,7 @@ export function useSpatialMapCanvasController(
     height: VIEWPORT_HEIGHT,
   };
 
-  const activeNodeId = createMemo(() => hoveredNodeId() ?? selectedNodeId());
+  const activeNodeId = createMemo(() => selectedNodeId());
   const relatedSet = createMemo(() => getRelatedSet(adjacency(), activeNodeId()));
   const selectedNode = createMemo(() =>
     selectedNodeId() ? sourceNodesById().get(selectedNodeId() ?? "") ?? null : null,
@@ -128,6 +148,7 @@ export function useSpatialMapCanvasController(
       positionedNodes: positionedNodes(),
       relatedSet: relatedSet(),
       selectedNodeId: selectedNodeId(),
+      transitionVisualState: transitionVisualState(),
     }),
   );
   const edgeState = createMemo(() =>
@@ -137,6 +158,7 @@ export function useSpatialMapCanvasController(
       nodesById: nodesById(),
       relatedSet: relatedSet(),
       showEdges: showEdges(),
+      transitionVisualState: transitionVisualState(),
     }),
   );
 
@@ -149,17 +171,15 @@ export function useSpatialMapCanvasController(
     const nextData = visibleData();
     const sourceData = data();
     const nextLayout = createInitialLayout(nextData);
-    setPositionedNodes(nextLayout);
+    transitionToLayout(nextLayout, pendingTransitionAnchorId);
+    pendingTransitionAnchorId = null;
     setHoveredNodeId(null);
     setIsolatedNodeId((current) =>
       current && sourceData.nodes.some((node) => node.id === current) ? current : null,
     );
     setSelectedNodeId((current) =>
-      current && nextData.nodes.some((node) => node.id === current)
-        ? current
-        : nextData.nodes[0]?.id ?? null,
+      current && nextData.nodes.some((node) => node.id === current) ? current : null,
     );
-    queueMicrotask(() => fitCameraToLayout(nextLayout));
   });
 
   const updateViewportSize = () => {
@@ -182,7 +202,35 @@ export function useSpatialMapCanvasController(
     return viewportSize.width / viewportSize.height;
   };
 
+  const cancelCameraTween = () => {
+    if (cameraTweenFrame === undefined) {
+      return;
+    }
+
+    if (typeof cancelAnimationFrame !== "undefined") {
+      cancelAnimationFrame(cameraTweenFrame);
+    }
+    cameraTweenFrame = undefined;
+  };
+
+  const cancelLayoutTransition = () => {
+    if (layoutTransitionFrame === undefined) {
+      return;
+    }
+
+    if (typeof cancelAnimationFrame !== "undefined") {
+      cancelAnimationFrame(layoutTransitionFrame);
+    }
+    layoutTransitionFrame = undefined;
+    if (layoutTransitionTarget) {
+      setPositionedNodes(layoutTransitionTarget);
+      layoutTransitionTarget = undefined;
+    }
+    setTransitionVisualState(new Map());
+  };
+
   const setCameraImmediate = (nextCamera: CameraState) => {
+    cancelCameraTween();
     cameraSnapshot = nextCamera;
     if (cameraFrame !== undefined) {
       cancelAnimationFrame(cameraFrame);
@@ -192,6 +240,7 @@ export function useSpatialMapCanvasController(
   };
 
   const setCameraDeferred = (nextCamera: CameraState) => {
+    cancelCameraTween();
     cameraSnapshot = nextCamera;
     if (cameraFrame !== undefined) {
       return;
@@ -211,6 +260,37 @@ export function useSpatialMapCanvasController(
     setCameraImmediate(getFitCamera(nodes, getViewportAspectRatio()));
   };
 
+  const animateCameraToLayout = (
+    nodes: PositionedMapNode[],
+    startedAt: number,
+    durationMs: number,
+  ) => {
+    cancelCameraTween();
+
+    const startCamera = cameraSnapshot;
+    const targetCamera = getFitCamera(nodes, getViewportAspectRatio());
+
+    const tick = (now: number) => {
+      const progress = clampValue((now - startedAt) / durationMs, 0, 1);
+      const easedProgress = easeInOutCubic(progress);
+      const nextCamera = interpolateCamera(startCamera, targetCamera, easedProgress);
+
+      cameraSnapshot = nextCamera;
+      writeCamera(nextCamera);
+
+      if (progress < 1) {
+        cameraTweenFrame = requestAnimationFrame(tick);
+        return;
+      }
+
+      cameraTweenFrame = undefined;
+      cameraSnapshot = targetCamera;
+      writeCamera(targetCamera);
+    };
+
+    cameraTweenFrame = requestAnimationFrame(tick);
+  };
+
   const scheduleViewportFit = (nodes: PositionedMapNode[] = positionedNodes()) => {
     if (viewportFitFrame !== undefined) {
       cancelAnimationFrame(viewportFitFrame);
@@ -220,6 +300,84 @@ export function useSpatialMapCanvasController(
       viewportFitFrame = undefined;
       fitCameraToLayout(nodes);
     });
+  };
+
+  const transitionToLayout = (
+    nextLayout: PositionedMapNode[],
+    anchorNodeId: string | null,
+  ) => {
+    if (!layoutTransitionInitialized) {
+      layoutTransitionInitialized = true;
+      setPositionedNodes(nextLayout);
+      setTransitionVisualState(new Map());
+      queueMicrotask(() => fitCameraToLayout(nextLayout));
+      return;
+    }
+
+    cancelLayoutTransition();
+
+    const previousLayout = untrack(positionedNodes);
+    if (!hasLayoutTransitionWork(previousLayout, nextLayout)) {
+      setPositionedNodes(nextLayout);
+      setTransitionVisualState(new Map());
+      queueMicrotask(() => fitCameraToLayout(nextLayout));
+      return;
+    }
+
+    const anchorPosition = getLayoutTransitionAnchor({
+      anchorNodeId,
+      previousLayout,
+      nextLayout,
+    });
+    const animationItems = createLayoutTransitionItems(
+      previousLayout,
+      nextLayout,
+      anchorPosition,
+    );
+    const startedAt = performance.now();
+    layoutTransitionTarget = nextLayout;
+
+    animateCameraToLayout(nextLayout, startedAt, LAYOUT_TRANSITION_DURATION_MS);
+
+    const tick = (now: number) => {
+      const progress = clampValue(
+        (now - startedAt) / LAYOUT_TRANSITION_DURATION_MS,
+        0,
+        1,
+      );
+      const easedProgress = easeInOutCubic(progress);
+      const nextNodes: PositionedMapNode[] = [];
+      const nextTransitionState = new Map<string, { opacity: number; scale: number }>();
+
+      for (const item of animationItems) {
+        const opacity = interpolateNumber(item.startOpacity, item.endOpacity, easedProgress);
+
+        if (progress >= 1 && item.endOpacity === 0) {
+          continue;
+        }
+
+        nextNodes.push(interpolatePositionedNode(item.startNode, item.endNode, easedProgress));
+        nextTransitionState.set(item.endNode.id, {
+          opacity,
+          scale: interpolateNumber(item.startScale, item.endScale, easedProgress),
+        });
+      }
+
+      setPositionedNodes(nextNodes);
+      setTransitionVisualState(nextTransitionState);
+
+      if (progress < 1) {
+        layoutTransitionFrame = requestAnimationFrame(tick);
+        return;
+      }
+
+      layoutTransitionFrame = undefined;
+      layoutTransitionTarget = undefined;
+      setPositionedNodes(nextLayout);
+      setTransitionVisualState(new Map());
+    };
+
+    layoutTransitionFrame = requestAnimationFrame(tick);
   };
 
   const getWorldPoint = (clientX: number, clientY: number) => {
@@ -279,6 +437,8 @@ export function useSpatialMapCanvasController(
   };
 
   const handleViewportPointerDown: SpatialMapCanvasController["viewportHandlers"]["onPointerDown"] = (event) => {
+    cancelLayoutTransition();
+    cancelCameraTween();
     updateViewportSize();
     panSession = {
       pointerId: event.pointerId,
@@ -340,6 +500,8 @@ export function useSpatialMapCanvasController(
 
   const handleWheel: SpatialMapCanvasController["viewportHandlers"]["onWheel"] = (event) => {
     event.preventDefault();
+    cancelLayoutTransition();
+    cancelCameraTween();
 
     const aspectRatio = getViewportAspectRatio();
     const anchor = getWorldPoint(event.clientX, event.clientY);
@@ -365,16 +527,29 @@ export function useSpatialMapCanvasController(
   };
 
   const applyIsolation = (nodeId: string | null) => {
+    pendingTransitionAnchorId = nodeId ?? isolatedNodeId() ?? selectedNodeId();
     setHoveredNodeId(null);
+    setShowLinkedInIsolation(false);
+    if (nodeId) {
+      writeVisibleDepthLevel(getDepthLevelCount(filterSpatialMapDataForIsolation(data(), nodeId)));
+    }
     setIsolatedNodeId(nodeId);
     if (nodeId) {
       setSelectedNodeId(nodeId);
     }
+  };
 
-    const nextData = filterSpatialMapDataByRelatedNodes(data(), nodeId);
-    const nextLayout = createInitialLayout(nextData);
-    setPositionedNodes(nextLayout);
-    queueMicrotask(() => fitCameraToLayout(nextLayout));
+  const toggleNodeIsolation = (nodeId: string) => {
+    if (suppressNodeClick) {
+      return;
+    }
+
+    applyIsolation(isolatedNodeId() === nodeId ? null : nodeId);
+  };
+
+  const toggleLinkedIsolation = () => {
+    pendingTransitionAnchorId = isolatedNodeId() ?? selectedNodeId();
+    setShowLinkedInIsolation((current) => !current);
   };
 
   const handleBackgroundClick: SpatialMapCanvasController["sceneHandlers"]["onBackgroundClick"] = (event) => {
@@ -391,6 +566,19 @@ export function useSpatialMapCanvasController(
     setSelectedNodeId(null);
   };
 
+  const handleBackgroundDoubleClick: SpatialMapCanvasController["sceneHandlers"]["onBackgroundDoubleClick"] = (event) => {
+    if (suppressNodeClick) {
+      return;
+    }
+
+    const target = event.target;
+    if (target instanceof Element && target.closest(".spatial-map-node")) {
+      return;
+    }
+
+    applyIsolation(null);
+  };
+
   onMount(() => {
     updateViewportSize();
     if (viewportRef && typeof ResizeObserver !== "undefined") {
@@ -400,18 +588,29 @@ export function useSpatialMapCanvasController(
     fitCameraToNodes();
     window.addEventListener("keydown", handleWindowKeyDown);
     window.addEventListener("resize", handleResize);
+
+    onCleanup(() => {
+      window.removeEventListener("keydown", handleWindowKeyDown);
+      window.removeEventListener("resize", handleResize);
+    });
   });
 
   onCleanup(() => {
     if (cameraFrame !== undefined) {
-      cancelAnimationFrame(cameraFrame);
+      if (typeof cancelAnimationFrame !== "undefined") {
+        cancelAnimationFrame(cameraFrame);
+      }
+      cameraFrame = undefined;
     }
+    cancelCameraTween();
+    cancelLayoutTransition();
     if (viewportFitFrame !== undefined) {
-      cancelAnimationFrame(viewportFitFrame);
+      if (typeof cancelAnimationFrame !== "undefined") {
+        cancelAnimationFrame(viewportFitFrame);
+      }
+      viewportFitFrame = undefined;
     }
     resizeObserver?.disconnect();
-    window.removeEventListener("keydown", handleWindowKeyDown);
-    window.removeEventListener("resize", handleResize);
   });
 
   return {
@@ -430,6 +629,7 @@ export function useSpatialMapCanvasController(
     selectedNodeRelations,
     selectedNode,
     showEdges,
+    showLinkedInIsolation,
     sourceNodesById,
     availableDepthLevels,
     visibleData,
@@ -460,11 +660,11 @@ export function useSpatialMapCanvasController(
       const maxLevel = availableDepthLevels().at(-1) ?? 1;
       writeVisibleDepthLevel(clampInteger(value, 1, maxLevel));
     },
+    toggleLinkedInIsolation: toggleLinkedIsolation,
     toggleEdges: () => setShowEdges((current) => !current),
     reflowLayout: () => {
       const nextLayout = createInitialLayout(visibleData());
-      setPositionedNodes(nextLayout);
-      queueMicrotask(() => fitCameraToLayout(nextLayout));
+      transitionToLayout(nextLayout, selectedNodeId());
     },
     fitCameraToNodes,
     setViewportRef: setViewportElement,
@@ -481,8 +681,9 @@ export function useSpatialMapCanvasController(
     },
     sceneHandlers: {
       onBackgroundClick: handleBackgroundClick,
+      onBackgroundDoubleClick: handleBackgroundDoubleClick,
       onNodeClick: handleNodeSelection,
-      onNodeIsolateClick: (nodeId) => applyIsolation(nodeId),
+      onNodeDoubleClick: toggleNodeIsolation,
       onNodePointerDown: handleNodeSelection,
       onNodePointerEnter: setHoveredNodeId,
       onNodePointerLeave: (nodeId) =>

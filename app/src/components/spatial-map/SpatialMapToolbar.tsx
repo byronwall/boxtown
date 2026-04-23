@@ -52,6 +52,16 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             </Text>
             <Button
               colorPalette="green"
+              variant={spatialMap.showLinkedInIsolation() ? "surface" : "outline"}
+              size="xs"
+              class={`spatial-map-button spatial-map-isolation-toggle${spatialMap.showLinkedInIsolation() ? " is-active" : ""}`}
+              aria-pressed={spatialMap.showLinkedInIsolation()}
+              onClick={() => spatialMap.toggleLinkedInIsolation()}
+            >
+              Show Linked
+            </Button>
+            <Button
+              colorPalette="green"
               variant="outline"
               size="xs"
               class="spatial-map-button"

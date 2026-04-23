@@ -25,7 +25,6 @@ import type {
   ContextNoteConversionRunStep,
   ContextNoteConversionRunStepId,
   ConversionCandidateBatch,
-  ContextTrimResult,
 } from "./types";
 
 const questionSetSchema = z.object({
@@ -45,20 +44,12 @@ const questionSetSchema = z.object({
   ).min(3).max(4),
 });
 
-const candidateLinkSchema = z.union([
-  z.object({
-    source: z.string().min(1),
-    target: z.string().min(1),
-    parentChild: z.literal(true),
-    relationship: z.undefined().optional(),
-  }),
-  z.object({
-    source: z.string().min(1),
-    target: z.string().min(1),
-    parentChild: z.literal(false),
-    relationship: z.enum(["related", "dependency", "reuse"]),
-  }),
-]);
+const candidateLinkSchema = z.object({
+  source: z.string().min(1),
+  target: z.string().min(1),
+  parentChild: z.boolean(),
+  relationship: z.enum(["related", "dependency", "reuse"]).optional(),
+});
 
 const candidateBatchSchema = z.object({
   summary: z.string().min(1),
@@ -261,13 +252,31 @@ function sanitizeCandidateNodes(nodes: MapNode[]) {
   }));
 }
 
+function sanitizeCandidateLinks(links: z.infer<typeof candidateLinkSchema>[]): MapLink[] {
+  return links.map((link) =>
+    link.parentChild
+      ? {
+          source: link.source,
+          target: link.target,
+          parentChild: true,
+        }
+      : {
+          source: link.source,
+          target: link.target,
+          parentChild: false,
+          relationship: link.relationship ?? "related",
+        },
+  );
+}
+
 function createCandidateBatch(summary: string, nodes: MapNode[], links: MapLink[]): ConversionCandidateBatch {
   const sanitizedNodes = sanitizeCandidateNodes(nodes);
+  const sanitizedLinks = sanitizeCandidateLinks(links);
   return {
     summary,
     nodes: sanitizedNodes,
-    links,
-    tree: buildCandidateTree(sanitizedNodes, links),
+    links: sanitizedLinks,
+    tree: buildCandidateTree(sanitizedNodes, sanitizedLinks),
   };
 }
 

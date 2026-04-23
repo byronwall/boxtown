@@ -35,6 +35,50 @@ describe("add-nodes structured validation", () => {
     ).toThrow();
   });
 
+  it("normalizes generated graph links for persistence", () => {
+    expect(
+      parseGeneratedNodeBatch({
+        summary: "Generated",
+        nodes: [
+          {
+            id: "node-1",
+            label: "Node 1",
+            type: "component",
+            depth: 2,
+            purpose: "Purpose",
+            implementation: "Implementation",
+            context: "",
+          },
+        ],
+        links: [
+          {
+            source: "parent",
+            target: "node-1",
+            parentChild: true,
+            relationship: "related",
+          },
+          {
+            source: "node-1",
+            target: "existing",
+            parentChild: false,
+          },
+        ],
+      }).links,
+    ).toEqual([
+      {
+        source: "parent",
+        target: "node-1",
+        parentChild: true,
+      },
+      {
+        source: "node-1",
+        target: "existing",
+        parentChild: false,
+        relationship: "related",
+      },
+    ]);
+  });
+
   it("requires exactly four follow-up suggestions", () => {
     expect(() =>
       parseFollowUpSuggestions({

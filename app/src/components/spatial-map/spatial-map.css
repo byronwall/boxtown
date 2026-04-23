@@ -264,7 +264,8 @@
 }
 
 .spatial-map-toggle-button.is-active,
-.spatial-map-depth-button.is-active {
+.spatial-map-depth-button.is-active,
+.spatial-map-isolation-toggle.is-active {
   background: rgba(37, 95, 58, 0.16) !important;
   color: var(--spatial-map-accent-strong) !important;
   box-shadow: inset 0 -2px 0 rgba(23, 62, 39, 0.86) !important;
@@ -402,6 +403,13 @@
   cursor: pointer;
 }
 
+.spatial-map-tree-drop-target.is-dragging-image .spatial-map-tree-row,
+.spatial-map-image-drop-panel.is-dragging-image {
+  border-color: rgba(23, 62, 39, 0.72);
+  background: rgba(211, 225, 211, 0.98);
+  box-shadow: inset 0 0 0 2px rgba(23, 62, 39, 0.34);
+}
+
 .spatial-map-tree-row:hover {
   border-color: var(--spatial-map-tree-stroke-hover);
   background: var(--spatial-map-tree-fill-hover);
@@ -467,6 +475,54 @@
   min-width: 0;
   display: grid;
   gap: 3px;
+}
+
+.spatial-map-image-strip {
+  display: flex;
+  min-width: 0;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.spatial-map-image-upload-form {
+  display: none;
+}
+
+.spatial-map-image-strip--inspector {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 6px;
+}
+
+.spatial-map-image-thumb {
+  position: relative;
+  display: block;
+  min-width: 34px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(34, 41, 36, 0.28);
+  border-radius: 0;
+  background: rgba(18, 22, 19, 0.08);
+  cursor: zoom-in;
+  overflow: hidden;
+}
+
+.spatial-map-image-strip--inspector .spatial-map-image-thumb {
+  height: 70px;
+}
+
+.spatial-map-image-thumb:hover,
+.spatial-map-image-thumb:focus-visible {
+  outline: none;
+  border-color: rgba(23, 62, 39, 0.68);
+  box-shadow: inset 0 0 0 1px rgba(23, 62, 39, 0.32);
+}
+
+.spatial-map-image-thumb img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
 }
 
 .spatial-map-tree-label {
@@ -540,16 +596,16 @@
   stroke: rgba(47, 57, 50, 0.32);
   stroke-width: 1.35;
   stroke-linecap: square;
-  transition: opacity 120ms ease;
+  transition: opacity 180ms ease;
 }
 
 .spatial-map-node {
-  transition: opacity 80ms linear;
+  transition: filter 140ms ease, opacity 180ms ease;
 }
 
 .spatial-map-node-body,
 .spatial-map-node text {
-  transition: fill 80ms linear, stroke 80ms linear;
+  transition: fill 120ms ease, stroke 120ms ease;
 }
 
 .spatial-map-node-body {
@@ -617,6 +673,56 @@
   stroke-width: 2;
 }
 
+.spatial-map-node.is-isolated {
+  filter:
+    drop-shadow(0 8px 0 rgba(18, 47, 31, 0.2))
+    drop-shadow(0 0 18px rgba(44, 121, 77, 0.34));
+}
+
+.spatial-map-node.is-isolated .spatial-map-node-body {
+  stroke: #2f7a4d;
+  stroke-width: 2.4;
+}
+
+.spatial-map-node-image-frame {
+  pointer-events: auto;
+}
+
+.spatial-map-node-image-button {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  padding: 0;
+  border: 1px solid rgba(15, 47, 29, 0.38);
+  border-radius: 0;
+  background: rgba(18, 22, 19, 0.1);
+  cursor: zoom-in;
+  overflow: hidden;
+}
+
+.spatial-map-node-image-button img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.spatial-map-node-image-button span {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  min-width: 18px;
+  padding: 2px 4px;
+  background: rgba(15, 47, 29, 0.92);
+  color: #f5f8f3;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+  text-align: center;
+}
+
 .spatial-map-node .label {
   fill: #131816;
   font-weight: 700;
@@ -645,42 +751,6 @@
   text-transform: uppercase;
   pointer-events: none;
   user-select: none;
-}
-
-.spatial-map-node-actions {
-  opacity: 0;
-  transform: scale(0.94);
-  transition: opacity 100ms ease, transform 100ms ease;
-}
-
-.spatial-map-node-action {
-  cursor: pointer;
-}
-
-.spatial-map-node-action rect {
-  fill: rgba(15, 47, 29, 0.96);
-  stroke: rgba(230, 238, 228, 0.72);
-  stroke-width: 1;
-}
-
-.spatial-map-node-action text {
-  fill: #f5f8f3;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  pointer-events: none;
-  user-select: none;
-}
-
-.spatial-map-node-action.is-active rect {
-  fill: #244e37;
-  stroke: #0f2f1d;
-}
-
-.spatial-map-node.is-hovered .spatial-map-node-actions,
-.spatial-map-node.is-selected .spatial-map-node-actions {
-  opacity: 1;
-  transform: scale(1);
 }
 
 .spatial-map-isolation-readout {
@@ -901,6 +971,85 @@
   width: min(800px, 90vw);
   max-width: min(800px, 90vw) !important;
   max-height: calc(100vh - 32px) !important;
+}
+
+.spatial-map-image-drop-panel {
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.spatial-map-image-viewer-dialog {
+  width: min(1120px, 96vw);
+  max-height: calc(100vh - 24px) !important;
+}
+
+.spatial-map-image-viewer-dialog .dialog__body {
+  align-items: stretch;
+}
+
+.spatial-map-image-viewer-dialog .dialog__body > * {
+  width: 100%;
+  min-width: 0;
+}
+
+.spatial-map-image-viewer-stage {
+  position: relative;
+  width: 100%;
+  height: min(72vh, 760px);
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid rgba(34, 41, 36, 0.24);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    #171b18;
+  background-size: 24px 24px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.spatial-map-image-viewer-stage:active {
+  cursor: grabbing;
+}
+
+.spatial-map-image-viewer-stage img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  max-height: none;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  display: block;
+  transform-origin: top left;
+  user-select: none;
+  will-change: transform;
+}
+
+.spatial-map-image-viewer-help,
+.spatial-map-image-viewer-meta {
+  color: var(--spatial-map-copy-muted);
+  font-family:
+    "IBM Plex Mono",
+    "SFMono-Regular",
+    "SF Mono",
+    "Roboto Mono",
+    "Consolas",
+    "Liberation Mono",
+    monospace;
+  font-size: 11px;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.spatial-map-image-viewer-meta span {
+  display: inline-flex;
+  min-height: 20px;
+  align-items: center;
+  padding: 0 6px;
+  border: 1px solid rgba(34, 41, 36, 0.14);
+  background: rgba(244, 246, 242, 0.74);
 }
 
 .spatial-map-context-markdown.is-dialog {

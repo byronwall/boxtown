@@ -1,8 +1,9 @@
-import { For } from "solid-js";
+import { For, Show } from "solid-js";
 import { Box } from "styled-system/jsx";
 import { VIEWPORT_HEIGHT, VIEWPORT_WIDTH } from "~/lib/spatial-map/layout";
 
 import type { NodeVisualState } from "./spatial-map-canvas.types";
+import { getImageFilesFromDataTransfer, useSpatialMapImages } from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
 
 const NODE_TYPE_FALLBACK_TONES = [
@@ -82,6 +83,7 @@ export function SpatialMapScene() {
         viewBox={`0 0 ${VIEWPORT_WIDTH} ${VIEWPORT_HEIGHT}`}
         preserveAspectRatio="none"
         onClick={controller.sceneHandlers.onBackgroundClick}
+        onDblClick={controller.sceneHandlers.onBackgroundDoubleClick}
       >
         <g class="spatial-map-scene-layer" transform={controller.sceneTransform()}>
           <g>
@@ -103,7 +105,7 @@ export function SpatialMapScene() {
                   item={item}
                   zoomScale={VIEWPORT_WIDTH / controller.camera().width}
                   onClick={controller.sceneHandlers.onNodeClick}
-                  onIsolateClick={controller.sceneHandlers.onNodeIsolateClick}
+                  onDoubleClick={controller.sceneHandlers.onNodeDoubleClick}
                   isIsolationTarget={controller.isolatedNodeId() === item.node.id}
                   onPointerDown={controller.sceneHandlers.onNodePointerDown}
                   onPointerEnter={controller.sceneHandlers.onNodePointerEnter}
@@ -122,18 +124,23 @@ function SpatialMapNode(props: {
   item: NodeVisualState;
   zoomScale: number;
   onClick: (nodeId: string) => void;
-  onIsolateClick: (nodeId: string) => void;
+  onDoubleClick: (nodeId: string) => void;
   isIsolationTarget: boolean;
   onPointerDown: (nodeId: string) => void;
   onPointerEnter: (nodeId: string) => void;
   onPointerLeave: (nodeId: string) => void;
 }) {
+  const imageUi = useSpatialMapImages();
   const x = () => props.item.node.x - props.item.node.width / 2;
   const y = () => props.item.node.y - props.item.node.height / 2;
+  const nodeImages = () => props.item.node.images ?? [];
+  const firstImage = () => nodeImages()[0];
+  const hasImages = () => nodeImages().length > 0;
+  const imageHeight = () => (hasImages() ? Math.min(54, props.item.node.height * 0.38) : 0);
   const fallbackTone = () => getNodeTypeFallbackTone(props.item.node.type);
   const zoomTextCompression = () => Math.max(1, Math.min(2.75, Math.sqrt(props.zoomScale)));
   const availableLabelHeight = () =>
-    Math.max(1, props.item.node.height - NODE_LABEL_TOP_PADDING - NODE_LABEL_META_GAP);
+    Math.max(1, props.item.node.height - NODE_LABEL_TOP_PADDING - NODE_LABEL_META_GAP - imageHeight());
   const labelFontSize = () =>
     Math.min(
       props.item.node.fontSize / zoomTextCompression(),
@@ -154,6 +161,7 @@ function SpatialMapNode(props: {
       text: props.item.node.label,
       textWidth: labelFontSize() * SVG_TEXT_WIDTH_FACTOR,
     });
+  const labelLineAt = (index: number) => labelLines()[index] ?? "";
   const labelBlockHeight = () => labelLines().length * labelLineHeight();
   const labelStartY = () =>
     Math.max(
@@ -164,7 +172,7 @@ function SpatialMapNode(props: {
 
   return (
     <g
-      class={`spatial-map-node spatial-map-node--${props.item.node.type}${props.item.isSelected ? " is-selected" : ""}${props.item.isHovered ? " is-hovered" : ""}`}
+      class={`spatial-map-node spatial-map-node--${props.item.node.type}${props.item.isSelected ? " is-selected" : ""}${props.item.isHovered ? " is-hovered" : ""}${props.isIsolationTarget ? " is-isolated" : ""}`}
       data-node-id={props.item.node.id}
       transform={`translate(${x()}, ${y()}) scale(${props.item.scale})`}
       opacity={props.item.opacity}
@@ -179,28 +187,95 @@ function SpatialMapNode(props: {
       }}
       onPointerDown={() => props.onPointerDown(props.item.node.id)}
       onClick={() => props.onClick(props.item.node.id)}
+      onDblClick={(event) => {
+        event.stopPropagation();
+        props.onDoubleClick(props.item.node.id);
+      }}
       onPointerEnter={() => props.onPointerEnter(props.item.node.id)}
       onPointerLeave={() => props.onPointerLeave(props.item.node.id)}
+      onDragOver={(event) => {
+        if (getImageFilesFromDataTransfer(event.dataTransfer).length === 0) {
+          return;
+        }
+
+        event.preventDefault();
+      }}
+      onDrop={(event) => {
+        const files = getImageFilesFromDataTransfer(event.dataTransfer);
+        if (files.length === 0) {
+          console.warn("[spatial-map-images]", "canvas node drop ignored: no image files", {
+            nodeId: props.item.node.id,
+          });
+          return;
+        }
+
+        console.info("[spatial-map-images]", "canvas node drop image files accepted", {
+          nodeId: props.item.node.id,
+          files: files.map((file) => ({
+            name: file.name,
+            size: file.size,
+            type: file.type,
+          })),
+        });
+        event.preventDefault();
+        event.stopPropagation();
+        void imageUi.uploadImages(props.item.node.id, files);
+      }}
     >
       <rect
         class="spatial-map-node-body"
         width={props.item.node.width}
         height={props.item.node.height}
       />
+      <Show when={firstImage()}>
+        {(image) => (
+          <foreignObject
+            class="spatial-map-node-image-frame"
+            x="8"
+            y="8"
+            width={props.item.node.width - 16}
+            height={imageHeight()}
+          >
+            <button
+              type="button"
+              class="spatial-map-node-image-button"
+              aria-label={`Open ${image().originalName}`}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                imageUi.openImage(image(), props.item.node);
+              }}
+            >
+              <img src={image().src} alt={image().originalName} loading="lazy" />
+              <Show when={nodeImages().length > 1}>
+                <span>{nodeImages().length}</span>
+              </Show>
+            </button>
+          </foreignObject>
+        )}
+      </Show>
       <text
         class="label"
         x={props.item.node.width / 2}
-        y={labelStartY()}
+        y={labelStartY() + imageHeight()}
         text-anchor="middle"
         font-size={String(labelFontSize())}
       >
-        <For each={labelLines()}>
-          {(line, index) => (
-            <tspan x={props.item.node.width / 2} dy={index() === 0 ? 0 : labelLineHeight()}>
-              {line}
-            </tspan>
-          )}
-        </For>
+        <tspan x={props.item.node.width / 2} dy="0">
+          {labelLineAt(0)}
+        </tspan>
+        <tspan x={props.item.node.width / 2} dy={labelLineHeight()}>
+          {labelLineAt(1)}
+        </tspan>
+        <tspan x={props.item.node.width / 2} dy={labelLineHeight()}>
+          {labelLineAt(2)}
+        </tspan>
+        <tspan x={props.item.node.width / 2} dy={labelLineHeight()}>
+          {labelLineAt(3)}
+        </tspan>
+        <tspan x={props.item.node.width / 2} dy={labelLineHeight()}>
+          {labelLineAt(4)}
+        </tspan>
       </text>
       <text
         class="meta"
@@ -211,44 +286,6 @@ function SpatialMapNode(props: {
       >
         {props.item.node.type}
       </text>
-      <g
-        class="spatial-map-node-actions"
-        transform={`translate(${props.item.node.width - 18}, 18)`}
-      >
-        <g
-          class={`spatial-map-node-action${props.isIsolationTarget ? " is-active" : ""}`}
-          role="button"
-          tabindex="0"
-          aria-label={props.isIsolationTarget ? "Isolation active" : "Isolate related nodes"}
-          onPointerDown={(event) => {
-            event.stopPropagation();
-          }}
-          onClick={(event) => {
-            event.stopPropagation();
-            props.onIsolateClick(props.item.node.id);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              event.stopPropagation();
-              props.onIsolateClick(props.item.node.id);
-            }
-          }}
-        >
-          <rect
-            class="spatial-map-node-action-body"
-            x="-16"
-            y="-10"
-            width="32"
-            height="20"
-            rx="0"
-            ry="0"
-          />
-          <text text-anchor="middle" dominant-baseline="central">
-            {props.isIsolationTarget ? "ON" : "ISO"}
-          </text>
-        </g>
-      </g>
     </g>
   );
 }
