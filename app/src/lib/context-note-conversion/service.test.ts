@@ -159,7 +159,7 @@ describe("context note conversion service", () => {
             {
               source: "candidate-root",
               target: "candidate-child",
-              kind: "hierarchy",
+              parentChild: true,
             },
           ],
         },
@@ -270,7 +270,7 @@ describe("context note conversion service", () => {
             {
               source: "candidate-root",
               target: "candidate-child",
-              kind: "hierarchy",
+              parentChild: true,
             },
           ],
         },

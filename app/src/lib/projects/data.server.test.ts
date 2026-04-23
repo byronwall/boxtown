@@ -34,7 +34,8 @@ describe("mergeGeneratedSpatialMapData", () => {
           {
             source: "page-home",
             target: "page-home",
-            kind: "related",
+            parentChild: false,
+            relationship: "related",
           },
         ],
       },
@@ -57,17 +58,18 @@ describe("mergeGeneratedSpatialMapData", () => {
           {
             source: "page-home",
             target: "draft-node",
-            kind: "hierarchy",
+            parentChild: true,
           },
           {
             source: "page-home",
             target: "draft-node",
-            kind: "hierarchy",
+            parentChild: true,
           },
           {
             source: "draft-node",
             target: "missing-node",
-            kind: "related",
+            parentChild: false,
+            relationship: "related",
           },
         ],
       },
@@ -79,12 +81,13 @@ describe("mergeGeneratedSpatialMapData", () => {
       {
         source: "page-home",
         target: "page-home",
-        kind: "related",
+        parentChild: false,
+        relationship: "related",
       },
       {
         source: "page-home",
         target: "page-billing-center",
-        kind: "hierarchy",
+        parentChild: true,
       },
     ]);
   });
@@ -294,10 +297,89 @@ describe("context node persistence", () => {
         }),
       ]);
       expect(result.project.spatialMap.links).toEqual([
-        { source: "note-imported-notes", target: "note-overview", kind: "hierarchy" },
-        { source: "note-overview", target: "note-metrics", kind: "hierarchy" },
-        { source: "note-overview", target: "note-risks", kind: "hierarchy" },
-        { source: "note-imported-notes", target: "note-appendix", kind: "hierarchy" },
+        { source: "note-imported-notes", target: "note-overview", parentChild: true },
+        { source: "note-overview", target: "note-metrics", parentChild: true },
+        { source: "note-overview", target: "note-risks", parentChild: true },
+        { source: "note-imported-notes", target: "note-appendix", parentChild: true },
+      ]);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("rolls headings below the selected import depth into parent context", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-depth-"));
+    const dataDir = path.join(tempRoot, "app", "src", "data");
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
+
+    try {
+      process.chdir(tempRoot);
+
+      const project = await createProjectOnDisk({ name: "Depth Import" });
+      const result = await createContextNodeOnDisk({
+        projectId: project.id,
+        label: "Imported Notes",
+        context: [
+          "# Overview",
+          "Overview details",
+          "",
+          "## Metrics",
+          "Metric summary",
+          "",
+          "### Web",
+          "Web details",
+          "",
+          "#### Mobile",
+          "Mobile details",
+          "",
+          "## Risks",
+          "Risk details",
+        ].join("\n"),
+        splitByHeadingLevel: true,
+        maxHeadingDepth: 2,
+      });
+
+      expect(result.createdNodeCount).toBe(4);
+      expect(result.project.spatialMap.nodes.slice(-4)).toEqual([
+        expect.objectContaining({
+          id: "note-imported-notes",
+          label: "Imported Notes",
+          depth: 2,
+          context: "",
+        }),
+        expect.objectContaining({
+          id: "note-overview",
+          label: "Overview",
+          depth: 3,
+          context: "Overview details",
+        }),
+        expect.objectContaining({
+          id: "note-metrics",
+          label: "Metrics",
+          depth: 4,
+          context: [
+            "Metric summary",
+            "",
+            "### Web",
+            "Web details",
+            "",
+            "#### Mobile",
+            "Mobile details",
+          ].join("\n"),
+        }),
+        expect.objectContaining({
+          id: "note-risks",
+          label: "Risks",
+          depth: 4,
+          context: "Risk details",
+        }),
+      ]);
+      expect(result.project.spatialMap.links).toEqual([
+        { source: "note-imported-notes", target: "note-overview", parentChild: true },
+        { source: "note-overview", target: "note-metrics", parentChild: true },
+        { source: "note-overview", target: "note-risks", parentChild: true },
       ]);
     } finally {
       process.chdir(originalCwd);
@@ -397,8 +479,8 @@ describe("context node persistence", () => {
                 },
               ],
               links: [
-                { source: "node-a", target: "node-b", kind: "related" },
-                { source: "node-b", target: "node-a", kind: "related" },
+                { source: "node-a", target: "node-b", parentChild: false, relationship: "related" },
+                { source: "node-b", target: "node-a", parentChild: false, relationship: "related" },
               ],
             },
           },

@@ -11,6 +11,7 @@ import {
   createInitialLayout,
   filterSpatialMapDataByRelatedNodes,
   getRelatedSet,
+  VIEWPORT_HEIGHT,
   VIEWPORT_WIDTH,
 } from "~/lib/spatial-map/layout";
 import type { PositionedMapNode, SpatialMapData } from "~/lib/spatial-map/types";
@@ -18,6 +19,7 @@ import type { PositionedMapNode, SpatialMapData } from "~/lib/spatial-map/types"
 import type {
   CameraState,
   SpatialMapCanvasController,
+  SpatialMapViewMode,
 } from "./spatial-map-canvas.types";
 import {
   clampValue,
@@ -26,7 +28,6 @@ import {
   preserveCameraCenter,
 } from "./spatial-map-camera";
 import {
-  getHoveredSpatialMapNodeId,
   isEditableTarget,
 } from "./spatial-map-dom";
 import {
@@ -43,6 +44,11 @@ interface PanSession {
   didDrag: boolean;
 }
 
+interface ViewportSize {
+  width: number;
+  height: number;
+}
+
 export function useSpatialMapCanvasController(
   data: Accessor<SpatialMapData>,
 ): SpatialMapCanvasController {
@@ -56,7 +62,12 @@ export function useSpatialMapCanvasController(
   const [inspectorOpen, setInspectorOpen] = createSignal(true);
   const [addNodesOpen, setAddNodesOpen] = createSignal(false);
   const [contextNoteConversionOpen, setContextNoteConversionOpen] = createSignal(false);
-  const [camera, setCamera] = createSignal(createDefaultCamera());
+  const [viewMode, setViewMode] = createSignal<SpatialMapViewMode>("canvas");
+  const [visibleDepthLevel, writeVisibleDepthLevel] = createSignal(
+    getDepthLevelCount(data()),
+  );
+  const initialCamera = createDefaultCamera();
+  const [camera, writeCamera] = createSignal(initialCamera);
   const [isPanning, setIsPanning] = createSignal(false);
   const adjacency = createMemo(() => buildAdjacencyMap(data()));
   const nodesById = createMemo(
@@ -66,15 +77,28 @@ export function useSpatialMapCanvasController(
     () => new Map(data().nodes.map((node) => [node.id, node])),
   );
   const isolationModeActive = createMemo(() => Boolean(isolatedNodeId()));
-  const visibleData = createMemo(() =>
+  const isolatedData = createMemo(() =>
     filterSpatialMapDataByRelatedNodes(data(), isolatedNodeId()),
+  );
+  const availableDepthLevels = createMemo(() =>
+    Array.from({ length: getDepthLevelCount(isolatedData()) }, (_, index) => index + 1),
+  );
+  const visibleData = createMemo(() =>
+    filterSpatialMapDataByDepthLevel(isolatedData(), visibleDepthLevel()),
   );
 
   let viewportRef: HTMLDivElement | undefined;
-  let svgRef: SVGSVGElement | undefined;
+  let cameraSnapshot = initialCamera;
+  let cameraFrame: number | undefined;
+  let resizeObserver: ResizeObserver | undefined;
   let panSession: PanSession | undefined;
   let suppressNodeClick = false;
+  let viewportFitFrame: number | undefined;
   const fallbackCamera = createDefaultCamera();
+  const viewportSize: ViewportSize = {
+    width: VIEWPORT_WIDTH,
+    height: VIEWPORT_HEIGHT,
+  };
 
   const activeNodeId = createMemo(() => hoveredNodeId() ?? selectedNodeId());
   const relatedSet = createMemo(() => getRelatedSet(adjacency(), activeNodeId()));
@@ -90,6 +114,13 @@ export function useSpatialMapCanvasController(
   const zoomPercent = createMemo(() =>
     `${Math.round((VIEWPORT_WIDTH / camera().width) * 100)}%`,
   );
+  const sceneTransform = createMemo(() => {
+    const currentCamera = camera();
+    const scaleX = VIEWPORT_WIDTH / currentCamera.width;
+    const scaleY = VIEWPORT_HEIGHT / currentCamera.height;
+
+    return `matrix(${scaleX} 0 0 ${scaleY} ${-currentCamera.x * scaleX} ${-currentCamera.y * scaleY})`;
+  });
   const orderedNodes = createMemo(() =>
     createOrderedNodeState({
       activeNodeId: activeNodeId(),
@@ -110,6 +141,11 @@ export function useSpatialMapCanvasController(
   );
 
   createEffect(() => {
+    const maxLevel = availableDepthLevels().at(-1) ?? 1;
+    writeVisibleDepthLevel((current) => clampInteger(current, 1, maxLevel));
+  });
+
+  createEffect(() => {
     const nextData = visibleData();
     const sourceData = data();
     const nextLayout = createInitialLayout(nextData);
@@ -119,36 +155,80 @@ export function useSpatialMapCanvasController(
       current && sourceData.nodes.some((node) => node.id === current) ? current : null,
     );
     setSelectedNodeId((current) =>
-      current && sourceData.nodes.some((node) => node.id === current)
+      current && nextData.nodes.some((node) => node.id === current)
         ? current
-        : sourceData.nodes[0]?.id ?? null,
+        : nextData.nodes[0]?.id ?? null,
     );
     queueMicrotask(() => fitCameraToLayout(nextLayout));
   });
+
+  const updateViewportSize = () => {
+    if (!viewportRef || !viewportRef.isConnected) {
+      viewportSize.width = VIEWPORT_WIDTH;
+      viewportSize.height = VIEWPORT_HEIGHT;
+      return;
+    }
+
+    viewportSize.width = Math.max(viewportRef.clientWidth, 1);
+    viewportSize.height = Math.max(viewportRef.clientHeight, 1);
+  };
 
   const getViewportAspectRatio = () => {
     if (!viewportRef) {
       return fallbackCamera.width / fallbackCamera.height;
     }
 
-    return viewportRef.clientWidth / Math.max(viewportRef.clientHeight, 1);
+    updateViewportSize();
+    return viewportSize.width / viewportSize.height;
+  };
+
+  const setCameraImmediate = (nextCamera: CameraState) => {
+    cameraSnapshot = nextCamera;
+    if (cameraFrame !== undefined) {
+      cancelAnimationFrame(cameraFrame);
+      cameraFrame = undefined;
+    }
+    writeCamera(nextCamera);
+  };
+
+  const setCameraDeferred = (nextCamera: CameraState) => {
+    cameraSnapshot = nextCamera;
+    if (cameraFrame !== undefined) {
+      return;
+    }
+
+    cameraFrame = requestAnimationFrame(() => {
+      cameraFrame = undefined;
+      writeCamera(cameraSnapshot);
+    });
   };
 
   const fitCameraToNodes = () => {
-    setCamera(getFitCamera(positionedNodes(), getViewportAspectRatio()));
+    setCameraImmediate(getFitCamera(positionedNodes(), getViewportAspectRatio()));
   };
 
   const fitCameraToLayout = (nodes: PositionedMapNode[]) => {
-    setCamera(getFitCamera(nodes, getViewportAspectRatio()));
+    setCameraImmediate(getFitCamera(nodes, getViewportAspectRatio()));
+  };
+
+  const scheduleViewportFit = (nodes: PositionedMapNode[] = positionedNodes()) => {
+    if (viewportFitFrame !== undefined) {
+      cancelAnimationFrame(viewportFitFrame);
+    }
+
+    viewportFitFrame = requestAnimationFrame(() => {
+      viewportFitFrame = undefined;
+      fitCameraToLayout(nodes);
+    });
   };
 
   const getWorldPoint = (clientX: number, clientY: number) => {
-    if (!svgRef) {
+    if (!viewportRef) {
       return { x: 0, y: 0 };
     }
 
-    const rect = svgRef.getBoundingClientRect();
-    const currentCamera = camera();
+    const rect = viewportRef.getBoundingClientRect();
+    const currentCamera = cameraSnapshot;
     const xRatio = (clientX - rect.left) / Math.max(rect.width, 1);
     const yRatio = (clientY - rect.top) / Math.max(rect.height, 1);
 
@@ -170,29 +250,47 @@ export function useSpatialMapCanvasController(
   };
 
   const handleResize = () => {
-    setCamera((current) => preserveCameraCenter(current, getViewportAspectRatio()));
-  };
-
-  const handleGlobalPointerMove = (event: PointerEvent) => {
-    if (isPanning()) {
+    if (
+      !viewportRef?.isConnected ||
+      viewportRef.clientWidth === 0 ||
+      viewportRef.clientHeight === 0
+    ) {
       return;
     }
 
-    setHoveredNodeId(getHoveredSpatialMapNodeId(event.clientX, event.clientY));
+    updateViewportSize();
+    setCameraImmediate(preserveCameraCenter(cameraSnapshot, getViewportAspectRatio()));
+  };
+
+  const setViewportElement = (element: HTMLDivElement) => {
+    if (viewportRef === element) {
+      return;
+    }
+
+    if (viewportRef) {
+      resizeObserver?.unobserve(viewportRef);
+    }
+
+    viewportRef = element;
+    updateViewportSize();
+    resizeObserver?.observe(element);
+    fitCameraToNodes();
+    scheduleViewportFit();
   };
 
   const handleViewportPointerDown: SpatialMapCanvasController["viewportHandlers"]["onPointerDown"] = (event) => {
+    updateViewportSize();
     panSession = {
       pointerId: event.pointerId,
       startClientX: event.clientX,
       startClientY: event.clientY,
-      startCamera: camera(),
+      startCamera: cameraSnapshot,
       didDrag: false,
     };
   };
 
   const handleViewportPointerMove: SpatialMapCanvasController["viewportHandlers"]["onPointerMove"] = (event) => {
-    if (!panSession || panSession.pointerId !== event.pointerId || !svgRef) {
+    if (!panSession || panSession.pointerId !== event.pointerId) {
       return;
     }
 
@@ -211,11 +309,10 @@ export function useSpatialMapCanvasController(
       return;
     }
 
-    const rect = svgRef.getBoundingClientRect();
-    const worldDeltaX = (deltaX / Math.max(rect.width, 1)) * panSession.startCamera.width;
-    const worldDeltaY = (deltaY / Math.max(rect.height, 1)) * panSession.startCamera.height;
+    const worldDeltaX = (deltaX / viewportSize.width) * panSession.startCamera.width;
+    const worldDeltaY = (deltaY / viewportSize.height) * panSession.startCamera.height;
 
-    setCamera({
+    setCameraDeferred({
       ...panSession.startCamera,
       x: panSession.startCamera.x - worldDeltaX,
       y: panSession.startCamera.y - worldDeltaY,
@@ -246,14 +343,14 @@ export function useSpatialMapCanvasController(
 
     const aspectRatio = getViewportAspectRatio();
     const anchor = getWorldPoint(event.clientX, event.clientY);
-    const currentCamera = camera();
+    const currentCamera = cameraSnapshot;
     const zoomFactor = Math.exp(event.deltaY * 0.0012);
     const nextWidth = clampValue(currentCamera.width * zoomFactor, 220, VIEWPORT_WIDTH * 8);
     const nextHeight = nextWidth / aspectRatio;
     const anchorRatioX = (anchor.x - currentCamera.x) / currentCamera.width;
     const anchorRatioY = (anchor.y - currentCamera.y) / currentCamera.height;
 
-    setCamera({
+    setCameraDeferred({
       x: anchor.x - anchorRatioX * nextWidth,
       y: anchor.y - anchorRatioY * nextHeight,
       width: nextWidth,
@@ -295,20 +392,31 @@ export function useSpatialMapCanvasController(
   };
 
   onMount(() => {
+    updateViewportSize();
+    if (viewportRef && typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(handleResize);
+      resizeObserver.observe(viewportRef);
+    }
     fitCameraToNodes();
     window.addEventListener("keydown", handleWindowKeyDown);
     window.addEventListener("resize", handleResize);
-    window.addEventListener("pointermove", handleGlobalPointerMove);
   });
 
   onCleanup(() => {
+    if (cameraFrame !== undefined) {
+      cancelAnimationFrame(cameraFrame);
+    }
+    if (viewportFitFrame !== undefined) {
+      cancelAnimationFrame(viewportFitFrame);
+    }
+    resizeObserver?.disconnect();
     window.removeEventListener("keydown", handleWindowKeyDown);
     window.removeEventListener("resize", handleResize);
-    window.removeEventListener("pointermove", handleGlobalPointerMove);
   });
 
   return {
     camera,
+    sceneTransform,
     addNodesOpen,
     contextNoteConversionOpen,
     edgeState,
@@ -323,6 +431,10 @@ export function useSpatialMapCanvasController(
     selectedNode,
     showEdges,
     sourceNodesById,
+    availableDepthLevels,
+    visibleData,
+    visibleDepthLevel,
+    viewMode,
     zoomPercent,
     closeAddNodesFlow: () => setAddNodesOpen(false),
     closeContextNoteConversionFlow: () => setContextNoteConversionOpen(false),
@@ -338,6 +450,16 @@ export function useSpatialMapCanvasController(
     isolateNode: (nodeId) => applyIsolation(nodeId),
     setInspectorOpen,
     setSelectedNodeId,
+    setViewMode: (value) => {
+      setViewMode(value);
+      if (value === "canvas") {
+        scheduleViewportFit();
+      }
+    },
+    setVisibleDepthLevel: (value) => {
+      const maxLevel = availableDepthLevels().at(-1) ?? 1;
+      writeVisibleDepthLevel(clampInteger(value, 1, maxLevel));
+    },
     toggleEdges: () => setShowEdges((current) => !current),
     reflowLayout: () => {
       const nextLayout = createInitialLayout(visibleData());
@@ -345,11 +467,9 @@ export function useSpatialMapCanvasController(
       queueMicrotask(() => fitCameraToLayout(nextLayout));
     },
     fitCameraToNodes,
-    setViewportRef: (element) => {
-      viewportRef = element;
-    },
+    setViewportRef: setViewportElement,
     setSvgRef: (element) => {
-      svgRef = element;
+      void element;
     },
     viewportHandlers: {
       onPointerDown: handleViewportPointerDown,
@@ -369,4 +489,41 @@ export function useSpatialMapCanvasController(
         setHoveredNodeId((current) => (current === nodeId ? null : current)),
     },
   };
+}
+
+function getDepthLevelCount(data: SpatialMapData) {
+  if (data.nodes.length === 0) {
+    return 1;
+  }
+
+  const depths = data.nodes.map((node) => node.depth);
+  return Math.max(Math.max(...depths) - Math.min(...depths) + 1, 1);
+}
+
+function filterSpatialMapDataByDepthLevel(
+  data: SpatialMapData,
+  visibleDepthLevel: number,
+): SpatialMapData {
+  if (data.nodes.length === 0) {
+    return data;
+  }
+
+  const minDepth = Math.min(...data.nodes.map((node) => node.depth));
+  const maxVisibleDepth = minDepth + Math.max(visibleDepthLevel, 1) - 1;
+  const visibleNodeIds = new Set(
+    data.nodes
+      .filter((node) => node.depth <= maxVisibleDepth)
+      .map((node) => node.id),
+  );
+
+  return {
+    nodes: data.nodes.filter((node) => visibleNodeIds.has(node.id)),
+    links: data.links.filter(
+      (link) => visibleNodeIds.has(link.source) && visibleNodeIds.has(link.target),
+    ),
+  };
+}
+
+function clampInteger(value: number, min: number, max: number) {
+  return Math.min(Math.max(Math.trunc(value), min), max);
 }

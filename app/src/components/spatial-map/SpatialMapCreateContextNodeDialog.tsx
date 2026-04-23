@@ -1,7 +1,8 @@
 import { useSubmission } from "@solidjs/router";
-import { createEffect, createSignal } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 import { HStack, VStack } from "styled-system/jsx";
 import { createProjectContextNode } from "~/lib/projects/data";
+import { detectMarkdownMaxHeadingDepth } from "~/lib/projects/context-node-markdown";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
 import { Button } from "~/components/ui/button";
@@ -27,14 +28,35 @@ export function SpatialMapCreateContextNodeDialog(
   const [label, setLabel] = createSignal("");
   const [context, setContext] = createSignal("");
   const [splitByHeadingLevel, setSplitByHeadingLevel] = createSignal(false);
+  const [selectedMaxHeadingDepth, setSelectedMaxHeadingDepth] = createSignal(1);
+  const [hasManualHeadingDepth, setHasManualHeadingDepth] = createSignal(false);
   let nameInput: HTMLInputElement | undefined;
   const formId = "create-context-node-form";
+  const detectedMaxHeadingDepth = createMemo(() => detectMarkdownMaxHeadingDepth(context()));
+  const headingDepthOptions = createMemo(() =>
+    Array.from({ length: detectedMaxHeadingDepth() }, (_, index) => index + 1),
+  );
 
   const reset = () => {
     setLabel("");
     setContext("");
     setSplitByHeadingLevel(false);
+    setSelectedMaxHeadingDepth(1);
+    setHasManualHeadingDepth(false);
     createContextNodeSubmission.clear();
+  };
+
+  const handleSplitByHeadingLevelChange = (checked: boolean) => {
+    setSplitByHeadingLevel(checked);
+    if (checked) {
+      setSelectedMaxHeadingDepth(Math.max(1, detectedMaxHeadingDepth()));
+      setHasManualHeadingDepth(false);
+    }
+  };
+
+  const handleSelectMaxHeadingDepth = (depth: number) => {
+    setSelectedMaxHeadingDepth(depth);
+    setHasManualHeadingDepth(true);
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -66,6 +88,20 @@ export function SpatialMapCreateContextNodeDialog(
           : `${result.project.spatialMap.nodes.find((node) => node.id === result.nodeId)?.label ?? "New node"} is now available in the map.`,
     });
     createContextNodeSubmission.clear();
+  });
+
+  createEffect(() => {
+    const maxDepth = detectedMaxHeadingDepth();
+    if (maxDepth === 0) {
+      setSelectedMaxHeadingDepth(1);
+      setHasManualHeadingDepth(false);
+      return;
+    }
+
+    if (!hasManualHeadingDepth() || selectedMaxHeadingDepth() > maxDepth) {
+      setSelectedMaxHeadingDepth(maxDepth);
+      setHasManualHeadingDepth(false);
+    }
   });
 
   return (
@@ -109,6 +145,11 @@ export function SpatialMapCreateContextNodeDialog(
         >
           <VStack alignItems="stretch" gap="4">
             <input type="hidden" name="projectId" value={props.projectId} />
+            <input
+              type="hidden"
+              name="maxHeadingDepth"
+              value={selectedMaxHeadingDepth()}
+            />
             <Field.Root required>
               <Field.Label>
                 Name
@@ -147,7 +188,7 @@ export function SpatialMapCreateContextNodeDialog(
               <Checkbox.Root
                 checked={splitByHeadingLevel()}
                 onCheckedChange={(details) =>
-                  setSplitByHeadingLevel(details.checked === true)
+                  handleSplitByHeadingLevelChange(details.checked === true)
                 }
               >
                 <Checkbox.HiddenInput name="splitByHeadingLevel" value="true" />
@@ -162,6 +203,33 @@ export function SpatialMapCreateContextNodeDialog(
                     <Field.HelperText>
                       Create a root note from the name above, then turn markdown headings into linked child nodes with each section body stored as that node&apos;s context.
                     </Field.HelperText>
+                    <Show
+                      when={splitByHeadingLevel() && headingDepthOptions().length > 0}
+                    >
+                      <VStack alignItems="stretch" gap="1" mt="2">
+                        <Field.HelperText>
+                          Convert headings through depth {selectedMaxHeadingDepth()}. Deeper headings stay in the parent node&apos;s context.
+                        </Field.HelperText>
+                        <HStack gap="1" flexWrap="wrap">
+                          <For each={headingDepthOptions()}>
+                            {(depth) => (
+                              <Button
+                                type="button"
+                                size="2xs"
+                                variant={
+                                  selectedMaxHeadingDepth() === depth ? "solid" : "outline"
+                                }
+                                colorPalette="blue"
+                                aria-pressed={selectedMaxHeadingDepth() === depth}
+                                onClick={() => handleSelectMaxHeadingDepth(depth)}
+                              >
+                                {depth}
+                              </Button>
+                            )}
+                          </For>
+                        </HStack>
+                      </VStack>
+                    </Show>
                   </VStack>
                 </HStack>
               </Checkbox.Root>

@@ -1,5 +1,6 @@
 import type { ClarifyingQuestion, FollowUpSuggestion } from "./types";
 import type { ProjectRecord } from "~/lib/projects/types";
+import { getLinkLabel } from "~/lib/spatial-map/links";
 import type { MapNode } from "~/lib/spatial-map/types";
 
 function summarizeNode(node: MapNode) {
@@ -18,7 +19,7 @@ function summarizeGraph(project: ProjectRecord) {
     "",
     "Existing links:",
     ...project.spatialMap.links.map(
-      (link) => `${link.source} -> ${link.target} (${link.kind ?? "related"})`,
+      (link) => `${link.source} -> ${link.target} (${getLinkLabel(link)})`,
     ),
   ].join("\n");
 }
@@ -89,7 +90,9 @@ export function buildNodeGenerationPrompt(input: {
     "Keep node labels compact and concrete.",
     "Purpose and implementation should each be one sentence.",
     "Links may target existing nodes or newly generated nodes.",
-    "Prefer hierarchy links when creating child structure and related links for cross-cutting adjacency.",
+    "For parent/child structure, emit links with parentChild: true and no relationship.",
+    'For non-parent/child adjacency, emit parentChild: false with relationship "related", "dependency", or "reuse".',
+    "Create parentChild links first to anchor true depth before adding cross-cutting relationship links.",
     "",
     `User brief: ${input.brief}`,
     input.selectedNode

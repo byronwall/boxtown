@@ -1,4 +1,5 @@
 import { A } from "@solidjs/router";
+import { For } from "solid-js";
 import { Box, HStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import { Text } from "~/components/ui/text";
@@ -73,6 +74,45 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
           projectId={props.projectId}
           onProjectUpdated={props.onProjectUpdated}
         />
+        <HStack gap="0" class="spatial-map-toggle-group" aria-label="Map view mode">
+          <Button
+            colorPalette="green"
+            variant={spatialMap.viewMode() === "canvas" ? "surface" : "outline"}
+            size="xs"
+            class={`spatial-map-button spatial-map-toggle-button${spatialMap.viewMode() === "canvas" ? " is-active" : ""}`}
+            aria-pressed={spatialMap.viewMode() === "canvas"}
+            onClick={() => spatialMap.setViewMode("canvas")}
+          >
+            Canvas
+          </Button>
+          <Button
+            colorPalette="green"
+            variant={spatialMap.viewMode() === "tree" ? "surface" : "outline"}
+            size="xs"
+            class={`spatial-map-button spatial-map-toggle-button${spatialMap.viewMode() === "tree" ? " is-active" : ""}`}
+            aria-pressed={spatialMap.viewMode() === "tree"}
+            onClick={() => spatialMap.setViewMode("tree")}
+          >
+            Tree
+          </Button>
+        </HStack>
+        <HStack gap="0" class="spatial-map-toggle-group" aria-label="Displayed hierarchy depth">
+          <For each={spatialMap.availableDepthLevels()}>
+            {(level) => (
+              <Button
+                colorPalette="green"
+                variant={spatialMap.visibleDepthLevel() === level ? "surface" : "outline"}
+                size="xs"
+                class={`spatial-map-button spatial-map-depth-button${spatialMap.visibleDepthLevel() === level ? " is-active" : ""}`}
+                aria-label={`Show ${level} hierarchy ${level === 1 ? "level" : "levels"}`}
+                aria-pressed={spatialMap.visibleDepthLevel() === level}
+                onClick={() => spatialMap.setVisibleDepthLevel(level)}
+              >
+                {level}
+              </Button>
+            )}
+          </For>
+        </HStack>
         <Button
           colorPalette="green"
           variant="outline"

@@ -41,6 +41,21 @@ const questionSetSchema = z.object({
     .max(4),
 });
 
+const generatedLinkSchema = z.union([
+  z.object({
+    source: z.string().min(1),
+    target: z.string().min(1),
+    parentChild: z.literal(true),
+    relationship: z.undefined().optional(),
+  }),
+  z.object({
+    source: z.string().min(1),
+    target: z.string().min(1),
+    parentChild: z.literal(false),
+    relationship: z.enum(["related", "dependency", "reuse"]),
+  }),
+]);
+
 const generatedNodeBatchSchema = z.object({
   summary: z.string().min(1),
   nodes: z
@@ -58,11 +73,7 @@ const generatedNodeBatchSchema = z.object({
     .min(1)
     .max(10),
   links: z.array(
-    z.object({
-      source: z.string().min(1),
-      target: z.string().min(1),
-      kind: z.string().min(1).optional(),
-    }),
+    generatedLinkSchema,
   ),
 });
 

@@ -3,6 +3,7 @@ import type {
   MapNode,
   PositionedMapNode,
 } from "~/lib/spatial-map/types";
+import { getLinkLabel } from "~/lib/spatial-map/links";
 
 import type { EdgeVisualState, NodeVisualState } from "./spatial-map-canvas.types";
 
@@ -26,14 +27,14 @@ export function describeRelations(
   const outgoing = links
     .filter((link) => link.source === selectedNode.id && nodesById.has(link.target))
     .map((link) => ({
-      kind: link.kind ?? "link",
+      kind: getLinkLabel(link),
       nodeId: link.target,
     }));
 
   const incoming = links
     .filter((link) => link.target === selectedNode.id && nodesById.has(link.source))
     .map((link) => ({
-      kind: link.kind ?? "link",
+      kind: getLinkLabel(link),
       nodeId: link.source,
     }));
 
@@ -68,11 +69,6 @@ export function createOrderedNodeState(options: {
       isSelected,
       opacity: isDimmed ? 0.22 : 1,
       scale: isCore ? 1.045 : isActive ? 1.02 : isDimmed ? 0.985 : 1,
-      filter: isActive
-        ? "drop-shadow(0 20px 28px rgba(56, 88, 65, 0.18))"
-        : isDimmed
-          ? "drop-shadow(0 6px 12px rgba(56, 88, 65, 0.08))"
-          : "none",
     };
   });
 }
@@ -109,7 +105,7 @@ export function createEdgeState(options: {
 
     return [
       {
-        linkId: `${link.source}-${link.target}-${link.kind ?? "link"}-${index}`,
+        linkId: `${link.source}-${link.target}-${getLinkLabel(link)}-${index}`,
         path: `M ${source.x} ${source.y} L ${target.x} ${target.y}`,
         opacity: visible ? opacity : 0,
       },

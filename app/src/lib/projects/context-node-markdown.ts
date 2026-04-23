@@ -5,6 +5,10 @@ export interface MarkdownHeadingSection {
   context: string;
 }
 
+interface SplitMarkdownIntoHeadingSectionsOptions {
+  maxHeadingDepth?: number;
+}
+
 interface MutableMarkdownHeadingSection {
   level: number;
   label: string;
@@ -15,14 +19,39 @@ interface MutableMarkdownHeadingSection {
 const ATX_HEADING_PATTERN = /^( {0,3})(#{1,6})[ \t]+(.+?)(?:[ \t]+#+[ \t]*)?$/;
 const FENCE_PATTERN = /^( {0,3})(`{3,}|~{3,})/;
 
-export function splitMarkdownIntoHeadingSections(markdown: string): {
+export function detectMarkdownMaxHeadingDepth(markdown: string) {
+  return parseMarkdownHeadingSections(markdown).maxHeadingDepth;
+}
+
+export function splitMarkdownIntoHeadingSections(
+  markdown: string,
+  options: SplitMarkdownIntoHeadingSectionsOptions = {},
+): {
   preamble: string;
   sections: MarkdownHeadingSection[];
 } {
+  const parsed = parseMarkdownHeadingSections(markdown, options);
+
+  return {
+    preamble: parsed.preamble,
+    sections: parsed.sections,
+  };
+}
+
+function parseMarkdownHeadingSections(
+  markdown: string,
+  options: SplitMarkdownIntoHeadingSectionsOptions = {},
+) {
   const lines = markdown.split(/\r?\n/);
   const sections: MutableMarkdownHeadingSection[] = [];
   const preambleLines: string[] = [];
-  const headingStack: Array<{ index: number; level: number }> = [];
+  const headingStack: Array<{ level: number }> = [];
+  const includedHeadingStack: Array<{ index: number; level: number }> = [];
+  const maxHeadingDepth =
+    typeof options.maxHeadingDepth === "number" && Number.isFinite(options.maxHeadingDepth)
+      ? Math.max(1, Math.floor(options.maxHeadingDepth))
+      : null;
+  let detectedMaxHeadingDepth = 0;
   let activeSectionIndex: number | null = null;
   let activeFenceMarker: string | null = null;
 
@@ -59,7 +88,32 @@ export function splitMarkdownIntoHeadingSections(markdown: string): {
         headingStack.pop();
       }
 
-      const parentIndex = headingStack[headingStack.length - 1]?.index ?? null;
+      const headingDepth = headingStack.length + 1;
+      detectedMaxHeadingDepth = Math.max(detectedMaxHeadingDepth, headingDepth);
+      headingStack.push({ level });
+
+      while (includedHeadingStack.length > 0) {
+        const lastIncludedHeading = includedHeadingStack[includedHeadingStack.length - 1];
+        if (!lastIncludedHeading || lastIncludedHeading.level < level) {
+          break;
+        }
+        includedHeadingStack.pop();
+      }
+
+      if (maxHeadingDepth !== null && headingDepth > maxHeadingDepth) {
+        const parentSectionIndex = includedHeadingStack[includedHeadingStack.length - 1]?.index;
+        if (parentSectionIndex === undefined) {
+          preambleLines.push(line);
+          activeSectionIndex = null;
+        } else {
+          sections[parentSectionIndex]?.bodyLines.push(line);
+          activeSectionIndex = parentSectionIndex;
+        }
+        continue;
+      }
+
+      const parentIndex =
+        includedHeadingStack[includedHeadingStack.length - 1]?.index ?? null;
       const nextSectionIndex = sections.length;
       sections.push({
         level,
@@ -67,7 +121,7 @@ export function splitMarkdownIntoHeadingSections(markdown: string): {
         parentIndex,
         bodyLines: [],
       });
-      headingStack.push({ index: nextSectionIndex, level });
+      includedHeadingStack.push({ index: nextSectionIndex, level });
       activeSectionIndex = nextSectionIndex;
       continue;
     }
@@ -82,6 +136,7 @@ export function splitMarkdownIntoHeadingSections(markdown: string): {
 
   return {
     preamble: trimMarkdownBlock(preambleLines.join("\n")),
+    maxHeadingDepth: detectedMaxHeadingDepth,
     sections: sections.map((section) => ({
       level: section.level,
       label: section.label,

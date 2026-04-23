@@ -244,6 +244,32 @@
   background: rgba(233, 214, 214, 0.96) !important;
 }
 
+.spatial-map-toggle-group {
+  overflow: hidden;
+  border: 1px solid var(--spatial-map-panel-border-strong);
+  background: rgba(231, 235, 228, 0.98);
+}
+
+.spatial-map-toggle-button,
+.spatial-map-depth-button {
+  min-width: 34px;
+  border-width: 0 1px 0 0 !important;
+  border-color: rgba(24, 29, 26, 0.24) !important;
+  background: transparent !important;
+}
+
+.spatial-map-toggle-button:last-child,
+.spatial-map-depth-button:last-child {
+  border-right-width: 0 !important;
+}
+
+.spatial-map-toggle-button.is-active,
+.spatial-map-depth-button.is-active {
+  background: rgba(37, 95, 58, 0.16) !important;
+  color: var(--spatial-map-accent-strong) !important;
+  box-shadow: inset 0 -2px 0 rgba(23, 62, 39, 0.86) !important;
+}
+
 .spatial-map-shortcut {
   display: inline-flex;
   align-items: center;
@@ -289,6 +315,208 @@
   cursor: grabbing;
 }
 
+.spatial-map-tree-viewport {
+  position: relative;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--spatial-map-panel-border-strong);
+  background:
+    linear-gradient(90deg, rgba(18, 22, 19, 0.055) 1px, transparent 1px),
+    linear-gradient(rgba(18, 22, 19, 0.055) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(248, 250, 247, 0.88) 0%, rgba(231, 236, 230, 0.96) 100%);
+  background-size: 80px 80px, 80px 80px, auto;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    inset 0 0 0 1px rgba(20, 25, 22, 0.04);
+}
+
+.spatial-map-tree-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 8px 9px;
+  border: 1px solid rgba(34, 41, 36, 0.2);
+  background: rgba(231, 235, 228, 0.96);
+}
+
+.spatial-map-tree-title {
+  margin: 0;
+  color: var(--spatial-map-copy);
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.spatial-map-tree-subtitle,
+.spatial-map-tree-empty {
+  margin: 4px 0 0;
+  color: var(--spatial-map-copy-muted);
+  font-size: 11px;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.spatial-map-tree-empty {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid rgba(34, 41, 36, 0.16);
+  background: rgba(244, 246, 242, 0.82);
+}
+
+.spatial-map-tree-list,
+.spatial-map-tree-node,
+.spatial-map-tree-children {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.spatial-map-tree-row {
+  --spatial-map-tree-fill: var(--spatial-map-neutral-fill);
+  --spatial-map-tree-fill-hover: var(--spatial-map-neutral-fill-hover);
+  --spatial-map-tree-stroke: var(--spatial-map-neutral-stroke);
+  --spatial-map-tree-stroke-hover: var(--spatial-map-neutral-stroke-hover);
+  --spatial-map-tree-indent: 0px;
+  display: grid;
+  grid-template-columns: 3px minmax(0, 1fr) minmax(0, max-content);
+  align-items: center;
+  gap: 9px;
+  box-sizing: border-box;
+  width: calc(100% - var(--spatial-map-tree-indent));
+  max-width: calc(100% - var(--spatial-map-tree-indent));
+  min-width: 0;
+  min-height: 46px;
+  margin-left: var(--spatial-map-tree-indent);
+  padding: 7px 9px 7px 0;
+  border: 1px solid var(--spatial-map-tree-stroke);
+  background: var(--spatial-map-tree-fill);
+  color: var(--spatial-map-copy);
+  font-family: inherit;
+  text-align: left;
+  appearance: none;
+  cursor: pointer;
+}
+
+.spatial-map-tree-row:hover {
+  border-color: var(--spatial-map-tree-stroke-hover);
+  background: var(--spatial-map-tree-fill-hover);
+}
+
+.spatial-map-tree-row:focus-visible {
+  outline: none;
+  border-color: rgba(23, 62, 39, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(23, 62, 39, 0.34);
+}
+
+.spatial-map-tree-row.is-selected {
+  border-color: #0f2f1d;
+  background: var(--spatial-map-tree-fill-hover);
+  box-shadow: inset 2px 0 0 rgba(23, 62, 39, 0.94);
+}
+
+.spatial-map-tree-row--page,
+.spatial-map-tree-row--area {
+  --spatial-map-tree-fill: var(--spatial-map-blue-fill);
+  --spatial-map-tree-fill-hover: var(--spatial-map-blue-fill-hover);
+  --spatial-map-tree-stroke: var(--spatial-map-blue-stroke);
+  --spatial-map-tree-stroke-hover: var(--spatial-map-blue-stroke-hover);
+}
+
+.spatial-map-tree-row--assembly,
+.spatial-map-tree-row--module {
+  --spatial-map-tree-fill: var(--spatial-map-green-fill);
+  --spatial-map-tree-fill-hover: var(--spatial-map-green-fill-hover);
+  --spatial-map-tree-stroke: var(--spatial-map-green-stroke);
+  --spatial-map-tree-stroke-hover: var(--spatial-map-green-stroke-hover);
+}
+
+.spatial-map-tree-row--component,
+.spatial-map-tree-row--contract,
+.spatial-map-tree-row--standard {
+  --spatial-map-tree-fill: var(--spatial-map-neutral-fill);
+  --spatial-map-tree-fill-hover: var(--spatial-map-neutral-fill-hover);
+  --spatial-map-tree-stroke: var(--spatial-map-neutral-stroke);
+  --spatial-map-tree-stroke-hover: var(--spatial-map-neutral-stroke-hover);
+}
+
+.spatial-map-tree-row--taxonomy {
+  --spatial-map-tree-fill: var(--spatial-map-steel-fill);
+  --spatial-map-tree-fill-hover: var(--spatial-map-steel-fill-hover);
+  --spatial-map-tree-stroke: var(--spatial-map-steel-stroke);
+  --spatial-map-tree-stroke-hover: var(--spatial-map-steel-stroke-hover);
+}
+
+.spatial-map-tree-row--note {
+  --spatial-map-tree-fill: var(--spatial-map-amber-fill);
+  --spatial-map-tree-fill-hover: var(--spatial-map-amber-fill-hover);
+  --spatial-map-tree-stroke: var(--spatial-map-amber-stroke);
+  --spatial-map-tree-stroke-hover: var(--spatial-map-amber-stroke-hover);
+}
+
+.spatial-map-tree-rail {
+  align-self: stretch;
+  background: var(--spatial-map-tree-stroke);
+}
+
+.spatial-map-tree-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.spatial-map-tree-label {
+  overflow: hidden;
+  color: #131816;
+  font-size: 13px;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.spatial-map-tree-purpose {
+  overflow: hidden;
+  color: var(--spatial-map-copy-muted);
+  font-size: 11px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spatial-map-tree-meta {
+  justify-self: end;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--spatial-map-copy-dim);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.spatial-map-tree-meta span {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 18px;
+  padding: 0 5px;
+  border: 1px solid color-mix(in srgb, var(--spatial-map-tree-stroke) 38%, transparent);
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.spatial-map-tree-children {
+  position: relative;
+  margin-top: 4px;
+}
+
 .spatial-map-scene {
   width: 100%;
   height: 100%;
@@ -302,6 +530,10 @@
   background-position: -1px -1px;
 }
 
+.spatial-map-scene-layer {
+  will-change: transform;
+}
+
 .spatial-map-edge {
   fill: none;
   pointer-events: none;
@@ -312,12 +544,12 @@
 }
 
 .spatial-map-node {
-  transition: opacity 120ms ease, filter 120ms ease;
+  transition: opacity 80ms linear;
 }
 
 .spatial-map-node-body,
 .spatial-map-node text {
-  transition: opacity 120ms ease, fill 120ms ease, stroke 120ms ease, transform 120ms ease;
+  transition: fill 80ms linear, stroke 80ms linear;
 }
 
 .spatial-map-node-body {
@@ -389,8 +621,14 @@
   fill: #131816;
   font-weight: 700;
   letter-spacing: -0.03em;
+  line-height: 1.16;
   pointer-events: none;
+  text-rendering: geometricPrecision;
   user-select: none;
+}
+
+.spatial-map-node .label tspan {
+  dominant-baseline: alphabetic;
 }
 
 .spatial-map-node .meta {

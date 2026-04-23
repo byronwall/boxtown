@@ -8,6 +8,7 @@ import { SpatialMapProvider, useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapInspector } from "./SpatialMapInspector";
 import { SpatialMapScene } from "./SpatialMapScene";
 import { SpatialMapToolbar } from "./SpatialMapToolbar";
+import { SpatialMapTreeView } from "./SpatialMapTreeView";
 
 const ContextNoteConversionRail = lazy(() =>
   import("./context-note-conversion-flow/ContextNoteConversionRail").then((module) => ({
@@ -59,8 +60,10 @@ function SpatialMapCanvasLayout(props: {
             projectId={props.project.id}
             onProjectUpdated={props.onProjectUpdated}
           />
-          <SpatialMapScene />
-          <Show when={!props.hasNodes}>
+          <Show when={controller.viewMode() === "canvas"} fallback={<SpatialMapTreeView />}>
+            <SpatialMapScene />
+          </Show>
+          <Show when={!props.hasNodes && controller.viewMode() === "canvas"}>
             <Box class="spatial-map-empty">
               <Box as="h2" class="spatial-map-empty-title">
                 Blank project grid

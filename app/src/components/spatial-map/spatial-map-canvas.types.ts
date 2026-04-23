@@ -1,5 +1,7 @@
 import type { Accessor, JSX } from "solid-js";
-import type { MapNode, PositionedMapNode } from "~/lib/spatial-map/types";
+import type { MapNode, PositionedMapNode, SpatialMapData } from "~/lib/spatial-map/types";
+
+export type SpatialMapViewMode = "canvas" | "tree";
 
 export interface CameraState {
   x: number;
@@ -14,7 +16,6 @@ export interface NodeVisualState {
   isSelected: boolean;
   opacity: number;
   scale: number;
-  filter: string;
 }
 
 export interface EdgeVisualState {
@@ -44,6 +45,7 @@ export interface SceneInteractionHandlers {
 export interface SpatialMapCanvasController {
   addNodesOpen: Accessor<boolean>;
   camera: Accessor<CameraState>;
+  sceneTransform: Accessor<string>;
   contextNoteConversionOpen: Accessor<boolean>;
   edgeState: Accessor<EdgeVisualState[]>;
   isolatedNodeId: Accessor<string | null>;
@@ -60,6 +62,10 @@ export interface SpatialMapCanvasController {
   selectedNode: Accessor<MapNode | null>;
   showEdges: Accessor<boolean>;
   sourceNodesById: Accessor<Map<string, MapNode>>;
+  availableDepthLevels: Accessor<number[]>;
+  visibleData: Accessor<SpatialMapData>;
+  visibleDepthLevel: Accessor<number>;
+  viewMode: Accessor<SpatialMapViewMode>;
   zoomPercent: Accessor<string>;
   closeAddNodesFlow: () => void;
   closeContextNoteConversionFlow: () => void;
@@ -67,6 +73,8 @@ export interface SpatialMapCanvasController {
   isolateNode: (nodeId: string) => void;
   setInspectorOpen: (value: boolean | ((current: boolean) => boolean)) => void;
   setSelectedNodeId: (value: string | null | ((current: string | null) => string | null)) => void;
+  setViewMode: (value: SpatialMapViewMode) => void;
+  setVisibleDepthLevel: (value: number) => void;
   toggleEdges: () => void;
   reflowLayout: () => void;
   fitCameraToNodes: () => void;

@@ -8,13 +8,27 @@ export interface MapNode {
   context: string;
   rawContext: string;
   contextMode: "context-only" | "structured";
+  images: MapNodeImage[];
+}
+
+export interface MapNodeImage {
+  id: string;
+  src: string;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
 }
 
 export interface MapLink {
   source: string;
   target: string;
-  kind?: string;
+  parentChild: boolean;
+  relationship?: MapLinkRelationship;
 }
+
+export type MapLinkRelationship = "related" | "dependency" | "reuse";
 
 export interface SpatialMapData {
   nodes: MapNode[];

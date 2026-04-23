@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { GeneratedNodeBatch } from "~/lib/add-nodes/types";
+import { createParentChildLink, getLinkKey } from "~/lib/spatial-map/links";
 import type { SpatialMapData } from "~/lib/spatial-map/types";
 import { parseSpatialMapData } from "~/lib/spatial-map/validate";
 import { splitMarkdownIntoHeadingSections } from "./context-node-markdown";
@@ -22,6 +23,7 @@ interface CreateContextNodeInput {
   label: string;
   context: string;
   splitByHeadingLevel?: boolean;
+  maxHeadingDepth?: number;
 }
 
 interface DeleteProjectNodeInput {
@@ -109,9 +111,7 @@ export function mergeGeneratedSpatialMapData(
   const existingIds = new Set(current.nodes.map((node) => node.id));
   const nodeIdMap = new Map<string, string>();
   const nextNodes = [...current.nodes];
-  const existingLinkKeys = new Set(
-    current.links.map((link) => `${link.source}::${link.target}::${link.kind ?? ""}`),
-  );
+  const existingLinkKeys = new Set(current.links.map(getLinkKey));
 
   for (const node of generated.nodes) {
     const stableId = createUniqueNodeId(node.label, node.type, existingIds);
@@ -135,18 +135,21 @@ export function mergeGeneratedSpatialMapData(
       continue;
     }
 
-    const normalizedKind = link.kind?.trim() || undefined;
-    const key = `${source}::${target}::${normalizedKind ?? ""}`;
+    const nextLink = link.parentChild
+      ? createParentChildLink({ source, target })
+      : {
+          source,
+          target,
+          parentChild: false,
+          relationship: link.relationship ?? "related",
+        };
+    const key = getLinkKey(nextLink);
     if (existingLinkKeys.has(key)) {
       continue;
     }
 
     existingLinkKeys.add(key);
-    nextLinks.push({
-      source,
-      target,
-      kind: normalizedKind,
-    });
+    nextLinks.push(nextLink);
   }
 
   return {
@@ -231,6 +234,7 @@ export async function createContextNodeOnDisk(
         label: baseLabel,
         markdown: input.context,
         existingIds,
+        maxHeadingDepth: input.maxHeadingDepth,
       })
     : createSingleContextNode({
         label: baseLabel,
@@ -282,8 +286,11 @@ function createContextNodeTree(input: {
   label: string;
   markdown: string;
   existingIds: Set<string>;
+  maxHeadingDepth?: number;
 }) {
-  const { preamble, sections } = splitMarkdownIntoHeadingSections(input.markdown);
+  const { preamble, sections } = splitMarkdownIntoHeadingSections(input.markdown, {
+    maxHeadingDepth: input.maxHeadingDepth,
+  });
   if (sections.length === 0) {
     return createSingleContextNode({
       label: input.label,
@@ -324,9 +331,7 @@ function createContextNodeTree(input: {
       }),
     );
     links.push({
-      source: parentNodeId,
-      target: nodeId,
-      kind: "hierarchy",
+      ...createParentChildLink({ source: parentNodeId, target: nodeId }),
     });
   }
 
@@ -472,6 +477,7 @@ function createUniqueNodeId(label: string, type: string, existingIds: Set<string
 
   return `${baseId}-${suffix}`;
 }
+
 
 function reserveUniqueNodeId(label: string, type: string, existingIds: Set<string>) {
   const nodeId = createUniqueNodeId(label, type, existingIds);

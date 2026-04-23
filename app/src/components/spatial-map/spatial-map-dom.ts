@@ -7,9 +7,3 @@ export function isEditableTarget(target: EventTarget | null) {
       target.tagName === "SELECT")
   );
 }
-
-export function getHoveredSpatialMapNodeId(clientX: number, clientY: number) {
-  const hoveredElement = document.elementFromPoint(clientX, clientY);
-  const hoveredNode = hoveredElement?.closest(".spatial-map-node");
-  return hoveredNode?.getAttribute("data-node-id") ?? null;
-}

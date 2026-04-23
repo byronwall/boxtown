@@ -97,6 +97,7 @@ export const createProjectContextNode = action(
     const label = formData.get("label");
     const context = formData.get("context");
     const splitByHeadingLevel = formData.get("splitByHeadingLevel");
+    const maxHeadingDepth = formData.get("maxHeadingDepth");
 
     if (typeof projectId !== "string" || projectId.trim().length === 0) {
       throw new Error("A project id is required.");
@@ -110,6 +111,8 @@ export const createProjectContextNode = action(
       label,
       context: typeof context === "string" ? context : "",
       splitByHeadingLevel: splitByHeadingLevel === "true",
+      maxHeadingDepth:
+        typeof maxHeadingDepth === "string" ? Number.parseInt(maxHeadingDepth, 10) : undefined,
     });
   },
   "create-project-context-node",

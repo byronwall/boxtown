@@ -186,38 +186,181 @@
     }
   ],
   "links": [
-    { "source": "page-home", "target": "asm-home-hero", "kind": "hierarchy" },
-    { "source": "page-home", "target": "asm-home-featured", "kind": "hierarchy" },
-    { "source": "page-recipes", "target": "asm-recipes-filterbar", "kind": "hierarchy" },
-    { "source": "page-recipes", "target": "asm-recipes-results", "kind": "hierarchy" },
-    { "source": "page-recipe-detail", "target": "asm-detail-overview", "kind": "hierarchy" },
-    { "source": "page-recipe-detail", "target": "asm-detail-instructions", "kind": "hierarchy" },
-    { "source": "page-profile", "target": "asm-profile-saved", "kind": "hierarchy" },
-    { "source": "page-profile", "target": "asm-profile-planner", "kind": "hierarchy" },
-    { "source": "asm-home-hero", "target": "cmp-search-input", "kind": "hierarchy" },
-    { "source": "asm-home-hero", "target": "cmp-cta-button", "kind": "hierarchy" },
-    { "source": "asm-home-featured", "target": "cmp-recipe-card", "kind": "hierarchy" },
-    { "source": "asm-recipes-filterbar", "target": "cmp-filter-chip", "kind": "hierarchy" },
-    { "source": "asm-recipes-filterbar", "target": "cmp-sort-select", "kind": "hierarchy" },
-    { "source": "asm-recipes-results", "target": "cmp-recipe-card", "kind": "hierarchy" },
-    { "source": "asm-detail-overview", "target": "cmp-rating-stars", "kind": "hierarchy" },
-    { "source": "asm-detail-overview", "target": "cmp-save-toggle", "kind": "hierarchy" },
-    { "source": "asm-detail-instructions", "target": "cmp-ingredient-list", "kind": "hierarchy" },
-    { "source": "asm-detail-instructions", "target": "cmp-step-list", "kind": "hierarchy" },
-    { "source": "asm-profile-saved", "target": "cmp-recipe-card", "kind": "hierarchy" },
-    { "source": "asm-profile-saved", "target": "cmp-save-toggle", "kind": "hierarchy" },
-    { "source": "asm-profile-planner", "target": "cmp-calendar-grid", "kind": "hierarchy" },
-    { "source": "asm-profile-planner", "target": "cmp-shopping-list", "kind": "hierarchy" },
-    { "source": "page-home", "target": "page-recipes", "kind": "related" },
-    { "source": "page-recipes", "target": "page-recipe-detail", "kind": "related" },
-    { "source": "page-profile", "target": "page-recipe-detail", "kind": "related" },
-    { "source": "asm-home-featured", "target": "asm-recipes-results", "kind": "related" },
-    { "source": "asm-recipes-filterbar", "target": "asm-recipes-results", "kind": "dependency" },
-    { "source": "asm-detail-overview", "target": "asm-profile-saved", "kind": "related" },
-    { "source": "asm-profile-planner", "target": "asm-detail-instructions", "kind": "related" },
-    { "source": "cmp-search-input", "target": "cmp-filter-chip", "kind": "related" },
-    { "source": "cmp-cta-button", "target": "cmp-recipe-card", "kind": "reuse" },
-    { "source": "cmp-rating-stars", "target": "cmp-save-toggle", "kind": "related" },
-    { "source": "cmp-calendar-grid", "target": "cmp-shopping-list", "kind": "dependency" }
+    {
+      "source": "page-home",
+      "target": "asm-home-hero",
+      "parentChild": true
+    },
+    {
+      "source": "page-home",
+      "target": "asm-home-featured",
+      "parentChild": true
+    },
+    {
+      "source": "page-recipes",
+      "target": "asm-recipes-filterbar",
+      "parentChild": true
+    },
+    {
+      "source": "page-recipes",
+      "target": "asm-recipes-results",
+      "parentChild": true
+    },
+    {
+      "source": "page-recipe-detail",
+      "target": "asm-detail-overview",
+      "parentChild": true
+    },
+    {
+      "source": "page-recipe-detail",
+      "target": "asm-detail-instructions",
+      "parentChild": true
+    },
+    {
+      "source": "page-profile",
+      "target": "asm-profile-saved",
+      "parentChild": true
+    },
+    {
+      "source": "page-profile",
+      "target": "asm-profile-planner",
+      "parentChild": true
+    },
+    {
+      "source": "asm-home-hero",
+      "target": "cmp-search-input",
+      "parentChild": true
+    },
+    {
+      "source": "asm-home-hero",
+      "target": "cmp-cta-button",
+      "parentChild": true
+    },
+    {
+      "source": "asm-home-featured",
+      "target": "cmp-recipe-card",
+      "parentChild": true
+    },
+    {
+      "source": "asm-recipes-filterbar",
+      "target": "cmp-filter-chip",
+      "parentChild": true
+    },
+    {
+      "source": "asm-recipes-filterbar",
+      "target": "cmp-sort-select",
+      "parentChild": true
+    },
+    {
+      "source": "asm-recipes-results",
+      "target": "cmp-recipe-card",
+      "parentChild": true
+    },
+    {
+      "source": "asm-detail-overview",
+      "target": "cmp-rating-stars",
+      "parentChild": true
+    },
+    {
+      "source": "asm-detail-overview",
+      "target": "cmp-save-toggle",
+      "parentChild": true
+    },
+    {
+      "source": "asm-detail-instructions",
+      "target": "cmp-ingredient-list",
+      "parentChild": true
+    },
+    {
+      "source": "asm-detail-instructions",
+      "target": "cmp-step-list",
+      "parentChild": true
+    },
+    {
+      "source": "asm-profile-saved",
+      "target": "cmp-recipe-card",
+      "parentChild": true
+    },
+    {
+      "source": "asm-profile-saved",
+      "target": "cmp-save-toggle",
+      "parentChild": true
+    },
+    {
+      "source": "asm-profile-planner",
+      "target": "cmp-calendar-grid",
+      "parentChild": true
+    },
+    {
+      "source": "asm-profile-planner",
+      "target": "cmp-shopping-list",
+      "parentChild": true
+    },
+    {
+      "source": "page-home",
+      "target": "page-recipes",
+      "parentChild": false,
+      "relationship": "related"
+    },
+    {
+      "source": "page-recipes",
+      "target": "page-recipe-detail",
+      "parentChild": false,
+      "relationship": "related"
+    },
+    {
+      "source": "page-profile",
+      "target": "page-recipe-detail",
+      "parentChild": false,
+      "relationship": "related"
+    },
+    {
+      "source": "asm-home-featured",
+      "target": "asm-recipes-results",
+      "parentChild": false,
+      "relationship": "related"
+    },
+    {
+      "source": "asm-recipes-filterbar",
+      "target": "asm-recipes-results",
+      "parentChild": false,
+      "relationship": "dependency"
+    },
+    {
+      "source": "asm-detail-overview",
+      "target": "asm-profile-saved",
+      "parentChild": false,
+      "relationship": "related"
+    },
+    {
+      "source": "asm-profile-planner",
+      "target": "asm-detail-instructions",
+      "parentChild": false,
+      "relationship": "related"
+    },
+    {
+      "source": "cmp-search-input",
+      "target": "cmp-filter-chip",
+      "parentChild": false,
+      "relationship": "related"
+    },
+    {
+      "source": "cmp-cta-button",
+      "target": "cmp-recipe-card",
+      "parentChild": false,
+      "relationship": "reuse"
+    },
+    {
+      "source": "cmp-rating-stars",
+      "target": "cmp-save-toggle",
+      "parentChild": false,
+      "relationship": "related"
+    },
+    {
+      "source": "cmp-calendar-grid",
+      "target": "cmp-shopping-list",
+      "parentChild": false,
+      "relationship": "dependency"
+    }
   ]
 }

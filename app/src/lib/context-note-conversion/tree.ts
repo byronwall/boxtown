@@ -21,13 +21,7 @@ export function buildCandidateTree(nodes: MapNode[], links: MapLink[]): Conversi
       continue;
     }
 
-    const source = nodeById.get(link.source)!;
-    const target = nodeById.get(link.target)!;
-    const isHierarchy =
-      link.kind === "hierarchy" ||
-      (source.depth < target.depth && (link.kind === undefined || link.kind === "related"));
-
-    if (!isHierarchy) {
+    if (!link.parentChild) {
       continue;
     }
 
