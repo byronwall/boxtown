@@ -13,4 +13,4 @@ services:
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5-mini}
       OPENAI_HEAVY_MODEL: ${OPENAI_HEAVY_MODEL:-gpt-5.4}
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "${APP_PORT_EXPOSE:-}:3000"
