@@ -1,0 +1,222 @@
+# Custom Component Inventory
+
+- `scope`
+  - Commentary: This inventory focuses on app-specific components that are not normally available in a common UI component framework. Generic primitives from `app/src/components/ui/` such as buttons, inputs, dialogs, selects, tabs, tables, popovers, tooltips, and other Ark/Panda wrappers are intentionally excluded.
+  - Commentary: The markdown renderer is included because it is a custom rendering stack with code, table, heading, and Mermaid behavior. Generated Panda output in `app/styled-system/` is also excluded.
+
+- `routes`
+  - `app/src/routes/index.tsx`
+    - Commentary: Entry route for the project registry view. It loads the route data and delegates the actual screen rendering to the custom project index component.
+  - `app/src/routes/projects/[projectId].tsx`
+    - Commentary: Entry route for a single project workspace. It prepares project-specific data for the spatial map experience and renders the project detail component.
+
+- `projects`
+  - `ProjectIndexPage`
+    - Path: `app/src/components/projects/ProjectIndexPage.tsx`
+    - Commentary: Custom landing surface for browsing and creating product-grid projects. It combines registry-level metrics, project summaries, and entry points into the spatial map workspace.
+  - `RegistryMetric`
+    - Path: `app/src/components/projects/ProjectIndexPage.tsx`
+    - Commentary: Internal metric display for high-level registry counts. It gives the project index a compact dashboard-like summary without relying on a generic stat-card component.
+  - `ProjectStat`
+    - Path: `app/src/components/projects/ProjectIndexPage.tsx`
+    - Commentary: Internal stat display for individual project summaries. It keeps repeated metadata visually consistent across project cards.
+  - `ProjectDetailPage`
+    - Path: `app/src/components/projects/ProjectDetailPage.tsx`
+    - Commentary: Custom page shell for the selected project. It bridges project data, mutation actions, and the spatial map canvas into the main workspace.
+  - `ProjectDeleteControl`
+    - Path: `app/src/components/projects/ProjectDeleteControl.tsx`
+    - Commentary: Project-specific destructive action control. It wraps confirmation and form-backed server-action submission for deleting a project.
+
+- `spatial-map/core`
+  - `SpatialMapCanvas`
+    - Path: `app/src/components/spatial-map/SpatialMapCanvas.tsx`
+    - Commentary: Main custom workspace for the map editor/viewer. It coordinates the SVG scene, toolbar, tree, inspector, image controls, and AI workflow rails.
+  - `SpatialMapCanvasLayout`
+    - Path: `app/src/components/spatial-map/SpatialMapCanvas.tsx`
+    - Commentary: Internal layout component for the map workspace. It arranges the viewport and surrounding panels into the app's dense operator-style canvas.
+  - `SpatialMapProvider`
+    - Path: `app/src/components/spatial-map/SpatialMapContext.tsx`
+    - Commentary: Context provider for the spatial map controller. It lets deeply nested map controls share camera, selection, depth, node, and relationship state.
+  - `useSpatialMap`
+    - Path: `app/src/components/spatial-map/SpatialMapContext.tsx`
+    - Commentary: Consumer hook for the spatial map context. It avoids prop drilling across the custom map scene, toolbar, tree, inspector, and image components.
+  - `SpatialMapScene`
+    - Path: `app/src/components/spatial-map/SpatialMapScene.tsx`
+    - Commentary: Custom SVG graph renderer for the spatial map. It translates map data into positioned nodes, relationship edges, labels, selection states, and pointer interactions.
+  - `SpatialMapNode`
+    - Path: `app/src/components/spatial-map/SpatialMapScene.tsx`
+    - Commentary: Internal SVG renderer for a single map node. It handles node tone, label wrapping, metadata display, hover state, and selection affordances.
+  - `SpatialMapToolbar`
+    - Path: `app/src/components/spatial-map/SpatialMapToolbar.tsx`
+    - Commentary: Custom control strip for map operations. It exposes map-specific actions such as fit, depth navigation, node creation, AI workflows, and inspector visibility.
+  - `SpatialMapTreeView`
+    - Path: `app/src/components/spatial-map/SpatialMapTreeView.tsx`
+    - Commentary: Custom hierarchical view of the map graph. It gives users a tree-structured alternative to the spatial canvas for navigating parent/child relationships.
+  - `SpatialMapTreeNode`
+    - Path: `app/src/components/spatial-map/SpatialMapTreeView.tsx`
+    - Commentary: Internal recursive tree item renderer. It manages indentation, selection, child nesting, and node labels for the tree view.
+
+- `spatial-map/inspector`
+  - `SpatialMapInspector`
+    - Path: `app/src/components/spatial-map/SpatialMapInspector.tsx`
+    - Commentary: Custom detail rail for the selected map node. It presents node metadata, context content, relationship lists, and node-level actions.
+  - `InspectorToggle`
+    - Path: `app/src/components/spatial-map/SpatialMapInspector.tsx`
+    - Commentary: Map-specific inspector visibility control. It is used in toolbar and panel contexts so users can collapse or reopen the detail rail.
+  - `ContextPreview`
+    - Path: `app/src/components/spatial-map/SpatialMapInspector.tsx`
+    - Commentary: Internal preview for node context text. It supports compact inspection of rich or plain context content without expanding the full dialog.
+  - `RawContextPreview`
+    - Path: `app/src/components/spatial-map/SpatialMapInspector.tsx`
+    - Commentary: Internal raw-text renderer for context content. It preserves source formatting when exact note text matters.
+  - `ContextPreviewDialog`
+    - Path: `app/src/components/spatial-map/SpatialMapInspector.tsx`
+    - Commentary: Expanded modal view for long context content. It keeps the inspector compact while still allowing full text review.
+  - `InspectorRow`
+    - Path: `app/src/components/spatial-map/SpatialMapInspector.tsx`
+    - Commentary: Internal key-value row for node metadata. It standardizes dense display of ids, types, depths, and related attributes.
+  - `InspectorBlock`
+    - Path: `app/src/components/spatial-map/SpatialMapInspector.tsx`
+    - Commentary: Internal grouped content block for the inspector. It separates longer node details into readable technical sections.
+  - `InspectorRelationList`
+    - Path: `app/src/components/spatial-map/SpatialMapInspector.tsx`
+    - Commentary: Internal renderer for node relationships. It converts graph links into selectable parent, child, and related-node records.
+
+- `spatial-map/node-actions`
+  - `SpatialMapCreateContextNodeDialog`
+    - Path: `app/src/components/spatial-map/SpatialMapCreateContextNodeDialog.tsx`
+    - Commentary: Custom dialog for creating context nodes in the project map. It uses form-backed server actions and map-specific defaults rather than a generic create form.
+  - `SpatialMapDeleteNodeControl`
+    - Path: `app/src/components/spatial-map/SpatialMapDeleteNodeControl.tsx`
+    - Commentary: Node-specific destructive action control. It combines confirmation, pending state, and server-action submission for removing a map node.
+
+- `spatial-map/images`
+  - `SpatialMapImageProvider`
+    - Path: `app/src/components/spatial-map/SpatialMapImages.tsx`
+    - Commentary: Context provider for node image state. It owns upload, selection, drag/drop, and viewer behavior related to spatial map images.
+  - `useSpatialMapImages`
+    - Path: `app/src/components/spatial-map/SpatialMapImages.tsx`
+    - Commentary: Consumer hook for image-related map state. It lets image strips and drop targets share the same upload and viewer controls.
+  - `SpatialMapImageStrip`
+    - Path: `app/src/components/spatial-map/SpatialMapImages.tsx`
+    - Commentary: Custom thumbnail strip for images attached to a node. It keeps visual references close to the selected node's inspector workflow.
+  - `SpatialMapImageDropTarget`
+    - Path: `app/src/components/spatial-map/SpatialMapImages.tsx`
+    - Commentary: Drag-and-drop upload target for map node images. It extracts image files from browser drag events and routes them into the project image pipeline.
+  - `SpatialMapImageViewer`
+    - Path: `app/src/components/spatial-map/SpatialMapImages.tsx`
+    - Commentary: Internal zoomable image viewer. It supports detailed inspection of node imagery without leaving the map workspace.
+
+- `spatial-map/add-nodes-flow`
+  - `AddNodesFlowRail`
+    - Path: `app/src/components/spatial-map/add-nodes-flow/AddNodesFlowRail.tsx`
+    - Commentary: Custom AI workflow rail for generating additional map nodes. It displays run progress, generated content, errors, and acceptance controls for the add-nodes job.
+  - `InspectorRow`
+    - Path: `app/src/components/spatial-map/add-nodes-flow/AddNodesFlowRail.tsx`
+    - Commentary: Internal metadata row for add-nodes output. It keeps generated-node details compact and aligned with the inspector style.
+  - `useAddNodesFlow`
+    - Path: `app/src/components/spatial-map/add-nodes-flow/useAddNodesFlow.ts`
+    - Commentary: Custom state hook for the add-nodes lifecycle. It starts runs, subscribes to event-stream updates, tracks terminal states, and exposes rail-ready snapshots.
+
+- `spatial-map/context-note-conversion-flow`
+  - `ContextNoteConversionRail`
+    - Path: `app/src/components/spatial-map/context-note-conversion-flow/ContextNoteConversionRail.tsx`
+    - Commentary: Custom AI workflow rail for converting freeform notes into candidate map structure. It lets users review generated trees before accepting them into the project.
+  - `CandidateTreeNode`
+    - Path: `app/src/components/spatial-map/context-note-conversion-flow/ContextNoteConversionRail.tsx`
+    - Commentary: Internal recursive renderer for conversion candidates. It makes AI-generated hierarchy inspectable before it becomes persisted map data.
+  - `InspectorRow`
+    - Path: `app/src/components/spatial-map/context-note-conversion-flow/ContextNoteConversionRail.tsx`
+    - Commentary: Internal metadata row for conversion output. It keeps run and candidate attributes readable in the rail.
+  - `useContextNoteConversionFlow`
+    - Path: `app/src/components/spatial-map/context-note-conversion-flow/useContextNoteConversionFlow.ts`
+    - Commentary: Custom state hook for the context-note conversion lifecycle. It starts conversion jobs, subscribes to updates, tracks completion, and exposes results to the rail.
+
+- `markdown-renderer`
+  - `MarkdownRenderer`
+    - Path: `app/src/components/markdown-renderer/MarkdownRenderer.tsx`
+    - Commentary: Main custom markdown rendering entry point. It wires markdown parsing into app-specific renderers for headings, code, tables, and Mermaid diagrams.
+  - `markdownComponents`
+    - Path: `app/src/components/markdown-renderer/markdown-components.tsx`
+    - Commentary: Custom component map passed into the markdown renderer. It overrides default markdown tags with app-specific behavior and styling.
+  - `markdownTableComponents`
+    - Path: `app/src/components/markdown-renderer/markdown-table-components.tsx`
+    - Commentary: Table-specific markdown renderer map. It adapts imported markdown tables to the app's dense, technical table style.
+  - `MarkdownHeading`
+    - Path: `app/src/components/markdown-renderer/markdown-heading.tsx`
+    - Commentary: Custom heading renderer with generated anchors. It makes imported markdown navigable and stable for deep linking.
+  - `MarkdownPre`
+    - Path: `app/src/components/markdown-renderer/markdown-pre.tsx`
+    - Commentary: Custom preformatted block router. It detects code versus Mermaid content and delegates to the right specialized renderer.
+  - `MarkdownCode`
+    - Path: `app/src/components/markdown-renderer/markdown-code.tsx`
+    - Commentary: Inline code renderer for markdown content. It normalizes code text and keeps inline technical tokens visually distinct.
+  - `MarkdownCodeBlock`
+    - Path: `app/src/components/markdown-renderer/markdown-code-block.tsx`
+    - Commentary: Custom fenced code block renderer. It handles language labels, collapse behavior, syntax highlighting, line numbering, and copy-friendly presentation.
+  - `LineNumberedCode`
+    - Path: `app/src/components/markdown-renderer/line-numbered-code.tsx`
+    - Commentary: Deterministic code display with line numbers. It is used when plain code layout is needed without syntax-token rendering.
+  - `HighlightedLineNumberedCode`
+    - Path: `app/src/components/markdown-renderer/highlighted-line-numbered-code.tsx`
+    - Commentary: Syntax-highlighted code display with line numbers. It combines highlighting output with the app's line-numbered code layout.
+  - `MarkdownMermaidBlock`
+    - Path: `app/src/components/markdown-renderer/markdown-mermaid-block.tsx`
+    - Commentary: Custom Mermaid diagram renderer for markdown fences. It manages diagram rendering state and connects diagrams to viewing actions.
+  - `MarkdownMermaidDialog`
+    - Path: `app/src/components/markdown-renderer/markdown-mermaid-dialog.tsx`
+    - Commentary: Expanded viewing surface for Mermaid diagrams. It gives complex diagrams more space than the inline markdown layout can provide.
+  - `MarkdownMermaidActionTray`
+    - Path: `app/src/components/markdown-renderer/markdown-mermaid-action-tray.tsx`
+    - Commentary: Custom action overlay for Mermaid diagrams. It exposes diagram-specific actions without making the diagram body noisy.
+  - `MarkdownMermaidDialogActions`
+    - Path: `app/src/components/markdown-renderer/markdown-mermaid-dialog-actions.tsx`
+    - Commentary: Dialog-specific controls for Mermaid viewing. It keeps zoom and viewport actions separate from diagram rendering.
+
+- `console-log-capture`
+  - `ConsoleLogCaptureProvider`
+    - Path: `app/src/components/console-log-capture/ConsoleLogCaptureProvider.tsx`
+    - Commentary: Custom browser-console capture provider. It intercepts console output, manages capture state, and owns the keyboard shortcut for opening diagnostics.
+  - `ConsoleLogCapturePanel`
+    - Path: `app/src/components/console-log-capture/ConsoleLogCapturePanel.tsx`
+    - Commentary: Custom diagnostics panel for captured logs. It combines filtering, controls, and event rendering into a focused debug surface.
+  - `ConsoleLogCapturePanelShell`
+    - Path: `app/src/components/console-log-capture/ConsoleLogCapturePanelShell.tsx`
+    - Commentary: Panel chrome and placement wrapper for console capture. It separates the diagnostic shell from the log-specific content.
+  - `ConsoleLogCaptureTopControls`
+    - Path: `app/src/components/console-log-capture/ConsoleLogCaptureTopControls.tsx`
+    - Commentary: Operational controls for the console capture panel. It handles capture toggling, clearing, and high-level panel actions.
+  - `ConsoleLogCapturePrefixFilters`
+    - Path: `app/src/components/console-log-capture/ConsoleLogCapturePrefixFilters.tsx`
+    - Commentary: Prefix-based filtering controls for captured logs. It lets users narrow logs by bracketed subsystem labels.
+  - `ConsoleLogCaptureList`
+    - Path: `app/src/components/console-log-capture/ConsoleLogCaptureList.tsx`
+    - Commentary: Custom log event list renderer. It formats levels, timestamps, prefixes, and payloads for quick troubleshooting.
+
+- `comps-explorer`
+  - `CompsExplorer`
+    - Path: `app/src/components/comps-explorer/CompsExplorer.tsx`
+    - Commentary: Internal dogfooding shell for the app's component and design-system surfaces. It combines navigation, selected demos, markdown tests, and token views.
+  - `CompsExplorerSidebar`
+    - Path: `app/src/components/comps-explorer/CompsExplorerSidebar.tsx`
+    - Commentary: Custom navigation for the explorer. It groups demos and docs into categories that match how the design system is evaluated.
+  - `RecipeExplorerPanel`
+    - Path: `app/src/components/comps-explorer/RecipeExplorerPanel.tsx`
+    - Commentary: Custom Panda recipe inspection panel. It helps inspect variants, slots, and examples rather than acting like a generic component.
+  - `DesignSystemOverview`
+    - Path: `app/src/components/comps-explorer/DesignSystemOverview.tsx`
+    - Commentary: Token and theme visualization surface. It turns color, layout, typography, motion, and effect tokens into browsable reference panels.
+  - `ColorSwatchTooltip`
+    - Path: `app/src/components/comps-explorer/DesignSystemOverview.tsx`
+    - Commentary: Internal token detail tooltip for swatches. It exposes token names and values while keeping the overview compact.
+  - `MarkdownRendererPlayground`
+    - Path: `app/src/components/comps-explorer/MarkdownRendererPlayground.tsx`
+    - Commentary: Dogfooding surface for imported markdown behavior. It exercises headings, lists, code blocks, tables, and Mermaid diagrams.
+  - `ErrorOverlayPlayground`
+    - Path: `app/src/components/comps-explorer/ErrorOverlayPlayground.tsx`
+    - Commentary: Test surface for the custom global error overlay. It lets the team inspect error UI without intentionally breaking a route.
+
+- `errors`
+  - `GlobalErrorOverlay`
+    - Path: `app/src/components/errors/GlobalErrorOverlay.tsx`
+    - Commentary: Custom app-level runtime error display. It replaces raw exception output with a controlled diagnostic surface.

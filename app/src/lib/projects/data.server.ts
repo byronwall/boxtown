@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import type { GeneratedNodeBatch } from "~/lib/add-nodes/types";
@@ -36,6 +36,19 @@ interface AddProjectNodeImagesInput {
   projectId: string;
   nodeId: string;
   images: File[];
+}
+
+interface ProjectNodeImageSource {
+  originalName: string;
+  mimeType: string;
+  size: number;
+  data: Buffer;
+}
+
+interface AddProjectNodeImageSourcesInput {
+  projectId: string;
+  nodeIds: string[];
+  images: ProjectNodeImageSource[];
 }
 
 interface SerializedProjectRecord {
@@ -286,6 +299,79 @@ export async function addProjectNodeImagesOnDisk(
   return nextRecord;
 }
 
+export async function addProjectNodeImageSourcesOnDisk(
+  input: AddProjectNodeImageSourcesInput,
+): Promise<ProjectRecord> {
+  if (input.nodeIds.length === 0 || input.images.length === 0) {
+    const project = await readProjectByIdFromDisk(input.projectId);
+    if (!project) {
+      throw new Error("Project not found.");
+    }
+    return project;
+  }
+
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const targetNodeIds = new Set(input.nodeIds);
+  const currentNodeIds = new Set(current.spatialMap.nodes.map((node) => node.id));
+  for (const nodeId of targetNodeIds) {
+    if (!currentNodeIds.has(nodeId)) {
+      throw new Error(`Node "${nodeId}" not found.`);
+    }
+  }
+
+  const now = new Date().toISOString();
+  const imagesByNodeId = new Map<string, MapNodeImage[]>();
+  for (const nodeId of targetNodeIds) {
+    const imageDir = getProjectNodeImageDir(input.projectId, nodeId);
+    await mkdir(imageDir, { recursive: true });
+
+    const storedImages: MapNodeImage[] = [];
+    for (const image of input.images) {
+      const extension = getImageSourceFileExtension(image.mimeType);
+      const imageId = randomUUID();
+      const filename = `${imageId}${extension}`;
+      await writeFile(path.join(imageDir, filename), image.data);
+      storedImages.push({
+        id: imageId,
+        src: `/api/projects/${encodeURIComponent(input.projectId)}/images/${encodeURIComponent(nodeId)}/${encodeURIComponent(filename)}`,
+        filename,
+        originalName: sanitizeImageOriginalName(image.originalName),
+        mimeType: image.mimeType,
+        size: image.size,
+        createdAt: now,
+      });
+    }
+
+    imagesByNodeId.set(nodeId, storedImages);
+  }
+
+  const nextNodes = current.spatialMap.nodes.map((node) =>
+    targetNodeIds.has(node.id)
+      ? { ...node, images: [...(node.images ?? []), ...(imagesByNodeId.get(node.id) ?? [])] }
+      : node,
+  );
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: now,
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: nextNodes,
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return nextRecord;
+}
+
 export async function createContextNodeOnDisk(
   input: CreateContextNodeInput,
 ): Promise<{ nodeId: string; project: ProjectRecord; createdNodeCount: number }> {
@@ -464,21 +550,49 @@ export async function deleteProjectNodeOnDisk(
   return nextRecord;
 }
 
-async function readProjectRecordsFromDisk(): Promise<ProjectRecord[]> {
-  const raw = await readFile(getProjectsFilePath(), "utf8");
-  const parsed = JSON.parse(raw);
-
-  if (!Array.isArray(parsed)) {
-    throw new Error("Invalid projects file: expected an array.");
+export async function readProjectRecordsFromDisk(): Promise<ProjectRecord[]> {
+  const projectsDir = getProjectsDirPath();
+  if (!existsSync(projectsDir)) {
+    return [];
   }
 
-  return parsed.map(parseProjectRecord);
+  const entries = await readdir(projectsDir, { withFileTypes: true });
+  const records: ProjectRecord[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    const projectFile = path.join(projectsDir, entry.name, "project.json");
+    if (!existsSync(projectFile)) {
+      continue;
+    }
+
+    records.push(parseProjectRecord(JSON.parse(await readFile(projectFile, "utf8"))));
+  }
+
+  return records;
 }
 
-async function writeProjectRecordsToDisk(records: ProjectRecord[]) {
-  const dataDir = resolveProjectDataDir();
-  await mkdir(dataDir, { recursive: true });
-  await writeFile(path.join(dataDir, "projects.json"), `${JSON.stringify(records, null, 2)}\n`, "utf8");
+export async function writeProjectRecordsToDisk(records: ProjectRecord[]) {
+  const projectsDir = getProjectsDirPath();
+  const expectedDirs = new Set(records.map((record) => safePathSegment(record.id)));
+
+  await mkdir(projectsDir, { recursive: true });
+
+  for (const record of records) {
+    const projectDir = getProjectDataDir(record.id);
+    await mkdir(projectDir, { recursive: true });
+    await writeFile(getProjectJsonFilePath(record.id), `${JSON.stringify(record, null, 2)}\n`, "utf8");
+  }
+
+  const entries = await readdir(projectsDir, { withFileTypes: true });
+  await Promise.all(
+    entries
+      .filter((entry) => entry.isDirectory() && !expectedDirs.has(entry.name))
+      .map((entry) => rm(path.join(projectsDir, entry.name), { recursive: true, force: true })),
+  );
 }
 
 function parseProjectRecord(value: SerializedProjectRecord): ProjectRecord {
@@ -564,7 +678,12 @@ const IMAGE_EXTENSIONS_BY_MIME_TYPE: Record<string, string> = {
 };
 
 function getImageFileExtension(file: File) {
-  const extension = IMAGE_EXTENSIONS_BY_MIME_TYPE[file.type];
+  const extension = getImageSourceFileExtension(file.type);
+  return extension;
+}
+
+function getImageSourceFileExtension(mimeType: string) {
+  const extension = IMAGE_EXTENSIONS_BY_MIME_TYPE[mimeType];
   if (!extension) {
     throw new Error("Only AVIF, GIF, JPEG, PNG, and WebP images are supported.");
   }
@@ -592,19 +711,19 @@ export function getProjectNodeImageFilePath(input: {
   return filePath;
 }
 
-function getProjectNodeImageDir(projectId: string, nodeId: string) {
-  return path.join(resolveProjectDataDir(), "images", safePathSegment(projectId), safePathSegment(nodeId));
+export function getProjectNodeImageDir(projectId: string, nodeId: string) {
+  return path.join(getProjectDataDir(projectId), "images", safePathSegment(nodeId));
 }
 
-function safePathSegment(value: string) {
+export function safePathSegment(value: string) {
   return value.replace(/[^a-zA-Z0-9_-]+/g, "_") || "unknown";
 }
 
-function resolveProjectDataDir() {
+export function resolveProjectDataDir() {
   const cwd = process.cwd();
   const candidates = [
-    path.join(cwd, "src", "data"),
-    path.join(cwd, "app", "src", "data"),
+    path.join(cwd, "data"),
+    path.join(cwd, "app", "data"),
   ];
 
   for (const candidate of candidates) {
@@ -616,6 +735,14 @@ function resolveProjectDataDir() {
   return candidates[0];
 }
 
-function getProjectsFilePath() {
-  return path.join(resolveProjectDataDir(), "projects.json");
+export function getProjectsDirPath() {
+  return path.join(resolveProjectDataDir(), "projects");
+}
+
+export function getProjectDataDir(projectId: string) {
+  return path.join(getProjectsDirPath(), safePathSegment(projectId));
+}
+
+export function getProjectJsonFilePath(projectId: string) {
+  return path.join(getProjectDataDir(projectId), "project.json");
 }

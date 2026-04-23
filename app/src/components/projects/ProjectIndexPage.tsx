@@ -9,6 +9,8 @@ import { Input } from "~/components/ui/input";
 import { Text } from "~/components/ui/text";
 import type { ProjectSummary } from "~/lib/projects/types";
 import { ProjectDeleteControl } from "./ProjectDeleteControl";
+import { ProjectExportControl } from "./ProjectExportControl";
+import { ProjectImportControl } from "./ProjectImportControl";
 
 interface ProjectIndexPageProps {
   projects: ProjectSummary[];
@@ -119,7 +121,7 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
                   later without changing the route structure.
                 </Card.Description>
               </Card.Header>
-              <Card.Body px="4" py="3">
+              <Card.Body px="4" py="3" borderBottomWidth="1px" borderColor="#6a7168">
                 <form action={props.createProjectActionUrl} method="post">
                   <VStack alignItems="stretch" gap="3">
                     <Field.Root>
@@ -155,6 +157,9 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
                     </Button>
                   </VStack>
                 </form>
+              </Card.Body>
+              <Card.Body px="4" py="3">
+                <ProjectImportControl />
               </Card.Body>
             </Card.Root>
 
@@ -224,7 +229,10 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
                         >
                           {project.id}
                         </Text>
-                        <ProjectDeleteControl projectId={project.id} projectName={project.name} />
+                        <HStack gap="2">
+                          <ProjectExportControl projectId={project.id} projectName={project.name} />
+                          <ProjectDeleteControl projectId={project.id} projectName={project.name} />
+                        </HStack>
                       </HStack>
                       <A href={`/projects/${project.id}`} style={{ display: "block", "text-decoration": "none" }}>
                         <Box transition="background-color 120ms ease" _hover={{ bg: "#edf0eb" }}>

@@ -6,6 +6,7 @@
     "dev": "pnpm prepare && vinxi dev",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "image:task-ui": "node scripts/generate-gpt-image-2-task-ui.mjs",
     "test": "vitest run",
     "type-check": "tsc --noEmit",
     "build": "vinxi build",

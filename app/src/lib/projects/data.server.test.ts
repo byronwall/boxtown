@@ -97,7 +97,7 @@ describe("createProjectOnDisk", () => {
   it("resolves the project data file when the server starts from the repo root", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-root-"));
-    const dataDir = path.join(tempRoot, "app", "src", "data");
+    const dataDir = path.join(tempRoot, "app", "data");
     mkdirSync(dataDir, { recursive: true });
     writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
 
@@ -119,7 +119,7 @@ describe("deleteProjectOnDisk", () => {
   it("removes a project from disk", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-delete-"));
-    const dataDir = path.join(tempRoot, "app", "src", "data");
+    const dataDir = path.join(tempRoot, "app", "data");
     mkdirSync(dataDir, { recursive: true });
     writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
 
@@ -144,41 +144,31 @@ describe("context node persistence", () => {
   it("updates node context on disk", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-update-"));
-    const dataDir = path.join(tempRoot, "app", "src", "data");
+    const dataDir = path.join(tempRoot, "app", "data");
     mkdirSync(dataDir, { recursive: true });
-    writeFileSync(
-      path.join(dataDir, "projects.json"),
-      `${JSON.stringify(
-        [
+    writeProjectFixture(dataDir, {
+      id: "context-project",
+      name: "Context Project",
+      description: "Test fixture",
+      createdAt: "2026-04-20T00:00:00.000Z",
+      updatedAt: "2026-04-20T00:00:00.000Z",
+      spatialMap: {
+        nodes: [
           {
-            id: "context-project",
-            name: "Context Project",
-            description: "Test fixture",
-            createdAt: "2026-04-20T00:00:00.000Z",
-            updatedAt: "2026-04-20T00:00:00.000Z",
-            spatialMap: {
-              nodes: [
-                {
-                  id: "node-1",
-                  label: "Node 1",
-                  type: "page",
-                  depth: 0,
-                  purpose: "Purpose",
-                  implementation: "Implementation",
-                  context: "",
-                  rawContext: "",
-                  contextMode: "structured",
-                },
-              ],
-              links: [],
-            },
+            id: "node-1",
+            label: "Node 1",
+            type: "page",
+            depth: 0,
+            purpose: "Purpose",
+            implementation: "Implementation",
+            context: "",
+            rawContext: "",
+            contextMode: "structured",
           },
         ],
-        null,
-        2,
-      )}\n`,
-      "utf8",
-    );
+        links: [],
+      },
+    });
 
     try {
       process.chdir(tempRoot);
@@ -200,7 +190,7 @@ describe("context node persistence", () => {
   it("creates a standalone note node with context", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-create-"));
-    const dataDir = path.join(tempRoot, "app", "src", "data");
+    const dataDir = path.join(tempRoot, "app", "data");
     mkdirSync(dataDir, { recursive: true });
     writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
 
@@ -233,7 +223,7 @@ describe("context node persistence", () => {
   it("splits markdown headings into linked context nodes", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-split-"));
-    const dataDir = path.join(tempRoot, "app", "src", "data");
+    const dataDir = path.join(tempRoot, "app", "data");
     mkdirSync(dataDir, { recursive: true });
     writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
 
@@ -310,7 +300,7 @@ describe("context node persistence", () => {
   it("rolls headings below the selected import depth into parent context", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-depth-"));
-    const dataDir = path.join(tempRoot, "app", "src", "data");
+    const dataDir = path.join(tempRoot, "app", "data");
     mkdirSync(dataDir, { recursive: true });
     writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
 
@@ -389,39 +379,29 @@ describe("context node persistence", () => {
   it("treats legacy note nodes as context-only and preserves current context as raw context", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-legacy-"));
-    const dataDir = path.join(tempRoot, "app", "src", "data");
+    const dataDir = path.join(tempRoot, "app", "data");
     mkdirSync(dataDir, { recursive: true });
-    writeFileSync(
-      path.join(dataDir, "projects.json"),
-      `${JSON.stringify(
-        [
+    writeProjectFixture(dataDir, {
+      id: "legacy-note-project",
+      name: "Legacy Note Project",
+      description: "Test fixture",
+      createdAt: "2026-04-20T00:00:00.000Z",
+      updatedAt: "2026-04-20T00:00:00.000Z",
+      spatialMap: {
+        nodes: [
           {
-            id: "legacy-note-project",
-            name: "Legacy Note Project",
-            description: "Test fixture",
-            createdAt: "2026-04-20T00:00:00.000Z",
-            updatedAt: "2026-04-20T00:00:00.000Z",
-            spatialMap: {
-              nodes: [
-                {
-                  id: "legacy-note",
-                  label: "Legacy Note",
-                  type: "note",
-                  depth: 2,
-                  purpose: "Purpose",
-                  implementation: "Implementation",
-                  context: "Legacy context",
-                },
-              ],
-              links: [],
-            },
+            id: "legacy-note",
+            label: "Legacy Note",
+            type: "note",
+            depth: 2,
+            purpose: "Purpose",
+            implementation: "Implementation",
+            context: "Legacy context",
           },
         ],
-        null,
-        2,
-      )}\n`,
-      "utf8",
-    );
+        links: [],
+      },
+    });
 
     try {
       process.chdir(tempRoot);
@@ -441,55 +421,45 @@ describe("context node persistence", () => {
   it("deletes a node and prunes attached links", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-node-delete-"));
-    const dataDir = path.join(tempRoot, "app", "src", "data");
+    const dataDir = path.join(tempRoot, "app", "data");
     mkdirSync(dataDir, { recursive: true });
-    writeFileSync(
-      path.join(dataDir, "projects.json"),
-      `${JSON.stringify(
-        [
+    writeProjectFixture(dataDir, {
+      id: "delete-node-project",
+      name: "Delete Node Project",
+      description: "Test fixture",
+      createdAt: "2026-04-20T00:00:00.000Z",
+      updatedAt: "2026-04-20T00:00:00.000Z",
+      spatialMap: {
+        nodes: [
           {
-            id: "delete-node-project",
-            name: "Delete Node Project",
-            description: "Test fixture",
-            createdAt: "2026-04-20T00:00:00.000Z",
-            updatedAt: "2026-04-20T00:00:00.000Z",
-            spatialMap: {
-              nodes: [
-                {
-                  id: "node-a",
-                  label: "Node A",
-                  type: "page",
-                  depth: 0,
-                  purpose: "Purpose",
-                  implementation: "Implementation",
-                  context: "",
-                  rawContext: "",
-                  contextMode: "structured",
-                },
-                {
-                  id: "node-b",
-                  label: "Node B",
-                  type: "note",
-                  depth: 2,
-                  purpose: "Purpose",
-                  implementation: "Implementation",
-                  context: "Context",
-                  rawContext: "Context",
-                  contextMode: "context-only",
-                },
-              ],
-              links: [
-                { source: "node-a", target: "node-b", parentChild: false, relationship: "related" },
-                { source: "node-b", target: "node-a", parentChild: false, relationship: "related" },
-              ],
-            },
+            id: "node-a",
+            label: "Node A",
+            type: "page",
+            depth: 0,
+            purpose: "Purpose",
+            implementation: "Implementation",
+            context: "",
+            rawContext: "",
+            contextMode: "structured",
+          },
+          {
+            id: "node-b",
+            label: "Node B",
+            type: "note",
+            depth: 2,
+            purpose: "Purpose",
+            implementation: "Implementation",
+            context: "Context",
+            rawContext: "Context",
+            contextMode: "context-only",
           },
         ],
-        null,
-        2,
-      )}\n`,
-      "utf8",
-    );
+        links: [
+          { source: "node-a", target: "node-b", parentChild: false, relationship: "related" },
+          { source: "node-b", target: "node-a", parentChild: false, relationship: "related" },
+        ],
+      },
+    });
 
     try {
       process.chdir(tempRoot);
@@ -507,3 +477,9 @@ describe("context node persistence", () => {
     }
   });
 });
+
+function writeProjectFixture(dataDir: string, project: Record<string, unknown>) {
+  const projectDir = path.join(dataDir, "projects", String(project.id));
+  mkdirSync(projectDir, { recursive: true });
+  writeFileSync(path.join(projectDir, "project.json"), `${JSON.stringify(project, null, 2)}\n`, "utf8");
+}

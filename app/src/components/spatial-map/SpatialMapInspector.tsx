@@ -12,6 +12,7 @@ import type { ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
 import { Text } from "~/components/ui/text";
 import type { MapNode } from "~/lib/spatial-map/types";
+import { SpatialMapGenerateImageControl } from "./SpatialMapGenerateImageControl";
 import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
@@ -150,6 +151,11 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                 >
                   <SpatialMapImageStrip node={node()} variant="inspector" />
                 </Show>
+                <SpatialMapGenerateImageControl
+                  projectId={props.projectId}
+                  node={node()}
+                  onProjectUpdated={props.onProjectUpdated}
+                />
               </SpatialMapImageDropTarget>
             )}
           </Show>

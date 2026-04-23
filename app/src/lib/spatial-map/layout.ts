@@ -406,18 +406,12 @@ export function solveStaticLayout(
   nextNodes = packLayout(nextNodes, adjacency);
   nextNodes = sealLayout(nextNodes, adjacency);
   nextNodes = rebalanceLayoutAspect(nextNodes);
-  nextNodes = fillViewportLayout(nextNodes);
   nextNodes = sealLayout(nextNodes, adjacency);
   nextNodes = snapLayoutToGrid(nextNodes, 4);
   nextNodes = resolveOverlaps(nextNodes);
   nextNodes = sealLayout(nextNodes, adjacency);
   nextNodes = alignLayoutBorders(nextNodes, adjacency);
-  nextNodes = fillViewportLayout(nextNodes, {
-    targetWidthRatio: 0.64,
-    targetHeightRatio: 0.5,
-  });
-  nextNodes = alignLayoutBorders(nextNodes, adjacency);
-  nextNodes = snapLayoutToGrid(nextNodes, 4);
+  nextNodes = recenterLayout(nextNodes, 20);
   nextNodes = resolveOverlaps(nextNodes);
 
   return nextNodes.map((node) => ({ ...node, vx: 0, vy: 0 }));
@@ -843,6 +837,9 @@ function scorePackedCandidate(
       y: candidate.y,
     },
   ]);
+  const nodeArea =
+    node.width * node.height +
+    placedNodes.reduce((total, placed) => total + placed.width * placed.height, 0);
   const area = bounds.width * bounds.height;
   const perimeter = bounds.width + bounds.height;
   const desiredAspect = VIEWPORT_WIDTH / VIEWPORT_HEIGHT;
@@ -850,22 +847,15 @@ function scorePackedCandidate(
   const aspectError = Math.log(aspect / desiredAspect);
   const aspectPenalty = Math.abs(aspectError) * 660 + Math.max(0, -aspectError) * 520;
   const contact = measureSharedBorder(placedNodes, node, candidate);
-  const widthRatio = bounds.width / VIEWPORT_WIDTH;
-  const heightRatio = bounds.height / VIEWPORT_HEIGHT;
-  const widthUnderfillPenalty = Math.max(0, 0.76 - widthRatio) * 760;
-  const heightUnderfillPenalty = Math.max(0, 0.56 - heightRatio) * 160;
-  const heightOverflowPenalty = Math.max(0, heightRatio - 0.78) * 620;
-  const viewportFillReward = Math.min(widthRatio, 0.9) * 230 + Math.min(heightRatio, 0.72) * 70;
+  const targetBlobArea = nodeArea / 0.72;
+  const sparsePenalty = Math.max(0, area / targetBlobArea - 1) * 120;
 
   return (
     distanceToTarget * 0.22 +
-    area * 0.00035 +
+    area * 0.0007 +
     perimeter * 0.018 +
-    aspectPenalty -
-    viewportFillReward +
-    widthUnderfillPenalty +
-    heightUnderfillPenalty +
-    heightOverflowPenalty -
+    aspectPenalty +
+    sparsePenalty -
     contact.sharedBorder * 5 -
     contact.touchingNeighbors * 80
   );
@@ -1009,43 +999,6 @@ function rebalanceLayoutAspect(nodes: PositionedMapNode[]) {
       y: position.y,
     };
   });
-}
-
-function fillViewportLayout(
-  nodes: PositionedMapNode[],
-  options: { targetWidthRatio?: number; targetHeightRatio?: number } = {},
-) {
-  const bounds = getLayoutBounds(nodes);
-  const availableWidth = VIEWPORT_WIDTH - 40;
-  const availableHeight = VIEWPORT_HEIGHT - 40;
-  const targetWidth = availableWidth * (options.targetWidthRatio ?? 0.72);
-  const targetHeight = availableHeight * (options.targetHeightRatio ?? 0.62);
-  const scaleX = clamp(
-    targetWidth / Math.max(bounds.width, 1),
-    1,
-    availableWidth / bounds.width,
-  );
-  const scaleY = clamp(
-    targetHeight / Math.max(bounds.height, 1),
-    1,
-    availableHeight / bounds.height,
-  );
-
-  if (scaleX <= 1.01 && scaleY <= 1.01) {
-    return nodes;
-  }
-
-  const centerX = (bounds.minX + bounds.maxX) / 2;
-  const centerY = (bounds.minY + bounds.maxY) / 2;
-
-  return recenterLayout(
-    nodes.map((node) => ({
-      ...node,
-      x: centerX + (node.x - centerX) * scaleX,
-      y: centerY + (node.y - centerY) * scaleY,
-    })),
-    20,
-  );
 }
 
 function getLayoutBounds(nodes: PositionedMapNode[]) {

@@ -7,6 +7,7 @@ import {
   onCleanup,
   onMount,
   Show,
+  untrack,
   useContext,
   type JSX,
 } from "solid-js";
@@ -17,10 +18,12 @@ import { toaster } from "~/components/ui/toast";
 import { addProjectNodeImages } from "~/lib/projects/data";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
-import type { MapNode, MapNodeImage } from "~/lib/spatial-map/types";
+import type { MapLink, MapNode, MapNodeImage, SpatialMapData } from "~/lib/spatial-map/types";
 
+import { copyImageTargetToClipboard, downloadImageTarget } from "./image-viewer-actions";
 import { isEditableTarget } from "./spatial-map-dom";
 import { useSpatialMap } from "./SpatialMapContext";
+import { createContainedImageViewport } from "./use-contained-image-viewport";
 
 interface SpatialMapImageContextValue {
   openImage: (image: MapNodeImage, node: MapNode) => void;
@@ -47,6 +50,8 @@ const IMAGE_VIEWER_MAX_SCALE = 8;
 
 export function SpatialMapImageProvider(props: {
   projectId: string;
+  projectName: string;
+  spatialMap: SpatialMapData;
   onProjectUpdated?: (project: ProjectRecord) => void;
   children: JSX.Element;
 }) {
@@ -137,6 +142,11 @@ export function SpatialMapImageProvider(props: {
       return;
     }
 
+    if (spatialMap.sourceDecompositionOpen()) {
+      console.info(IMAGE_DEBUG_PREFIX, "paste ignored: source decomposition intake is open");
+      return;
+    }
+
     const nodeId = spatialMap.selectedNodeId();
     if (!nodeId) {
       console.warn(IMAGE_DEBUG_PREFIX, "paste ignored: no selected node");
@@ -188,6 +198,8 @@ export function SpatialMapImageProvider(props: {
       {props.children}
       <SpatialMapImageViewer
         state={viewerState()}
+        projectName={props.projectName}
+        spatialMap={props.spatialMap}
         onOpenChange={(open) => {
           if (!open) {
             setViewerState(null);
@@ -349,7 +361,7 @@ function describeEventTarget(target: EventTarget | null) {
 function dedupeFiles(files: File[]) {
   const seen = new Set<string>();
   return files.filter((file) => {
-    const key = `${file.name}:${file.type}:${file.size}:${file.lastModified}`;
+    const key = `${file.name}:${file.type}:${file.size}`;
     if (seen.has(key)) {
       return false;
     }
@@ -361,46 +373,83 @@ function dedupeFiles(files: File[]) {
 
 function SpatialMapImageViewer(props: {
   state: ImageViewerState | null;
+  projectName: string;
+  spatialMap: SpatialMapData;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [scale, setScale] = createSignal(1);
-  const [offset, setOffset] = createSignal({ x: 0, y: 0 });
+  const imageViewport = createContainedImageViewport({
+    minScale: IMAGE_VIEWER_MIN_SCALE,
+    maxScale: IMAGE_VIEWER_MAX_SCALE,
+  });
   let panSession: ViewerPanSession | undefined;
-  let stageRef: HTMLDivElement | undefined;
 
   const resetView = () => {
-    setScale(1);
-    setOffset({ x: 0, y: 0 });
-  };
-
-  const applyScaleAt = (nextScale: number, anchorClientX?: number, anchorClientY?: number) => {
-    const currentScale = scale();
-    const clampedScale = clamp(nextScale, IMAGE_VIEWER_MIN_SCALE, IMAGE_VIEWER_MAX_SCALE);
-    if (clampedScale === currentScale) {
-      return;
-    }
-
-    if (!stageRef) {
-      setScale(clampedScale);
-      return;
-    }
-
-    const bounds = stageRef.getBoundingClientRect();
-    const anchorX = anchorClientX === undefined ? bounds.width / 2 : anchorClientX - bounds.left;
-    const anchorY = anchorClientY === undefined ? bounds.height / 2 : anchorClientY - bounds.top;
-    const currentOffset = offset();
-    const focusX = (anchorX - currentOffset.x) / currentScale;
-    const focusY = (anchorY - currentOffset.y) / currentScale;
-
-    setScale(clampedScale);
-    setOffset({
-      x: anchorX - focusX * clampedScale,
-      y: anchorY - focusY * clampedScale,
-    });
+    imageViewport.resetView();
   };
 
   const zoomBy = (amount: number, anchorClientX?: number, anchorClientY?: number) => {
-    applyScaleAt(scale() * amount, anchorClientX, anchorClientY);
+    imageViewport.zoomBy(amount, anchorClientX, anchorClientY);
+  };
+
+  createEffect(() => {
+    const imageSrc = props.state?.image.src;
+    untrack(() => {
+      imageViewport.clearImageSize();
+      resetView();
+    });
+    if (!imageSrc) return;
+  });
+
+  const copyImage = async () => {
+    if (!props.state) return;
+
+    try {
+      await copyImageTargetToClipboard({
+        src: props.state.image.src,
+        filename: props.state.image.originalName,
+        mimeType: props.state.image.mimeType,
+      });
+      toaster.success({
+        title: "Image copied",
+        description: "The image is now available on your clipboard.",
+      });
+    } catch (error) {
+      toaster.error({
+        title: "Copy failed",
+        description: error instanceof Error ? error.message : "The image could not be copied.",
+      });
+    }
+  };
+
+  const downloadImage = async () => {
+    if (!props.state) return;
+
+    try {
+      await downloadImageTarget({
+        src: props.state.image.src,
+        filename: getNodeImageDownloadFilename({
+          image: props.state.image,
+          node: props.state.node,
+          projectName: props.projectName,
+          spatialMap: props.spatialMap,
+        }),
+        mimeType: props.state.image.mimeType,
+      });
+      toaster.success({
+        title: "Download started",
+        description: getNodeImageDownloadFilename({
+          image: props.state.image,
+          node: props.state.node,
+          projectName: props.projectName,
+          spatialMap: props.spatialMap,
+        }),
+      });
+    } catch (error) {
+      toaster.error({
+        title: "Download failed",
+        description: error instanceof Error ? error.message : "The image could not be downloaded.",
+      });
+    }
   };
 
   return (
@@ -408,6 +457,7 @@ function SpatialMapImageViewer(props: {
       open={Boolean(props.state)}
       onOpenChange={(open) => {
         if (!open) {
+          imageViewport.clearImageSize();
           resetView();
         }
         props.onOpenChange(open);
@@ -419,7 +469,13 @@ function SpatialMapImageViewer(props: {
       footer={
         <HStack justifyContent="space-between" width="100%" gap="2" flexWrap="wrap">
           <span class="spatial-map-image-viewer-help">Wheel zoom, drag pan, double-click reset.</span>
-          <HStack gap="2">
+          <HStack gap="2" flexWrap="wrap" justifyContent="flex-end">
+            <Button size="xs" variant="outline" class="spatial-map-button" onClick={copyImage}>
+              Copy Image
+            </Button>
+            <Button size="xs" variant="outline" class="spatial-map-button" onClick={downloadImage}>
+              Download
+            </Button>
             <Button size="xs" variant="outline" class="spatial-map-button" onClick={() => zoomBy(0.8)}>
               Zoom Out
             </Button>
@@ -437,7 +493,7 @@ function SpatialMapImageViewer(props: {
         {(state) => (
           <VStack alignItems="stretch" gap="2">
             <Box
-              ref={stageRef}
+              ref={imageViewport.setStageRef}
               class="spatial-map-image-viewer-stage"
               onWheel={(event) => {
                 event.preventDefault();
@@ -456,8 +512,8 @@ function SpatialMapImageViewer(props: {
                   pointerId: event.pointerId,
                   x: event.clientX,
                   y: event.clientY,
-                  startX: offset().x,
-                  startY: offset().y,
+                  startX: imageViewport.offset().x,
+                  startY: imageViewport.offset().y,
                 };
                 event.currentTarget.setPointerCapture(event.pointerId);
               }}
@@ -466,7 +522,7 @@ function SpatialMapImageViewer(props: {
                   return;
                 }
 
-                setOffset({
+                imageViewport.setOffset({
                   x: panSession.startX + event.clientX - panSession.x,
                   y: panSession.startY + event.clientY - panSession.y,
                 });
@@ -485,15 +541,16 @@ function SpatialMapImageViewer(props: {
                 src={state().image.src}
                 alt={state().image.originalName}
                 draggable={false}
+                onLoad={imageViewport.handleImageLoad}
                 style={{
-                  transform: `translate(${offset().x}px, ${offset().y}px) scale(${scale()})`,
+                  transform: `translate(${imageViewport.offset().x}px, ${imageViewport.offset().y}px) scale(${imageViewport.scale()})`,
                 }}
               />
             </Box>
             <HStack class="spatial-map-image-viewer-meta" gap="2" flexWrap="wrap">
               <span>{state().image.mimeType}</span>
               <span>{formatBytes(state().image.size)}</span>
-              <span>{Math.round(scale() * 100)}%</span>
+              <span>{Math.round(imageViewport.scale() * 100)}%</span>
             </HStack>
           </VStack>
         )}
@@ -516,4 +573,118 @@ function formatBytes(bytes: number) {
   }
 
   return `${Math.round(bytes / 1024 / 102.4) / 10} MB`;
+}
+
+function getNodeImageDownloadFilename(input: {
+  image: MapNodeImage;
+  node: MapNode;
+  projectName: string;
+  spatialMap: SpatialMapData;
+}) {
+  const parts = [
+    input.projectName,
+    ...getHierarchyLabels(input.spatialMap, input.node),
+    ...getDependencyFilenameParts(input.spatialMap, input.node),
+  ]
+    .map((part) => sanitizeFilenameSegment(part))
+    .filter(Boolean);
+  const baseName = truncateFilenameBase(dedupeSequentialParts(parts).join(" - ") || "image");
+  const extension =
+    getImageExtension(input.image.originalName) ||
+    getImageExtension(input.image.filename) ||
+    getMimeExtension(input.image.mimeType);
+
+  return extension ? `${baseName}${extension}` : baseName;
+}
+
+function sanitizeFilenameSegment(value: string) {
+  return value.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim().slice(0, 64);
+}
+
+function getHierarchyLabels(spatialMap: SpatialMapData, node: MapNode) {
+  const nodesById = new Map(spatialMap.nodes.map((item) => [item.id, item]));
+  const path = [node];
+  const seen = new Set([node.id]);
+  let current = node;
+
+  while (true) {
+    const parentLink = spatialMap.links.find((link) => link.parentChild && link.target === current.id);
+    const parent = parentLink ? nodesById.get(parentLink.source) : undefined;
+    if (!parent || seen.has(parent.id)) {
+      break;
+    }
+
+    path.unshift(parent);
+    seen.add(parent.id);
+    current = parent;
+  }
+
+  return path.map((item) => item.label || item.id);
+}
+
+function getDependencyFilenameParts(spatialMap: SpatialMapData, node: MapNode) {
+  const dependencyLabels = getDependencyChainLabels(spatialMap, node);
+  return dependencyLabels.length > 0 ? ["deps", ...dependencyLabels] : [];
+}
+
+function getDependencyChainLabels(spatialMap: SpatialMapData, node: MapNode) {
+  const nodesById = new Map(spatialMap.nodes.map((item) => [item.id, item]));
+  const path: MapNode[] = [];
+  let current = node;
+  const seen = new Set([node.id]);
+
+  while (path.length < 6) {
+    const dependencyLink = getIncomingDependencyLinks(spatialMap.links, current.id)
+      .map((link) => ({ link, source: nodesById.get(link.source) }))
+      .filter((item): item is { link: MapLink; source: MapNode } => Boolean(item.source))
+      .sort((left, right) => getNodeSortWeight(left.source) - getNodeSortWeight(right.source))[0];
+
+    if (!dependencyLink || seen.has(dependencyLink.source.id)) {
+      break;
+    }
+
+    path.unshift(dependencyLink.source);
+    seen.add(dependencyLink.source.id);
+    current = dependencyLink.source;
+  }
+
+  return path.map((item) => item.label || item.id);
+}
+
+function getIncomingDependencyLinks(links: MapLink[], nodeId: string) {
+  return links.filter((link) => !link.parentChild && link.relationship === "dependency" && link.target === nodeId);
+}
+
+function getNodeSortWeight(node: MapNode) {
+  return node.depth;
+}
+
+function dedupeSequentialParts(parts: string[]) {
+  return parts.filter((part, index) => index === 0 || part.toLowerCase() !== parts[index - 1]?.toLowerCase());
+}
+
+function truncateFilenameBase(filename: string) {
+  return filename.length <= 180 ? filename : filename.slice(0, 180).trim();
+}
+
+function getImageExtension(filename: string) {
+  const match = filename.match(/(\.[a-z0-9]+)$/i);
+  return match?.[1] ?? "";
+}
+
+function getMimeExtension(mimeType: string) {
+  switch (mimeType) {
+    case "image/avif":
+      return ".avif";
+    case "image/gif":
+      return ".gif";
+    case "image/jpeg":
+      return ".jpg";
+    case "image/png":
+      return ".png";
+    case "image/webp":
+      return ".webp";
+    default:
+      return "";
+  }
 }

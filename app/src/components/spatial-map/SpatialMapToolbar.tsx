@@ -80,6 +80,15 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
         >
           Add Nodes
         </Button>
+        <Button
+          colorPalette="green"
+          variant="outline"
+          size="xs"
+          class="spatial-map-button"
+          onClick={() => spatialMap.openSourceDecompositionFlow()}
+        >
+          Decompose Source
+        </Button>
         <SpatialMapCreateContextNodeDialog
           projectId={props.projectId}
           onProjectUpdated={props.onProjectUpdated}

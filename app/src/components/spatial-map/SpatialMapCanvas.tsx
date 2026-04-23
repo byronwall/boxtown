@@ -17,6 +17,12 @@ const ContextNoteConversionRail = lazy(() =>
   })),
 );
 
+const SourceDecompositionRail = lazy(() =>
+  import("./source-decomposition-flow/SourceDecompositionRail").then((module) => ({
+    default: module.SourceDecompositionRail,
+  })),
+);
+
 interface SpatialMapHeaderProps {
   eyebrow?: string;
   title?: string;
@@ -55,6 +61,8 @@ function SpatialMapCanvasLayout(props: {
   return (
     <SpatialMapImageProvider
       projectId={props.project.id}
+      projectName={props.project.name}
+      spatialMap={props.project.spatialMap}
       onProjectUpdated={props.onProjectUpdated}
     >
       <Box class={`spatial-map-shell${controller.inspectorOpen() ? "" : " spatial-map-shell--collapsed"}`}>
@@ -86,18 +94,28 @@ function SpatialMapCanvasLayout(props: {
             fallback={<AddNodesFlowRail project={props.project} onProjectUpdated={props.onProjectUpdated} />}
           >
             <Show
-              when={!controller.contextNoteConversionOpen()}
+              when={!controller.sourceDecompositionOpen()}
               fallback={
-                <ContextNoteConversionRail
+                <SourceDecompositionRail
                   project={props.project}
                   onProjectUpdated={props.onProjectUpdated}
                 />
               }
             >
-              <SpatialMapInspector
-                projectId={props.project.id}
-                onProjectUpdated={props.onProjectUpdated}
-              />
+              <Show
+                when={!controller.contextNoteConversionOpen()}
+                fallback={
+                  <ContextNoteConversionRail
+                    project={props.project}
+                    onProjectUpdated={props.onProjectUpdated}
+                  />
+                }
+              >
+                <SpatialMapInspector
+                  projectId={props.project.id}
+                  onProjectUpdated={props.onProjectUpdated}
+                />
+              </Show>
             </Show>
           </Show>
         </Box>

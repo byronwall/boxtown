@@ -63,6 +63,25 @@ export const deleteProject = action(
   "delete-project",
 );
 
+export const importProject = action(
+  async (formData: FormData) => {
+    "use server";
+    const { importProjectArchiveOnDisk } = await import("./archive.server");
+
+    const archive = formData.get("archive");
+    if (!(archive instanceof File) || archive.size === 0) {
+      throw new Error("A project ZIP archive is required.");
+    }
+
+    const project = await importProjectArchiveOnDisk(archive);
+
+    throw redirect(`/projects/${project.id}`, {
+      revalidate: [getProjects.key, getProjectById.keyFor(project.id)],
+    });
+  },
+  "import-project",
+);
+
 export const updateProjectNodeContext = action(
   async (formData: FormData) => {
     "use server";

@@ -69,6 +69,7 @@ export interface SpatialMapCanvasController {
   showEdges: Accessor<boolean>;
   showLinkedInIsolation: Accessor<boolean>;
   sourceNodesById: Accessor<Map<string, MapNode>>;
+  sourceDecompositionOpen: Accessor<boolean>;
   availableDepthLevels: Accessor<number[]>;
   visibleData: Accessor<SpatialMapData>;
   visibleDepthLevel: Accessor<number>;
@@ -76,6 +77,7 @@ export interface SpatialMapCanvasController {
   zoomPercent: Accessor<string>;
   closeAddNodesFlow: () => void;
   closeContextNoteConversionFlow: () => void;
+  closeSourceDecompositionFlow: () => void;
   clearIsolation: () => void;
   isolateNode: (nodeId: string) => void;
   setInspectorOpen: (value: boolean | ((current: boolean) => boolean)) => void;
@@ -88,6 +90,7 @@ export interface SpatialMapCanvasController {
   fitCameraToNodes: () => void;
   openAddNodesFlow: () => void;
   openContextNoteConversionFlow: () => void;
+  openSourceDecompositionFlow: () => void;
   setViewportRef: (element: HTMLDivElement) => void;
   setSvgRef: (element: SVGSVGElement) => void;
   viewportHandlers: ViewportPointerHandlers;

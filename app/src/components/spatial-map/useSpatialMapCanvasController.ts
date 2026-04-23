@@ -75,6 +75,7 @@ export function useSpatialMapCanvasController(
   const [inspectorOpen, setInspectorOpen] = createSignal(true);
   const [addNodesOpen, setAddNodesOpen] = createSignal(false);
   const [contextNoteConversionOpen, setContextNoteConversionOpen] = createSignal(false);
+  const [sourceDecompositionOpen, setSourceDecompositionOpen] = createSignal(false);
   const [viewMode, setViewMode] = createSignal<SpatialMapViewMode>("canvas");
   const [visibleDepthLevel, writeVisibleDepthLevel] = createSignal(
     getDepthLevelCount(data()),
@@ -618,6 +619,7 @@ export function useSpatialMapCanvasController(
     sceneTransform,
     addNodesOpen,
     contextNoteConversionOpen,
+    sourceDecompositionOpen,
     edgeState,
     isolatedNodeId,
     isolationLabel,
@@ -638,14 +640,22 @@ export function useSpatialMapCanvasController(
     zoomPercent,
     closeAddNodesFlow: () => setAddNodesOpen(false),
     closeContextNoteConversionFlow: () => setContextNoteConversionOpen(false),
+    closeSourceDecompositionFlow: () => setSourceDecompositionOpen(false),
     clearIsolation: () => applyIsolation(null),
     openAddNodesFlow: () => {
       setContextNoteConversionOpen(false);
+      setSourceDecompositionOpen(false);
       setAddNodesOpen(true);
     },
     openContextNoteConversionFlow: () => {
       setAddNodesOpen(false);
+      setSourceDecompositionOpen(false);
       setContextNoteConversionOpen(true);
+    },
+    openSourceDecompositionFlow: () => {
+      setAddNodesOpen(false);
+      setContextNoteConversionOpen(false);
+      setSourceDecompositionOpen(true);
     },
     isolateNode: (nodeId) => applyIsolation(nodeId),
     setInspectorOpen,

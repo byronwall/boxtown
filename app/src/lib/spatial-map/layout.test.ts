@@ -15,7 +15,7 @@ import { alignLayoutBorders } from "./border-alignment";
 import type { PositionedMapNode } from "./types";
 import { parseSpatialMapData } from "./validate";
 
-const dataPath = path.join(process.cwd(), "src", "data", "spatial-map.json");
+const dataPath = path.join(process.cwd(), "data", "spatial-map.json");
 const parsedData = parseSpatialMapData(
   JSON.parse(readFileSync(dataPath, "utf8")),
 );
@@ -70,10 +70,23 @@ describe("spatial map layout", () => {
     const viewportAspect = VIEWPORT_WIDTH / VIEWPORT_HEIGHT;
     const layoutAspect = bounds.width / bounds.height;
 
-    expect(bounds.width / VIEWPORT_WIDTH).toBeGreaterThanOrEqual(0.62);
-    expect(bounds.height / VIEWPORT_HEIGHT).toBeGreaterThanOrEqual(0.5);
+    expect(getLayoutDensity(layout, bounds)).toBeGreaterThanOrEqual(0.52);
     expect(layoutAspect).toBeGreaterThanOrEqual(viewportAspect * 0.72);
     expect(layoutAspect).toBeLessThanOrEqual(viewportAspect * 1.2);
+  });
+
+  it("keeps focused subgraphs as dense centered blobs instead of spreading them out", () => {
+    const focusedData = filterSpatialMapDataByRelatedNodes(parsedData, "page-recipes", 1);
+    const layout = createInitialLayout(focusedData);
+    const bounds = getLayoutBounds(layout);
+    const viewportAspect = VIEWPORT_WIDTH / VIEWPORT_HEIGHT;
+    const layoutAspect = bounds.width / bounds.height;
+
+    expect(getLayoutDensity(layout, bounds)).toBeGreaterThanOrEqual(0.46);
+    expect(layoutAspect).toBeGreaterThanOrEqual(viewportAspect * 0.65);
+    expect(layoutAspect).toBeLessThanOrEqual(viewportAspect * 1.25);
+    expect(Math.abs(getLayoutCenterX(layout) - VIEWPORT_WIDTH / 2)).toBeLessThanOrEqual(40);
+    expect(Math.abs(getLayoutCenterY(layout) - VIEWPORT_HEIGHT / 2)).toBeLessThanOrEqual(40);
   });
 
   it("steps the force layout without losing nodes", () => {
@@ -263,9 +276,31 @@ function getLayoutBounds(nodes: PositionedMapNode[]) {
   }
 
   return {
+    minX,
+    minY,
+    maxX,
+    maxY,
     width: maxX - minX,
     height: maxY - minY,
   };
+}
+
+function getLayoutDensity(
+  nodes: PositionedMapNode[],
+  bounds: { width: number; height: number },
+) {
+  const nodeArea = nodes.reduce((total, node) => total + node.width * node.height, 0);
+  return nodeArea / (bounds.width * bounds.height);
+}
+
+function getLayoutCenterX(nodes: PositionedMapNode[]) {
+  const bounds = getLayoutBounds(nodes);
+  return bounds.minX + bounds.width / 2;
+}
+
+function getLayoutCenterY(nodes: PositionedMapNode[]) {
+  const bounds = getLayoutBounds(nodes);
+  return bounds.minY + bounds.height / 2;
 }
 
 function getAxisOverlap(
