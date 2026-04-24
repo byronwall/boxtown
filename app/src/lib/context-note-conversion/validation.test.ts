@@ -27,7 +27,7 @@ describe("context-note-conversion structured validation", () => {
             label: "Node 1",
             type: "component",
             depth: 2,
-            purpose: "Purpose only",
+            metadata: { purpose: 1 },
           },
         ],
         links: [],

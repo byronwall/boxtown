@@ -6,6 +6,7 @@ import { Text } from "~/components/ui/text";
 import { Textarea } from "~/components/ui/textarea";
 import { getTreeCheckedState, toggleTreeSelection } from "~/lib/context-note-conversion/selection";
 import type { ConversionCandidateTreeItem } from "~/lib/context-note-conversion/types";
+import { getNodePrimaryMetadataText } from "~/lib/projects/node-metadata";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { useSpatialMap } from "~/components/spatial-map/SpatialMapContext";
 import { getImageFilesFromDataTransfer } from "~/components/spatial-map/SpatialMapImages";
@@ -271,18 +272,19 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
                           {candidateBatch().summary}
                         </Text>
                         <Text as="p" class="spatial-map-empty-state">
-                          All candidates start selected. Source images attach to accepted nodes.
+                          All candidates start selected. Source images attach only to accepted top-level nodes.
                         </Text>
                         <VStack alignItems="stretch" gap="1.5" class="spatial-map-candidate-tree">
                           <For each={candidateBatch().tree.roots}>
                             {(rootId) => (
-                              <CandidateTreeNode
-                                item={candidateBatch().tree.items[rootId]!}
-                                items={candidateBatch().tree.items}
-                                getCheckedState={getCheckedState}
-                                onToggle={setNodeAndDescendants}
-                                level={0}
-                              />
+                            <CandidateTreeNode
+                              item={candidateBatch().tree.items[rootId]!}
+                              items={candidateBatch().tree.items}
+                              getCheckedState={getCheckedState}
+                              onToggle={setNodeAndDescendants}
+                              nodeMetadataSchema={props.project.nodeMetadataSchema}
+                              level={0}
+                            />
                             )}
                           </For>
                         </VStack>
@@ -359,6 +361,7 @@ function CandidateTreeNode(props: {
   items: Record<string, ConversionCandidateTreeItem>;
   getCheckedState: (nodeId: string) => Checkbox.CheckedState;
   onToggle: (nodeId: string, checked: boolean) => void;
+  nodeMetadataSchema: ProjectRecord["nodeMetadataSchema"];
   level: number;
 }) {
   return (
@@ -387,7 +390,11 @@ function CandidateTreeNode(props: {
               </Text>
             </HStack>
             <Text as="div" class="spatial-map-relation-meta">
-              {props.item.purpose}
+              {getNodePrimaryMetadataText(
+                { metadata: props.item.metadata },
+                props.nodeMetadataSchema,
+                "No metadata",
+              )}
             </Text>
           </VStack>
         </HStack>
@@ -400,6 +407,7 @@ function CandidateTreeNode(props: {
             items={props.items}
             getCheckedState={props.getCheckedState}
             onToggle={props.onToggle}
+            nodeMetadataSchema={props.nodeMetadataSchema}
             level={props.level + 1}
           />
         )}

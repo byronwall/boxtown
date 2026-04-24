@@ -1,6 +1,8 @@
 import { createMemo, For, Show } from "solid-js";
 import { Box, HStack, VStack } from "styled-system/jsx";
 
+import { getNodePrimaryMetadataText } from "~/lib/projects/node-metadata";
+import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode, SpatialMapData } from "~/lib/spatial-map/types";
 import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
@@ -15,7 +17,7 @@ interface SpatialMapTree {
   items: Map<string, SpatialMapTreeItem>;
 }
 
-export function SpatialMapTreeView() {
+export function SpatialMapTreeView(props: { project: ProjectRecord }) {
   const spatialMap = useSpatialMap();
   const tree = createMemo(() => buildSpatialMapTree(spatialMap.visibleData()));
 
@@ -52,6 +54,7 @@ export function SpatialMapTreeView() {
                     <SpatialMapTreeNode
                       item={treeItem()}
                       tree={tree()}
+                      nodeMetadataSchema={props.project.nodeMetadataSchema}
                       depth={0}
                       ancestry={new Set([nodeId])}
                     />
@@ -69,6 +72,7 @@ export function SpatialMapTreeView() {
 function SpatialMapTreeNode(props: {
   item: SpatialMapTreeItem;
   tree: SpatialMapTree;
+  nodeMetadataSchema: ProjectRecord["nodeMetadataSchema"];
   depth: number;
   ancestry: Set<string>;
 }) {
@@ -101,9 +105,15 @@ function SpatialMapTreeNode(props: {
           }}
         >
           <span class="spatial-map-tree-rail" aria-hidden="true" />
-          <span class="spatial-map-tree-copy">
-            <span class="spatial-map-tree-label">{props.item.node.label}</span>
-            <span class="spatial-map-tree-purpose">{props.item.node.purpose}</span>
+            <span class="spatial-map-tree-copy">
+              <span class="spatial-map-tree-label">{props.item.node.label}</span>
+              <span class="spatial-map-tree-purpose">
+                {getNodePrimaryMetadataText(
+                  props.item.node,
+                  props.nodeMetadataSchema,
+                  "No metadata",
+                )}
+              </span>
             <SpatialMapImageStrip node={props.item.node} variant="tree" />
           </span>
           <HStack gap="1" class="spatial-map-tree-meta">
@@ -123,6 +133,7 @@ function SpatialMapTreeNode(props: {
               <SpatialMapTreeNode
                 item={child}
                 tree={props.tree}
+                nodeMetadataSchema={props.nodeMetadataSchema}
                 depth={props.depth + 1}
                 ancestry={new Set([...props.ancestry, child.node.id])}
               />

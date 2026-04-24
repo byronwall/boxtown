@@ -10,10 +10,9 @@ const baseNode: PositionedMapNode = {
   height: 100,
   id: "node-a",
   images: [],
-  implementation: "",
   label: "Node A",
+  metadata: {},
   metaSize: 10,
-  purpose: "",
   rawContext: "",
   type: "page",
   vx: 0,
@@ -41,7 +40,7 @@ describe("createOrderedNodeState", () => {
       transitionVisualState: new Map([["node-a", { opacity: 1, scale: 1.2 }]]),
     });
 
-    expect(states[0]?.scale).toBe(1);
+    expect(states[0]?.scale).toBe(1.2);
   });
 
   it("keeps unrelated nodes at full opacity during hover-only interactions", () => {
@@ -55,5 +54,50 @@ describe("createOrderedNodeState", () => {
 
     expect(states.map((state) => state.opacity)).toEqual([1, 1]);
     expect(states.map((state) => state.isHovered)).toEqual([true, false]);
+  });
+
+  it("lightens deeper visible node fills without changing opacity", () => {
+    const deepNode: PositionedMapNode = {
+      ...unrelatedNode,
+      depth: 2,
+    };
+
+    const states = createOrderedNodeState({
+      activeNodeId: null,
+      hoveredNodeId: null,
+      positionedNodes: [baseNode, deepNode],
+      relatedSet: new Set(),
+      selectedNodeId: null,
+    });
+
+    expect(states.map((state) => state.opacity)).toEqual([1, 1]);
+    expect(states[0]?.depthFillLightness).toBe("0%");
+    expect(states[1]?.depthFillLightness).toBe("46%");
+    expect(states[1]?.depthFillHoverLightness).toBe("36%");
+    expect(states[0]?.depthStrokeLightness).toBe("0%");
+    expect(states[1]?.depthStrokeLightness).toBe("28%");
+    expect(states[1]?.depthStrokeHoverLightness).toBe("22%");
+    expect(states[0]?.depthStrokeWidth).toBe(1.4);
+    expect(states[1]?.depthStrokeWidth).toBe(1.05);
+  });
+
+  it("keeps single-depth views visually neutral", () => {
+    const sameDepthNode: PositionedMapNode = {
+      ...unrelatedNode,
+      depth: 0,
+    };
+
+    const states = createOrderedNodeState({
+      activeNodeId: null,
+      hoveredNodeId: null,
+      positionedNodes: [baseNode, sameDepthNode],
+      relatedSet: new Set(),
+      selectedNodeId: null,
+    });
+
+    expect(states.map((state) => state.scale)).toEqual([1, 1]);
+    expect(states.map((state) => state.depthFillLightness)).toEqual(["0%", "0%"]);
+    expect(states.map((state) => state.depthStrokeLightness)).toEqual(["0%", "0%"]);
+    expect(states.map((state) => state.depthStrokeWidth)).toEqual([1.4, 1.4]);
   });
 });

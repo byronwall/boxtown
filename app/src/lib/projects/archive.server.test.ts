@@ -2,6 +2,7 @@ import { existsSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { createDefaultProjectNodeMetadataSchema } from "./node-metadata";
 import { exportProjectArchiveOnDisk, importProjectArchiveOnDisk } from "./archive.server";
 import { deleteProjectOnDisk, readProjectByIdFromDisk } from "./data.server";
 
@@ -23,6 +24,7 @@ describe("project archives", () => {
           description: "Test fixture",
           createdAt: "2026-04-20T00:00:00.000Z",
           updatedAt: "2026-04-20T00:00:00.000Z",
+          nodeMetadataSchema: createDefaultProjectNodeMetadataSchema(),
           spatialMap: {
             nodes: [
               {
@@ -30,8 +32,10 @@ describe("project archives", () => {
                 label: "Node 1",
                 type: "page",
                 depth: 0,
-                purpose: "Purpose",
-                implementation: "Implementation",
+                metadata: {
+                  purpose: "Purpose",
+                  implementation: "Implementation",
+                },
                 context: "",
                 rawContext: "",
                 contextMode: "structured",

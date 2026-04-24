@@ -2,7 +2,6 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { MapNodeImage } from "~/lib/spatial-map/types";
-import { parseSpatialMapData } from "~/lib/spatial-map/validate";
 import {
   getProjectNodeImageDir,
   getProjectNodeImageFilePath,
@@ -11,10 +10,11 @@ import {
   safePathSegment,
   writeProjectRecordsToDisk,
 } from "./data.server";
+import { parseStoredProjectRecord } from "./project-record-format";
 import type { ProjectRecord } from "./types";
 
 const FORMAT = "product-grid-project-archive";
-const VERSION = 1;
+const VERSION = 2;
 const UTF8_FLAG = 0x0800;
 
 interface ZipEntry {
@@ -68,11 +68,17 @@ export async function importProjectArchiveOnDisk(file: File) {
     version?: unknown;
     projectId?: unknown;
   };
-  if (manifest.format !== FORMAT || manifest.version !== VERSION || typeof manifest.projectId !== "string") {
+  if (
+    manifest.format !== FORMAT ||
+    (manifest.version !== 1 && manifest.version !== VERSION) ||
+    typeof manifest.projectId !== "string"
+  ) {
     throw new Error("Unsupported project archive.");
   }
 
-  const archivedProject = parseProjectRecord(JSON.parse(readRequiredText(entries, "project.json")));
+  const archivedProject = parseStoredProjectRecord(
+    JSON.parse(readRequiredText(entries, "project.json")),
+  ).record;
   if (archivedProject.id !== manifest.projectId) {
     throw new Error("Archive manifest does not match project payload.");
   }
@@ -91,27 +97,6 @@ export async function importProjectArchiveOnDisk(file: File) {
 function jsonEntry(name: string, value: unknown): ZipEntry {
   return { name, data: Buffer.from(`${JSON.stringify(value, null, 2)}\n`) };
 }
-
-function parseProjectRecord(value: Record<string, unknown>): ProjectRecord {
-  if (
-    typeof value.id !== "string" ||
-    typeof value.name !== "string" ||
-    typeof value.createdAt !== "string" ||
-    typeof value.updatedAt !== "string"
-  ) {
-    throw new Error("Invalid project payload in archive.");
-  }
-
-  return {
-    id: value.id,
-    name: value.name,
-    description: typeof value.description === "string" ? value.description : "No project description yet.",
-    createdAt: value.createdAt,
-    updatedAt: value.updatedAt,
-    spatialMap: parseSpatialMapData(value.spatialMap),
-  };
-}
-
 function normalizeImportedProject(project: ProjectRecord, projectId: string): ProjectRecord {
   return {
     ...project,

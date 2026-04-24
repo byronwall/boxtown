@@ -44,6 +44,14 @@ export const createProject = action(
   "create-project",
 );
 
+function getMetadataFromFormData(formData: FormData) {
+  return Object.fromEntries(
+    [...formData.entries()]
+      .filter(([key, value]) => key.startsWith("metadata.") && typeof value === "string")
+      .map(([key, value]) => [key.slice("metadata.".length), value]),
+  );
+}
+
 export const deleteProject = action(
   async (formData: FormData) => {
     "use server";
@@ -156,12 +164,70 @@ export const createProjectContextNode = action(
       projectId,
       label,
       context: typeof context === "string" ? context : "",
+      metadata: getMetadataFromFormData(formData),
       splitByHeadingLevel: splitByHeadingLevel === "true",
       maxHeadingDepth:
         typeof maxHeadingDepth === "string" ? Number.parseInt(maxHeadingDepth, 10) : undefined,
     });
   },
   "create-project-context-node",
+);
+
+export const updateProjectNodeMetadata = action(
+  async (formData: FormData) => {
+    "use server";
+    const { updateProjectNodeMetadataOnDisk } = await import("./data.server");
+
+    const projectId = formData.get("projectId");
+    const nodeId = formData.get("nodeId");
+
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+    if (typeof nodeId !== "string" || nodeId.trim().length === 0) {
+      throw new Error("A node id is required.");
+    }
+
+    return updateProjectNodeMetadataOnDisk({
+      projectId,
+      nodeId,
+      metadata: getMetadataFromFormData(formData),
+    });
+  },
+  "update-project-node-metadata",
+);
+
+export const updateProjectMetadataSchema = action(
+  async (formData: FormData) => {
+    "use server";
+    const { updateProjectMetadataSchemaOnDisk } = await import("./data.server");
+
+    const projectId = formData.get("projectId");
+    const originalKeys = formData.getAll("originalKey");
+    const keys = formData.getAll("key");
+    const labels = formData.getAll("label");
+    const defaultValues = formData.getAll("defaultValue");
+
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+    if (keys.length !== labels.length || keys.length !== defaultValues.length) {
+      throw new Error("Project metadata rows are malformed.");
+    }
+
+    return updateProjectMetadataSchemaOnDisk({
+      projectId,
+      fields: keys.map((key, index) => ({
+        originalKey:
+          typeof originalKeys[index] === "string" ? originalKeys[index] : undefined,
+        key: typeof key === "string" ? key : "",
+        label: typeof labels[index] === "string" ? labels[index] : "",
+        defaultValue:
+          typeof defaultValues[index] === "string" ? defaultValues[index] : "",
+      })),
+    });
+  },
+  "update-project-metadata-schema",
 );
 
 export const deleteProjectNode = action(

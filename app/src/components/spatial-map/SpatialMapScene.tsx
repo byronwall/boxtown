@@ -174,7 +174,7 @@ function SpatialMapNode(props: {
     <g
       class={`spatial-map-node spatial-map-node--${props.item.node.type}${props.item.isSelected ? " is-selected" : ""}${props.item.isHovered ? " is-hovered" : ""}${props.isIsolationTarget ? " is-isolated" : ""}`}
       data-node-id={props.item.node.id}
-      transform={`translate(${x()}, ${y()}) scale(${props.item.scale})`}
+      transform={`translate(${x()}, ${y()})`}
       opacity={props.item.opacity}
       style={{
         "transform-box": "fill-box",
@@ -184,6 +184,11 @@ function SpatialMapNode(props: {
         "--spatial-map-node-fill-hover": fallbackTone().fillHover,
         "--spatial-map-node-stroke": fallbackTone().stroke,
         "--spatial-map-node-stroke-hover": fallbackTone().strokeHover,
+        "--spatial-map-node-depth-fill-lightness": props.item.depthFillLightness,
+        "--spatial-map-node-depth-fill-hover-lightness": props.item.depthFillHoverLightness,
+        "--spatial-map-node-depth-stroke-lightness": props.item.depthStrokeLightness,
+        "--spatial-map-node-depth-stroke-hover-lightness": props.item.depthStrokeHoverLightness,
+        "--spatial-map-node-depth-stroke-width": String(props.item.depthStrokeWidth),
       }}
       onPointerDown={() => props.onPointerDown(props.item.node.id)}
       onClick={() => props.onClick(props.item.node.id)}

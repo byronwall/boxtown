@@ -3,8 +3,7 @@ export interface MapNode {
   label: string;
   type: string;
   depth: number;
-  purpose: string;
-  implementation: string;
+  metadata: Record<string, string>;
   context: string;
   rawContext: string;
   contextMode: "context-only" | "structured";

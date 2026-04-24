@@ -14,6 +14,8 @@ const sizeByDepth: Record<
   1: { area: 12_580, minWidth: 148, maxWidth: 212, fontSize: 16, metaSize: 11 },
   2: { area: 6_960, minWidth: 112, maxWidth: 164, fontSize: 12, metaSize: 10 },
 };
+const SHALLOW_VISIBLE_DEPTH_SCALE = 1.32;
+const DEEP_VISIBLE_DEPTH_SCALE = 0.8;
 
 export type AdjacencyMap = Map<string, Set<string>>;
 
@@ -49,9 +51,10 @@ export function buildAdjacencyMap(data: SpatialMapData): AdjacencyMap {
 
 export function createInitialLayout(data: SpatialMapData): PositionedMapNode[] {
   const adjacency = buildAdjacencyMap(data);
+  const visibleDepthRange = getVisibleDepthRange(data.nodes);
   const positionedNodes = data.nodes.map((node) => ({
     ...node,
-    ...getNodeSize(node.depth, node.label),
+    ...getVisibleDepthNodeSize(node.depth, node.label, visibleDepthRange),
     x: VIEWPORT_CENTER_X,
     y: VIEWPORT_CENTER_Y,
     vx: 0,
@@ -59,6 +62,67 @@ export function createInitialLayout(data: SpatialMapData): PositionedMapNode[] {
   }));
 
   return resetLayout(positionedNodes, adjacency);
+}
+
+function getVisibleDepthNodeSize(
+  depth: number,
+  label: string,
+  visibleDepthRange: { minDepth: number; maxDepth: number },
+): NodeSize {
+  const baseSize = getNodeSize(depth, label);
+  const relativeDepth = getRelativeDepth(depth, visibleDepthRange);
+  if (relativeDepth === null) {
+    return baseSize;
+  }
+
+  const scale = interpolateNumber(
+    SHALLOW_VISIBLE_DEPTH_SCALE,
+    DEEP_VISIBLE_DEPTH_SCALE,
+    relativeDepth,
+  );
+
+  return {
+    width: roundEven(Math.max(48, baseSize.width * scale)),
+    height: roundEven(Math.max(48, baseSize.height * scale)),
+    fontSize: Math.max(10, Math.round(baseSize.fontSize * scale * 10) / 10),
+    metaSize: Math.max(9, Math.round(baseSize.metaSize * scale * 10) / 10),
+  };
+}
+
+function getVisibleDepthRange(nodes: { depth: number }[]) {
+  if (nodes.length === 0) {
+    return { minDepth: 0, maxDepth: 0 };
+  }
+
+  let minDepth = Number.POSITIVE_INFINITY;
+  let maxDepth = Number.NEGATIVE_INFINITY;
+
+  for (const node of nodes) {
+    minDepth = Math.min(minDepth, node.depth);
+    maxDepth = Math.max(maxDepth, node.depth);
+  }
+
+  return { minDepth, maxDepth };
+}
+
+function getRelativeDepth(
+  depth: number,
+  range: { minDepth: number; maxDepth: number },
+) {
+  const span = range.maxDepth - range.minDepth;
+  if (span <= 0) {
+    return null;
+  }
+
+  return (depth - range.minDepth) / span;
+}
+
+function interpolateNumber(start: number, end: number, progress: number) {
+  return start + (end - start) * progress;
+}
+
+function roundEven(value: number) {
+  return Math.max(2, Math.round(value / 2) * 2);
 }
 
 export function filterSpatialMapDataByRelatedNodes(

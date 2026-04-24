@@ -4,12 +4,13 @@ import { Box, HStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import { Text } from "~/components/ui/text";
 import type { ProjectRecord } from "~/lib/projects/types";
+import { ProjectMetadataSettingsDialog } from "./ProjectMetadataSettingsDialog";
 import { SpatialMapCreateContextNodeDialog } from "./SpatialMapCreateContextNodeDialog";
 import { useSpatialMap } from "./SpatialMapContext";
 import { InspectorToggle } from "./SpatialMapInspector";
 
 interface SpatialMapToolbarProps {
-  projectId: string;
+  project: ProjectRecord;
   eyebrow?: string;
   title?: string;
   subtitle?: string;
@@ -90,7 +91,11 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
           Decompose Source
         </Button>
         <SpatialMapCreateContextNodeDialog
-          projectId={props.projectId}
+          project={props.project}
+          onProjectUpdated={props.onProjectUpdated}
+        />
+        <ProjectMetadataSettingsDialog
+          project={props.project}
           onProjectUpdated={props.onProjectUpdated}
         />
         <HStack gap="0" class="spatial-map-toggle-group" aria-label="Map view mode">

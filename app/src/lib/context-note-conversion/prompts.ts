@@ -1,10 +1,11 @@
 import type { ProjectRecord } from "~/lib/projects/types";
+import { summarizeNodeMetadata } from "~/lib/projects/node-metadata";
 import { getLinkLabel } from "~/lib/spatial-map/links";
 import type { MapNode } from "~/lib/spatial-map/types";
 import type { ClarifyingQuestion } from "./types";
 
-function summarizeNode(node: MapNode) {
-  return `${node.id} | ${node.label} | ${node.type} | ${node.contextMode} | depth ${node.depth} | purpose: ${node.purpose}`;
+function summarizeNode(node: MapNode, project: ProjectRecord) {
+  return `${node.id} | ${node.label} | ${node.type} | ${node.contextMode} | depth ${node.depth} | metadata: ${summarizeNodeMetadata(node, project.nodeMetadataSchema)}`;
 }
 
 function summarizeGraph(project: ProjectRecord) {
@@ -14,8 +15,17 @@ function summarizeGraph(project: ProjectRecord) {
     `Node count: ${project.spatialMap.nodes.length}`,
     `Link count: ${project.spatialMap.links.length}`,
     "",
+    "Project metadata schema:",
+    ...(
+      project.nodeMetadataSchema.length > 0
+        ? project.nodeMetadataSchema.map(
+            (field) => `${field.key} | ${field.label} | default: ${field.defaultValue || "(none)"}`,
+          )
+        : ["No project metadata fields defined."]
+    ),
+    "",
     "Existing nodes:",
-    ...project.spatialMap.nodes.map(summarizeNode),
+    ...project.spatialMap.nodes.map((node) => summarizeNode(node, project)),
     "",
     "Existing links:",
     ...project.spatialMap.links.map(
@@ -51,7 +61,7 @@ export function buildQuestionPrompt(input: {
     "Prefer questions about decomposition strategy, structural depth, relationship style, and evidence preservation.",
     "Do not ask for confirmation or approval.",
     "",
-    `Source note: ${summarizeNode(input.sourceNode)}`,
+    `Source note: ${summarizeNode(input.sourceNode, input.project)}`,
     "Source note current context:",
     input.sourceNode.context || "(empty)",
     "",
@@ -71,13 +81,14 @@ export function buildSuggestionPrompt(input: {
     'Do not reproduce the source note itself as a candidate node. The source note remains a context inbox.',
     'Use contextMode \"structured\" for every generated node.',
     "Keep labels compact and concrete.",
-    "Purpose and implementation should each be one sentence.",
+    "Use only the project metadata keys listed below when populating metadata.",
+    "Each populated metadata value should stay concise and concrete.",
     "For parent/child structure, emit links with parentChild: true and no relationship.",
     'For non-parent/child adjacency, emit parentChild: false with relationship "related", "dependency", or "reuse".',
     "Create parentChild links first to anchor true depth before adding cross-cutting relationship links.",
     "Generated links may connect to existing nodes when helpful, but only generated nodes should appear in the review tree.",
     "",
-    `Source note: ${summarizeNode(input.sourceNode)}`,
+    `Source note: ${summarizeNode(input.sourceNode, input.project)}`,
     "Source note current context:",
     input.sourceNode.context || "(empty)",
     "",
@@ -89,6 +100,7 @@ export function buildSuggestionPrompt(input: {
 }
 
 export function buildTrimPrompt(input: {
+  project: ProjectRecord;
   sourceNode: MapNode;
   acceptedSummary: string;
   acceptedNodes: MapNode[];
@@ -100,11 +112,11 @@ export function buildTrimPrompt(input: {
     "Remove material that is already captured by the accepted structure.",
     "It is valid for the remaining context to be empty.",
     "",
-    `Source note: ${summarizeNode(input.sourceNode)}`,
+    `Source note: ${summarizeNode(input.sourceNode, input.project)}`,
     `Accepted summary: ${input.acceptedSummary}`,
     "",
     "Accepted structured nodes:",
-    ...input.acceptedNodes.map(summarizeNode),
+    ...input.acceptedNodes.map((node) => summarizeNode(node, input.project)),
     "",
     "Original current context to trim:",
     input.sourceNode.context || "(empty)",

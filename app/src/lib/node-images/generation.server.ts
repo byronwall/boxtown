@@ -2,6 +2,13 @@ import { openai } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import {
+  completeLlmSession,
+  failLlmSession,
+  recordLlmSessionEvent,
+  startLlmSession,
+  withLlmCallLogging,
+} from "~/lib/llm-logging/logger.server";
+import {
   addProjectNodeImageSourcesOnDisk,
   readProjectByIdFromDisk,
 } from "~/lib/projects/data.server";
@@ -37,6 +44,8 @@ const imagePlanningSchema = z.object({
   dimensionRationale: z.string().min(1).max(280),
 });
 
+const NODE_IMAGE_LLM_PIPELINE = "node-image-generation";
+
 interface GenerateProjectNodeMockupImageInput {
   projectId: string;
   nodeId: string;
@@ -64,6 +73,18 @@ export async function startNodeImageGenerationRun(args: {
   });
 
   registerNodeImageGenerationRun(snapshot);
+  await startLlmSession(NODE_IMAGE_LLM_PIPELINE, runId, {
+    startedAt: snapshot.startedAt,
+    metadata: {
+      projectId: args.projectId,
+      nodeId: args.input.nodeId,
+      mode: "background-run",
+    },
+  });
+  await recordLlmSessionEvent(NODE_IMAGE_LLM_PIPELINE, runId, {
+    stage: "run-created",
+    message: "Created node-image generation LLM session.",
+  });
   void runNodeImageGenerationPhase(runId);
 
   return { runId, snapshot };
@@ -73,31 +94,64 @@ export async function generateProjectNodeMockupImageOnDisk(
   input: GenerateProjectNodeMockupImageInput,
 ): Promise<ProjectRecord> {
   assertOpenAiKey();
+  const sessionId = `node-image-direct-${crypto.randomUUID()}`;
 
   const project = await readProjectByIdFromDisk(input.projectId);
   if (!project) {
     throw new Error("Project not found.");
   }
 
-  const context = buildNodeImageGenerationContext({
-    project,
-    nodeId: input.nodeId,
+  await startLlmSession(NODE_IMAGE_LLM_PIPELINE, sessionId, {
+    metadata: {
+      projectId: input.projectId,
+      nodeId: input.nodeId,
+      mode: "direct-call",
+    },
   });
-  const plannedImage = await planNodeMockupImage(context);
-  const image = await generateLowCostMockupImage(plannedImage);
 
-  return addProjectNodeImageSourcesOnDisk({
-    projectId: input.projectId,
-    nodeIds: [input.nodeId],
-    images: [
-      {
-        originalName: `${slugifyName(plannedImage.title)}.png`,
-        mimeType: "image/png",
-        size: image.byteLength,
-        data: image,
+  try {
+    const context = buildNodeImageGenerationContext({
+      project,
+      nodeId: input.nodeId,
+    });
+    await recordLlmSessionEvent(NODE_IMAGE_LLM_PIPELINE, sessionId, {
+      stage: "capture-context",
+      message: "Captured node and descendant context for direct image generation.",
+      data: {
+        targetNodeId: context.targetNode.id,
+        descendantNodeIds: context.descendantNodes.map((node) => node.id),
       },
-    ],
-  });
+    });
+    const plannedImage = await planNodeMockupImage(context, sessionId, "plan-prompt");
+    const image = await generateLowCostMockupImage(plannedImage, {
+      pipeline: NODE_IMAGE_LLM_PIPELINE,
+      sessionId,
+      callId: "generate-image",
+      label: "Generate mockup image",
+    });
+
+    const updatedProject = await addProjectNodeImageSourcesOnDisk({
+      projectId: input.projectId,
+      nodeIds: [input.nodeId],
+      images: [
+        {
+          originalName: `${slugifyName(plannedImage.title)}.png`,
+          mimeType: "image/png",
+          size: image.byteLength,
+          data: image,
+        },
+      ],
+    });
+    await completeLlmSession(NODE_IMAGE_LLM_PIPELINE, sessionId, {
+      title: plannedImage.title,
+      size: plannedImage.size,
+      imageByteLength: image.byteLength,
+    });
+    return updatedProject;
+  } catch (error) {
+    await failLlmSession(NODE_IMAGE_LLM_PIPELINE, sessionId, error);
+    throw error;
+  }
 }
 
 async function runNodeImageGenerationPhase(runId: string) {
@@ -124,6 +178,14 @@ async function runNodeImageGenerationPhase(runId: string) {
       project,
       nodeId: snapshot.nodeId,
     });
+    await recordLlmSessionEvent(NODE_IMAGE_LLM_PIPELINE, runId, {
+      stage: "capture-context",
+      message: "Captured selected node and descendants for image planning.",
+      data: {
+        targetNodeId: context.targetNode.id,
+        descendantNodeIds: context.descendantNodes.map((node) => node.id),
+      },
+    });
 
     patchNodeImageGenerationRun(runId, (run) => {
       completeNodeImageGenerationStep(
@@ -138,7 +200,7 @@ async function runNodeImageGenerationPhase(runId: string) {
       );
     });
 
-    const plan = await planNodeMockupImage(context);
+    const plan = await planNodeMockupImage(context, runId, "plan-prompt");
 
     patchNodeImageGenerationRun(runId, (run) => {
       run.snapshot.plan = plan;
@@ -154,7 +216,12 @@ async function runNodeImageGenerationPhase(runId: string) {
       );
     });
 
-    const image = await generateLowCostMockupImage(plan);
+    const image = await generateLowCostMockupImage(plan, {
+      pipeline: NODE_IMAGE_LLM_PIPELINE,
+      sessionId: runId,
+      callId: "generate-image",
+      label: "Generate mockup image",
+    });
 
     patchNodeImageGenerationRun(runId, (run) => {
       completeNodeImageGenerationStep(
@@ -200,7 +267,14 @@ async function runNodeImageGenerationPhase(runId: string) {
         "Generated and attached node mockup image.",
       );
     });
+    await completeLlmSession(NODE_IMAGE_LLM_PIPELINE, runId, {
+      title: plan.title,
+      size: plan.size,
+      imageByteLength: image.byteLength,
+      nodeId: snapshot.nodeId,
+    });
   } catch (error) {
+    await failLlmSession(NODE_IMAGE_LLM_PIPELINE, runId, error);
     patchNodeImageGenerationRun(runId, (run) => {
       failNodeImageGenerationSnapshot(
         run.snapshot,
@@ -222,14 +296,43 @@ function assertOpenAiKey() {
 
 async function planNodeMockupImage(
   context: ReturnType<typeof buildNodeImageGenerationContext>,
+  sessionId: string,
+  callId: string,
 ) {
-  const result = await generateText({
-    model: openai(getPromptModel()),
-    prompt: buildNodeImagePromptPlanningPrompt(context),
-    maxRetries: 1,
-    experimental_output: Output.object({ schema: imagePlanningSchema }),
-    providerOptions: { openai: { reasoningEffort: "low" } },
-  });
+  const prompt = buildNodeImagePromptPlanningPrompt(context);
+  const result = await withLlmCallLogging(
+    NODE_IMAGE_LLM_PIPELINE,
+    sessionId,
+    {
+      callId,
+      label: "Plan node image prompt",
+      request: {
+        provider: "openai",
+        modelId: getPromptModel(),
+        prompt,
+        schemaName: "imagePlanningSchema",
+        maxRetries: 1,
+        reasoningEffort: "low",
+      },
+    },
+    () =>
+      generateText({
+        model: openai(getPromptModel()),
+        prompt,
+        maxRetries: 1,
+        experimental_output: Output.object({ schema: imagePlanningSchema }),
+        providerOptions: { openai: { reasoningEffort: "low" } },
+      }),
+    (value) => ({
+      response: {
+        output: value.experimental_output,
+        finishReason: value.finishReason,
+        usage: value.usage,
+        warnings: value.warnings,
+        providerMetadata: value.providerMetadata,
+      },
+    }),
+  );
 
   return result.experimental_output;
 }

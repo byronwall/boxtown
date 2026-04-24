@@ -15,7 +15,7 @@ import { toaster } from "~/components/ui/toast";
 import { useSpatialMap } from "./SpatialMapContext";
 
 interface SpatialMapCreateContextNodeDialogProps {
-  projectId: string;
+  project: ProjectRecord;
   onProjectUpdated?: (project: ProjectRecord) => void;
 }
 
@@ -27,6 +27,7 @@ export function SpatialMapCreateContextNodeDialog(
   const [open, setOpen] = createSignal(false);
   const [label, setLabel] = createSignal("");
   const [context, setContext] = createSignal("");
+  const [metadataDraft, setMetadataDraft] = createSignal<Record<string, string>>({});
   const [splitByHeadingLevel, setSplitByHeadingLevel] = createSignal(false);
   const [selectedMaxHeadingDepth, setSelectedMaxHeadingDepth] = createSignal(1);
   const [hasManualHeadingDepth, setHasManualHeadingDepth] = createSignal(false);
@@ -40,6 +41,7 @@ export function SpatialMapCreateContextNodeDialog(
   const reset = () => {
     setLabel("");
     setContext("");
+    setMetadataDraft({});
     setSplitByHeadingLevel(false);
     setSelectedMaxHeadingDepth(1);
     setHasManualHeadingDepth(false);
@@ -144,7 +146,7 @@ export function SpatialMapCreateContextNodeDialog(
           method="post"
         >
           <VStack alignItems="stretch" gap="4">
-            <input type="hidden" name="projectId" value={props.projectId} />
+            <input type="hidden" name="projectId" value={props.project.id} />
             <input
               type="hidden"
               name="maxHeadingDepth"
@@ -182,6 +184,30 @@ export function SpatialMapCreateContextNodeDialog(
                 Markdown is stored as plain text and rendered in the inspector when selected.
               </Field.HelperText>
             </Field.Root>
+
+            <For each={props.project.nodeMetadataSchema}>
+              {(field) => (
+                <Field.Root>
+                  <Field.Label>{field.label}</Field.Label>
+                  <Input
+                    name={`metadata.${field.key}`}
+                    value={metadataDraft()[field.key] ?? ""}
+                    onInput={(event) =>
+                      setMetadataDraft((current) => ({
+                        ...current,
+                        [field.key]: event.currentTarget.value,
+                      }))
+                    }
+                    placeholder={field.defaultValue}
+                  />
+                  <Field.HelperText>
+                    {field.defaultValue
+                      ? `Default: ${field.defaultValue}`
+                      : "Optional project metadata."}
+                  </Field.HelperText>
+                </Field.Root>
+              )}
+            </For>
 
             <Field.Root>
               <Field.Label>Import Options</Field.Label>

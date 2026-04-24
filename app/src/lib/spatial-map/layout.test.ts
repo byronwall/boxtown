@@ -12,6 +12,7 @@ import {
   stepLayout,
 } from "./layout";
 import { alignLayoutBorders } from "./border-alignment";
+import type { SpatialMapData } from "./types";
 import type { PositionedMapNode } from "./types";
 import { parseSpatialMapData } from "./validate";
 
@@ -96,6 +97,44 @@ describe("spatial map layout", () => {
 
     expect(next).toHaveLength(initial.length);
     expect(next.every((node) => Number.isFinite(node.x) && Number.isFinite(node.y))).toBe(true);
+  });
+
+  it("sizes shallower visible nodes larger before layout runs", () => {
+    const smallData: SpatialMapData = {
+      nodes: [
+        {
+          id: "root",
+          label: "Root",
+          type: "page",
+          depth: 0,
+          metadata: {},
+          context: "",
+          rawContext: "",
+          contextMode: "structured",
+        },
+        {
+          id: "deep",
+          label: "Deep",
+          type: "component",
+          depth: 3,
+          metadata: {},
+          context: "",
+          rawContext: "",
+          contextMode: "structured",
+        },
+      ],
+      links: [],
+    };
+
+    const layout = createInitialLayout(smallData);
+    const rootNode = layout.find((node) => node.id === "root");
+    const deepNode = layout.find((node) => node.id === "deep");
+
+    expect(rootNode).toBeDefined();
+    expect(deepNode).toBeDefined();
+    expect((rootNode?.width ?? 0) > (deepNode?.width ?? 0)).toBe(true);
+    expect((rootNode?.height ?? 0) > (deepNode?.height ?? 0)).toBe(true);
+    expect((rootNode?.fontSize ?? 0) > (deepNode?.fontSize ?? 0)).toBe(true);
   });
 
   it("aligns small border gaps between neighboring nodes", () => {
@@ -205,8 +244,7 @@ function createPositionedNode(
     label: id,
     type: "page",
     depth: 0,
-    purpose: "",
-    implementation: "",
+    metadata: {},
     context: "",
     rawContext: "",
     contextMode: "structured",

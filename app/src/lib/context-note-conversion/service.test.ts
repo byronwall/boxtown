@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createDefaultProjectNodeMetadataSchema } from "~/lib/projects/node-metadata";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode } from "~/lib/spatial-map/types";
 
@@ -7,11 +8,25 @@ const {
   readProjectByIdFromDisk,
   appendGeneratedNodesToProjectOnDisk,
   updateProjectNodeContextOnDisk,
+  startLlmSession,
+  recordLlmSessionEvent,
+  completeLlmSession,
+  failLlmSession,
+  withLlmCallLogging,
 } = vi.hoisted(() => ({
   generateText: vi.fn(),
   readProjectByIdFromDisk: vi.fn(),
   appendGeneratedNodesToProjectOnDisk: vi.fn(),
   updateProjectNodeContextOnDisk: vi.fn(),
+  startLlmSession: vi.fn(),
+  recordLlmSessionEvent: vi.fn(),
+  completeLlmSession: vi.fn(),
+  failLlmSession: vi.fn(),
+  withLlmCallLogging: vi.fn(async (_pipeline, _sessionId, _definition, operation, buildResult) => {
+    const value = await operation();
+    buildResult(value);
+    return value;
+  }),
 }));
 
 vi.mock("ai", () => ({
@@ -31,6 +46,14 @@ vi.mock("~/lib/projects/data.server", () => ({
   updateProjectNodeContextOnDisk,
 }));
 
+vi.mock("~/lib/llm-logging/logger.server", () => ({
+  startLlmSession,
+  recordLlmSessionEvent,
+  completeLlmSession,
+  failLlmSession,
+  withLlmCallLogging,
+}));
+
 import {
   acceptContextNoteConversionSelection,
   startContextNoteConversionRun,
@@ -44,8 +67,10 @@ function buildSourceNode(overrides: Partial<MapNode> = {}): MapNode {
     label: "Source Note",
     type: "note",
     depth: 2,
-    purpose: "Loose context",
-    implementation: "Stored on the node",
+    metadata: {
+      purpose: "Loose context",
+      implementation: "Stored on the node",
+    },
     context: "Original note context",
     rawContext: "Original note context",
     contextMode: "context-only",
@@ -60,6 +85,7 @@ function buildProject(sourceNode: MapNode = buildSourceNode()): ProjectRecord {
     description: "Description",
     createdAt: "2026-04-20T00:00:00.000Z",
     updatedAt: "2026-04-20T00:00:00.000Z",
+    nodeMetadataSchema: createDefaultProjectNodeMetadataSchema(),
     spatialMap: {
       nodes: [
         {
@@ -67,8 +93,10 @@ function buildProject(sourceNode: MapNode = buildSourceNode()): ProjectRecord {
           label: "Home",
           type: "page",
           depth: 0,
-          purpose: "Purpose",
-          implementation: "Implementation",
+          metadata: {
+            purpose: "Purpose",
+            implementation: "Implementation",
+          },
           context: "",
           rawContext: "",
           contextMode: "structured",
@@ -83,6 +111,11 @@ function buildProject(sourceNode: MapNode = buildSourceNode()): ProjectRecord {
 describe("context note conversion service", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    withLlmCallLogging.mockImplementation(async (_pipeline, _sessionId, _definition, operation, buildResult) => {
+      const value = await operation();
+      buildResult(value);
+      return value;
+    });
     process.env.OPENAI_API_KEY = "test-key";
     process.env.OPENAI_MODEL = "gpt-5-mini";
     process.env.OPENAI_HEAVY_MODEL = "gpt-5.4";
@@ -137,8 +170,10 @@ describe("context note conversion service", () => {
               label: "Candidate Root",
               type: "page",
               depth: 0,
-              purpose: "Root purpose",
-              implementation: "Root implementation",
+              metadata: {
+                purpose: "Root purpose",
+                implementation: "Root implementation",
+              },
               context: "",
               rawContext: "",
               contextMode: "structured",
@@ -148,8 +183,10 @@ describe("context note conversion service", () => {
               label: "Candidate Child",
               type: "assembly",
               depth: 1,
-              purpose: "Child purpose",
-              implementation: "Child implementation",
+              metadata: {
+                purpose: "Child purpose",
+                implementation: "Child implementation",
+              },
               context: "",
               rawContext: "",
               contextMode: "structured",
@@ -248,8 +285,10 @@ describe("context note conversion service", () => {
               label: "Candidate Root",
               type: "page",
               depth: 0,
-              purpose: "Root purpose",
-              implementation: "Root implementation",
+              metadata: {
+                purpose: "Root purpose",
+                implementation: "Root implementation",
+              },
               context: "",
               rawContext: "",
               contextMode: "structured",
@@ -259,8 +298,10 @@ describe("context note conversion service", () => {
               label: "Candidate Child",
               type: "assembly",
               depth: 1,
-              purpose: "Child purpose",
-              implementation: "Child implementation",
+              metadata: {
+                purpose: "Child purpose",
+                implementation: "Child implementation",
+              },
               context: "",
               rawContext: "",
               contextMode: "structured",
@@ -293,8 +334,10 @@ describe("context note conversion service", () => {
             label: "Candidate Root",
             type: "page",
             depth: 0,
-            purpose: "Root purpose",
-            implementation: "Root implementation",
+            metadata: {
+              purpose: "Root purpose",
+              implementation: "Root implementation",
+            },
             context: "",
             rawContext: "",
             contextMode: "structured",

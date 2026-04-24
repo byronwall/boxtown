@@ -1,10 +1,11 @@
 import type { ProjectRecord } from "~/lib/projects/types";
+import { summarizeNodeMetadata } from "~/lib/projects/node-metadata";
 import { getLinkLabel } from "~/lib/spatial-map/links";
 import type { MapNode } from "~/lib/spatial-map/types";
 import type { SourceAssetSummary } from "./types";
 
-function summarizeNode(node: MapNode) {
-  return `${node.id} | ${node.label} | ${node.type} | depth ${node.depth} | purpose: ${node.purpose}`;
+function summarizeNode(node: MapNode, project: ProjectRecord) {
+  return `${node.id} | ${node.label} | ${node.type} | depth ${node.depth} | metadata: ${summarizeNodeMetadata(node, project.nodeMetadataSchema)}`;
 }
 
 function summarizeGraph(project: ProjectRecord) {
@@ -14,8 +15,17 @@ function summarizeGraph(project: ProjectRecord) {
     `Node count: ${project.spatialMap.nodes.length}`,
     `Link count: ${project.spatialMap.links.length}`,
     "",
+    "Project metadata schema:",
+    ...(
+      project.nodeMetadataSchema.length > 0
+        ? project.nodeMetadataSchema.map(
+            (field) => `${field.key} | ${field.label} | default: ${field.defaultValue || "(none)"}`,
+          )
+        : ["No project metadata fields defined."]
+    ),
+    "",
     "Existing nodes:",
-    ...project.spatialMap.nodes.map(summarizeNode),
+    ...project.spatialMap.nodes.map((node) => summarizeNode(node, project)),
     "",
     "Existing links:",
     ...project.spatialMap.links.map(
@@ -43,10 +53,12 @@ export function buildSourceDecompositionPrompt(input: {
     "Return 5 to 12 nodes unless the source clearly implies fewer.",
     "Use compact concrete labels. Prefer node types such as app, layout, page, region, block, component, interaction, style-system, data-state, or asset.",
     "Depth must represent the hierarchy: broad app/layout nodes at low depth, nested blocks/components at higher depth.",
-    "Purpose should describe what the node represents in the source.",
-    "Implementation should describe what it would take to rebuild that part.",
+    "Use only the project metadata keys listed below when populating metadata.",
+    "Metadata should describe what the node represents and how it should be rebuilt when relevant.",
     "Context should include concise rebuild notes and any relevant source evidence.",
-    "For each node, include sourceAssetIds listing the source image ids that directly informed that node.",
+    "Use sourceAssetIds sparingly.",
+    "Only top-level root nodes should usually include full uploaded screenshot ids in sourceAssetIds.",
+    "Child nodes should usually leave sourceAssetIds empty unless a separate uploaded crop directly corresponds to that child.",
     "Include a general styleCommentary covering styles, colors, fonts, density, hierarchy, spacing, and theme cues.",
     "Links may target existing nodes or newly generated nodes.",
     "For parent/child structure, emit links with parentChild: true and no relationship.",
@@ -59,7 +71,7 @@ export function buildSourceDecompositionPrompt(input: {
     input.sourceAssets.length > 0 ? summarizeAssets(input.sourceAssets) : "No source images provided.",
     "",
     input.selectedNode
-      ? `Selected anchor node: ${summarizeNode(input.selectedNode)}`
+      ? `Selected anchor node: ${summarizeNode(input.selectedNode, input.project)}`
       : "Selected anchor node: none",
     "",
     summarizeGraph(input.project),

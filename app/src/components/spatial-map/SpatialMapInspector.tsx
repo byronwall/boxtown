@@ -7,7 +7,10 @@ import * as Field from "~/components/ui/field";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
-import { updateProjectNodeContext } from "~/lib/projects/data";
+import {
+  updateProjectNodeContext,
+  updateProjectNodeMetadata,
+} from "~/lib/projects/data";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
 import { Text } from "~/components/ui/text";
@@ -18,7 +21,7 @@ import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 
 interface SpatialMapInspectorProps {
-  projectId: string;
+  project: ProjectRecord;
   onProjectUpdated?: (project: ProjectRecord) => void;
 }
 
@@ -28,17 +31,37 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     const formData = input[0];
     return (
       formData instanceof FormData &&
-      formData.get("projectId") === props.projectId &&
+      formData.get("projectId") === props.project.id &&
+      formData.get("nodeId") === spatialMap.selectedNodeId()
+    );
+  });
+  const saveMetadataSubmission = useSubmission(updateProjectNodeMetadata, (input) => {
+    const formData = input[0];
+    return (
+      formData instanceof FormData &&
+      formData.get("projectId") === props.project.id &&
       formData.get("nodeId") === spatialMap.selectedNodeId()
     );
   });
   const selectedNode = createMemo(() => spatialMap.selectedNode());
   const [contextDraft, setContextDraft] = createSignal("");
+  const [metadataDraft, setMetadataDraft] = createSignal<Record<string, string>>({});
   const [editingContext, setEditingContext] = createSignal(false);
   const [contextDialogOpen, setContextDialogOpen] = createSignal(false);
   const [isHydrated, setIsHydrated] = createSignal(false);
   const contextFormId = "spatial-map-context-form";
+  const metadataFormId = "spatial-map-metadata-form";
   const isContextOnlyNode = createMemo(() => selectedNode()?.contextMode === "context-only");
+  const metadataIsDirty = createMemo(() => {
+    const node = selectedNode();
+    if (!node) {
+      return false;
+    }
+
+    return props.project.nodeMetadataSchema.some((field) => {
+      return (metadataDraft()[field.key] ?? "") !== (node.metadata[field.key] ?? "");
+    });
+  });
 
   onMount(() => {
     setIsHydrated(true);
@@ -46,6 +69,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
 
   createEffect(() => {
     setContextDraft(selectedNode()?.context ?? "");
+    setMetadataDraft(selectedNode()?.metadata ?? {});
     setEditingContext(false);
     setContextDialogOpen(false);
   });
@@ -64,6 +88,21 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
       description: `${label ?? "This node"} now includes the latest markdown context.`,
     });
     saveContextSubmission.clear();
+  });
+
+  createEffect(() => {
+    const result = saveMetadataSubmission.result;
+    if (!result || saveMetadataSubmission.pending) {
+      return;
+    }
+
+    const label = result.spatialMap.nodes.find((node) => node.id === spatialMap.selectedNodeId())?.label;
+    props.onProjectUpdated?.(result);
+    toaster.success({
+      title: "Metadata updated",
+      description: `${label ?? "This node"} now uses the current project metadata values.`,
+    });
+    saveMetadataSubmission.clear();
   });
 
   return (
@@ -110,7 +149,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                     </Button>
                   </Show>
                   <SpatialMapDeleteNodeControl
-                    projectId={props.projectId}
+                    projectId={props.project.id}
                     node={node()}
                     onProjectUpdated={props.onProjectUpdated}
                   />
@@ -152,7 +191,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                   <SpatialMapImageStrip node={node()} variant="inspector" />
                 </Show>
                 <SpatialMapGenerateImageControl
-                  projectId={props.projectId}
+                  projectId={props.project.id}
                   node={node()}
                   onProjectUpdated={props.onProjectUpdated}
                 />
@@ -201,17 +240,89 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
           </Show>
 
           <Box class="spatial-map-inspector-section">
-            <InspectorBlock
-              title="Purpose"
-              body={selectedNode()?.purpose ?? "No purpose available for this item."}
-            />
-            <InspectorBlock
-              title="Implementation"
-              body={
-                selectedNode()?.implementation ??
-                "No implementation notes available for this item."
+            <HStack justifyContent="space-between" alignItems="center" gap="3">
+              <Text
+                as="h3"
+                margin="0"
+                fontSize="sm"
+                fontWeight="semibold"
+                class="spatial-map-inspector-section-title is-heading"
+              >
+                Metadata
+              </Text>
+              <Show when={selectedNode()}>
+                {(node) => (
+                  <HStack gap="2">
+                    <Show when={metadataIsDirty()}>
+                      <Button
+                        type="button"
+                        size="xs"
+                        variant="outline"
+                        class="spatial-map-button"
+                        onClick={() => setMetadataDraft(node().metadata)}
+                      >
+                        Reset
+                      </Button>
+                    </Show>
+                    <Button
+                      type="submit"
+                      form={metadataFormId}
+                      size="xs"
+                      class="spatial-map-button spatial-map-button--strong"
+                      loading={saveMetadataSubmission.pending}
+                      disabled={!metadataIsDirty()}
+                    >
+                      Save Metadata
+                    </Button>
+                  </HStack>
+                )}
+              </Show>
+            </HStack>
+            <Show
+              when={selectedNode()}
+              fallback={
+                <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+                  Select a node to edit its project metadata values.
+                </Text>
               }
-            />
+            >
+              {(node) => (
+                <form
+                  id={metadataFormId}
+                  action={normalizeActionUrl(updateProjectNodeMetadata.url)}
+                  method="post"
+                >
+                  <VStack alignItems="stretch" gap="3">
+                    <input type="hidden" name="projectId" value={props.project.id} />
+                    <input type="hidden" name="nodeId" value={node().id} />
+                    <For each={props.project.nodeMetadataSchema}>
+                      {(field) => (
+                        <Field.Root>
+                          <Field.Label>{field.label}</Field.Label>
+                          <Textarea
+                            name={`metadata.${field.key}`}
+                            rows={1}
+                            value={metadataDraft()[field.key] ?? ""}
+                            onInput={(event) =>
+                              setMetadataDraft((current) => ({
+                                ...current,
+                                [field.key]: event.currentTarget.value,
+                              }))
+                            }
+                            placeholder={field.defaultValue}
+                          />
+                        </Field.Root>
+                      )}
+                    </For>
+                    <Show when={props.project.nodeMetadataSchema.length === 0}>
+                      <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+                        This project does not define any metadata keys yet.
+                      </Text>
+                    </Show>
+                  </VStack>
+                </form>
+              )}
+            </Show>
           </Box>
 
           <Box class="spatial-map-inspector-section">
@@ -290,7 +401,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                     method="post"
                   >
                     <VStack alignItems="stretch" gap="3">
-                      <input type="hidden" name="projectId" value={props.projectId} />
+                      <input type="hidden" name="projectId" value={props.project.id} />
                       <input type="hidden" name="nodeId" value={node().id} />
                       <Field.Root>
                         <Field.Label>Markdown Context</Field.Label>
@@ -493,25 +604,6 @@ function InspectorRow(props: { label: string; value: string; mono?: boolean }) {
         {props.value}
       </Text>
     </HStack>
-  );
-}
-
-function InspectorBlock(props: { title: string; body: string }) {
-  return (
-    <VStack alignItems="start" gap="1" class="spatial-map-inspector-block">
-      <Text
-        as="h3"
-        margin="0"
-        fontSize="sm"
-        fontWeight="semibold"
-        class="spatial-map-inspector-block-title"
-      >
-        {props.title}
-      </Text>
-      <Text as="p" margin="0" class="spatial-map-inspector-block-body">
-        {props.body}
-      </Text>
-    </VStack>
   );
 }
 

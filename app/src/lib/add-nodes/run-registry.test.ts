@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { createDefaultProjectNodeMetadataSchema } from "~/lib/projects/node-metadata";
 import { getAddNodesRunSnapshot, patchAddNodesRun, registerAddNodesRun, subscribeAddNodesRun } from "./run-registry";
 import type { AddNodesRunSnapshot, AddNodesRunState } from "./types";
 
@@ -27,6 +28,7 @@ function buildState(): AddNodesRunState {
       description: "Description",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      nodeMetadataSchema: createDefaultProjectNodeMetadataSchema(),
       spatialMap: { nodes: [], links: [] },
     },
     selectedNode: null,

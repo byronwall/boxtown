@@ -1,9 +1,11 @@
+import { getNodeMetadataEntries } from "~/lib/projects/node-metadata";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode, SpatialMapData } from "~/lib/spatial-map/types";
 
 export interface NodeImageGenerationContext {
   projectName: string;
   projectDescription: string;
+  projectMetadataSchema: ProjectRecord["nodeMetadataSchema"];
   targetNode: NodeImageContextNode;
   descendantNodes: NodeImageContextNode[];
   relatedNodes: NodeImageContextNode[];
@@ -14,8 +16,7 @@ export interface NodeImageContextNode {
   label: string;
   type: string;
   depth: number;
-  purpose: string;
-  implementation: string;
+  metadata: Array<{ key: string; label: string; value: string }>;
   contextExcerpt: string;
 }
 
@@ -56,9 +57,10 @@ export function buildNodeImageGenerationContext(input: {
   return {
     projectName: input.project.name,
     projectDescription: input.project.description,
-    targetNode: summarizeNodeForImageContext(targetNode),
-    descendantNodes: descendantNodes.map(summarizeNodeForImageContext),
-    relatedNodes: relatedNodes.map(summarizeNodeForImageContext),
+    projectMetadataSchema: input.project.nodeMetadataSchema,
+    targetNode: summarizeNodeForImageContext(targetNode, input.project),
+    descendantNodes: descendantNodes.map((node) => summarizeNodeForImageContext(node, input.project)),
+    relatedNodes: relatedNodes.map((node) => summarizeNodeForImageContext(node, input.project)),
   };
 }
 
@@ -66,6 +68,13 @@ export function formatNodeImageGenerationContext(context: NodeImageGenerationCon
   return [
     `Project: ${context.projectName}`,
     `Description: ${context.projectDescription}`,
+    "",
+    "Project metadata schema:",
+    context.projectMetadataSchema.length > 0
+      ? context.projectMetadataSchema
+          .map((field) => `- ${field.label} (${field.key}) default: ${field.defaultValue || "(none)"}`)
+          .join("\n")
+      : "No project metadata fields defined.",
     "",
     "Target node:",
     formatContextNode(context.targetNode),
@@ -108,14 +117,16 @@ function getDescendantNodeIds(data: SpatialMapData, rootNodeId: string) {
   return descendants;
 }
 
-function summarizeNodeForImageContext(node: MapNode): NodeImageContextNode {
+function summarizeNodeForImageContext(
+  node: MapNode,
+  project: ProjectRecord,
+): NodeImageContextNode {
   return {
     id: node.id,
     label: node.label,
     type: node.type,
     depth: node.depth,
-    purpose: node.purpose,
-    implementation: node.implementation,
+    metadata: getNodeMetadataEntries(node, project.nodeMetadataSchema),
     contextExcerpt: truncateText(node.context || node.rawContext || "", MAX_CONTEXT_EXCERPT_LENGTH),
   };
 }
@@ -123,8 +134,9 @@ function summarizeNodeForImageContext(node: MapNode): NodeImageContextNode {
 function formatContextNode(node: NodeImageContextNode) {
   return [
     `- ${node.label} (${node.type}, depth ${node.depth}, id ${node.id})`,
-    `  Purpose: ${node.purpose}`,
-    `  Implementation: ${node.implementation}`,
+    ...(node.metadata.length > 0
+      ? node.metadata.map((entry) => `  ${entry.label}: ${entry.value}`)
+      : ["  Metadata: none"]),
     node.contextExcerpt ? `  Context: ${node.contextExcerpt}` : null,
   ]
     .filter(Boolean)

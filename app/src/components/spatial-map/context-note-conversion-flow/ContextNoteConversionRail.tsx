@@ -6,6 +6,7 @@ import { Text } from "~/components/ui/text";
 import { Tooltip } from "~/components/ui/tooltip";
 import { getTreeCheckedState, toggleTreeSelection } from "~/lib/context-note-conversion/selection";
 import type { ConversionCandidateTreeItem } from "~/lib/context-note-conversion/types";
+import { getNodePrimaryMetadataText } from "~/lib/projects/node-metadata";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { useSpatialMap } from "~/components/spatial-map/SpatialMapContext";
 import { useContextNoteConversionFlow } from "./useContextNoteConversionFlow";
@@ -228,6 +229,7 @@ export function ContextNoteConversionRail(props: ContextNoteConversionRailProps)
                               items={candidateBatch().tree.items}
                               getCheckedState={getCheckedState}
                               onToggle={setNodeAndDescendants}
+                              nodeMetadataSchema={props.project.nodeMetadataSchema}
                               level={0}
                             />
                           )}
@@ -296,6 +298,7 @@ function CandidateTreeNode(props: {
   items: Record<string, ConversionCandidateTreeItem>;
   getCheckedState: (nodeId: string) => Checkbox.CheckedState;
   onToggle: (nodeId: string, checked: boolean) => void;
+  nodeMetadataSchema: ProjectRecord["nodeMetadataSchema"];
   level: number;
 }) {
   return (
@@ -324,7 +327,11 @@ function CandidateTreeNode(props: {
               </Text>
             </HStack>
             <Text as="div" class="spatial-map-relation-meta">
-              {props.item.purpose}
+              {getNodePrimaryMetadataText(
+                { metadata: props.item.metadata },
+                props.nodeMetadataSchema,
+                "No metadata",
+              )}
             </Text>
           </VStack>
         </HStack>
@@ -337,6 +344,7 @@ function CandidateTreeNode(props: {
             items={props.items}
             getCheckedState={props.getCheckedState}
             onToggle={props.onToggle}
+            nodeMetadataSchema={props.nodeMetadataSchema}
             level={props.level + 1}
           />
         )}

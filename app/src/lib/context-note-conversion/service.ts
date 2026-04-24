@@ -1,11 +1,23 @@
 import { openai } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
 import { z } from "zod";
+import { createNodeMetadataObjectSchema } from "~/lib/projects/node-metadata.zod";
+import {
+  createDefaultProjectNodeMetadataSchema,
+  sanitizeNodeMetadata,
+} from "~/lib/projects/node-metadata";
 import {
   appendGeneratedNodesToProjectOnDisk,
   readProjectByIdFromDisk,
   updateProjectNodeContextOnDisk,
 } from "~/lib/projects/data.server";
+import {
+  completeLlmSession,
+  failLlmSession,
+  recordLlmSessionEvent,
+  startLlmSession,
+  withLlmCallLogging,
+} from "~/lib/llm-logging/logger.server";
 import type { MapLink, MapNode } from "~/lib/spatial-map/types";
 import { buildCandidateTree } from "./tree";
 import {
@@ -51,26 +63,6 @@ const candidateLinkSchema = z.object({
   relationship: z.enum(["related", "dependency", "reuse"]).optional(),
 });
 
-const candidateBatchSchema = z.object({
-  summary: z.string().min(1),
-  nodes: z.array(
-    z.object({
-      id: z.string().min(1),
-      label: z.string().min(1),
-      type: z.string().min(1),
-      depth: z.number().int().min(0),
-      purpose: z.string().min(1),
-      implementation: z.string().min(1),
-      context: z.string().default(""),
-      rawContext: z.string().default(""),
-      contextMode: z.literal("structured").default("structured"),
-    }),
-  ).min(1).max(10),
-  links: z.array(
-    candidateLinkSchema,
-  ),
-});
-
 const trimResultSchema = z.object({
   trimmedContext: z.string(),
   summary: z.string().min(1),
@@ -97,6 +89,29 @@ const stepLabels: Record<ContextNoteConversionRunStepId, string> = {
   "trim-context": "Trim context",
   complete: "Complete",
 };
+
+const CONTEXT_NOTE_CONVERSION_LLM_PIPELINE = "context-note-conversion";
+
+function createCandidateBatchSchema(
+  nodeMetadataSchema: NonNullable<Awaited<ReturnType<typeof readProjectByIdFromDisk>>>["nodeMetadataSchema"],
+) {
+  return z.object({
+    summary: z.string().min(1),
+    nodes: z.array(
+      z.object({
+        id: z.string().min(1),
+        label: z.string().min(1),
+        type: z.string().min(1),
+        depth: z.number().int().min(0),
+        metadata: createNodeMetadataObjectSchema(nodeMetadataSchema),
+        context: z.string().default(""),
+        rawContext: z.string().default(""),
+        contextMode: z.literal("structured").default("structured"),
+      }),
+    ).min(1).max(10),
+    links: z.array(candidateLinkSchema),
+  });
+}
 
 function getDefaultModel() {
   return process.env.OPENAI_MODEL ?? "gpt-5-mini";
@@ -213,21 +228,51 @@ function completeSnapshot(snapshot: ContextNoteConversionRunSnapshot, message: s
 }
 
 async function runStructuredPrompt<T>(args: {
+  sessionId: string;
+  callId: string;
+  callLabel: string;
   modelId: string;
   prompt: string;
   schema: z.ZodType<T>;
+  schemaName: string;
   reasoningEffort?: "minimal" | "low" | "medium";
 }) {
   assertOpenAiKey();
-  const result = await generateText({
-    model: openai(args.modelId),
-    prompt: args.prompt,
-    maxRetries: 1,
-    experimental_output: Output.object({ schema: args.schema }),
-    providerOptions: args.reasoningEffort
-      ? { openai: { reasoningEffort: args.reasoningEffort } }
-      : undefined,
-  });
+  const result = await withLlmCallLogging(
+    CONTEXT_NOTE_CONVERSION_LLM_PIPELINE,
+    args.sessionId,
+    {
+      callId: args.callId,
+      label: args.callLabel,
+      request: {
+        provider: "openai",
+        modelId: args.modelId,
+        prompt: args.prompt,
+        schemaName: args.schemaName,
+        maxRetries: 1,
+        reasoningEffort: args.reasoningEffort ?? null,
+      },
+    },
+    () =>
+      generateText({
+        model: openai(args.modelId),
+        prompt: args.prompt,
+        maxRetries: 1,
+        experimental_output: Output.object({ schema: args.schema }),
+        providerOptions: args.reasoningEffort
+          ? { openai: { reasoningEffort: args.reasoningEffort } }
+          : undefined,
+      }),
+    (value) => ({
+      response: {
+        output: value.experimental_output,
+        finishReason: value.finishReason,
+        usage: value.usage,
+        warnings: value.warnings,
+        providerMetadata: value.providerMetadata,
+      },
+    }),
+  );
 
   return result.experimental_output;
 }
@@ -243,9 +288,15 @@ function sanitizeQuestions(questions: ClarifyingQuestion[]) {
   }));
 }
 
-function sanitizeCandidateNodes(nodes: MapNode[]) {
+function sanitizeCandidateNodes(
+  nodes: Array<Omit<MapNode, "metadata"> & { metadata: Record<string, string | undefined> }>,
+  nodeMetadataSchema = createDefaultProjectNodeMetadataSchema(),
+) {
   return nodes.map((node) => ({
     ...node,
+    metadata: sanitizeNodeMetadata(node.metadata, nodeMetadataSchema, {
+      omitDefaultValues: true,
+    }),
     context: node.context ?? "",
     rawContext: node.rawContext ?? node.context ?? "",
     contextMode: "structured" as const,
@@ -269,8 +320,13 @@ function sanitizeCandidateLinks(links: z.infer<typeof candidateLinkSchema>[]): M
   );
 }
 
-function createCandidateBatch(summary: string, nodes: MapNode[], links: MapLink[]): ConversionCandidateBatch {
-  const sanitizedNodes = sanitizeCandidateNodes(nodes);
+function createCandidateBatch(
+  summary: string,
+  nodes: Array<Omit<MapNode, "metadata"> & { metadata: Record<string, string | undefined> }>,
+  links: MapLink[],
+  nodeMetadataSchema = createDefaultProjectNodeMetadataSchema(),
+): ConversionCandidateBatch {
+  const sanitizedNodes = sanitizeCandidateNodes(nodes, nodeMetadataSchema);
   const sanitizedLinks = sanitizeCandidateLinks(links);
   return {
     summary,
@@ -297,12 +353,49 @@ function filterAcceptedBatch(batch: ConversionCandidateBatch, acceptedNodeIds: s
   };
 }
 
+function sanitizeCandidateBatch(
+  batch: ReturnType<typeof createCandidateBatchSchema>["_output"],
+  nodeMetadataSchema = createDefaultProjectNodeMetadataSchema(),
+): ConversionCandidateBatch {
+  const nodes = batch.nodes.map((node) => ({
+    ...node,
+    metadata: sanitizeNodeMetadata(node.metadata, nodeMetadataSchema, {
+      omitDefaultValues: true,
+    }),
+  }));
+  const links = batch.links.map((link) =>
+    link.parentChild
+      ? {
+          source: link.source,
+          target: link.target,
+          parentChild: true,
+        }
+      : {
+          source: link.source,
+          target: link.target,
+          parentChild: false,
+          relationship: link.relationship ?? "related",
+        },
+  );
+
+  return {
+    summary: batch.summary,
+    nodes,
+    links,
+    tree: buildCandidateTree(nodes, links),
+  };
+}
+
 export function parseQuestionSet(input: unknown) {
   return questionSetSchema.parse(input);
 }
 
 export function parseCandidateBatch(input: unknown) {
-  return candidateBatchSchema.parse(input);
+  const nodeMetadataSchema = createDefaultProjectNodeMetadataSchema();
+  return sanitizeCandidateBatch(
+    createCandidateBatchSchema(nodeMetadataSchema).parse(input),
+    nodeMetadataSchema,
+  );
 }
 
 export function parseTrimResult(input: unknown) {
@@ -340,6 +433,19 @@ export async function startContextNoteConversionRun(args: {
     answers: {},
   });
 
+  await startLlmSession(CONTEXT_NOTE_CONVERSION_LLM_PIPELINE, runId, {
+    startedAt: snapshot.startedAt,
+    metadata: {
+      projectId: project.id,
+      sourceNodeId: sourceNode.id,
+      sourceContext: sourceNode.context,
+    },
+  });
+  await recordLlmSessionEvent(CONTEXT_NOTE_CONVERSION_LLM_PIPELINE, runId, {
+    stage: "run-created",
+    message: "Created context-note conversion LLM session.",
+  });
+
   void runQuestionPhase(runId);
 
   return { runId, snapshot };
@@ -347,6 +453,10 @@ export async function startContextNoteConversionRun(args: {
 
 async function runQuestionPhase(runId: string) {
   try {
+    await recordLlmSessionEvent(CONTEXT_NOTE_CONVERSION_LLM_PIPELINE, runId, {
+      stage: "capture-context",
+      message: "Captured project graph and source note context.",
+    });
     patchContextNoteConversionRun(runId, (run) => {
       activateStep(run.snapshot, "capture-context", "Inspecting project graph and source note context.");
       completeStep(run.snapshot, "capture-context", "Project graph context captured.");
@@ -359,12 +469,16 @@ async function runQuestionPhase(runId: string) {
     }
 
     const questionResult = await runStructuredPrompt({
+      sessionId: runId,
+      callId: "generate-questions",
+      callLabel: "Generate clarifying questions",
       modelId: getDefaultModel(),
       prompt: buildQuestionPrompt({
         project: state.project,
         sourceNode: state.sourceNode,
       }),
       schema: questionSetSchema,
+      schemaName: "questionSetSchema",
       reasoningEffort: "minimal",
     });
 
@@ -375,7 +489,13 @@ async function runQuestionPhase(runId: string) {
       completeStep(run.snapshot, "generate-questions", `Prepared ${questions.length} clarifying questions.`);
       activateStep(run.snapshot, "await-answers", "Choose one answer for each question to generate structured suggestions.");
     });
+    await recordLlmSessionEvent(CONTEXT_NOTE_CONVERSION_LLM_PIPELINE, runId, {
+      stage: "questions-generated",
+      message: `Prepared ${questions.length} clarifying questions.`,
+      data: { questions },
+    });
   } catch (error) {
+    await failLlmSession(CONTEXT_NOTE_CONVERSION_LLM_PIPELINE, runId, error);
     patchContextNoteConversionRun(runId, (run) => {
       failSnapshot(
         run.snapshot,
@@ -416,6 +536,11 @@ export async function submitContextNoteConversionAnswers(args: {
     completeStep(run.snapshot, "await-answers", `Captured ${Object.keys(args.input.answers).length} clarifying answers.`);
     activateStep(run.snapshot, "generate-suggestions", "Generating candidate structured nodes from the note.");
   });
+  await recordLlmSessionEvent(CONTEXT_NOTE_CONVERSION_LLM_PIPELINE, args.runId, {
+    stage: "answers-submitted",
+    message: `Captured ${Object.keys(args.input.answers).length} clarifying answers.`,
+    data: { answers: args.input.answers },
+  });
 
   void runSuggestionPhase(args.runId);
   return getContextNoteConversionRunSnapshot(args.runId);
@@ -429,6 +554,9 @@ async function runSuggestionPhase(runId: string) {
     }
 
     const generated = await runStructuredPrompt({
+      sessionId: runId,
+      callId: "generate-suggestions",
+      callLabel: "Generate structured node suggestions",
       modelId: getHeavyModel(),
       prompt: buildSuggestionPrompt({
         project: state.project,
@@ -436,11 +564,17 @@ async function runSuggestionPhase(runId: string) {
         questions: state.questions,
         answers: state.answers,
       }),
-      schema: candidateBatchSchema,
+      schema: createCandidateBatchSchema(state.project.nodeMetadataSchema),
+      schemaName: "candidateBatchSchema",
       reasoningEffort: "medium",
     });
 
-    const batch = createCandidateBatch(generated.summary, generated.nodes, generated.links);
+    const batch = createCandidateBatch(
+      generated.summary,
+      generated.nodes,
+      generated.links,
+      state.project.nodeMetadataSchema,
+    );
     patchContextNoteConversionRun(runId, (run) => {
       run.state.candidateBatch = batch;
       run.snapshot.candidateBatch = batch;
@@ -451,7 +585,16 @@ async function runSuggestionPhase(runId: string) {
       );
       activateStep(run.snapshot, "await-selection", "Review the structured suggestions and uncheck anything you do not want to add.");
     });
+    await recordLlmSessionEvent(CONTEXT_NOTE_CONVERSION_LLM_PIPELINE, runId, {
+      stage: "suggestions-generated",
+      message: `Prepared ${batch.nodes.length} candidate nodes for review.`,
+      data: {
+        summary: batch.summary,
+        nodeIds: batch.nodes.map((node) => node.id),
+      },
+    });
   } catch (error) {
+    await failLlmSession(CONTEXT_NOTE_CONVERSION_LLM_PIPELINE, runId, error);
     patchContextNoteConversionRun(runId, (run) => {
       failSnapshot(
         run.snapshot,
@@ -493,6 +636,11 @@ export async function acceptContextNoteConversionSelection(args: {
     completeStep(run.snapshot, "await-selection", `Accepted ${acceptedNodeIds.length} candidate nodes for persistence.`);
     activateStep(run.snapshot, "persist-graph", "Writing accepted nodes into the project graph.");
   });
+  await recordLlmSessionEvent(CONTEXT_NOTE_CONVERSION_LLM_PIPELINE, args.runId, {
+    stage: "selection-accepted",
+    message: `Accepted ${acceptedNodeIds.length} candidate nodes for persistence.`,
+    data: { acceptedNodeIds },
+  });
 
   void runAcceptancePhase(args.runId, acceptedNodeIds);
   return getContextNoteConversionRunSnapshot(args.runId);
@@ -515,6 +663,13 @@ async function runAcceptancePhase(runId: string, acceptedNodeIds: string[]) {
         links: acceptedBatch.links,
       },
     });
+    await recordLlmSessionEvent(CONTEXT_NOTE_CONVERSION_LLM_PIPELINE, runId, {
+      stage: "graph-persisted",
+      message: `Persisted ${acceptedBatch.nodes.length} accepted nodes and ${acceptedBatch.links.length} links.`,
+      data: {
+        acceptedNodeIds,
+      },
+    });
 
     patchContextNoteConversionRun(runId, (run) => {
       run.state.project = persistedProject;
@@ -532,13 +687,18 @@ async function runAcceptancePhase(runId: string, acceptedNodeIds: string[]) {
     }
 
     const trimResult = await runStructuredPrompt({
+      sessionId: runId,
+      callId: "trim-context",
+      callLabel: "Trim remaining note context",
       modelId: getDefaultModel(),
       prompt: buildTrimPrompt({
+        project: persistedProject,
         sourceNode: refreshedSourceNode,
         acceptedSummary: acceptedBatch.summary,
         acceptedNodes: acceptedBatch.nodes,
       }),
       schema: trimResultSchema,
+      schemaName: "trimResultSchema",
       reasoningEffort: "low",
     });
 
@@ -565,7 +725,14 @@ async function runAcceptancePhase(runId: string, acceptedNodeIds: string[]) {
         `Added ${acceptedBatch.nodes.length} nodes and trimmed the source note.`,
       );
     });
+    await completeLlmSession(CONTEXT_NOTE_CONVERSION_LLM_PIPELINE, runId, {
+      summary: acceptedBatch.summary,
+      acceptedNodeIds,
+      acceptedLinkCount: acceptedBatch.links.length,
+      trimSummary: trimResult.summary,
+    });
   } catch (error) {
+    await failLlmSession(CONTEXT_NOTE_CONVERSION_LLM_PIPELINE, runId, error);
     patchContextNoteConversionRun(runId, (run) => {
       failSnapshot(
         run.snapshot,

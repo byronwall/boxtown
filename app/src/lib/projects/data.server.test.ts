@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -11,25 +11,30 @@ import {
   readProjectByIdFromDisk,
   readProjectSummariesFromDisk,
   updateProjectNodeContextOnDisk,
+  updateProjectNodeMetadataOnDisk,
+  updateProjectMetadataSchemaOnDisk,
 } from "./data.server";
+import {
+  DEFAULT_NOTE_IMPLEMENTATION,
+  DEFAULT_NOTE_PURPOSE,
+  createDefaultProjectNodeMetadataSchema,
+} from "./node-metadata";
+
+const defaultSchema = createDefaultProjectNodeMetadataSchema();
 
 describe("mergeGeneratedSpatialMapData", () => {
   it("appends generated nodes, remaps ids, and dedupes links", () => {
     const merged = mergeGeneratedSpatialMapData(
       {
         nodes: [
-        {
-          id: "page-home",
-          label: "Home",
-          type: "page",
-          depth: 0,
-          purpose: "Purpose",
-          implementation: "Implementation",
-          context: "",
-          rawContext: "",
-          contextMode: "structured",
-        },
-      ],
+          buildNode({
+            id: "page-home",
+            label: "Home",
+            type: "page",
+            depth: 0,
+            metadata: { purpose: "Purpose", implementation: "Implementation" },
+          }),
+        ],
         links: [
           {
             source: "page-home",
@@ -42,17 +47,13 @@ describe("mergeGeneratedSpatialMapData", () => {
       {
         summary: "Generated",
         nodes: [
-          {
+          buildNode({
             id: "draft-node",
             label: "Billing Center",
             type: "page",
             depth: 1,
-            purpose: "Purpose",
-            implementation: "Implementation",
-            context: "",
-            rawContext: "",
-            contextMode: "structured",
-          },
+            metadata: { purpose: "Purpose", implementation: "Implementation" },
+          }),
         ],
         links: [
           {
@@ -73,6 +74,7 @@ describe("mergeGeneratedSpatialMapData", () => {
           },
         ],
       },
+      defaultSchema,
     );
 
     expect(merged.nodes).toHaveLength(2);
@@ -109,6 +111,7 @@ describe("createProjectOnDisk", () => {
 
       expect(created.id).toBe("ideal-cli-tool");
       expect(persisted?.name).toBe("Ideal CLI tool");
+      expect(persisted?.nodeMetadataSchema).toEqual(defaultSchema);
     } finally {
       process.chdir(originalCwd);
     }
@@ -146,29 +149,21 @@ describe("context node persistence", () => {
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-update-"));
     const dataDir = path.join(tempRoot, "app", "data");
     mkdirSync(dataDir, { recursive: true });
-    writeProjectFixture(dataDir, {
+    writeProjectFixture(dataDir, buildProjectFixture({
       id: "context-project",
-      name: "Context Project",
-      description: "Test fixture",
-      createdAt: "2026-04-20T00:00:00.000Z",
-      updatedAt: "2026-04-20T00:00:00.000Z",
       spatialMap: {
         nodes: [
-          {
+          buildNode({
             id: "node-1",
             label: "Node 1",
             type: "page",
             depth: 0,
-            purpose: "Purpose",
-            implementation: "Implementation",
-            context: "",
-            rawContext: "",
-            contextMode: "structured",
-          },
+            metadata: { purpose: "Purpose", implementation: "Implementation" },
+          }),
         ],
         links: [],
       },
-    });
+    }));
 
     try {
       process.chdir(tempRoot);
@@ -187,7 +182,7 @@ describe("context node persistence", () => {
     }
   });
 
-  it("creates a standalone note node with context", async () => {
+  it("creates a standalone note node with context and metadata", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-create-"));
     const dataDir = path.join(tempRoot, "app", "data");
@@ -202,6 +197,10 @@ describe("context node persistence", () => {
         projectId: project.id,
         label: "Loose Notes",
         context: "## Inbox\n\n- Keep this here",
+        metadata: {
+          purpose: "Captured research notes",
+          implementation: DEFAULT_NOTE_IMPLEMENTATION,
+        },
       });
 
       expect(result.nodeId).toBe("note-loose-notes");
@@ -210,6 +209,7 @@ describe("context node persistence", () => {
         label: "Loose Notes",
         type: "note",
         depth: 2,
+        metadata: { purpose: "Captured research notes" },
         context: "## Inbox\n\n- Keep this here",
         rawContext: "## Inbox\n\n- Keep this here",
         contextMode: "context-only",
@@ -249,6 +249,7 @@ describe("context node persistence", () => {
           "# Appendix",
           "Appendix notes",
         ].join("\n"),
+        metadata: { purpose: "Imported markdown" },
         splitByHeadingLevel: true,
       });
 
@@ -259,30 +260,35 @@ describe("context node persistence", () => {
           id: "note-imported-notes",
           label: "Imported Notes",
           depth: 2,
+          metadata: { purpose: "Imported markdown" },
           context: "Shared intro",
         }),
         expect.objectContaining({
           id: "note-overview",
           label: "Overview",
           depth: 3,
+          metadata: {},
           context: "Overview details",
         }),
         expect.objectContaining({
           id: "note-metrics",
           label: "Metrics",
           depth: 4,
+          metadata: {},
           context: "- Conversion",
         }),
         expect.objectContaining({
           id: "note-risks",
           label: "Risks",
           depth: 4,
+          metadata: {},
           context: "Risk details",
         }),
         expect.objectContaining({
           id: "note-appendix",
           label: "Appendix",
           depth: 3,
+          metadata: {},
           context: "Appendix notes",
         }),
       ]);
@@ -337,18 +343,21 @@ describe("context node persistence", () => {
           id: "note-imported-notes",
           label: "Imported Notes",
           depth: 2,
+          metadata: {},
           context: "",
         }),
         expect.objectContaining({
           id: "note-overview",
           label: "Overview",
           depth: 3,
+          metadata: {},
           context: "Overview details",
         }),
         expect.objectContaining({
           id: "note-metrics",
           label: "Metrics",
           depth: 4,
+          metadata: {},
           context: [
             "Metric summary",
             "",
@@ -363,6 +372,7 @@ describe("context node persistence", () => {
           id: "note-risks",
           label: "Risks",
           depth: 4,
+          metadata: {},
           context: "Risk details",
         }),
       ]);
@@ -381,12 +391,8 @@ describe("context node persistence", () => {
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-legacy-"));
     const dataDir = path.join(tempRoot, "app", "data");
     mkdirSync(dataDir, { recursive: true });
-    writeProjectFixture(dataDir, {
+    writeProjectFixture(dataDir, buildProjectFixture({
       id: "legacy-note-project",
-      name: "Legacy Note Project",
-      description: "Test fixture",
-      createdAt: "2026-04-20T00:00:00.000Z",
-      updatedAt: "2026-04-20T00:00:00.000Z",
       spatialMap: {
         nodes: [
           {
@@ -401,7 +407,7 @@ describe("context node persistence", () => {
         ],
         links: [],
       },
-    });
+    }));
 
     try {
       process.chdir(tempRoot);
@@ -409,9 +415,137 @@ describe("context node persistence", () => {
       const persisted = await readProjectByIdFromDisk("legacy-note-project");
       expect(persisted?.spatialMap.nodes[0]).toMatchObject({
         id: "legacy-note",
+        metadata: { purpose: "Purpose", implementation: "Implementation" },
         context: "Legacy context",
         rawContext: "Legacy context",
         contextMode: "context-only",
+      });
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("drops legacy note boilerplate metadata during migration and writes it back to disk", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-boilerplate-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    const projectId = "boilerplate-note-project";
+    writeProjectFixture(dataDir, buildProjectFixture({
+      id: projectId,
+      spatialMap: {
+        nodes: [
+          {
+            id: "legacy-note",
+            label: "Legacy Note",
+            type: "note",
+            depth: 2,
+            purpose: DEFAULT_NOTE_PURPOSE,
+            implementation: DEFAULT_NOTE_IMPLEMENTATION,
+            context: "Legacy context",
+          },
+        ],
+        links: [],
+      },
+    }));
+
+    try {
+      process.chdir(tempRoot);
+
+      const persisted = await readProjectByIdFromDisk(projectId);
+      expect(persisted?.spatialMap.nodes[0]?.metadata).toEqual({});
+
+      const writtenBack = JSON.parse(
+        readFileSync(path.join(dataDir, "projects", projectId, "project.json"), "utf8"),
+      ) as {
+        spatialMap: { nodes: Array<{ metadata?: Record<string, string> }> };
+      };
+      expect(writtenBack.spatialMap.nodes[0]?.metadata).toEqual({});
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("updates node metadata on disk", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-metadata-update-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    writeProjectFixture(dataDir, buildProjectFixture({
+      id: "metadata-project",
+      spatialMap: {
+        nodes: [buildNode({ id: "node-1", label: "Node 1", type: "page", depth: 0 })],
+        links: [],
+      },
+    }));
+
+    try {
+      process.chdir(tempRoot);
+
+      const project = await updateProjectNodeMetadataOnDisk({
+        projectId: "metadata-project",
+        nodeId: "node-1",
+        metadata: {
+          purpose: "Updated purpose",
+          implementation: DEFAULT_NOTE_IMPLEMENTATION,
+        },
+      });
+
+      expect(project.spatialMap.nodes[0]?.metadata).toEqual({ purpose: "Updated purpose" });
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("updates project metadata schema and remaps node values", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-schema-update-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    writeProjectFixture(dataDir, buildProjectFixture({
+      id: "schema-project",
+      spatialMap: {
+        nodes: [
+          buildNode({
+            id: "node-1",
+            label: "Node 1",
+            type: "page",
+            depth: 0,
+            metadata: { purpose: "Mapped purpose", implementation: "Mapped implementation" },
+          }),
+        ],
+        links: [],
+      },
+    }));
+
+    try {
+      process.chdir(tempRoot);
+
+      const project = await updateProjectMetadataSchemaOnDisk({
+        projectId: "schema-project",
+        fields: [
+          {
+            originalKey: "purpose",
+            key: "summary",
+            label: "Summary",
+            defaultValue: "",
+          },
+          {
+            originalKey: "implementation",
+            key: "build-plan",
+            label: "Build Plan",
+            defaultValue: "",
+          },
+        ],
+      });
+
+      expect(project.nodeMetadataSchema.map((field) => field.key)).toEqual([
+        "summary",
+        "build-plan",
+      ]);
+      expect(project.spatialMap.nodes[0]?.metadata).toEqual({
+        summary: "Mapped purpose",
+        "build-plan": "Mapped implementation",
       });
     } finally {
       process.chdir(originalCwd);
@@ -423,43 +557,34 @@ describe("context node persistence", () => {
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-node-delete-"));
     const dataDir = path.join(tempRoot, "app", "data");
     mkdirSync(dataDir, { recursive: true });
-    writeProjectFixture(dataDir, {
+    writeProjectFixture(dataDir, buildProjectFixture({
       id: "delete-node-project",
-      name: "Delete Node Project",
-      description: "Test fixture",
-      createdAt: "2026-04-20T00:00:00.000Z",
-      updatedAt: "2026-04-20T00:00:00.000Z",
       spatialMap: {
         nodes: [
-          {
+          buildNode({
             id: "node-a",
             label: "Node A",
             type: "page",
             depth: 0,
-            purpose: "Purpose",
-            implementation: "Implementation",
-            context: "",
-            rawContext: "",
-            contextMode: "structured",
-          },
-          {
+            metadata: { purpose: "Purpose", implementation: "Implementation" },
+          }),
+          buildNode({
             id: "node-b",
             label: "Node B",
             type: "note",
             depth: 2,
-            purpose: "Purpose",
-            implementation: "Implementation",
+            metadata: { purpose: "Purpose", implementation: "Implementation" },
             context: "Context",
             rawContext: "Context",
             contextMode: "context-only",
-          },
+          }),
         ],
         links: [
           { source: "node-a", target: "node-b", parentChild: false, relationship: "related" },
           { source: "node-b", target: "node-a", parentChild: false, relationship: "related" },
         ],
       },
-    });
+    }));
 
     try {
       process.chdir(tempRoot);
@@ -477,6 +602,43 @@ describe("context node persistence", () => {
     }
   });
 });
+
+function buildNode(input: {
+  id: string;
+  label: string;
+  type: string;
+  depth: number;
+  metadata?: Record<string, string>;
+  context?: string;
+  rawContext?: string;
+  contextMode?: "context-only" | "structured";
+}) {
+  return {
+    id: input.id,
+    label: input.label,
+    type: input.type,
+    depth: input.depth,
+    metadata: input.metadata ?? {},
+    context: input.context ?? "",
+    rawContext: input.rawContext ?? "",
+    contextMode: input.contextMode ?? "structured",
+  };
+}
+
+function buildProjectFixture(input: {
+  id: string;
+  spatialMap: Record<string, unknown>;
+}) {
+  return {
+    id: input.id,
+    name: input.id,
+    description: "Test fixture",
+    createdAt: "2026-04-20T00:00:00.000Z",
+    updatedAt: "2026-04-20T00:00:00.000Z",
+    nodeMetadataSchema: defaultSchema,
+    spatialMap: input.spatialMap,
+  };
+}
 
 function writeProjectFixture(dataDir: string, project: Record<string, unknown>) {
   const projectDir = path.join(dataDir, "projects", String(project.id));

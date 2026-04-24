@@ -53,7 +53,7 @@ export function createOrderedNodeState(options: {
   selectedNodeId: string | null;
   transitionVisualState?: Map<string, TransitionVisualState>;
 }): NodeVisualState[] {
-  const {
+const {
     activeNodeId,
     hoveredNodeId,
     positionedNodes,
@@ -61,22 +61,74 @@ export function createOrderedNodeState(options: {
     selectedNodeId,
     transitionVisualState,
   } = options;
-
   return positionedNodes.map((node) => {
     const isDimmed = Boolean(activeNodeId && !relatedSet.has(node.id));
     const isHovered = hoveredNodeId === node.id;
     const isSelected = selectedNodeId === node.id;
     const transitionState = transitionVisualState?.get(node.id);
     const baseOpacity = isDimmed ? 0.22 : 1;
+    const relativeDepth = getRelativeDepth(node.depth, positionedNodes);
+    const baseFillLightness = 46;
+    const hoverFillLightness = 36;
+    const baseStrokeLightness = 28;
+    const hoverStrokeLightness = 22;
+    const depthStrokeWidth = relativeDepth === null
+      ? 1.4
+      : Math.round(interpolateNumber(1.4, 1.05, relativeDepth) * 100) / 100;
+    const depthFillLightness = `${Math.round(
+      relativeDepth === null ? 0 : interpolateNumber(0, baseFillLightness, relativeDepth),
+    )}%`;
+    const depthFillHoverLightness = `${Math.round(
+      relativeDepth === null ? 0 : interpolateNumber(0, hoverFillLightness, relativeDepth),
+    )}%`;
+    const depthStrokeLightness = `${Math.round(
+      relativeDepth === null ? 0 : interpolateNumber(0, baseStrokeLightness, relativeDepth),
+    )}%`;
+    const depthStrokeHoverLightness = `${Math.round(
+      relativeDepth === null ? 0 : interpolateNumber(0, hoverStrokeLightness, relativeDepth),
+    )}%`;
 
     return {
       node,
       isHovered,
       isSelected,
       opacity: baseOpacity * (transitionState?.opacity ?? 1),
-      scale: 1,
+      scale: transitionState?.scale ?? 1,
+      depthFillLightness,
+      depthFillHoverLightness,
+      depthStrokeLightness,
+      depthStrokeHoverLightness,
+      depthStrokeWidth,
     };
   });
+}
+
+function getRelativeDepth(
+  depth: number,
+  nodes: PositionedMapNode[],
+) {
+  if (nodes.length === 0) {
+    return null;
+  }
+
+  let minDepth = Number.POSITIVE_INFINITY;
+  let maxDepth = Number.NEGATIVE_INFINITY;
+
+  for (const node of nodes) {
+    minDepth = Math.min(minDepth, node.depth);
+    maxDepth = Math.max(maxDepth, node.depth);
+  }
+
+  const span = maxDepth - minDepth;
+  if (span <= 0) {
+    return null;
+  }
+
+  return (depth - minDepth) / span;
+}
+
+function interpolateNumber(start: number, end: number, progress: number) {
+  return start + (end - start) * progress;
 }
 
 export function createEdgeState(options: {

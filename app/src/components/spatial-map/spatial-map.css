@@ -611,10 +611,20 @@
 .spatial-map-node-body {
   rx: 0;
   ry: 0;
-  stroke-width: 1.4;
+  stroke-width: var(--spatial-map-node-depth-stroke-width, 1.4);
   shape-rendering: crispEdges;
-  fill: var(--spatial-map-node-fill, var(--spatial-map-neutral-fill));
-  stroke: var(--spatial-map-node-stroke, var(--spatial-map-neutral-stroke));
+  fill: color-mix(
+    in srgb,
+    var(--spatial-map-node-fill, var(--spatial-map-neutral-fill))
+      calc(100% - var(--spatial-map-node-depth-fill-lightness, 0%)),
+    white var(--spatial-map-node-depth-fill-lightness, 0%)
+  );
+  stroke: color-mix(
+    in srgb,
+    var(--spatial-map-node-stroke, var(--spatial-map-neutral-stroke))
+      calc(100% - var(--spatial-map-node-depth-stroke-lightness, 0%)),
+    white var(--spatial-map-node-depth-stroke-lightness, 0%)
+  );
 }
 
 .spatial-map-node--page .spatial-map-node-body,
@@ -664,8 +674,18 @@
 
 .spatial-map-node:hover .spatial-map-node-body,
 .spatial-map-node.is-hovered .spatial-map-node-body {
-  fill: var(--spatial-map-node-fill-hover, var(--spatial-map-node-fill));
-  stroke: var(--spatial-map-node-stroke-hover, var(--spatial-map-node-stroke));
+  fill: color-mix(
+    in srgb,
+    var(--spatial-map-node-fill-hover, var(--spatial-map-node-fill))
+      calc(100% - var(--spatial-map-node-depth-fill-hover-lightness, 0%)),
+    white var(--spatial-map-node-depth-fill-hover-lightness, 0%)
+  );
+  stroke: color-mix(
+    in srgb,
+    var(--spatial-map-node-stroke-hover, var(--spatial-map-node-stroke))
+      calc(100% - var(--spatial-map-node-depth-stroke-hover-lightness, 0%)),
+    white var(--spatial-map-node-depth-stroke-hover-lightness, 0%)
+  );
 }
 
 .spatial-map-node.is-selected .spatial-map-node-body {

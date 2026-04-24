@@ -16,6 +16,11 @@ export interface NodeVisualState {
   isSelected: boolean;
   opacity: number;
   scale: number;
+  depthFillLightness: string;
+  depthFillHoverLightness: string;
+  depthStrokeLightness: string;
+  depthStrokeHoverLightness: string;
+  depthStrokeWidth: number;
 }
 
 export interface TransitionVisualState {
@@ -82,6 +87,8 @@ export interface SpatialMapCanvasController {
   isolateNode: (nodeId: string) => void;
   setInspectorOpen: (value: boolean | ((current: boolean) => boolean)) => void;
   setSelectedNodeId: (value: string | null | ((current: string | null) => string | null)) => void;
+  setShowEdges: (value: boolean | ((current: boolean) => boolean)) => void;
+  setShowLinkedInIsolation: (value: boolean | ((current: boolean) => boolean)) => void;
   setViewMode: (value: SpatialMapViewMode) => void;
   setVisibleDepthLevel: (value: number) => void;
   toggleLinkedInIsolation: () => void;

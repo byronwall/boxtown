@@ -63,7 +63,13 @@ interface ViewportSize {
 export function useSpatialMapCanvasController(
   data: Accessor<SpatialMapData>,
 ): SpatialMapCanvasController {
-  const [positionedNodes, setPositionedNodes] = createSignal(createInitialLayout(data()));
+  const initialPositionedNodes = createInitialLayout(data());
+  const fallbackCamera = createDefaultCamera();
+  const initialCamera = getFitCamera(
+    initialPositionedNodes,
+    fallbackCamera.width / fallbackCamera.height,
+  );
+  const [positionedNodes, setPositionedNodes] = createSignal(initialPositionedNodes);
   const [transitionVisualState, setTransitionVisualState] = createSignal(
     new Map<string, { opacity: number; scale: number }>(),
   );
@@ -80,7 +86,6 @@ export function useSpatialMapCanvasController(
   const [visibleDepthLevel, writeVisibleDepthLevel] = createSignal(
     getDepthLevelCount(data()),
   );
-  const initialCamera = createDefaultCamera();
   const [camera, writeCamera] = createSignal(initialCamera);
   const [isPanning, setIsPanning] = createSignal(false);
   const adjacency = createMemo(() => buildAdjacencyMap(data()));
@@ -115,7 +120,7 @@ export function useSpatialMapCanvasController(
   let panSession: PanSession | undefined;
   let suppressNodeClick = false;
   let viewportFitFrame: number | undefined;
-  const fallbackCamera = createDefaultCamera();
+  let viewportSizedFitApplied = false;
   const viewportSize: ViewportSize = {
     width: VIEWPORT_WIDTH,
     height: VIEWPORT_HEIGHT,
@@ -132,9 +137,13 @@ export function useSpatialMapCanvasController(
   const selectedNodeRelations = createMemo(() =>
     describeRelations(data().links, sourceNodesById(), selectedNode()),
   );
-  const zoomPercent = createMemo(() =>
-    `${Math.round((VIEWPORT_WIDTH / camera().width) * 100)}%`,
-  );
+  const zoomPercent = createMemo(() => {
+    const currentCamera = camera();
+    const scaleX = VIEWPORT_WIDTH / currentCamera.width;
+    const scaleY = VIEWPORT_HEIGHT / currentCamera.height;
+
+    return `${Math.round(Math.min(scaleX, scaleY) * 100)}%`;
+  });
   const sceneTransform = createMemo(() => {
     const currentCamera = camera();
     const scaleX = VIEWPORT_WIDTH / currentCamera.width;
@@ -292,13 +301,25 @@ export function useSpatialMapCanvasController(
     cameraTweenFrame = requestAnimationFrame(tick);
   };
 
-  const scheduleViewportFit = (nodes: PositionedMapNode[] = positionedNodes()) => {
+  const scheduleViewportFit = (
+    nodes: PositionedMapNode[] = positionedNodes(),
+    remainingFrames = 3,
+  ) => {
     if (viewportFitFrame !== undefined) {
       cancelAnimationFrame(viewportFitFrame);
     }
 
     viewportFitFrame = requestAnimationFrame(() => {
       viewportFitFrame = undefined;
+      if (
+        remainingFrames > 0 &&
+        (!viewportRef?.isConnected ||
+          viewportRef.clientWidth === 0 ||
+          viewportRef.clientHeight === 0)
+      ) {
+        scheduleViewportFit(nodes, remainingFrames - 1);
+        return;
+      }
       fitCameraToLayout(nodes);
     });
   };
@@ -418,6 +439,11 @@ export function useSpatialMapCanvasController(
     }
 
     updateViewportSize();
+    if (!viewportSizedFitApplied) {
+      viewportSizedFitApplied = true;
+      fitCameraToNodes();
+      return;
+    }
     setCameraImmediate(preserveCameraCenter(cameraSnapshot, getViewportAspectRatio()));
   };
 
@@ -587,6 +613,7 @@ export function useSpatialMapCanvasController(
       resizeObserver.observe(viewportRef);
     }
     fitCameraToNodes();
+    scheduleViewportFit();
     window.addEventListener("keydown", handleWindowKeyDown);
     window.addEventListener("resize", handleResize);
 
@@ -660,6 +687,8 @@ export function useSpatialMapCanvasController(
     isolateNode: (nodeId) => applyIsolation(nodeId),
     setInspectorOpen,
     setSelectedNodeId,
+    setShowEdges,
+    setShowLinkedInIsolation,
     setViewMode: (value) => {
       setViewMode(value);
       if (value === "canvas") {

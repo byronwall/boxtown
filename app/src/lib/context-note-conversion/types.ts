@@ -43,8 +43,7 @@ export interface ConversionCandidateTreeItem {
   label: string;
   type: string;
   depth: number;
-  purpose: string;
-  implementation: string;
+  metadata: Record<string, string>;
   childNodeIds: string[];
 }
 

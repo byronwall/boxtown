@@ -1,8 +1,20 @@
 import { openai } from "@ai-sdk/openai";
 import { generateText, Output } from "ai";
 import { z } from "zod";
+import { createNodeMetadataObjectSchema } from "~/lib/projects/node-metadata.zod";
+import {
+  createDefaultProjectNodeMetadataSchema,
+  sanitizeNodeMetadata,
+} from "~/lib/projects/node-metadata";
 import { getAddNodesRunSnapshot, getAddNodesRunState, patchAddNodesRun, registerAddNodesRun } from "./run-registry";
 import { buildFollowUpPrompt, buildNodeGenerationPrompt, buildQuestionPrompt } from "./prompts";
+import {
+  completeLlmSession,
+  failLlmSession,
+  recordLlmSessionEvent,
+  startLlmSession,
+  withLlmCallLogging,
+} from "~/lib/llm-logging/logger.server";
 import type {
   AddNodesRunAnswerRequest,
   AddNodesRunEvent,
@@ -48,27 +60,6 @@ const generatedLinkSchema = z.object({
   relationship: z.enum(["related", "dependency", "reuse"]).optional(),
 });
 
-const generatedNodeBatchSchema = z.object({
-  summary: z.string().min(1),
-  nodes: z
-    .array(
-      z.object({
-        id: z.string().min(1),
-        label: z.string().min(1),
-        type: z.string().min(1),
-        depth: z.number().int().min(0),
-        purpose: z.string().min(1),
-        implementation: z.string().min(1),
-        context: z.string().default(""),
-      }),
-    )
-    .min(1)
-    .max(10),
-  links: z.array(
-    generatedLinkSchema,
-  ),
-});
-
 const followUpSchema = z.object({
   suggestions: z
     .array(
@@ -101,6 +92,8 @@ const addNodesRunStepLabels: Record<AddNodesRunStepId, string> = {
   "suggest-follow-ups": "Suggest follow-ups",
   complete: "Complete",
 };
+
+const ADD_NODES_LLM_PIPELINE = "add-nodes";
 
 function getDefaultModel() {
   return process.env.OPENAI_MODEL ?? "gpt-5-mini";
@@ -222,21 +215,51 @@ function getOptionLabel(question: ClarifyingQuestion, optionId: string) {
 }
 
 async function runStructuredPrompt<T>(args: {
+  sessionId: string;
+  callId: string;
+  callLabel: string;
   modelId: string;
   prompt: string;
   schema: z.ZodType<T>;
+  schemaName: string;
   reasoningEffort?: "minimal" | "low" | "medium";
 }) {
   assertOpenAiKey();
-  const result = await generateText({
-    model: openai(args.modelId),
-    prompt: args.prompt,
-    maxRetries: 1,
-    experimental_output: Output.object({ schema: args.schema }),
-    providerOptions: args.reasoningEffort
-      ? { openai: { reasoningEffort: args.reasoningEffort } }
-      : undefined,
-  });
+  const result = await withLlmCallLogging(
+    ADD_NODES_LLM_PIPELINE,
+    args.sessionId,
+    {
+      callId: args.callId,
+      label: args.callLabel,
+      request: {
+        provider: "openai",
+        modelId: args.modelId,
+        prompt: args.prompt,
+        schemaName: args.schemaName,
+        maxRetries: 1,
+        reasoningEffort: args.reasoningEffort ?? null,
+      },
+    },
+    () =>
+      generateText({
+        model: openai(args.modelId),
+        prompt: args.prompt,
+        maxRetries: 1,
+        experimental_output: Output.object({ schema: args.schema }),
+        providerOptions: args.reasoningEffort
+          ? { openai: { reasoningEffort: args.reasoningEffort } }
+          : undefined,
+      }),
+    (value) => ({
+      response: {
+        output: value.experimental_output,
+        finishReason: value.finishReason,
+        usage: value.usage,
+        warnings: value.warnings,
+        providerMetadata: value.providerMetadata,
+      },
+    }),
+  );
 
   return result.experimental_output;
 }
@@ -259,11 +282,39 @@ function sanitizeSuggestions(suggestions: FollowUpSuggestion[]) {
   }));
 }
 
-function sanitizeGeneratedBatch(batch: z.infer<typeof generatedNodeBatchSchema>): GeneratedNodeBatch {
+function createGeneratedNodeBatchSchema(
+  nodeMetadataSchema: NonNullable<Awaited<ReturnType<typeof readProjectByIdFromDisk>>>["nodeMetadataSchema"],
+) {
+  return z.object({
+    summary: z.string().min(1),
+    nodes: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          label: z.string().min(1),
+          type: z.string().min(1),
+          depth: z.number().int().min(0),
+          metadata: createNodeMetadataObjectSchema(nodeMetadataSchema),
+          context: z.string().default(""),
+        }),
+      )
+      .min(1)
+      .max(10),
+    links: z.array(generatedLinkSchema),
+  });
+}
+
+function sanitizeGeneratedBatch(
+  batch: ReturnType<typeof createGeneratedNodeBatchSchema>["_output"],
+  nodeMetadataSchema = createDefaultProjectNodeMetadataSchema(),
+): GeneratedNodeBatch {
   return {
     ...batch,
     nodes: batch.nodes.map((node) => ({
       ...node,
+      metadata: sanitizeNodeMetadata(node.metadata, nodeMetadataSchema, {
+        omitDefaultValues: true,
+      }),
       rawContext: "",
       contextMode: "structured" as const,
     })),
@@ -289,7 +340,11 @@ export function parseQuestionSet(input: unknown) {
 }
 
 export function parseGeneratedNodeBatch(input: unknown) {
-  return sanitizeGeneratedBatch(generatedNodeBatchSchema.parse(input));
+  const nodeMetadataSchema = createDefaultProjectNodeMetadataSchema();
+  return sanitizeGeneratedBatch(
+    createGeneratedNodeBatchSchema(nodeMetadataSchema).parse(input),
+    nodeMetadataSchema,
+  );
 }
 
 export function parseFollowUpSuggestions(input: unknown) {
@@ -328,6 +383,19 @@ export async function startAddNodesRun(args: {
     answers: {},
   });
 
+  await startLlmSession(ADD_NODES_LLM_PIPELINE, runId, {
+    startedAt: snapshot.startedAt,
+    metadata: {
+      projectId: project.id,
+      selectedNodeId: selectedNode?.id ?? null,
+      brief,
+    },
+  });
+  await recordLlmSessionEvent(ADD_NODES_LLM_PIPELINE, runId, {
+    stage: "run-created",
+    message: "Created add-nodes LLM session.",
+  });
+
   void runQuestionPhase(runId);
 
   return {
@@ -338,6 +406,10 @@ export async function startAddNodesRun(args: {
 
 async function runQuestionPhase(runId: string) {
   try {
+    await recordLlmSessionEvent(ADD_NODES_LLM_PIPELINE, runId, {
+      stage: "capture-context",
+      message: "Captured project graph context for question generation.",
+    });
     patchAddNodesRun(runId, (run) => {
       activateStep(run.snapshot, "capture-context", "Inspecting project graph and selected context.");
     });
@@ -353,6 +425,9 @@ async function runQuestionPhase(runId: string) {
     }
 
     const questionResult = await runStructuredPrompt({
+      sessionId: runId,
+      callId: "generate-questions",
+      callLabel: "Generate clarifying questions",
       modelId: getDefaultModel(),
       prompt: buildQuestionPrompt({
         project: state.project,
@@ -360,6 +435,7 @@ async function runQuestionPhase(runId: string) {
         brief: snapshot.brief,
       }),
       schema: questionSetSchema,
+      schemaName: "questionSetSchema",
       reasoningEffort: "minimal",
     });
 
@@ -371,7 +447,13 @@ async function runQuestionPhase(runId: string) {
       completeStep(run.snapshot, "generate-questions", `Prepared ${questions.length} clarifying questions.`);
       activateStep(run.snapshot, "await-answers", "Choose one answer for each question to generate nodes.");
     });
+    await recordLlmSessionEvent(ADD_NODES_LLM_PIPELINE, runId, {
+      stage: "questions-generated",
+      message: `Prepared ${questions.length} clarifying questions.`,
+      data: { questions },
+    });
   } catch (error) {
+    await failLlmSession(ADD_NODES_LLM_PIPELINE, runId, error);
     patchAddNodesRun(runId, (run) => {
       failSnapshot(
         run.snapshot,
@@ -416,6 +498,11 @@ export async function submitAddNodesRunAnswers(args: {
     );
     activateStep(run.snapshot, "generate-nodes", "Generating graph additions from the selected answers.");
   });
+  await recordLlmSessionEvent(ADD_NODES_LLM_PIPELINE, args.runId, {
+    stage: "answers-submitted",
+    message: `Captured ${Object.keys(args.input.answers).length} clarifying answers.`,
+    data: { answers: args.input.answers },
+  });
 
   void runCompletionPhase(args.runId);
 
@@ -431,6 +518,9 @@ async function runCompletionPhase(runId: string) {
     }
 
     const generatedResult = await runStructuredPrompt({
+      sessionId: runId,
+      callId: "generate-nodes",
+      callLabel: "Generate candidate nodes",
       modelId: getHeavyModel(),
       prompt: buildNodeGenerationPrompt({
         project: state.project,
@@ -439,10 +529,14 @@ async function runCompletionPhase(runId: string) {
         questions: state.questions,
         answers: state.answers,
       }),
-      schema: generatedNodeBatchSchema,
+      schema: createGeneratedNodeBatchSchema(state.project.nodeMetadataSchema),
+      schemaName: "generatedNodeBatchSchema",
       reasoningEffort: "medium",
     });
-    const generated = sanitizeGeneratedBatch(generatedResult);
+    const generated = sanitizeGeneratedBatch(
+      generatedResult,
+      state.project.nodeMetadataSchema,
+    );
 
     patchAddNodesRun(runId, (run) => {
       run.state.generatedBatch = generated;
@@ -458,6 +552,13 @@ async function runCompletionPhase(runId: string) {
       projectId: snapshot.projectId,
       generated,
     });
+    await recordLlmSessionEvent(ADD_NODES_LLM_PIPELINE, runId, {
+      stage: "graph-persisted",
+      message: `Persisted ${generated.nodes.length} nodes and ${generated.links.length} links.`,
+      data: {
+        nodeIds: persistedProject.spatialMap.nodes.slice(-generated.nodes.length).map((node) => node.id),
+      },
+    });
 
     patchAddNodesRun(runId, (run) => {
       run.state.project = persistedProject;
@@ -470,6 +571,9 @@ async function runCompletionPhase(runId: string) {
     });
 
     const followUps = await runStructuredPrompt({
+      sessionId: runId,
+      callId: "suggest-follow-ups",
+      callLabel: "Generate follow-up suggestions",
       modelId: getDefaultModel(),
       prompt: buildFollowUpPrompt({
         project: persistedProject,
@@ -479,6 +583,7 @@ async function runCompletionPhase(runId: string) {
         answers: state.answers,
       }),
       schema: followUpSchema,
+      schemaName: "followUpSchema",
       reasoningEffort: "minimal",
     });
 
@@ -502,7 +607,14 @@ async function runCompletionPhase(runId: string) {
         `Added ${generated.nodes.length} nodes after ${state.questions.length} clarifying questions.`,
       );
     });
+    await completeLlmSession(ADD_NODES_LLM_PIPELINE, runId, {
+      summary: generated.summary,
+      nodeCount: generated.nodes.length,
+      linkCount: generated.links.length,
+      suggestions,
+    });
   } catch (error) {
+    await failLlmSession(ADD_NODES_LLM_PIPELINE, runId, error);
     patchAddNodesRun(runId, (run) => {
       failSnapshot(
         run.snapshot,

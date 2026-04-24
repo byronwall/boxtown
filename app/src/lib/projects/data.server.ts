@@ -5,9 +5,21 @@ import path from "node:path";
 import type { GeneratedNodeBatch } from "~/lib/add-nodes/types";
 import { createParentChildLink, getLinkKey } from "~/lib/spatial-map/links";
 import type { MapNodeImage, SpatialMapData } from "~/lib/spatial-map/types";
-import { parseSpatialMapData } from "~/lib/spatial-map/validate";
 import { splitMarkdownIntoHeadingSections } from "./context-node-markdown";
-import type { ProjectRecord, ProjectSummary } from "./types";
+import {
+  createDefaultProjectNodeMetadataSchema,
+  normalizeProjectNodeMetadataKey,
+  normalizeProjectNodeMetadataLabel,
+  sanitizeNodeMetadata,
+} from "./node-metadata";
+import {
+  parseStoredProjectRecord,
+} from "./project-record-format";
+import type {
+  ProjectNodeMetadataField,
+  ProjectRecord,
+  ProjectSummary,
+} from "./types";
 
 interface CreateProjectInput {
   name?: string;
@@ -23,8 +35,27 @@ interface CreateContextNodeInput {
   projectId: string;
   label: string;
   context: string;
+  metadata?: Record<string, unknown>;
   splitByHeadingLevel?: boolean;
   maxHeadingDepth?: number;
+}
+
+interface UpdateProjectNodeMetadataInput {
+  projectId: string;
+  nodeId: string;
+  metadata: Record<string, unknown>;
+}
+
+interface UpdateProjectMetadataSchemaInput {
+  projectId: string;
+  fields: ProjectMetadataSchemaRowInput[];
+}
+
+interface ProjectMetadataSchemaRowInput {
+  originalKey?: string;
+  key: string;
+  label: string;
+  defaultValue: string;
 }
 
 interface DeleteProjectNodeInput {
@@ -49,15 +80,6 @@ interface AddProjectNodeImageSourcesInput {
   projectId: string;
   nodeIds: string[];
   images: ProjectNodeImageSource[];
-}
-
-interface SerializedProjectRecord {
-  id: unknown;
-  name: unknown;
-  description?: unknown;
-  createdAt: unknown;
-  updatedAt: unknown;
-  spatialMap: unknown;
 }
 
 export function createBlankSpatialMapData(): SpatialMapData {
@@ -104,6 +126,7 @@ export async function createProjectOnDisk(
       "Blank project ready for grid editing, structure mapping, and future AI-assisted details.",
     createdAt: now,
     updatedAt: now,
+    nodeMetadataSchema: createDefaultProjectNodeMetadataSchema(),
     spatialMap: createBlankSpatialMapData(),
   };
 
@@ -127,6 +150,7 @@ export async function deleteProjectOnDisk(projectId: string): Promise<void> {
 export function mergeGeneratedSpatialMapData(
   current: SpatialMapData,
   generated: GeneratedNodeBatch,
+  nodeMetadataSchema: ProjectNodeMetadataField[],
 ): SpatialMapData {
   const existingIds = new Set(current.nodes.map((node) => node.id));
   const nodeIdMap = new Map<string, string>();
@@ -140,6 +164,9 @@ export function mergeGeneratedSpatialMapData(
     nextNodes.push({
       ...node,
       id: stableId,
+      metadata: sanitizeNodeMetadata(node.metadata, nodeMetadataSchema, {
+        omitDefaultValues: true,
+      }),
       contextMode: node.contextMode ?? (node.type === "note" ? "context-only" : "structured"),
       rawContext: node.rawContext ?? node.context,
     });
@@ -193,7 +220,11 @@ export async function appendGeneratedNodesToProjectOnDisk(input: {
   const nextRecord: ProjectRecord = {
     ...current,
     updatedAt: new Date().toISOString(),
-    spatialMap: mergeGeneratedSpatialMapData(current.spatialMap, input.generated),
+    spatialMap: mergeGeneratedSpatialMapData(
+      current.spatialMap,
+      input.generated,
+      current.nodeMetadataSchema,
+    ),
   };
 
   records[recordIndex] = nextRecord;
@@ -225,6 +256,80 @@ export async function updateProjectNodeContextOnDisk(
   const nextRecord: ProjectRecord = {
     ...current,
     updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: nextNodes,
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return nextRecord;
+}
+
+export async function updateProjectNodeMetadataOnDisk(
+  input: UpdateProjectNodeMetadataInput,
+): Promise<ProjectRecord> {
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
+
+  if (nodeIndex === -1) {
+    throw new Error("Node not found.");
+  }
+
+  const nextNodes = current.spatialMap.nodes.map((node, index) =>
+    index === nodeIndex
+      ? {
+          ...node,
+          metadata: sanitizeNodeMetadata(input.metadata, current.nodeMetadataSchema, {
+            omitDefaultValues: true,
+          }),
+        }
+      : node,
+  );
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: nextNodes,
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return nextRecord;
+}
+
+export async function updateProjectMetadataSchemaOnDisk(
+  input: UpdateProjectMetadataSchemaInput,
+): Promise<ProjectRecord> {
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const nextSchema = normalizeProjectMetadataSchemaRows(input.fields);
+  const nextNodes = current.spatialMap.nodes.map((node) => ({
+    ...node,
+    metadata: remapNodeMetadataForSchema(node.metadata, current.nodeMetadataSchema, nextSchema, input.fields),
+  }));
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    nodeMetadataSchema: nextSchema,
     spatialMap: {
       ...current.spatialMap,
       nodes: nextNodes,
@@ -385,16 +490,21 @@ export async function createContextNodeOnDisk(
   const current = records[recordIndex];
   const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));
   const baseLabel = input.label.trim();
+  const metadata = sanitizeNodeMetadata(input.metadata, current.nodeMetadataSchema, {
+    omitDefaultValues: true,
+  });
   const createdNodes = input.splitByHeadingLevel
     ? createContextNodeTree({
         label: baseLabel,
         markdown: input.context,
+        metadata,
         existingIds,
         maxHeadingDepth: input.maxHeadingDepth,
       })
     : createSingleContextNode({
         label: baseLabel,
         context: input.context,
+        metadata,
         existingIds,
       });
 
@@ -420,6 +530,7 @@ export async function createContextNodeOnDisk(
 function createSingleContextNode(input: {
   label: string;
   context: string;
+  metadata: Record<string, string>;
   existingIds: Set<string>;
 }) {
   const nodeId = reserveUniqueNodeId(input.label, "note", input.existingIds);
@@ -431,6 +542,7 @@ function createSingleContextNode(input: {
         id: nodeId,
         label: input.label,
         depth: 2,
+        metadata: input.metadata,
         context: input.context,
       }),
     ],
@@ -441,6 +553,7 @@ function createSingleContextNode(input: {
 function createContextNodeTree(input: {
   label: string;
   markdown: string;
+  metadata: Record<string, string>;
   existingIds: Set<string>;
   maxHeadingDepth?: number;
 }) {
@@ -451,6 +564,7 @@ function createContextNodeTree(input: {
     return createSingleContextNode({
       label: input.label,
       context: input.markdown,
+      metadata: input.metadata,
       existingIds: input.existingIds,
     });
   }
@@ -461,6 +575,7 @@ function createContextNodeTree(input: {
       id: rootNodeId,
       label: input.label,
       depth: 2,
+      metadata: input.metadata,
       context: preamble,
     }),
   ];
@@ -483,6 +598,7 @@ function createContextNodeTree(input: {
         id: nodeId,
         label: section.label,
         depth: nodeDepth,
+        metadata: {},
         context: section.context,
       }),
     );
@@ -502,6 +618,7 @@ function createContextNoteNode(input: {
   id: string;
   label: string;
   depth: number;
+  metadata: Record<string, string>;
   context: string;
 }) {
   return {
@@ -509,8 +626,7 @@ function createContextNoteNode(input: {
     label: input.label,
     type: "note",
     depth: input.depth,
-    purpose: "Loose context, notes, and markdown content that needs a home in the map.",
-    implementation: "Freeform markdown note stored directly on the node for AI or human editing.",
+    metadata: input.metadata,
     context: input.context,
     rawContext: input.context,
     contextMode: "context-only" as const,
@@ -558,6 +674,7 @@ export async function readProjectRecordsFromDisk(): Promise<ProjectRecord[]> {
 
   const entries = await readdir(projectsDir, { withFileTypes: true });
   const records: ProjectRecord[] = [];
+  let didNormalizeAnyRecord = false;
 
   for (const entry of entries) {
     if (!entry.isDirectory()) {
@@ -569,7 +686,13 @@ export async function readProjectRecordsFromDisk(): Promise<ProjectRecord[]> {
       continue;
     }
 
-    records.push(parseProjectRecord(JSON.parse(await readFile(projectFile, "utf8"))));
+    const parsed = parseStoredProjectRecord(JSON.parse(await readFile(projectFile, "utf8")));
+    records.push(parsed.record);
+    didNormalizeAnyRecord ||= parsed.didNormalize;
+  }
+
+  if (didNormalizeAnyRecord) {
+    await writeProjectRecordsToDisk(records);
   }
 
   return records;
@@ -584,7 +707,11 @@ export async function writeProjectRecordsToDisk(records: ProjectRecord[]) {
   for (const record of records) {
     const projectDir = getProjectDataDir(record.id);
     await mkdir(projectDir, { recursive: true });
-    await writeFile(getProjectJsonFilePath(record.id), `${JSON.stringify(record, null, 2)}\n`, "utf8");
+    await writeFile(
+      getProjectJsonFilePath(record.id),
+      `${JSON.stringify(record, null, 2)}\n`,
+      "utf8",
+    );
   }
 
   const entries = await readdir(projectsDir, { withFileTypes: true });
@@ -593,29 +720,6 @@ export async function writeProjectRecordsToDisk(records: ProjectRecord[]) {
       .filter((entry) => entry.isDirectory() && !expectedDirs.has(entry.name))
       .map((entry) => rm(path.join(projectsDir, entry.name), { recursive: true, force: true })),
   );
-}
-
-function parseProjectRecord(value: SerializedProjectRecord): ProjectRecord {
-  if (
-    typeof value.id !== "string" ||
-    typeof value.name !== "string" ||
-    typeof value.createdAt !== "string" ||
-    typeof value.updatedAt !== "string"
-  ) {
-    throw new Error("Invalid project record in projects file.");
-  }
-
-  return {
-    id: value.id,
-    name: value.name,
-    description:
-      typeof value.description === "string"
-        ? value.description
-        : "No project description yet.",
-    createdAt: value.createdAt,
-    updatedAt: value.updatedAt,
-    spatialMap: parseSpatialMapData(value.spatialMap),
-  };
 }
 
 function sanitizeProjectName(name?: string) {
@@ -667,6 +771,65 @@ function reserveUniqueNodeId(label: string, type: string, existingIds: Set<strin
   const nodeId = createUniqueNodeId(label, type, existingIds);
   existingIds.add(nodeId);
   return nodeId;
+}
+
+function normalizeProjectMetadataSchemaRows(rows: ProjectMetadataSchemaRowInput[]) {
+  const nextSchema = rows.map((row, index) => {
+    const key = normalizeProjectNodeMetadataKey(row.key);
+    if (key.length === 0) {
+      throw new Error(`Metadata row ${index + 1} must have a key.`);
+    }
+
+    return {
+      key,
+      label: normalizeProjectNodeMetadataLabel(row.label, key),
+      defaultValue: row.defaultValue.trim(),
+    } satisfies ProjectNodeMetadataField;
+  });
+  const keys = new Set<string>();
+  for (const field of nextSchema) {
+    if (keys.has(field.key)) {
+      throw new Error(`Duplicate metadata key "${field.key}".`);
+    }
+    keys.add(field.key);
+  }
+
+  return nextSchema;
+}
+
+function remapNodeMetadataForSchema(
+  metadata: Record<string, string>,
+  currentSchema: ProjectNodeMetadataField[],
+  nextSchema: ProjectNodeMetadataField[],
+  rows: ProjectMetadataSchemaRowInput[],
+) {
+  const currentMetadata = sanitizeNodeMetadata(metadata, currentSchema, {
+    omitDefaultValues: true,
+  });
+  const nextEntries = rows.flatMap((row, index) => {
+    const nextField = nextSchema[index];
+    if (!nextField) {
+      return [];
+    }
+
+    const originalKey = row.originalKey?.trim();
+    const value =
+      typeof originalKey === "string" && originalKey.length > 0
+        ? currentMetadata[originalKey]
+        : undefined;
+
+    if (typeof value !== "string") {
+      return [];
+    }
+
+    if (value === nextField.defaultValue) {
+      return [];
+    }
+
+    return [[nextField.key, value] satisfies [string, string]];
+  });
+
+  return Object.fromEntries(nextEntries);
 }
 
 const IMAGE_EXTENSIONS_BY_MIME_TYPE: Record<string, string> = {

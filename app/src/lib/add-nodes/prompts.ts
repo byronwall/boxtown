@@ -1,10 +1,11 @@
 import type { ClarifyingQuestion, FollowUpSuggestion } from "./types";
+import { summarizeNodeMetadata } from "~/lib/projects/node-metadata";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { getLinkLabel } from "~/lib/spatial-map/links";
 import type { MapNode } from "~/lib/spatial-map/types";
 
-function summarizeNode(node: MapNode) {
-  return `${node.id} | ${node.label} | ${node.type} | depth ${node.depth} | purpose: ${node.purpose}`;
+function summarizeNode(node: MapNode, project: ProjectRecord) {
+  return `${node.id} | ${node.label} | ${node.type} | depth ${node.depth} | metadata: ${summarizeNodeMetadata(node, project.nodeMetadataSchema)}`;
 }
 
 function summarizeGraph(project: ProjectRecord) {
@@ -14,8 +15,17 @@ function summarizeGraph(project: ProjectRecord) {
     `Node count: ${project.spatialMap.nodes.length}`,
     `Link count: ${project.spatialMap.links.length}`,
     "",
+    "Project metadata schema:",
+    ...(
+      project.nodeMetadataSchema.length > 0
+        ? project.nodeMetadataSchema.map(
+            (field) => `${field.key} | ${field.label} | default: ${field.defaultValue || "(none)"}`,
+          )
+        : ["No project metadata fields defined."]
+    ),
+    "",
     "Existing nodes:",
-    ...project.spatialMap.nodes.map(summarizeNode),
+    ...project.spatialMap.nodes.map((node) => summarizeNode(node, project)),
     "",
     "Existing links:",
     ...project.spatialMap.links.map(
@@ -66,7 +76,7 @@ export function buildQuestionPrompt(input: {
     "",
     `User brief: ${input.brief}`,
     input.selectedNode
-      ? `Selected node: ${summarizeNode(input.selectedNode)}`
+      ? `Selected node: ${summarizeNode(input.selectedNode, input.project)}`
       : "Selected node: none",
     "",
     summarizeGraph(input.project),
@@ -88,7 +98,8 @@ export function buildNodeGenerationPrompt(input: {
     "Return only nodes that do not already exist in the graph.",
     "Depth should be coherent with surrounding nodes.",
     "Keep node labels compact and concrete.",
-    "Purpose and implementation should each be one sentence.",
+    "Use only the project metadata keys listed below when populating metadata.",
+    "Each populated metadata value should stay concise and concrete.",
     "Links may target existing nodes or newly generated nodes.",
     "For parent/child structure, emit links with parentChild: true and no relationship.",
     'For non-parent/child adjacency, emit parentChild: false with relationship "related", "dependency", or "reuse".',
@@ -96,7 +107,7 @@ export function buildNodeGenerationPrompt(input: {
     "",
     `User brief: ${input.brief}`,
     input.selectedNode
-      ? `Selected node: ${summarizeNode(input.selectedNode)}`
+      ? `Selected node: ${summarizeNode(input.selectedNode, input.project)}`
       : "Selected node: none",
     "",
     "Clarification answers:",
