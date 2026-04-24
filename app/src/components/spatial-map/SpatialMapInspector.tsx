@@ -114,29 +114,23 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         <VStack alignItems="start" gap="2" h="full">
           <Box class="spatial-map-inspector-header">
             <VStack alignItems="start" gap="1" class="spatial-map-inspector-header-copy">
-              <Text as="span" textStyle="xs" class="spatial-map-kicker">
-                Inspector rail
-              </Text>
               <Box as="h2" class="spatial-map-inspector-title">
                 {spatialMap.selectedNode()?.label ?? "Select an item"}
               </Box>
-              <Text as="p" class="spatial-map-inspector-copy">
-                {spatialMap.selectedNode()
-                  ? "Lock another node to compare structure without losing current context."
-                  : "Choose any node to inspect metadata, role, and network relationships."}
-              </Text>
             </VStack>
             <InspectorToggle inToolbar={false} />
           </Box>
 
-          <Box class="spatial-map-inspector-section">
-            <InspectorRow label="ID" value={spatialMap.selectedNode()?.id ?? "None"} mono />
-            <InspectorRow label="Type" value={spatialMap.selectedNode()?.type ?? "Unknown"} />
-            <InspectorRow label="Mode" value={selectedNode()?.contextMode ?? "Unknown"} />
-            <InspectorRow label="Depth" value={String(spatialMap.selectedNode()?.depth ?? 0)} />
+          <Box class="spatial-map-inspector-section spatial-map-inspector-summary">
+            <HStack gap="1.5" flexWrap="wrap">
+              <InspectorChip label="ID" value={spatialMap.selectedNode()?.id ?? "None"} />
+              <InspectorChip label="Type" value={spatialMap.selectedNode()?.type ?? "Unknown"} />
+              <InspectorChip label="Mode" value={selectedNode()?.contextMode ?? "Unknown"} />
+              <InspectorChip label="Depth" value={String(spatialMap.selectedNode()?.depth ?? 0)} />
+            </HStack>
             <Show when={selectedNode()}>
               {(node) => (
-                <HStack justifyContent="space-between" gap="2" flexWrap="wrap">
+                <HStack class="spatial-map-inspector-action-row" gap="0" flexWrap="wrap">
                   <Show when={isContextOnlyNode()}>
                     <Button
                       size="xs"
@@ -152,6 +146,13 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                     projectId={props.project.id}
                     node={node()}
                     onProjectUpdated={props.onProjectUpdated}
+                    compact
+                  />
+                  <SpatialMapGenerateImageControl
+                    projectId={props.project.id}
+                    node={node()}
+                    onProjectUpdated={props.onProjectUpdated}
+                    compact
                   />
                 </HStack>
               )}
@@ -174,27 +175,13 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                   >
                     Images
                   </Text>
-                  <Text as="span" margin="0" fontSize="xs" class="spatial-map-empty-state">
-                    Drop or paste
-                  </Text>
                 </HStack>
                 <Show
                   when={(node().images ?? []).length > 0}
-                  fallback={
-                    <Box class="spatial-map-context-empty">
-                      <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
-                        Drop image files here, onto the canvas node, or paste while this node is selected.
-                      </Text>
-                    </Box>
-                  }
+                  fallback={<Box class="spatial-map-image-empty" aria-label="No images" />}
                 >
                   <SpatialMapImageStrip node={node()} variant="inspector" />
                 </Show>
-                <SpatialMapGenerateImageControl
-                  projectId={props.project.id}
-                  node={node()}
-                  onProjectUpdated={props.onProjectUpdated}
-                />
               </SpatialMapImageDropTarget>
             )}
           </Show>
@@ -282,7 +269,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
               when={selectedNode()}
               fallback={
                 <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
-                  Select a node to edit its project metadata values.
+                  No selection
                 </Text>
               }
             >
@@ -370,7 +357,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
               when={selectedNode()}
               fallback={
                 <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
-                  Select a node to view or edit its markdown context.
+                  No selection
                 </Text>
               }
             >
@@ -589,18 +576,13 @@ export function InspectorToggle(props: { inToolbar: boolean }) {
   );
 }
 
-function InspectorRow(props: { label: string; value: string; mono?: boolean }) {
+function InspectorChip(props: { label: string; value: string }) {
   return (
-    <HStack justifyContent="space-between" alignItems="start" gap="3" class="spatial-map-inspector-row">
+    <HStack gap="1.5" class="spatial-map-inspector-chip">
       <Text as="span" textStyle="xs" class="spatial-map-inspector-row-label">
         {props.label}
       </Text>
-      <Text
-        as="span"
-        textStyle="sm"
-        class={props.mono ? "spatial-map-inspector-row-value is-mono" : "spatial-map-inspector-row-value"}
-        textAlign="right"
-      >
+      <Text as="span" textStyle="xs" class="spatial-map-inspector-row-value is-mono">
         {props.value}
       </Text>
     </HStack>

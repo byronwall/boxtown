@@ -1,7 +1,9 @@
 import { For, Show, createEffect, createMemo, untrack } from "solid-js";
 import { Box, HStack, VStack } from "styled-system/jsx";
+import { WandSparklesIcon } from "lucide-solid";
 import { Button } from "~/components/ui/button";
 import { Text } from "~/components/ui/text";
+import { Tooltip } from "~/components/ui/tooltip";
 import { toaster } from "~/components/ui/toast";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode } from "~/lib/spatial-map/types";
@@ -11,6 +13,7 @@ interface SpatialMapGenerateImageControlProps {
   projectId: string;
   node: MapNode;
   onProjectUpdated?: (project: ProjectRecord) => void;
+  compact?: boolean;
 }
 
 export function SpatialMapGenerateImageControl(
@@ -40,20 +43,39 @@ export function SpatialMapGenerateImageControl(
   });
 
   return (
-    <VStack alignItems="stretch" gap="2" width="100%">
-      <HStack gap="2" justifyContent="flex-end">
-        <Button
-          size="xs"
-          variant="surface"
-          class="spatial-map-button spatial-map-button--strong"
-          loading={isRunning()}
-          loadingText="Generating"
-          disabled={isRunning()}
-          onClick={() => void flow.startRun({ nodeId: props.node.id })}
-        >
-          Generate Mockup
-        </Button>
-      </HStack>
+    <VStack alignItems="stretch" gap="2" width={props.compact ? "auto" : "100%"}>
+      <Show
+        when={props.compact}
+        fallback={
+          <HStack gap="2" justifyContent="flex-end">
+            <Button
+              size="xs"
+              variant="surface"
+              class="spatial-map-button spatial-map-button--strong"
+              loading={isRunning()}
+              loadingText="Generating"
+              disabled={isRunning()}
+              onClick={() => void flow.startRun({ nodeId: props.node.id })}
+            >
+              Generate Mockup
+            </Button>
+          </HStack>
+        }
+      >
+        <Tooltip content="Generate mockup" openDelay={150} closeDelay={80}>
+          <Button
+            size="xs"
+            variant="surface"
+            class="spatial-map-button spatial-map-icon-button spatial-map-button--strong"
+            loading={isRunning()}
+            disabled={isRunning()}
+            onClick={() => void flow.startRun({ nodeId: props.node.id })}
+            aria-label="Generate mockup"
+          >
+            <Box as={WandSparklesIcon} boxSize="4" />
+          </Button>
+        </Tooltip>
+      </Show>
 
       <Show when={flow.snapshot()}>
         {(snapshot) => (

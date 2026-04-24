@@ -142,6 +142,34 @@ export const addProjectNodeImages = action(
   "add-project-node-images",
 );
 
+export const deleteProjectNodeImage = action(
+  async (formData: FormData) => {
+    "use server";
+    const { deleteProjectNodeImageOnDisk } = await import("./data.server");
+
+    const projectId = formData.get("projectId");
+    const nodeId = formData.get("nodeId");
+    const imageId = formData.get("imageId");
+
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+    if (typeof nodeId !== "string" || nodeId.trim().length === 0) {
+      throw new Error("A node id is required.");
+    }
+    if (typeof imageId !== "string" || imageId.trim().length === 0) {
+      throw new Error("An image id is required.");
+    }
+
+    return deleteProjectNodeImageOnDisk({
+      projectId,
+      nodeId,
+      imageId,
+    });
+  },
+  "delete-project-node-image",
+);
+
 export const createProjectContextNode = action(
   async (formData: FormData) => {
     "use server";
@@ -203,6 +231,8 @@ export const updateProjectMetadataSchema = action(
     const { updateProjectMetadataSchemaOnDisk } = await import("./data.server");
 
     const projectId = formData.get("projectId");
+    const name = formData.get("name");
+    const description = formData.get("description");
     const originalKeys = formData.getAll("originalKey");
     const keys = formData.getAll("key");
     const labels = formData.getAll("label");
@@ -217,6 +247,8 @@ export const updateProjectMetadataSchema = action(
 
     return updateProjectMetadataSchemaOnDisk({
       projectId,
+      name: typeof name === "string" ? name : undefined,
+      description: typeof description === "string" ? description : undefined,
       fields: keys.map((key, index) => ({
         originalKey:
           typeof originalKeys[index] === "string" ? originalKeys[index] : undefined,

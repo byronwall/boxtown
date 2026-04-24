@@ -2,6 +2,7 @@ import { createAsync, useParams } from "@solidjs/router";
 import { Show } from "solid-js";
 import { ProjectDetailPage } from "~/components/projects/ProjectDetailPage";
 import { getProjectById } from "~/lib/projects/data";
+import { PageMeta, formatPageTitle, formatProjectDescription } from "~/lib/seo";
 
 export default function ProjectRoute() {
   const params = useParams();
@@ -17,7 +18,19 @@ export default function ProjectRoute() {
 
   return (
     <Show when={project()}>
-      {(resolvedProject) => <ProjectDetailPage project={resolvedProject()} />}
+      {(resolvedProject) => (
+        <>
+          <PageMeta
+            title={formatPageTitle(resolvedProject().name)}
+            description={formatProjectDescription({
+              description: resolvedProject().description,
+              nodeCount: resolvedProject().spatialMap.nodes.length,
+              linkCount: resolvedProject().spatialMap.links.length,
+            })}
+          />
+          <ProjectDetailPage project={resolvedProject()} />
+        </>
+      )}
     </Show>
   );
 }

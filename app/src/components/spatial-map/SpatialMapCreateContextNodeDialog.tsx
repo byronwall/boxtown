@@ -1,5 +1,5 @@
 import { useSubmission } from "@solidjs/router";
-import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal, type JSX } from "solid-js";
 import { HStack, VStack } from "styled-system/jsx";
 import { createProjectContextNode } from "~/lib/projects/data";
 import { detectMarkdownMaxHeadingDepth } from "~/lib/projects/context-node-markdown";
@@ -17,6 +17,7 @@ import { useSpatialMap } from "./SpatialMapContext";
 interface SpatialMapCreateContextNodeDialogProps {
   project: ProjectRecord;
   onProjectUpdated?: (project: ProjectRecord) => void;
+  trigger?: (open: () => void) => JSX.Element;
 }
 
 export function SpatialMapCreateContextNodeDialog(
@@ -108,15 +109,19 @@ export function SpatialMapCreateContextNodeDialog(
 
   return (
     <>
-      <Button
-        colorPalette="green"
-        variant="surface"
-        size="xs"
-        class="spatial-map-button spatial-map-button--strong"
-        onClick={() => setOpen(true)}
-      >
-        New Context Node
-      </Button>
+      {props.trigger ? (
+        props.trigger(() => setOpen(true))
+      ) : (
+        <Button
+          colorPalette="green"
+          variant="surface"
+          size="xs"
+          class="spatial-map-button spatial-map-button--strong"
+          onClick={() => setOpen(true)}
+        >
+          New Context Node
+        </Button>
+      )}
 
       <SimpleDialog
         open={open()}

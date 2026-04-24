@@ -1,9 +1,11 @@
 import { useSubmission } from "@solidjs/router";
 import { createEffect, createSignal } from "solid-js";
 import { HStack, VStack } from "styled-system/jsx";
+import { Trash2 } from "lucide-solid";
 import { Button } from "~/components/ui/button";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { Text } from "~/components/ui/text";
+import { Tooltip } from "~/components/ui/tooltip";
 import { toaster } from "~/components/ui/toast";
 import { deleteProjectNode } from "~/lib/projects/data";
 import type { ProjectRecord } from "~/lib/projects/types";
@@ -15,6 +17,7 @@ interface SpatialMapDeleteNodeControlProps {
   projectId: string;
   node: MapNode;
   onProjectUpdated?: (project: ProjectRecord) => void;
+  compact?: boolean;
 }
 
 export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlProps) {
@@ -51,14 +54,17 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
 
   return (
     <>
-      <Button
-        size="xs"
-        variant="outline"
-        class="spatial-map-button spatial-map-button--danger"
-        onClick={() => setOpen(true)}
-      >
-        Delete Node
-      </Button>
+      <Tooltip content="Delete node" disabled={!props.compact} openDelay={150} closeDelay={80}>
+        <Button
+          size="xs"
+          variant="outline"
+          class={`spatial-map-button spatial-map-button--danger${props.compact ? " spatial-map-icon-button" : ""}`}
+          onClick={() => setOpen(true)}
+          aria-label={props.compact ? "Delete node" : undefined}
+        >
+          {props.compact ? <Trash2 size={16} /> : "Delete Node"}
+        </Button>
+      </Tooltip>
 
       <SimpleDialog
         open={open()}

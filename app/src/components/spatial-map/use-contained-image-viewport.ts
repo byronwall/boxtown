@@ -97,11 +97,19 @@ export function createContainedImageViewport(options: ContainedImageViewportOpti
 
   const handleImageLoad = (event: Event) => {
     const image = event.currentTarget as HTMLImageElement;
-    setImageSize({
+    setLoadedImageSize({
       width: image.naturalWidth || image.width,
       height: image.naturalHeight || image.height,
     });
+  };
+
+  const setLoadedImageSize = (size: Size, options?: { immediate?: boolean }) => {
+    setImageSize(size);
     updateStageSize();
+    if (options?.immediate) {
+      resetView();
+      return;
+    }
     scheduleFitReset();
   };
 
@@ -173,6 +181,7 @@ export function createContainedImageViewport(options: ContainedImageViewportOpti
     imageSize,
     setStageRef,
     handleImageLoad,
+    setLoadedImageSize,
     clearImageSize,
     resetView,
     zoomBy,

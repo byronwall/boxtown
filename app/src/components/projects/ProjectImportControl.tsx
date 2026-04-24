@@ -18,8 +18,8 @@ export function ProjectImportControl() {
     <form action={normalizeActionUrl(importProject.url)} method="post" enctype="multipart/form-data">
       <VStack alignItems="stretch" gap="3">
         <Field.Root>
-          <Field.Label fontSize="xs" textTransform="uppercase" letterSpacing="0.16em" fontFamily={monoFont}>
-            Import project ZIP
+          <Field.Label fontSize="sm">
+            Import project
           </Field.Label>
           <input
             type="file"
@@ -37,7 +37,7 @@ export function ProjectImportControl() {
             })}
           />
           <Field.HelperText color="#4a524a">
-            Upload an archive exported from another Product Grid server.
+            Choose a project ZIP file.
           </Field.HelperText>
         </Field.Root>
         <Button
@@ -48,12 +48,9 @@ export function ProjectImportControl() {
           variant="outline"
           borderRadius="0"
           h="10"
-          textTransform="uppercase"
-          letterSpacing="0.12em"
-          fontFamily={monoFont}
         >
           <Box as={Upload} boxSize="4" />
-          <Text as="span">Import project</Text>
+          <Text as="span">Import</Text>
         </Button>
       </VStack>
     </form>

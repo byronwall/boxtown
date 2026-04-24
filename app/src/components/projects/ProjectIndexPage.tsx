@@ -1,8 +1,7 @@
 import { A } from "@solidjs/router";
 import { For } from "solid-js";
-import { Box, Grid, HStack, VStack } from "styled-system/jsx";
+import { Box, Grid, HStack, Stack, VStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
-import * as Card from "~/components/ui/card";
 import * as Field from "~/components/ui/field";
 import { Heading } from "~/components/ui/heading";
 import { Input } from "~/components/ui/input";
@@ -28,105 +27,79 @@ const monoFont =
   '"IBM Plex Mono", "SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace';
 
 export function ProjectIndexPage(props: ProjectIndexPageProps) {
+  const totalNodes = () => props.projects.reduce((count, project) => count + project.nodeCount, 0);
+  const totalLinks = () => props.projects.reduce((count, project) => count + project.linkCount, 0);
+
   return (
     <Box
       minH="100dvh"
       color="#171c19"
-      backgroundColor="#c6cbc4"
+      backgroundColor="#c9cec6"
       backgroundImage={`
-        linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 16%),
-        repeating-linear-gradient(0deg, rgba(30,36,32,0.1) 0 1px, transparent 1px 24px),
-        repeating-linear-gradient(90deg, rgba(30,36,32,0.08) 0 1px, transparent 1px 24px),
-        linear-gradient(180deg, #d3d7d0 0%, #c6cbc4 100%)
+        repeating-linear-gradient(0deg, rgba(31,36,33,0.08) 0 1px, transparent 1px 32px),
+        repeating-linear-gradient(90deg, rgba(31,36,33,0.06) 0 1px, transparent 1px 32px)
       `}
     >
       <Box maxW="7xl" mx="auto" px={{ base: "3", md: "4" }} py={{ base: "3", md: "4" }}>
         <Box
           borderWidth="2px"
           borderColor="#414740"
-          bg="#d9ddd6"
+          bg="#d8ddd5"
           boxShadow="inset 0 1px 0 rgba(255,255,255,0.22)"
         >
-          <Grid
-            gridTemplateColumns={{ base: "1fr", lg: "minmax(0, 320px) minmax(0, 1fr)" }}
-            borderBottomWidth="1px"
-            borderColor="#596057"
-          >
-            <Box px="4" py="3" borderRightWidth={{ base: "0", lg: "1px" }} borderBottomWidth={{ base: "1px", lg: "0" }} borderColor="#596057">
-              <Text
-                as="div"
-                textStyle="xs"
-                textTransform="uppercase"
-                letterSpacing="0.2em"
-                fontWeight="bold"
-                fontFamily={monoFont}
-                color="#4a524a"
-              >
-                Registry / Product Grid
-              </Text>
-              <Heading as="h1" textStyle="lg" lineHeight="1.05" mt="2">
-                Project index
-              </Heading>
-              <Text mt="2" textStyle="sm" color="#4a524a" maxW="72">
-                Technical registry for project canvases. Create a blank grid, inspect existing work,
-                and route directly into each project workspace.
-              </Text>
+          <Stack gap="0">
+            <Box px={{ base: "3", md: "4" }} py="3" borderBottomWidth="1px" borderColor="#596057">
+              <HStack justifyContent="space-between" alignItems="start" gap="4" flexWrap="wrap">
+                <Box maxW="2xl">
+                  <Heading as="h1" textStyle="lg" lineHeight="1.05">
+                    Projects
+                  </Heading>
+                  <Text mt="1" textStyle="sm" color="#4a524a">
+                    Create a project, import one, or open existing work.
+                  </Text>
+                </Box>
+                <HStack
+                  gap="3"
+                  borderWidth="1px"
+                  borderColor="#596057"
+                  px="3"
+                  py="2"
+                  alignSelf={{ base: "stretch", md: "start" }}
+                  flex={{ base: "1 1 100%", md: "0 0 auto" }}
+                  flexWrap="wrap"
+                >
+                  <SummaryItem value={props.projects.length} label="projects" />
+                  <SummaryItem value={totalNodes()} label="nodes" />
+                  <SummaryItem value={totalLinks()} label="links" />
+                </HStack>
+              </HStack>
             </Box>
 
             <Grid
-              gridTemplateColumns={{ base: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" }}
+              gap="0"
+              gridTemplateColumns={{ base: "1fr", lg: "minmax(280px, 320px) minmax(0, 1fr)" }}
+              alignItems="start"
             >
-              <RegistryMetric label="Projects" value={String(props.projects.length)} />
-              <RegistryMetric
-                label="Nodes"
-                value={String(props.projects.reduce((count, project) => count + project.nodeCount, 0))}
-              />
-              <RegistryMetric
-                label="Links"
-                value={String(props.projects.reduce((count, project) => count + project.linkCount, 0))}
-              />
-              <RegistryMetric label="Mode" value="INDEX" accent />
-            </Grid>
-          </Grid>
-
-          <Grid
-            gap="0"
-            gridTemplateColumns={{ base: "1fr", lg: "minmax(0, 320px) minmax(0, 1fr)" }}
-            alignItems="start"
-          >
-            <Card.Root
-              borderRadius="0"
-              borderWidth="0"
-              borderRightWidth={{ base: "0", lg: "1px" }}
-              borderBottomWidth={{ base: "1px", lg: "0" }}
-              borderColor="#596057"
-              bg="#d4d8d1"
-            >
-              <Card.Header px="4" py="3" gap="2" borderBottomWidth="1px" borderColor="#6a7168">
-                <Text
-                  as="span"
-                  textStyle="xs"
-                  textTransform="uppercase"
-                  letterSpacing="0.18em"
-                  fontFamily={monoFont}
-                  color="#4a524a"
-                >
-                  Control Bay
-                </Text>
-                <Heading as="h2" textStyle="md" lineHeight="1.05">
-                  Initialize blank project
-                </Heading>
-                <Card.Description color="#4a524a">
-                  New projects open as empty infinite grids. AI detail and context tools can layer on
-                  later without changing the route structure.
-                </Card.Description>
-              </Card.Header>
-              <Card.Body px="4" py="3" borderBottomWidth="1px" borderColor="#6a7168">
+              <Box
+                borderRightWidth={{ base: "0", lg: "1px" }}
+                borderBottomWidth={{ base: "1px", lg: "0" }}
+                borderColor="#596057"
+                bg="#d2d7cf"
+              >
+                <Box px="3" py="3" borderBottomWidth="1px" borderColor="#6a7168">
+                  <Heading as="h2" textStyle="sm" lineHeight="1.05">
+                    New project
+                  </Heading>
+                  <Text mt="1" textStyle="sm" color="#4a524a">
+                    Start with an empty grid.
+                  </Text>
+              </Box>
+              <Box px="3" py="3" borderBottomWidth="1px" borderColor="#6a7168">
                 <form action={props.createProjectActionUrl} method="post">
-                  <VStack alignItems="stretch" gap="3">
+                  <VStack alignItems="stretch" gap="2">
                     <Field.Root>
-                      <Field.Label fontSize="xs" textTransform="uppercase" letterSpacing="0.16em" fontFamily={monoFont}>
-                        Project name
+                      <Field.Label fontSize="sm">
+                        Name
                       </Field.Label>
                       <Input
                         name="name"
@@ -134,11 +107,11 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
                         borderRadius="0"
                         borderColor="#51584f"
                         bg="#eef1eb"
-                        h="10"
+                        h="9"
                         px="3"
                       />
                       <Field.HelperText color="#4a524a">
-                        Leave blank to create a default project name and route straight into a new grid.
+                        Leave blank for an untitled grid.
                       </Field.HelperText>
                     </Field.Root>
                     <Button
@@ -148,214 +121,102 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
                       loadingText="Initializing"
                       colorPalette="green"
                       borderRadius="0"
-                      h="10"
-                      textTransform="uppercase"
-                      letterSpacing="0.12em"
-                      fontFamily={monoFont}
+                      h="9"
                     >
-                      Create project
+                      Create
                     </Button>
                   </VStack>
                 </form>
-              </Card.Body>
-              <Card.Body px="4" py="3">
+              </Box>
+              <Box px="3" py="3">
                 <ProjectImportControl />
-              </Card.Body>
-            </Card.Root>
+              </Box>
+            </Box>
 
             <VStack alignItems="stretch" gap="0">
               <Box
-                px="4"
-                py="3"
+                px="3"
+                py="2"
                 borderBottomWidth="1px"
                 borderColor="#596057"
-                bg="#dfe2dc"
+                bg="#dfe3dd"
               >
-                <HStack justifyContent="space-between" alignItems="end" gap="4" flexWrap="wrap">
-                  <Box>
-                    <Text
-                      as="div"
-                      textStyle="xs"
-                      textTransform="uppercase"
-                      letterSpacing="0.18em"
-                      fontFamily={monoFont}
-                      color="#4a524a"
-                    >
-                      Registry
-                    </Text>
-                    <Heading as="h2" textStyle="md" mt="1">
-                      Available projects
-                    </Heading>
-                  </Box>
-                  <Text textStyle="sm" color="#4a524a" fontFamily={monoFont}>
-                    {props.projects.length} UNIT{props.projects.length === 1 ? "" : "S"} READY
+                <HStack justifyContent="space-between" alignItems="center" gap="4" flexWrap="wrap">
+                  <Heading as="h2" textStyle="sm">
+                    Existing projects
+                  </Heading>
+                  <Text textStyle="sm" color="#4a524a">
+                    {props.projects.length} total
                   </Text>
                 </HStack>
               </Box>
 
-              <Grid
-                gap="0"
-                gridTemplateColumns={{
-                  base: "1fr",
-                  xl: "repeat(2, minmax(0, 1fr))",
-                }}
-              >
+              <VStack alignItems="stretch" gap="0">
                 <For each={props.projects}>
                   {(project) => (
                     <Box
-                      h="full"
                       borderBottomWidth="1px"
-                      borderRightWidth={{ base: "0", xl: "1px" }}
                       borderColor="#596057"
-                      bg="#e8ebe5"
+                      bg="#e4e8e1"
+                      _hover={{ bg: "#edf0eb" }}
                     >
-                      <HStack
-                        justifyContent="space-between"
+                      <Grid
+                        gridTemplateColumns={{ base: "1fr", md: "minmax(0, 1fr) 316px auto" }}
+                        gap={{ base: "2", md: "3" }}
                         alignItems="center"
-                        gap="3"
-                        px="4"
+                        px="3"
                         py="2"
-                        borderBottomWidth="1px"
-                        borderColor="#6a7168"
-                        bg="#dde2db"
                       >
-                        <Text
-                          as="div"
-                          textStyle="xs"
-                          textTransform="uppercase"
-                          letterSpacing="0.18em"
-                          fontFamily={monoFont}
-                          color="#4a524a"
+                        <Box minW="0">
+                          <A href={`/projects/${project.id}`} style={{ display: "block", "text-decoration": "none", color: "inherit" }}>
+                            <Heading as="h3" textStyle="md" lineHeight="1.05">
+                              {project.name}
+                            </Heading>
+                            <Text mt="1" textStyle="sm" color="#414740" lineClamp="2">
+                              {project.description}
+                            </Text>
+                            <Text mt="2" textStyle="xs" color="#5b635b" fontFamily={monoFont}>
+                              {project.id}
+                            </Text>
+                          </A>
+                        </Box>
+
+                        <HStack gap="3" color="#30362f" flexWrap="wrap" fontFamily={monoFont} textStyle="sm">
+                          <Text as="span">{project.nodeCount} nodes</Text>
+                          <Text as="span">{project.linkCount} links</Text>
+                          <Text as="span">{dateFormatter.format(new Date(project.updatedAt))}</Text>
+                        </HStack>
+                        <HStack
+                          gap="2"
+                          justifyContent={{ base: "end", md: "start" }}
+                          gridColumn={{ base: "1", md: "auto" }}
                         >
-                          {project.id}
-                        </Text>
-                        <HStack gap="2">
                           <ProjectExportControl projectId={project.id} projectName={project.name} />
                           <ProjectDeleteControl projectId={project.id} projectName={project.name} />
                         </HStack>
-                      </HStack>
-                      <A href={`/projects/${project.id}`} style={{ display: "block", "text-decoration": "none" }}>
-                        <Box transition="background-color 120ms ease" _hover={{ bg: "#edf0eb" }}>
-                          <Grid
-                            gridTemplateColumns={{ base: "1fr", md: "minmax(0, 1fr) auto" }}
-                            gap="0"
-                            h="full"
-                          >
-                            <Box px="4" py="3" borderBottomWidth={{ base: "1px", md: "0" }} borderRightWidth={{ base: "0", md: "1px" }} borderColor="#6a7168">
-                              <HStack justifyContent="space-between" alignItems="start" gap="3">
-                                <Box minW="0">
-                                  <Heading as="h3" textStyle="md" lineHeight="1.05">
-                                    {project.name}
-                                  </Heading>
-                                  <Text mt="2" textStyle="sm" color="#414740">
-                                    {project.description}
-                                  </Text>
-                                </Box>
-                                <Text
-                                  as="span"
-                                  textStyle="xs"
-                                  px="2"
-                                  py="1"
-                                  borderWidth="1px"
-                                  borderColor="#5a6258"
-                                  fontFamily={monoFont}
-                                  textTransform="uppercase"
-                                  color="#1e4f39"
-                                  whiteSpace="nowrap"
-                                >
-                                  Grid
-                                </Text>
-                              </HStack>
-                            </Box>
-
-                            <Grid
-                              minW={{ base: "unset", md: "220px" }}
-                              gridTemplateColumns="repeat(2, minmax(0, 1fr))"
-                              gridTemplateRows="repeat(2, minmax(0, 1fr))"
-                            >
-                              <ProjectStat label="Nodes" value={String(project.nodeCount)} />
-                              <ProjectStat label="Links" value={String(project.linkCount)} />
-                              <ProjectStat
-                                label="Updated"
-                                value={dateFormatter.format(new Date(project.updatedAt))}
-                                compact
-                              />
-                              <ProjectStat label="Route" value="Open" compact accent />
-                            </Grid>
-                          </Grid>
-                        </Box>
-                      </A>
+                      </Grid>
                     </Box>
                   )}
                 </For>
-              </Grid>
+              </VStack>
             </VStack>
           </Grid>
+          </Stack>
         </Box>
       </Box>
     </Box>
   );
 }
 
-function RegistryMetric(props: { label: string; value: string; accent?: boolean }) {
+function SummaryItem(props: { label: string; value: number }) {
   return (
-    <Box
-      px="3"
-      py="3"
-      borderLeftWidth="1px"
-      borderTopWidth={{ base: "1px", md: "0" }}
-      borderColor="#596057"
-      bg={props.accent ? "#d8e0d7" : "#dfe2dc"}
-    >
-      <Text
-        textStyle="xs"
-        textTransform="uppercase"
-        letterSpacing="0.16em"
-        fontFamily={monoFont}
-        color="#4a524a"
-      >
-        {props.label}
-      </Text>
-      <Text mt="1" textStyle="lg" fontWeight="semibold">
+    <HStack gap="1" whiteSpace="nowrap">
+      <Text as="span" textStyle="md" fontWeight="semibold">
         {props.value}
       </Text>
-    </Box>
-  );
-}
-
-function ProjectStat(props: {
-  label: string;
-  value: string;
-  compact?: boolean;
-  accent?: boolean;
-}) {
-  return (
-    <Box
-      borderWidth="1px"
-      borderColor="#6a7168"
-      borderTopWidth="0"
-      borderLeftWidth="0"
-      bg={props.accent ? "#dbe3da" : "#e3e7e0"}
-      px="3"
-      py="3"
-    >
-      <Text
-        textStyle="xs"
-        textTransform="uppercase"
-        letterSpacing="0.16em"
-        color="#4a524a"
-        fontFamily={monoFont}
-      >
+      <Text as="span" textStyle="sm" color="#4a524a">
         {props.label}
       </Text>
-      <Text
-        mt="1"
-        textStyle={props.compact ? "sm" : "xl"}
-        fontWeight="semibold"
-        fontFamily={props.compact ? monoFont : undefined}
-      >
-        {props.value}
-      </Text>
-    </Box>
+    </HStack>
   );
 }

@@ -1,10 +1,13 @@
 import { useSubmission } from "@solidjs/router";
-import { For, createEffect, createSignal } from "solid-js";
-import { HStack, VStack } from "styled-system/jsx";
+import { ArrowDownIcon, ArrowUpIcon, Trash2 } from "lucide-solid";
+import { For, createEffect, createSignal, type JSX } from "solid-js";
+import { Box, HStack, VStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import * as Field from "~/components/ui/field";
-import { Input } from "~/components/ui/input";
+import { IconButton } from "~/components/ui/icon-button";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
+import { Text } from "~/components/ui/text";
+import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
 import { updateProjectMetadataSchema } from "~/lib/projects/data";
 import type { ProjectNodeMetadataField, ProjectRecord } from "~/lib/projects/types";
@@ -13,6 +16,7 @@ import { normalizeActionUrl } from "~/lib/router/action-url";
 interface ProjectMetadataSettingsDialogProps {
   project: ProjectRecord;
   onProjectUpdated?: (project: ProjectRecord) => void;
+  trigger?: (open: () => void) => JSX.Element;
 }
 
 interface MetadataSchemaRowDraft extends ProjectNodeMetadataField {
@@ -24,11 +28,15 @@ export function ProjectMetadataSettingsDialog(
 ) {
   const updateSubmission = useSubmission(updateProjectMetadataSchema);
   const [open, setOpen] = createSignal(false);
-  const [rows, setRows] = createSignal(createRows(props.project.nodeMetadataSchema));
+  const [name, setName] = createSignal("");
+  const [description, setDescription] = createSignal("");
+  const [rows, setRows] = createSignal<MetadataSchemaRowDraft[]>([]);
   const formId = "project-metadata-settings-form";
 
   createEffect(() => {
     if (!open()) {
+      setName(props.project.name);
+      setDescription(props.project.description);
       setRows(createRows(props.project.nodeMetadataSchema));
     }
   });
@@ -42,29 +50,33 @@ export function ProjectMetadataSettingsDialog(
     props.onProjectUpdated?.(result);
     setOpen(false);
     toaster.success({
-      title: "Project metadata updated",
-      description: "The project metadata schema and node values were updated.",
+      title: "Project settings updated",
+      description: "Project details and metadata settings were saved.",
     });
     updateSubmission.clear();
   });
 
   return (
     <>
-      <Button
-        colorPalette="green"
-        variant="outline"
-        size="xs"
-        class="spatial-map-button"
-        onClick={() => setOpen(true)}
-      >
-        Project Settings
-      </Button>
+      {props.trigger ? (
+        props.trigger(() => setOpen(true))
+      ) : (
+        <Button
+          colorPalette="green"
+          variant="outline"
+          size="xs"
+          class="spatial-map-button"
+          onClick={() => setOpen(true)}
+        >
+          Project Settings
+        </Button>
+      )}
 
       <SimpleDialog
         open={open()}
         onOpenChange={setOpen}
-        title="Project Metadata"
-        description="Define the project-level metadata keys available on nodes."
+        title="Project Settings"
+        description="Edit the project title, subtitle, and node metadata fields."
         maxW="900px"
         footer={
           <HStack>
@@ -87,85 +99,132 @@ export function ProjectMetadataSettingsDialog(
           method="post"
         >
           <input type="hidden" name="projectId" value={props.project.id} />
-          <VStack alignItems="stretch" gap="3">
-            <For each={rows()}>
-              {(row, index) => (
-                <VStack alignItems="stretch" gap="2" class="spatial-map-inspector-section">
-                  <input type="hidden" name="originalKey" value={row.originalKey} />
-                  <HStack gap="2" alignItems="flex-end" flexWrap="wrap">
-                    <Field.Root flex="1 1 180px">
-                      <Field.Label>Key</Field.Label>
-                      <Input
+          <VStack alignItems="stretch" gap="3" class="spatial-map-metadata-dialog">
+            <Box class="spatial-map-project-settings-section">
+              <Field.Root class="spatial-map-project-settings-row">
+                <Field.Label>Title</Field.Label>
+                <Textarea
+                  class="spatial-map-settings-input"
+                  name="name"
+                  value={name()}
+                  onInput={(event) => setName(event.currentTarget.value)}
+                  placeholder="Untitled Project"
+                  rows={1}
+                />
+              </Field.Root>
+              <Field.Root class="spatial-map-project-settings-row">
+                <Field.Label>Subtitle</Field.Label>
+                <Textarea
+                  class="spatial-map-settings-input spatial-map-settings-textarea"
+                  name="description"
+                  value={description()}
+                  onInput={(event) => setDescription(event.currentTarget.value)}
+                  placeholder="Project description"
+                  rows={2}
+                />
+              </Field.Root>
+            </Box>
+
+            <Text as="h3" class="spatial-map-settings-section-title">
+              Node Metadata Fields
+            </Text>
+            <Box class="spatial-map-metadata-grid spatial-map-metadata-grid--header">
+              <Text as="span">Key</Text>
+              <Text as="span">Label</Text>
+              <Text as="span">Default Value</Text>
+              <Text as="span">Order</Text>
+            </Box>
+
+            <Box class="spatial-map-metadata-grid spatial-map-metadata-grid--body">
+              <For each={rows()}>
+                {(row, index) => (
+                  <>
+                    <Field.Root>
+                      <input type="hidden" name="originalKey" value={row.originalKey} />
+                      <Textarea
+                        aria-label={`Key for metadata field ${index() + 1}`}
+                        class="spatial-map-metadata-input"
                         name="key"
                         value={row.key}
                         onInput={(event) =>
                           updateRow(index(), { key: event.currentTarget.value }, setRows)
                         }
                         placeholder="purpose"
+                        rows={1}
                       />
                     </Field.Root>
-                    <Field.Root flex="1 1 180px">
-                      <Field.Label>Label</Field.Label>
-                      <Input
+                    <Field.Root>
+                      <Textarea
+                        aria-label={`Label for metadata field ${index() + 1}`}
+                        class="spatial-map-metadata-input"
                         name="label"
                         value={row.label}
                         onInput={(event) =>
                           updateRow(index(), { label: event.currentTarget.value }, setRows)
                         }
                         placeholder="Purpose"
+                        rows={1}
                       />
                     </Field.Root>
-                    <Field.Root flex="2 1 260px">
-                      <Field.Label>Default Value</Field.Label>
-                      <Input
+                    <Field.Root>
+                      <Textarea
+                        aria-label={`Default value for metadata field ${index() + 1}`}
+                        class="spatial-map-metadata-input"
                         name="defaultValue"
                         value={row.defaultValue}
                         onInput={(event) =>
                           updateRow(index(), { defaultValue: event.currentTarget.value }, setRows)
                         }
                         placeholder="Optional default text"
+                        rows={1}
                       />
                     </Field.Root>
-                    <HStack gap="1">
-                      <Button
+                    <HStack gap="1" class="spatial-map-metadata-row-actions">
+                      <IconButton
+                        aria-label={`Move ${row.label || row.key || "field"} up`}
+                        title="Move up"
                         type="button"
                         size="xs"
                         variant="outline"
-                        class="spatial-map-button"
+                        class="spatial-map-button spatial-map-icon-button"
                         disabled={index() === 0}
                         onClick={() => moveRow(index(), -1, setRows)}
                       >
-                        Up
-                      </Button>
-                      <Button
+                        <ArrowUpIcon size={15} />
+                      </IconButton>
+                      <IconButton
+                        aria-label={`Move ${row.label || row.key || "field"} down`}
+                        title="Move down"
                         type="button"
                         size="xs"
                         variant="outline"
-                        class="spatial-map-button"
+                        class="spatial-map-button spatial-map-icon-button"
                         disabled={index() === rows().length - 1}
                         onClick={() => moveRow(index(), 1, setRows)}
                       >
-                        Down
-                      </Button>
-                      <Button
+                        <ArrowDownIcon size={15} />
+                      </IconButton>
+                      <IconButton
+                        aria-label={`Remove ${row.label || row.key || "field"}`}
+                        title="Remove"
                         type="button"
                         size="xs"
                         variant="outline"
-                        class="spatial-map-button"
+                        class="spatial-map-button spatial-map-icon-button spatial-map-button--danger"
                         onClick={() => removeRow(index(), setRows)}
                       >
-                        Remove
-                      </Button>
+                        <Trash2 size={15} />
+                      </IconButton>
                     </HStack>
-                  </HStack>
-                </VStack>
-              )}
-            </For>
+                  </>
+                )}
+              </For>
+            </Box>
 
             <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap">
-              <Field.HelperText>
+              <Text color="fg.muted" textStyle="sm">
                 Keys are normalized on save and node metadata is remapped by the original key.
-              </Field.HelperText>
+              </Text>
               <Button
                 type="button"
                 size="xs"

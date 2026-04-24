@@ -1,5 +1,6 @@
 import { For, Show } from "solid-js";
 import { Box } from "styled-system/jsx";
+import { Button } from "~/components/ui/button";
 import { VIEWPORT_HEIGHT, VIEWPORT_WIDTH } from "~/lib/spatial-map/layout";
 
 import type { NodeVisualState } from "./spatial-map-canvas.types";
@@ -59,7 +60,9 @@ const NODE_TYPE_FALLBACK_TONES = [
 
 const NODE_LABEL_HORIZONTAL_PADDING = 8;
 const NODE_LABEL_TOP_PADDING = 7;
-const NODE_LABEL_META_GAP = 16;
+const NODE_LABEL_IMAGE_GAP = 10;
+const NODE_LABEL_META_GAP = 8;
+const NODE_LABEL_BOTTOM_PADDING = 16;
 const NODE_LABEL_LINE_HEIGHT = 1.08;
 const SVG_TEXT_WIDTH_FACTOR = 0.58;
 
@@ -77,6 +80,20 @@ export function SpatialMapScene() {
       onPointerCancel={controller.viewportHandlers.onPointerCancel}
       onWheel={controller.viewportHandlers.onWheel}
     >
+      <Box class="spatial-map-viewport-controls">
+        <Box as="span" class="spatial-map-zoom-readout">
+          Zoom {controller.zoomPercent()}
+        </Box>
+        <Button
+          colorPalette="green"
+          variant="plain"
+          size="xs"
+          class="spatial-map-button spatial-map-viewport-button"
+          onClick={() => controller.fitCameraToNodes()}
+        >
+          Fit View
+        </Button>
+      </Box>
       <svg
         ref={controller.setSvgRef}
         class="spatial-map-scene"
@@ -139,14 +156,18 @@ function SpatialMapNode(props: {
   const imageHeight = () => (hasImages() ? Math.min(54, props.item.node.height * 0.38) : 0);
   const fallbackTone = () => getNodeTypeFallbackTone(props.item.node.type);
   const zoomTextCompression = () => Math.max(1, Math.min(2.75, Math.sqrt(props.zoomScale)));
+  const metaFontSize = () => props.item.node.metaSize / zoomTextCompression();
+  const metaBaselineY = () => props.item.node.height - NODE_LABEL_BOTTOM_PADDING;
+  const labelAreaTop = () =>
+    hasImages() ? NODE_LABEL_TOP_PADDING + imageHeight() + NODE_LABEL_IMAGE_GAP : NODE_LABEL_TOP_PADDING;
+  const labelAreaBottom = () => Math.max(labelAreaTop() + 1, metaBaselineY() - metaFontSize() - NODE_LABEL_META_GAP);
   const availableLabelHeight = () =>
-    Math.max(1, props.item.node.height - NODE_LABEL_TOP_PADDING - NODE_LABEL_META_GAP - imageHeight());
+    Math.max(1, labelAreaBottom() - labelAreaTop());
   const labelFontSize = () =>
     Math.min(
       props.item.node.fontSize / zoomTextCompression(),
       availableLabelHeight() / (2 * NODE_LABEL_LINE_HEIGHT),
     );
-  const metaFontSize = () => props.item.node.metaSize / zoomTextCompression();
   const labelLineHeight = () => Math.ceil(labelFontSize() * NODE_LABEL_LINE_HEIGHT);
   const labelLines = () =>
     wrapSvgText({
@@ -164,11 +185,9 @@ function SpatialMapNode(props: {
   const labelLineAt = (index: number) => labelLines()[index] ?? "";
   const labelBlockHeight = () => labelLines().length * labelLineHeight();
   const labelStartY = () =>
-    Math.max(
-      NODE_LABEL_TOP_PADDING + labelFontSize(),
-      (props.item.node.height - NODE_LABEL_META_GAP - labelBlockHeight()) / 2 +
-        labelFontSize() * 0.78,
-    );
+    labelAreaTop() +
+    Math.max(0, (availableLabelHeight() - labelBlockHeight()) / 2) +
+    labelFontSize() * 0.78;
 
   return (
     <g
@@ -248,7 +267,7 @@ function SpatialMapNode(props: {
               onPointerDown={(event) => event.stopPropagation()}
               onClick={(event) => {
                 event.stopPropagation();
-                imageUi.openImage(image(), props.item.node);
+                imageUi.openImage(image(), props.item.node, nodeImages());
               }}
             >
               <img src={image().src} alt={image().originalName} loading="lazy" />
@@ -262,7 +281,7 @@ function SpatialMapNode(props: {
       <text
         class="label"
         x={props.item.node.width / 2}
-        y={labelStartY() + imageHeight()}
+        y={labelStartY()}
         text-anchor="middle"
         font-size={String(labelFontSize())}
       >
@@ -285,7 +304,7 @@ function SpatialMapNode(props: {
       <text
         class="meta"
         x={props.item.node.width / 2}
-        y={props.item.node.height - 16}
+        y={metaBaselineY()}
         text-anchor="middle"
         font-size={String(metaFontSize())}
       >

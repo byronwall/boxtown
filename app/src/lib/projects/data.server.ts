@@ -48,6 +48,8 @@ interface UpdateProjectNodeMetadataInput {
 
 interface UpdateProjectMetadataSchemaInput {
   projectId: string;
+  name?: string;
+  description?: string;
   fields: ProjectMetadataSchemaRowInput[];
 }
 
@@ -67,6 +69,12 @@ interface AddProjectNodeImagesInput {
   projectId: string;
   nodeId: string;
   images: File[];
+}
+
+interface DeleteProjectNodeImageInput {
+  projectId: string;
+  nodeId: string;
+  imageId: string;
 }
 
 interface ProjectNodeImageSource {
@@ -328,6 +336,8 @@ export async function updateProjectMetadataSchemaOnDisk(
 
   const nextRecord: ProjectRecord = {
     ...current,
+    name: sanitizeProjectName(input.name ?? current.name),
+    description: sanitizeProjectDescription(input.description ?? current.description),
     updatedAt: new Date().toISOString(),
     nodeMetadataSchema: nextSchema,
     spatialMap: {
@@ -401,6 +411,60 @@ export async function addProjectNodeImagesOnDisk(
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
+  return nextRecord;
+}
+
+export async function deleteProjectNodeImageOnDisk(
+  input: DeleteProjectNodeImageInput,
+): Promise<ProjectRecord> {
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
+
+  if (nodeIndex === -1) {
+    throw new Error("Node not found.");
+  }
+
+  const node = current.spatialMap.nodes[nodeIndex];
+  const image = (node.images ?? []).find((item) => item.id === input.imageId);
+  if (!image) {
+    throw new Error("Image not found.");
+  }
+
+  const now = new Date().toISOString();
+  const nextNodes = current.spatialMap.nodes.map((item, index) =>
+    index === nodeIndex
+      ? { ...item, images: (item.images ?? []).filter((nodeImage) => nodeImage.id !== input.imageId) }
+      : item,
+  );
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: now,
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: nextNodes,
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+
+  await rm(
+    getProjectNodeImageFilePath({
+      projectId: input.projectId,
+      nodeId: input.nodeId,
+      filename: image.filename,
+    }),
+    { force: true },
+  );
+
   return nextRecord;
 }
 
@@ -725,6 +789,11 @@ export async function writeProjectRecordsToDisk(records: ProjectRecord[]) {
 function sanitizeProjectName(name?: string) {
   const trimmed = name?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : "Untitled Project";
+}
+
+function sanitizeProjectDescription(description?: string) {
+  const trimmed = description?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : "No project description yet.";
 }
 
 function createUniqueProjectId(name: string, records: ProjectRecord[]) {

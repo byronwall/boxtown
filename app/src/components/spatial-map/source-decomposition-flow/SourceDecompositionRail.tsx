@@ -36,7 +36,7 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
   });
   const [sourceText, setSourceText] = createSignal("");
   const [sourceImages, setSourceImages] = createSignal<File[]>([]);
-  const [previewFile, setPreviewFile] = createSignal<File | null>(null);
+  const [previewFileIndex, setPreviewFileIndex] = createSignal<number | null>(null);
   const [isDraggingImage, setIsDraggingImage] = createSignal(false);
   let fileInputRef: HTMLInputElement | undefined;
 
@@ -183,7 +183,7 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
                   {(file) => (
                     <HStack justifyContent="space-between" alignItems="center" gap="2" class="spatial-map-source-file-row">
                       <HStack gap="2" minW="0">
-                        <SourceImagePreview file={file} onOpen={setPreviewFile} />
+                        <SourceImagePreview file={file} onOpen={() => setPreviewFileIndex(sourceImages().indexOf(file))} />
                         <Text as="span" class="spatial-map-relation-name">
                           {file.name || "Pasted image"}
                         </Text>
@@ -344,10 +344,12 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
           </Show>
         </VStack>
         <SourceImagePreviewDialog
-          file={previewFile()}
+          files={sourceImages()}
+          index={previewFileIndex()}
+          onIndexChange={setPreviewFileIndex}
           onOpenChange={(open) => {
             if (!open) {
-              setPreviewFile(null);
+              setPreviewFileIndex(null);
             }
           }}
         />

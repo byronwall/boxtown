@@ -1,13 +1,23 @@
 import { useSubmission } from "@solidjs/router";
 import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ClipboardIcon,
+  DownloadIcon,
+  RotateCcwIcon,
+  Trash2Icon,
+  ZoomInIcon,
+  ZoomOutIcon,
+} from "lucide-solid";
+import {
   createContext,
   createEffect,
+  createMemo,
   createSignal,
   For,
   onCleanup,
   onMount,
   Show,
-  untrack,
   useContext,
   type JSX,
 } from "solid-js";
@@ -15,7 +25,7 @@ import { Box, HStack, VStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
-import { addProjectNodeImages } from "~/lib/projects/data";
+import { addProjectNodeImages, deleteProjectNodeImage } from "~/lib/projects/data";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
 import type { MapLink, MapNode, MapNodeImage, SpatialMapData } from "~/lib/spatial-map/types";
@@ -26,12 +36,13 @@ import { useSpatialMap } from "./SpatialMapContext";
 import { createContainedImageViewport } from "./use-contained-image-viewport";
 
 interface SpatialMapImageContextValue {
-  openImage: (image: MapNodeImage, node: MapNode) => void;
+  openImage: (image: MapNodeImage, node: MapNode, images?: MapNodeImage[]) => void;
   uploadImages: (nodeId: string, files: File[]) => Promise<void>;
 }
 
 interface ImageViewerState {
-  image: MapNodeImage;
+  images: MapNodeImage[];
+  index: number;
   node: MapNode;
 }
 
@@ -57,13 +68,21 @@ export function SpatialMapImageProvider(props: {
 }) {
   const spatialMap = useSpatialMap();
   const [viewerState, setViewerState] = createSignal<ImageViewerState | null>(null);
+  const [pendingDeleteImageId, setPendingDeleteImageId] = createSignal<string | null>(null);
   const imageUploadSubmission = useSubmission(addProjectNodeImages, (input) => {
+    const formData = input[0];
+    return formData instanceof FormData && formData.get("projectId") === props.projectId;
+  });
+  const imageDeleteSubmission = useSubmission(deleteProjectNodeImage, (input) => {
     const formData = input[0];
     return formData instanceof FormData && formData.get("projectId") === props.projectId;
   });
   let uploadFormRef: HTMLFormElement | undefined;
   let uploadFileInputRef: HTMLInputElement | undefined;
   let uploadNodeIdInputRef: HTMLInputElement | undefined;
+  let deleteFormRef: HTMLFormElement | undefined;
+  let deleteNodeIdInputRef: HTMLInputElement | undefined;
+  let deleteImageIdInputRef: HTMLInputElement | undefined;
 
   createEffect(() => {
     const result = imageUploadSubmission.result;
@@ -81,6 +100,48 @@ export function SpatialMapImageProvider(props: {
       description: "Image files were stored on disk and attached to the node.",
     });
     imageUploadSubmission.clear();
+  });
+
+  createEffect(() => {
+    const result = imageDeleteSubmission.result;
+    if (!result || imageDeleteSubmission.pending) {
+      return;
+    }
+
+    props.onProjectUpdated?.(result);
+    setViewerState((state) => {
+      if (!state) return state;
+      const node = result.spatialMap.nodes.find((item) => item.id === state.node.id);
+      if (!node) return null;
+      const images = node.images ?? [];
+      if (images.length === 0) return null;
+
+      return {
+        node,
+        images,
+        index: Math.min(state.index, images.length - 1),
+      };
+    });
+    toaster.success({
+      title: "Image deleted",
+      description: "The image was removed from this node.",
+    });
+    setPendingDeleteImageId(null);
+    imageDeleteSubmission.clear();
+  });
+
+  createEffect(() => {
+    const error = imageDeleteSubmission.error;
+    if (!error || imageDeleteSubmission.pending) {
+      return;
+    }
+
+    toaster.error({
+      title: "Delete failed",
+      description: error instanceof Error ? error.message : "The image could not be deleted.",
+    });
+    setPendingDeleteImageId(null);
+    imageDeleteSubmission.clear();
   });
 
   const uploadImages = async (nodeId: string, files: File[]) => {
@@ -124,6 +185,25 @@ export function SpatialMapImageProvider(props: {
       toaster.error({
         title: "Image upload failed",
         description: error instanceof Error ? error.message : "The selected image could not be stored.",
+      });
+    }
+  };
+
+  const deleteImage = async (nodeId: string, imageId: string) => {
+    try {
+      if (!deleteFormRef || !deleteNodeIdInputRef || !deleteImageIdInputRef) {
+        throw new Error("Delete form is not mounted.");
+      }
+
+      setPendingDeleteImageId(imageId);
+      deleteNodeIdInputRef.value = nodeId;
+      deleteImageIdInputRef.value = imageId;
+      deleteFormRef.requestSubmit();
+    } catch (error) {
+      setPendingDeleteImageId(null);
+      toaster.error({
+        title: "Delete failed",
+        description: error instanceof Error ? error.message : "The image could not be deleted.",
       });
     }
   };
@@ -180,7 +260,11 @@ export function SpatialMapImageProvider(props: {
   return (
     <SpatialMapImageContext.Provider
       value={{
-        openImage: (image, node) => setViewerState({ image, node }),
+        openImage: (image, node, images) => {
+          const collection = images?.length ? images : [image];
+          const index = Math.max(0, collection.findIndex((item) => item.src === image.src));
+          setViewerState({ images: collection, index, node });
+        },
         uploadImages,
       }}
     >
@@ -195,13 +279,28 @@ export function SpatialMapImageProvider(props: {
         <input ref={uploadNodeIdInputRef} type="hidden" name="nodeId" />
         <input ref={uploadFileInputRef} type="file" name="images" accept="image/*" multiple />
       </form>
+      <form
+        ref={deleteFormRef}
+        action={normalizeActionUrl(deleteProjectNodeImage.url)}
+        method="post"
+        class="spatial-map-image-delete-form"
+      >
+        <input type="hidden" name="projectId" value={props.projectId} />
+        <input ref={deleteNodeIdInputRef} type="hidden" name="nodeId" />
+        <input ref={deleteImageIdInputRef} type="hidden" name="imageId" />
+      </form>
       {props.children}
       <SpatialMapImageViewer
         state={viewerState()}
         projectName={props.projectName}
         spatialMap={props.spatialMap}
+        canDelete={true}
+        pendingDeleteImageId={pendingDeleteImageId()}
+        onDeleteImage={deleteImage}
+        onOpenImageChange={setViewerState}
         onOpenChange={(open) => {
           if (!open) {
+            setPendingDeleteImageId(null);
             setViewerState(null);
           }
         }}
@@ -238,7 +337,7 @@ export function SpatialMapImageStrip(props: {
               title={image.originalName}
               onClick={(event) => {
                 event.stopPropagation();
-                imageUi.openImage(image, props.node);
+                imageUi.openImage(image, props.node, images());
               }}
             >
               <img src={image.src} alt={image.originalName} loading="lazy" />
@@ -375,6 +474,10 @@ function SpatialMapImageViewer(props: {
   state: ImageViewerState | null;
   projectName: string;
   spatialMap: SpatialMapData;
+  canDelete?: boolean;
+  pendingDeleteImageId?: string | null;
+  onDeleteImage?: (nodeId: string, imageId: string) => Promise<void>;
+  onOpenImageChange: (state: ImageViewerState) => void;
   onOpenChange: (open: boolean) => void;
 }) {
   const imageViewport = createContainedImageViewport({
@@ -382,6 +485,29 @@ function SpatialMapImageViewer(props: {
     maxScale: IMAGE_VIEWER_MAX_SCALE,
   });
   let panSession: ViewerPanSession | undefined;
+  let imageSwitchRequestId = 0;
+  const currentImage = createMemo(() => props.state?.images[props.state.index] ?? null);
+  const hasMultipleImages = createMemo(() => (props.state?.images.length ?? 0) > 1);
+
+  createEffect(() => {
+    const image = currentImage();
+    const requestId = ++imageSwitchRequestId;
+    panSession = undefined;
+    imageViewport.clearImageSize();
+    resetView();
+    if (!image) return;
+
+    void preloadImageSize(image.src)
+      .then((size) => {
+        if (requestId !== imageSwitchRequestId) return;
+        imageViewport.setLoadedImageSize(size, { immediate: true });
+      })
+      .catch(() => {
+        if (requestId !== imageSwitchRequestId) return;
+        imageViewport.clearImageSize();
+        resetView();
+      });
+  });
 
   const resetView = () => {
     imageViewport.resetView();
@@ -391,23 +517,43 @@ function SpatialMapImageViewer(props: {
     imageViewport.zoomBy(amount, anchorClientX, anchorClientY);
   };
 
-  createEffect(() => {
-    const imageSrc = props.state?.image.src;
-    untrack(() => {
-      imageViewport.clearImageSize();
-      resetView();
-    });
-    if (!imageSrc) return;
-  });
+  const setActiveIndex = (index: number) => {
+    const state = props.state;
+    if (!state || state.images.length === 0) return;
+    const nextIndex = (index + state.images.length) % state.images.length;
+    if (nextIndex === state.index) return;
+    const requestId = ++imageSwitchRequestId;
+    const nextImage = state.images[nextIndex];
+    const onOpenImageChange = props.onOpenImageChange;
+    panSession = undefined;
+    void preloadImageSize(nextImage.src)
+      .then((size) => {
+        if (requestId !== imageSwitchRequestId) return;
+        imageViewport.setLoadedImageSize(size, { immediate: true });
+      })
+      .catch(() => {
+        if (requestId !== imageSwitchRequestId) return;
+        imageViewport.clearImageSize();
+        resetView();
+      })
+      .finally(() => {
+        if (requestId !== imageSwitchRequestId) return;
+        onOpenImageChange({ ...state, index: nextIndex });
+      });
+  };
+
+  const showPrevious = () => setActiveIndex((props.state?.index ?? 0) - 1);
+  const showNext = () => setActiveIndex((props.state?.index ?? 0) + 1);
 
   const copyImage = async () => {
-    if (!props.state) return;
+    const image = currentImage();
+    if (!image) return;
 
     try {
       await copyImageTargetToClipboard({
-        src: props.state.image.src,
-        filename: props.state.image.originalName,
-        mimeType: props.state.image.mimeType,
+        src: image.src,
+        filename: image.originalName,
+        mimeType: image.mimeType,
       });
       toaster.success({
         title: "Image copied",
@@ -422,24 +568,26 @@ function SpatialMapImageViewer(props: {
   };
 
   const downloadImage = async () => {
-    if (!props.state) return;
+    const state = props.state;
+    const image = currentImage();
+    if (!state || !image) return;
 
     try {
       await downloadImageTarget({
-        src: props.state.image.src,
+        src: image.src,
         filename: getNodeImageDownloadFilename({
-          image: props.state.image,
-          node: props.state.node,
+          image,
+          node: state.node,
           projectName: props.projectName,
           spatialMap: props.spatialMap,
         }),
-        mimeType: props.state.image.mimeType,
+        mimeType: image.mimeType,
       });
       toaster.success({
         title: "Download started",
         description: getNodeImageDownloadFilename({
-          image: props.state.image,
-          node: props.state.node,
+          image,
+          node: state.node,
           projectName: props.projectName,
           spatialMap: props.spatialMap,
         }),
@@ -452,6 +600,30 @@ function SpatialMapImageViewer(props: {
     }
   };
 
+  const deleteImage = async () => {
+    const state = props.state;
+    const image = currentImage();
+    if (!state || !image || !props.onDeleteImage || !props.canDelete) return;
+
+    await props.onDeleteImage(state.node.id, image.id);
+  };
+
+  onMount(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!props.state || !hasMultipleImages()) return;
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        showPrevious();
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        showNext();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    onCleanup(() => window.removeEventListener("keydown", handleKeyDown));
+  });
+
   return (
     <SimpleDialog
       open={Boolean(props.state)}
@@ -462,105 +634,219 @@ function SpatialMapImageViewer(props: {
         }
         props.onOpenChange(open);
       }}
-      title={props.state ? props.state.image.originalName : "Image"}
+      title={currentImage()?.originalName ?? "Image"}
       description={props.state ? `${props.state.node.label} image attachment` : undefined}
-      maxW="min(1120px, 96vw)"
+      maxW="min(1340px, 96vw)"
       contentClass="spatial-map-image-viewer-dialog"
       footer={
-        <HStack justifyContent="space-between" width="100%" gap="2" flexWrap="wrap">
+        <HStack class="spatial-map-image-viewer-footer" justifyContent="space-between" width="100%" gap="2" flexWrap="wrap">
           <span class="spatial-map-image-viewer-help">Wheel zoom, drag pan, double-click reset.</span>
-          <HStack gap="2" flexWrap="wrap" justifyContent="flex-end">
-            <Button size="xs" variant="outline" class="spatial-map-button" onClick={copyImage}>
-              Copy Image
+          <HStack class="spatial-map-image-viewer-actions" gap="1" flexWrap="wrap" justifyContent="flex-end">
+            <Button size="xs" variant="outline" class="spatial-map-image-viewer-action" onClick={copyImage}>
+              <ClipboardIcon size={14} />
+              <span>Copy</span>
             </Button>
-            <Button size="xs" variant="outline" class="spatial-map-button" onClick={downloadImage}>
-              Download
+            <Button size="xs" variant="outline" class="spatial-map-image-viewer-action" onClick={downloadImage}>
+              <DownloadIcon size={14} />
+              <span>Download</span>
             </Button>
-            <Button size="xs" variant="outline" class="spatial-map-button" onClick={() => zoomBy(0.8)}>
-              Zoom Out
+            <Button size="xs" variant="outline" class="spatial-map-image-viewer-action" onClick={() => zoomBy(0.8)}>
+              <ZoomOutIcon size={14} />
+              <span>Zoom Out</span>
             </Button>
-            <Button size="xs" variant="outline" class="spatial-map-button" onClick={resetView}>
-              Reset
+            <Button size="xs" variant="outline" class="spatial-map-image-viewer-action" onClick={resetView}>
+              <RotateCcwIcon size={14} />
+              <span>Reset</span>
             </Button>
-            <Button size="xs" variant="outline" class="spatial-map-button" onClick={() => zoomBy(1.25)}>
-              Zoom In
+            <Button size="xs" variant="outline" class="spatial-map-image-viewer-action" onClick={() => zoomBy(1.25)}>
+              <ZoomInIcon size={14} />
+              <span>Zoom In</span>
             </Button>
+            <Show when={props.canDelete && currentImage()}>
+              {(image) => (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  class="spatial-map-image-viewer-action spatial-map-image-viewer-action--danger"
+                  disabled={props.pendingDeleteImageId === image().id}
+                  onClick={deleteImage}
+                >
+                  <Trash2Icon size={14} />
+                  <span>{props.pendingDeleteImageId === image().id ? "Deleting" : "Delete"}</span>
+                </Button>
+              )}
+            </Show>
           </HStack>
         </HStack>
       }
     >
-      <Show when={props.state}>
+      <Show when={props.state && currentImage()}>
         {(state) => (
-          <VStack alignItems="stretch" gap="2">
-            <Box
-              ref={imageViewport.setStageRef}
-              class="spatial-map-image-viewer-stage"
-              onWheel={(event) => {
-                event.preventDefault();
-                const rawDelta =
-                  event.deltaMode === 1
-                    ? event.deltaY * 16
-                    : event.deltaMode === 2
-                      ? event.deltaY * window.innerHeight
-                      : event.deltaY;
-                const clampedDelta = clamp(rawDelta, -80, 80);
-                zoomBy(Math.exp(-clampedDelta * 0.0015), event.clientX, event.clientY);
-              }}
-              onDblClick={resetView}
-              onPointerDown={(event) => {
-                panSession = {
-                  pointerId: event.pointerId,
-                  x: event.clientX,
-                  y: event.clientY,
-                  startX: imageViewport.offset().x,
-                  startY: imageViewport.offset().y,
-                };
-                event.currentTarget.setPointerCapture(event.pointerId);
-              }}
-              onPointerMove={(event) => {
-                if (!panSession || panSession.pointerId !== event.pointerId) {
-                  return;
-                }
-
-                imageViewport.setOffset({
-                  x: panSession.startX + event.clientX - panSession.x,
-                  y: panSession.startY + event.clientY - panSession.y,
-                });
-              }}
-              onPointerUp={(event) => {
-                if (panSession?.pointerId === event.pointerId) {
-                  panSession = undefined;
-                  event.currentTarget.releasePointerCapture(event.pointerId);
-                }
-              }}
-              onPointerCancel={() => {
-                panSession = undefined;
-              }}
-            >
-              <img
-                src={state().image.src}
-                alt={state().image.originalName}
-                draggable={false}
-                onLoad={imageViewport.handleImageLoad}
-                style={{
-                  transform: `translate(${imageViewport.offset().x}px, ${imageViewport.offset().y}px) scale(${imageViewport.scale()})`,
-                }}
-              />
-            </Box>
-            <HStack class="spatial-map-image-viewer-meta" gap="2" flexWrap="wrap">
-              <span>{state().image.mimeType}</span>
-              <span>{formatBytes(state().image.size)}</span>
-              <span>{Math.round(imageViewport.scale() * 100)}%</span>
-            </HStack>
-          </VStack>
+          <ImageViewerContent
+            image={state()}
+            images={props.state?.images ?? []}
+            activeIndex={props.state?.index ?? 0}
+            hasMultipleImages={hasMultipleImages()}
+            imageViewport={imageViewport}
+            onSelectImage={setActiveIndex}
+            onPrevious={showPrevious}
+            onNext={showNext}
+            onZoom={zoomBy}
+            onReset={resetView}
+            getPanSession={() => panSession}
+            setPanSession={(session) => {
+              panSession = session;
+            }}
+          />
         )}
       </Show>
     </SimpleDialog>
   );
 }
 
+function ImageViewerContent(props: {
+  image: MapNodeImage;
+  images: MapNodeImage[];
+  activeIndex: number;
+  hasMultipleImages: boolean;
+  imageViewport: ReturnType<typeof createContainedImageViewport>;
+  onSelectImage: (index: number) => void;
+  onPrevious: () => void;
+  onNext: () => void;
+  onZoom: (amount: number, anchorClientX?: number, anchorClientY?: number) => void;
+  onReset: () => void;
+  getPanSession: () => ViewerPanSession | undefined;
+  setPanSession: (session: ViewerPanSession | undefined) => void;
+}) {
+  return (
+    <Box class="spatial-map-image-viewer-layout" data-has-thumbnails={props.hasMultipleImages ? "true" : "false"}>
+      <Show when={props.hasMultipleImages}>
+        <VStack as="nav" alignItems="stretch" gap="2" class="spatial-map-image-viewer-thumbs" aria-label="Image thumbnails">
+          <For each={props.images}>
+            {(image, index) => (
+              <button
+                type="button"
+                class="spatial-map-image-viewer-thumb"
+                classList={{ "is-active": index() === props.activeIndex }}
+                aria-label={`Show ${image.originalName}`}
+                aria-current={index() === props.activeIndex ? "true" : undefined}
+                onClick={() => props.onSelectImage(index())}
+              >
+                <img src={image.src} alt={image.originalName} loading="lazy" />
+                <span>{index() + 1}</span>
+              </button>
+            )}
+          </For>
+        </VStack>
+      </Show>
+      <VStack alignItems="stretch" gap="2" minW="0" class="spatial-map-image-viewer-main">
+        <Box class="spatial-map-image-viewer-frame">
+          <Show when={props.hasMultipleImages}>
+            <button
+              type="button"
+              class="spatial-map-image-viewer-arrow is-previous"
+              aria-label="Show previous image"
+              onClick={() => props.onPrevious()}
+            >
+              <ChevronLeftIcon size={22} />
+            </button>
+          </Show>
+          <Box
+            ref={props.imageViewport.setStageRef}
+            class="spatial-map-image-viewer-stage"
+            onWheel={(event) => {
+              event.preventDefault();
+              const rawDelta =
+                event.deltaMode === 1
+                  ? event.deltaY * 16
+                  : event.deltaMode === 2
+                    ? event.deltaY * window.innerHeight
+                    : event.deltaY;
+              const clampedDelta = clamp(rawDelta, -80, 80);
+              props.onZoom(Math.exp(-clampedDelta * 0.0015), event.clientX, event.clientY);
+            }}
+            onDblClick={props.onReset}
+            onPointerDown={(event) => {
+              props.setPanSession({
+                pointerId: event.pointerId,
+                x: event.clientX,
+                y: event.clientY,
+                startX: props.imageViewport.offset().x,
+                startY: props.imageViewport.offset().y,
+              });
+              event.currentTarget.setPointerCapture(event.pointerId);
+            }}
+            onPointerMove={(event) => {
+              const panSession = props.getPanSession();
+              if (!panSession || panSession.pointerId !== event.pointerId) {
+                return;
+              }
+
+              props.imageViewport.setOffset({
+                x: panSession.startX + event.clientX - panSession.x,
+                y: panSession.startY + event.clientY - panSession.y,
+              });
+            }}
+            onPointerUp={(event) => {
+              if (props.getPanSession()?.pointerId === event.pointerId) {
+                props.setPanSession(undefined);
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }
+            }}
+            onPointerCancel={() => {
+              props.setPanSession(undefined);
+            }}
+          >
+            <img
+              src={props.image.src}
+              alt={props.image.originalName}
+              draggable={false}
+              onLoad={(event) => props.imageViewport.handleImageLoad(event)}
+              style={{
+                transform: `translate(${props.imageViewport.offset().x}px, ${props.imageViewport.offset().y}px) scale(${props.imageViewport.scale()})`,
+              }}
+            />
+          </Box>
+          <Show when={props.hasMultipleImages}>
+            <button
+              type="button"
+              class="spatial-map-image-viewer-arrow is-next"
+              aria-label="Show next image"
+              onClick={() => props.onNext()}
+            >
+              <ChevronRightIcon size={22} />
+            </button>
+          </Show>
+        </Box>
+        <HStack class="spatial-map-image-viewer-meta" gap="2" flexWrap="wrap">
+          <span>
+            {props.activeIndex + 1} / {props.images.length || 1}
+          </span>
+          <span>{props.image.mimeType}</span>
+          <span>{formatBytes(props.image.size)}</span>
+          <span>{Math.round(props.imageViewport.scale() * 100)}%</span>
+        </HStack>
+      </VStack>
+    </Box>
+  );
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function preloadImageSize(src: string) {
+  return new Promise<{ width: number; height: number }>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      resolve({
+        width: image.naturalWidth || image.width,
+        height: image.naturalHeight || image.height,
+      });
+    };
+    image.onerror = () => reject(new Error("Image preload failed."));
+    image.src = src;
+  });
 }
 
 function formatBytes(bytes: number) {

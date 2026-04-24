@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -6,6 +6,7 @@ import {
   createContextNodeOnDisk,
   createProjectOnDisk,
   deleteProjectNodeOnDisk,
+  deleteProjectNodeImageOnDisk,
   deleteProjectOnDisk,
   mergeGeneratedSpatialMapData,
   readProjectByIdFromDisk,
@@ -19,6 +20,7 @@ import {
   DEFAULT_NOTE_PURPOSE,
   createDefaultProjectNodeMetadataSchema,
 } from "./node-metadata";
+import type { MapNodeImage } from "~/lib/spatial-map/types";
 
 const defaultSchema = createDefaultProjectNodeMetadataSchema();
 
@@ -601,6 +603,57 @@ describe("context node persistence", () => {
       process.chdir(originalCwd);
     }
   });
+
+  it("deletes a node image from metadata and disk", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-image-delete-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    const imageDir = path.join(dataDir, "projects", "delete-image-project", "images", "node-a");
+    const imagePath = path.join(imageDir, "image-a.png");
+    mkdirSync(imageDir, { recursive: true });
+    writeFileSync(imagePath, Buffer.from("fake-png"));
+    writeProjectFixture(dataDir, buildProjectFixture({
+      id: "delete-image-project",
+      spatialMap: {
+        nodes: [
+          buildNode({
+            id: "node-a",
+            label: "Node A",
+            type: "page",
+            depth: 0,
+            metadata: { purpose: "Purpose", implementation: "Implementation" },
+            images: [
+              {
+                id: "image-a",
+                src: "/api/projects/delete-image-project/images/node-a/image-a.png",
+                filename: "image-a.png",
+                originalName: "image-a.png",
+                mimeType: "image/png",
+                size: 8,
+                createdAt: "2026-04-20T00:00:00.000Z",
+              },
+            ],
+          }),
+        ],
+        links: [],
+      },
+    }));
+
+    try {
+      process.chdir(tempRoot);
+
+      const project = await deleteProjectNodeImageOnDisk({
+        projectId: "delete-image-project",
+        nodeId: "node-a",
+        imageId: "image-a",
+      });
+
+      expect(project.spatialMap.nodes[0]?.images).toEqual([]);
+      expect(existsSync(imagePath)).toBe(false);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
 });
 
 function buildNode(input: {
@@ -612,6 +665,7 @@ function buildNode(input: {
   context?: string;
   rawContext?: string;
   contextMode?: "context-only" | "structured";
+  images?: MapNodeImage[];
 }) {
   return {
     id: input.id,
@@ -622,6 +676,7 @@ function buildNode(input: {
     context: input.context ?? "",
     rawContext: input.rawContext ?? "",
     contextMode: input.contextMode ?? "structured",
+    images: input.images ?? [],
   };
 }
 
