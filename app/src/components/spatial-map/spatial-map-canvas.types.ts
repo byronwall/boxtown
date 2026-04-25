@@ -1,7 +1,11 @@
 import type { Accessor, JSX } from "solid-js";
-import type { MapNode, PositionedMapNode, SpatialMapData } from "~/lib/spatial-map/types";
+import type {
+  MapNode,
+  PositionedMapNode,
+  SpatialMapData,
+} from "~/lib/spatial-map/types";
 
-export type SpatialMapViewMode = "canvas" | "tree";
+export type SpatialMapViewMode = "canvas" | "tree" | "markdown";
 
 export interface CameraState {
   x: number;
@@ -86,9 +90,13 @@ export interface SpatialMapCanvasController {
   clearIsolation: () => void;
   isolateNode: (nodeId: string) => void;
   setInspectorOpen: (value: boolean | ((current: boolean) => boolean)) => void;
-  setSelectedNodeId: (value: string | null | ((current: string | null) => string | null)) => void;
+  setSelectedNodeId: (
+    value: string | null | ((current: string | null) => string | null),
+  ) => void;
   setShowEdges: (value: boolean | ((current: boolean) => boolean)) => void;
-  setShowLinkedInIsolation: (value: boolean | ((current: boolean) => boolean)) => void;
+  setShowLinkedInIsolation: (
+    value: boolean | ((current: boolean) => boolean),
+  ) => void;
   setViewMode: (value: SpatialMapViewMode) => void;
   setVisibleDepthLevel: (value: number) => void;
   toggleLinkedInIsolation: () => void;

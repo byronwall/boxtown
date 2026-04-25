@@ -104,8 +104,15 @@ export function createContainedImageViewport(options: ContainedImageViewportOpti
   };
 
   const setLoadedImageSize = (size: Size, options?: { immediate?: boolean }) => {
+    const currentSize = imageSize();
+    const sizeChanged = !currentSize || currentSize.width !== size.width || currentSize.height !== size.height;
+
     setImageSize(size);
     updateStageSize();
+    if (!sizeChanged) {
+      return;
+    }
+
     if (options?.immediate) {
       resetView();
       return;

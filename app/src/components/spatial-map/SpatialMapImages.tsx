@@ -18,32 +18,60 @@ import {
   onCleanup,
   onMount,
   Show,
+  untrack,
   useContext,
   type JSX,
 } from "solid-js";
 import { Box, HStack, VStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
+import { CloseButton } from "~/components/ui/close-button";
+import * as Dialog from "~/components/ui/dialog";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
-import { addProjectNodeImages, deleteProjectNodeImage } from "~/lib/projects/data";
+import {
+  addProjectNodeImages,
+  deleteProjectNodeImage,
+} from "~/lib/projects/data";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
-import type { MapLink, MapNode, MapNodeImage, SpatialMapData } from "~/lib/spatial-map/types";
+import type {
+  MapLink,
+  MapNode,
+  MapNodeImage,
+  SpatialMapData,
+} from "~/lib/spatial-map/types";
 
-import { copyImageTargetToClipboard, downloadImageTarget } from "./image-viewer-actions";
+import {
+  copyImageTargetToClipboard,
+  downloadImageTarget,
+} from "./image-viewer-actions";
 import { isEditableTarget } from "./spatial-map-dom";
 import { useSpatialMap } from "./SpatialMapContext";
 import { createContainedImageViewport } from "./use-contained-image-viewport";
 
+export interface SpatialMapImageTarget {
+  image: MapNodeImage;
+  node: MapNode;
+}
+
 interface SpatialMapImageContextValue {
-  openImage: (image: MapNodeImage, node: MapNode, images?: MapNodeImage[]) => void;
+  openImage: (
+    image: MapNodeImage,
+    node: MapNode,
+    images?: MapNodeImage[],
+  ) => void;
+  openImageTargets: (
+    targets: SpatialMapImageTarget[],
+    activeImage: MapNodeImage,
+    options?: { canDelete?: boolean },
+  ) => void;
   uploadImages: (nodeId: string, files: File[]) => Promise<void>;
 }
 
 interface ImageViewerState {
-  images: MapNodeImage[];
+  items: SpatialMapImageTarget[];
   index: number;
-  node: MapNode;
+  canDelete: boolean;
 }
 
 interface ViewerPanSession {
@@ -67,16 +95,29 @@ export function SpatialMapImageProvider(props: {
   children: JSX.Element;
 }) {
   const spatialMap = useSpatialMap();
-  const [viewerState, setViewerState] = createSignal<ImageViewerState | null>(null);
-  const [pendingDeleteImageId, setPendingDeleteImageId] = createSignal<string | null>(null);
+  const [viewerState, setViewerState] = createSignal<ImageViewerState | null>(
+    null,
+  );
+  const [pendingDeleteImageId, setPendingDeleteImageId] = createSignal<
+    string | null
+  >(null);
   const imageUploadSubmission = useSubmission(addProjectNodeImages, (input) => {
     const formData = input[0];
-    return formData instanceof FormData && formData.get("projectId") === props.projectId;
+    return (
+      formData instanceof FormData &&
+      formData.get("projectId") === props.projectId
+    );
   });
-  const imageDeleteSubmission = useSubmission(deleteProjectNodeImage, (input) => {
-    const formData = input[0];
-    return formData instanceof FormData && formData.get("projectId") === props.projectId;
-  });
+  const imageDeleteSubmission = useSubmission(
+    deleteProjectNodeImage,
+    (input) => {
+      const formData = input[0];
+      return (
+        formData instanceof FormData &&
+        formData.get("projectId") === props.projectId
+      );
+    },
+  );
   let uploadFormRef: HTMLFormElement | undefined;
   let uploadFileInputRef: HTMLInputElement | undefined;
   let uploadNodeIdInputRef: HTMLInputElement | undefined;
@@ -111,15 +152,22 @@ export function SpatialMapImageProvider(props: {
     props.onProjectUpdated?.(result);
     setViewerState((state) => {
       if (!state) return state;
-      const node = result.spatialMap.nodes.find((item) => item.id === state.node.id);
-      if (!node) return null;
-      const images = node.images ?? [];
-      if (images.length === 0) return null;
+      const nodesById = new Map(
+        result.spatialMap.nodes.map((node) => [node.id, node]),
+      );
+      const items = state.items.flatMap((item) => {
+        const node = nodesById.get(item.node.id);
+        const image = node?.images?.find(
+          (nodeImage) => nodeImage.id === item.image.id,
+        );
+        return node && image ? [{ node, image }] : [];
+      });
+      if (items.length === 0) return null;
 
       return {
-        node,
-        images,
-        index: Math.min(state.index, images.length - 1),
+        items,
+        index: Math.min(state.index, items.length - 1),
+        canDelete: state.canDelete,
       };
     });
     toaster.success({
@@ -138,7 +186,10 @@ export function SpatialMapImageProvider(props: {
 
     toaster.error({
       title: "Delete failed",
-      description: error instanceof Error ? error.message : "The image could not be deleted.",
+      description:
+        error instanceof Error
+          ? error.message
+          : "The image could not be deleted.",
     });
     setPendingDeleteImageId(null);
     imageDeleteSubmission.clear();
@@ -184,7 +235,10 @@ export function SpatialMapImageProvider(props: {
       });
       toaster.error({
         title: "Image upload failed",
-        description: error instanceof Error ? error.message : "The selected image could not be stored.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "The selected image could not be stored.",
       });
     }
   };
@@ -203,7 +257,10 @@ export function SpatialMapImageProvider(props: {
       setPendingDeleteImageId(null);
       toaster.error({
         title: "Delete failed",
-        description: error instanceof Error ? error.message : "The image could not be deleted.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "The image could not be deleted.",
       });
     }
   };
@@ -223,7 +280,10 @@ export function SpatialMapImageProvider(props: {
     }
 
     if (spatialMap.sourceDecompositionOpen()) {
-      console.info(IMAGE_DEBUG_PREFIX, "paste ignored: source decomposition intake is open");
+      console.info(
+        IMAGE_DEBUG_PREFIX,
+        "paste ignored: source decomposition intake is open",
+      );
       return;
     }
 
@@ -262,8 +322,29 @@ export function SpatialMapImageProvider(props: {
       value={{
         openImage: (image, node, images) => {
           const collection = images?.length ? images : [image];
-          const index = Math.max(0, collection.findIndex((item) => item.src === image.src));
-          setViewerState({ images: collection, index, node });
+          const index = Math.max(
+            0,
+            collection.findIndex((item) => item.src === image.src),
+          );
+          setViewerState({
+            items: collection.map((item) => ({ image: item, node })),
+            index,
+            canDelete: true,
+          });
+        },
+        openImageTargets: (targets, activeImage, options = {}) => {
+          if (targets.length === 0) {
+            return;
+          }
+          const index = Math.max(
+            0,
+            targets.findIndex((item) => item.image.src === activeImage.src),
+          );
+          setViewerState({
+            items: targets,
+            index,
+            canDelete: options.canDelete ?? true,
+          });
         },
         uploadImages,
       }}
@@ -277,7 +358,13 @@ export function SpatialMapImageProvider(props: {
       >
         <input type="hidden" name="projectId" value={props.projectId} />
         <input ref={uploadNodeIdInputRef} type="hidden" name="nodeId" />
-        <input ref={uploadFileInputRef} type="file" name="images" accept="image/*" multiple />
+        <input
+          ref={uploadFileInputRef}
+          type="file"
+          name="images"
+          accept="image/*"
+          multiple
+        />
       </form>
       <form
         ref={deleteFormRef}
@@ -294,7 +381,7 @@ export function SpatialMapImageProvider(props: {
         state={viewerState()}
         projectName={props.projectName}
         spatialMap={props.spatialMap}
-        canDelete={true}
+        canDelete={viewerState()?.canDelete ?? true}
         pendingDeleteImageId={pendingDeleteImageId()}
         onDeleteImage={deleteImage}
         onOpenImageChange={setViewerState}
@@ -312,7 +399,9 @@ export function SpatialMapImageProvider(props: {
 export function useSpatialMapImages() {
   const context = useContext(SpatialMapImageContext);
   if (!context) {
-    throw new Error("useSpatialMapImages must be used within SpatialMapImageProvider.");
+    throw new Error(
+      "useSpatialMapImages must be used within SpatialMapImageProvider.",
+    );
   }
 
   return context;
@@ -327,7 +416,9 @@ export function SpatialMapImageStrip(props: {
 
   return (
     <Show when={images().length > 0}>
-      <Box class={`spatial-map-image-strip spatial-map-image-strip--${props.variant}`}>
+      <Box
+        class={`spatial-map-image-strip spatial-map-image-strip--${props.variant}`}
+      >
         <For each={images()}>
           {(image) => (
             <button
@@ -362,10 +453,14 @@ export function SpatialMapImageDropTarget(props: {
       class={`${props.class ?? ""}${isDraggingImage() ? " is-dragging-image" : ""}`}
       onDragEnter={(event) => {
         if (getImageFilesFromDataTransfer(event.dataTransfer).length === 0) {
-          console.info(IMAGE_DEBUG_PREFIX, "drag enter ignored: no image files", {
-            nodeId: props.nodeId,
-            transfer: describeDataTransfer(event.dataTransfer),
-          });
+          console.info(
+            IMAGE_DEBUG_PREFIX,
+            "drag enter ignored: no image files",
+            {
+              nodeId: props.nodeId,
+              transfer: describeDataTransfer(event.dataTransfer),
+            },
+          );
           return;
         }
 
@@ -408,12 +503,16 @@ export function SpatialMapImageDropTarget(props: {
   );
 }
 
-export function getImageFilesFromDataTransfer(dataTransfer: DataTransfer | null) {
+export function getImageFilesFromDataTransfer(
+  dataTransfer: DataTransfer | null,
+) {
   if (!dataTransfer) {
     return [];
   }
 
-  const files = Array.from(dataTransfer.files).filter((file) => file.type.startsWith("image/"));
+  const files = Array.from(dataTransfer.files).filter((file) =>
+    file.type.startsWith("image/"),
+  );
   const itemFiles = Array.from(dataTransfer.items)
     .filter((item) => item.kind === "file" && item.type.startsWith("image/"))
     .map((item) => item.getAsFile())
@@ -486,45 +585,58 @@ function SpatialMapImageViewer(props: {
   });
   let panSession: ViewerPanSession | undefined;
   let imageSwitchRequestId = 0;
-  const currentImage = createMemo(() => props.state?.images[props.state.index] ?? null);
-  const hasMultipleImages = createMemo(() => (props.state?.images.length ?? 0) > 1);
-
-  createEffect(() => {
-    const image = currentImage();
-    const requestId = ++imageSwitchRequestId;
-    panSession = undefined;
-    imageViewport.clearImageSize();
-    resetView();
-    if (!image) return;
-
-    void preloadImageSize(image.src)
-      .then((size) => {
-        if (requestId !== imageSwitchRequestId) return;
-        imageViewport.setLoadedImageSize(size, { immediate: true });
-      })
-      .catch(() => {
-        if (requestId !== imageSwitchRequestId) return;
-        imageViewport.clearImageSize();
-        resetView();
-      });
-  });
+  const currentItem = createMemo(
+    () => props.state?.items[props.state.index] ?? null,
+  );
+  const currentImage = createMemo(() => currentItem()?.image ?? null);
+  const currentNode = createMemo(() => currentItem()?.node ?? null);
+  const hasMultipleImages = createMemo(
+    () => (props.state?.items.length ?? 0) > 1,
+  );
 
   const resetView = () => {
     imageViewport.resetView();
   };
 
-  const zoomBy = (amount: number, anchorClientX?: number, anchorClientY?: number) => {
+  createEffect(() => {
+    const image = currentImage();
+    untrack(() => {
+      const requestId = ++imageSwitchRequestId;
+      panSession = undefined;
+      imageViewport.clearImageSize();
+      resetView();
+      if (!image) return;
+
+      void preloadImageSize(image.src)
+        .then((size) => {
+          if (requestId !== imageSwitchRequestId) return;
+          imageViewport.setLoadedImageSize(size, { immediate: true });
+        })
+        .catch(() => {
+          if (requestId !== imageSwitchRequestId) return;
+          imageViewport.clearImageSize();
+          resetView();
+        });
+    });
+  });
+
+  const zoomBy = (
+    amount: number,
+    anchorClientX?: number,
+    anchorClientY?: number,
+  ) => {
     imageViewport.zoomBy(amount, anchorClientX, anchorClientY);
   };
 
   const setActiveIndex = (index: number) => {
     const state = props.state;
-    if (!state || state.images.length === 0) return;
-    const nextIndex = (index + state.images.length) % state.images.length;
+    if (!state || state.items.length === 0) return;
+    const nextIndex = (index + state.items.length) % state.items.length;
     if (nextIndex === state.index) return;
     const requestId = ++imageSwitchRequestId;
-    const nextImage = state.images[nextIndex];
+    const nextImage = state.items[nextIndex]?.image;
     const onOpenImageChange = props.onOpenImageChange;
+    if (!nextImage) return;
     panSession = undefined;
     void preloadImageSize(nextImage.src)
       .then((size) => {
@@ -562,7 +674,10 @@ function SpatialMapImageViewer(props: {
     } catch (error) {
       toaster.error({
         title: "Copy failed",
-        description: error instanceof Error ? error.message : "The image could not be copied.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "The image could not be copied.",
       });
     }
   };
@@ -570,14 +685,15 @@ function SpatialMapImageViewer(props: {
   const downloadImage = async () => {
     const state = props.state;
     const image = currentImage();
-    if (!state || !image) return;
+    const node = currentNode();
+    if (!state || !image || !node) return;
 
     try {
       await downloadImageTarget({
         src: image.src,
         filename: getNodeImageDownloadFilename({
           image,
-          node: state.node,
+          node,
           projectName: props.projectName,
           spatialMap: props.spatialMap,
         }),
@@ -587,7 +703,7 @@ function SpatialMapImageViewer(props: {
         title: "Download started",
         description: getNodeImageDownloadFilename({
           image,
-          node: state.node,
+          node,
           projectName: props.projectName,
           spatialMap: props.spatialMap,
         }),
@@ -595,7 +711,10 @@ function SpatialMapImageViewer(props: {
     } catch (error) {
       toaster.error({
         title: "Download failed",
-        description: error instanceof Error ? error.message : "The image could not be downloaded.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "The image could not be downloaded.",
       });
     }
   };
@@ -603,9 +722,17 @@ function SpatialMapImageViewer(props: {
   const deleteImage = async () => {
     const state = props.state;
     const image = currentImage();
-    if (!state || !image || !props.onDeleteImage || !props.canDelete) return;
+    const node = currentNode();
+    if (!state || !image || !node || !props.onDeleteImage || !props.canDelete)
+      return;
 
-    await props.onDeleteImage(state.node.id, image.id);
+    await props.onDeleteImage(node.id, image.id);
+  };
+
+  const closeViewer = () => {
+    imageViewport.clearImageSize();
+    resetView();
+    props.onOpenChange(false);
   };
 
   onMount(() => {
@@ -628,63 +755,119 @@ function SpatialMapImageViewer(props: {
     <SimpleDialog
       open={Boolean(props.state)}
       onOpenChange={(open) => {
-        if (!open) {
-          imageViewport.clearImageSize();
-          resetView();
-        }
-        props.onOpenChange(open);
+        if (!open) closeViewer();
+        else props.onOpenChange(open);
       }}
-      title={currentImage()?.originalName ?? "Image"}
-      description={props.state ? `${props.state.node.label} image attachment` : undefined}
-      maxW="min(1340px, 96vw)"
-      contentClass="spatial-map-image-viewer-dialog"
-      footer={
-        <HStack class="spatial-map-image-viewer-footer" justifyContent="space-between" width="100%" gap="2" flexWrap="wrap">
-          <span class="spatial-map-image-viewer-help">Wheel zoom, drag pan, double-click reset.</span>
-          <HStack class="spatial-map-image-viewer-actions" gap="1" flexWrap="wrap" justifyContent="flex-end">
-            <Button size="xs" variant="outline" class="spatial-map-image-viewer-action" onClick={copyImage}>
-              <ClipboardIcon size={14} />
-              <span>Copy</span>
-            </Button>
-            <Button size="xs" variant="outline" class="spatial-map-image-viewer-action" onClick={downloadImage}>
-              <DownloadIcon size={14} />
-              <span>Download</span>
-            </Button>
-            <Button size="xs" variant="outline" class="spatial-map-image-viewer-action" onClick={() => zoomBy(0.8)}>
-              <ZoomOutIcon size={14} />
-              <span>Zoom Out</span>
-            </Button>
-            <Button size="xs" variant="outline" class="spatial-map-image-viewer-action" onClick={resetView}>
-              <RotateCcwIcon size={14} />
-              <span>Reset</span>
-            </Button>
-            <Button size="xs" variant="outline" class="spatial-map-image-viewer-action" onClick={() => zoomBy(1.25)}>
-              <ZoomInIcon size={14} />
-              <span>Zoom In</span>
-            </Button>
-            <Show when={props.canDelete && currentImage()}>
-              {(image) => (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  class="spatial-map-image-viewer-action spatial-map-image-viewer-action--danger"
-                  disabled={props.pendingDeleteImageId === image().id}
-                  onClick={deleteImage}
-                >
-                  <Trash2Icon size={14} />
-                  <span>{props.pendingDeleteImageId === image().id ? "Deleting" : "Delete"}</span>
-                </Button>
-              )}
-            </Show>
+      header={
+        <HStack
+          class="spatial-map-image-viewer-header"
+          alignItems="center"
+          justifyContent="space-between"
+          gap="2"
+        >
+          <Dialog.Title class="spatial-map-image-viewer-title">
+            {currentImage()?.originalName ?? "Image"}
+          </Dialog.Title>
+          <HStack
+            class="spatial-map-image-viewer-header-tools"
+            gap="1"
+            justifyContent="flex-end"
+          >
+            <HStack class="spatial-map-image-viewer-meta" gap="1">
+              <span>
+                {(props.state?.index ?? 0) + 1} /{" "}
+                {props.state?.items.length || 1}
+              </span>
+              <span>{currentImage()?.mimeType ?? "image"}</span>
+              <span>{formatBytes(currentImage()?.size ?? 0)}</span>
+              <span>{Math.round(imageViewport.scale() * 100)}%</span>
+            </HStack>
+            <HStack
+              class="spatial-map-image-viewer-actions"
+              gap="1"
+              justifyContent="flex-end"
+            >
+              <Button
+                size="xs"
+                variant="outline"
+                class="spatial-map-image-viewer-action"
+                onClick={copyImage}
+              >
+                <ClipboardIcon size={14} />
+                <span>Copy</span>
+              </Button>
+              <Button
+                size="xs"
+                variant="outline"
+                class="spatial-map-image-viewer-action"
+                onClick={downloadImage}
+              >
+                <DownloadIcon size={14} />
+                <span>Download</span>
+              </Button>
+              <Button
+                size="xs"
+                variant="outline"
+                class="spatial-map-image-viewer-action"
+                onClick={() => zoomBy(0.8)}
+              >
+                <ZoomOutIcon size={14} />
+                <span>Zoom Out</span>
+              </Button>
+              <Button
+                size="xs"
+                variant="outline"
+                class="spatial-map-image-viewer-action"
+                onClick={resetView}
+              >
+                <RotateCcwIcon size={14} />
+                <span>Reset</span>
+              </Button>
+              <Button
+                size="xs"
+                variant="outline"
+                class="spatial-map-image-viewer-action"
+                onClick={() => zoomBy(1.25)}
+              >
+                <ZoomInIcon size={14} />
+                <span>Zoom In</span>
+              </Button>
+              <Show when={props.canDelete && currentImage()}>
+                {(image) => (
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    class="spatial-map-image-viewer-action spatial-map-image-viewer-action--danger"
+                    disabled={props.pendingDeleteImageId === image().id}
+                    onClick={deleteImage}
+                  >
+                    <Trash2Icon size={14} />
+                    <span>
+                      {props.pendingDeleteImageId === image().id
+                        ? "Deleting"
+                        : "Delete"}
+                    </span>
+                  </Button>
+                )}
+              </Show>
+              <CloseButton
+                class="spatial-map-image-viewer-close"
+                aria-label="Close image viewer"
+                onClick={closeViewer}
+              />
+            </HStack>
           </HStack>
         </HStack>
       }
+      maxW="min(1340px, 96vw)"
+      contentClass="spatial-map-image-viewer-dialog"
+      showClose={false}
     >
       <Show when={props.state && currentImage()}>
         {(state) => (
           <ImageViewerContent
             image={state()}
-            images={props.state?.images ?? []}
+            images={props.state?.items.map((item) => item.image) ?? []}
             activeIndex={props.state?.index ?? 0}
             hasMultipleImages={hasMultipleImages()}
             imageViewport={imageViewport}
@@ -713,15 +896,28 @@ function ImageViewerContent(props: {
   onSelectImage: (index: number) => void;
   onPrevious: () => void;
   onNext: () => void;
-  onZoom: (amount: number, anchorClientX?: number, anchorClientY?: number) => void;
+  onZoom: (
+    amount: number,
+    anchorClientX?: number,
+    anchorClientY?: number,
+  ) => void;
   onReset: () => void;
   getPanSession: () => ViewerPanSession | undefined;
   setPanSession: (session: ViewerPanSession | undefined) => void;
 }) {
   return (
-    <Box class="spatial-map-image-viewer-layout" data-has-thumbnails={props.hasMultipleImages ? "true" : "false"}>
+    <Box
+      class="spatial-map-image-viewer-layout"
+      data-has-thumbnails={props.hasMultipleImages ? "true" : "false"}
+    >
       <Show when={props.hasMultipleImages}>
-        <VStack as="nav" alignItems="stretch" gap="2" class="spatial-map-image-viewer-thumbs" aria-label="Image thumbnails">
+        <VStack
+          as="nav"
+          alignItems="stretch"
+          gap="2"
+          class="spatial-map-image-viewer-thumbs"
+          aria-label="Image thumbnails"
+        >
           <For each={props.images}>
             {(image, index) => (
               <button
@@ -729,7 +925,9 @@ function ImageViewerContent(props: {
                 class="spatial-map-image-viewer-thumb"
                 classList={{ "is-active": index() === props.activeIndex }}
                 aria-label={`Show ${image.originalName}`}
-                aria-current={index() === props.activeIndex ? "true" : undefined}
+                aria-current={
+                  index() === props.activeIndex ? "true" : undefined
+                }
                 onClick={() => props.onSelectImage(index())}
               >
                 <img src={image.src} alt={image.originalName} loading="lazy" />
@@ -739,7 +937,12 @@ function ImageViewerContent(props: {
           </For>
         </VStack>
       </Show>
-      <VStack alignItems="stretch" gap="2" minW="0" class="spatial-map-image-viewer-main">
+      <VStack
+        alignItems="stretch"
+        gap="2"
+        minW="0"
+        class="spatial-map-image-viewer-main"
+      >
         <Box class="spatial-map-image-viewer-frame">
           <Show when={props.hasMultipleImages}>
             <button
@@ -763,7 +966,11 @@ function ImageViewerContent(props: {
                     ? event.deltaY * window.innerHeight
                     : event.deltaY;
               const clampedDelta = clamp(rawDelta, -80, 80);
-              props.onZoom(Math.exp(-clampedDelta * 0.0015), event.clientX, event.clientY);
+              props.onZoom(
+                Math.exp(-clampedDelta * 0.0015),
+                event.clientX,
+                event.clientY,
+              );
             }}
             onDblClick={props.onReset}
             onPointerDown={(event) => {
@@ -818,14 +1025,6 @@ function ImageViewerContent(props: {
             </button>
           </Show>
         </Box>
-        <HStack class="spatial-map-image-viewer-meta" gap="2" flexWrap="wrap">
-          <span>
-            {props.activeIndex + 1} / {props.images.length || 1}
-          </span>
-          <span>{props.image.mimeType}</span>
-          <span>{formatBytes(props.image.size)}</span>
-          <span>{Math.round(props.imageViewport.scale() * 100)}%</span>
-        </HStack>
       </VStack>
     </Box>
   );
@@ -874,7 +1073,9 @@ function getNodeImageDownloadFilename(input: {
   ]
     .map((part) => sanitizeFilenameSegment(part))
     .filter(Boolean);
-  const baseName = truncateFilenameBase(dedupeSequentialParts(parts).join(" - ") || "image");
+  const baseName = truncateFilenameBase(
+    dedupeSequentialParts(parts).join(" - ") || "image",
+  );
   const extension =
     getImageExtension(input.image.originalName) ||
     getImageExtension(input.image.filename) ||
@@ -884,7 +1085,11 @@ function getNodeImageDownloadFilename(input: {
 }
 
 function sanitizeFilenameSegment(value: string) {
-  return value.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").trim().slice(0, 64);
+  return value
+    .replace(/[\\/:*?"<>|]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 64);
 }
 
 function getHierarchyLabels(spatialMap: SpatialMapData, node: MapNode) {
@@ -894,7 +1099,9 @@ function getHierarchyLabels(spatialMap: SpatialMapData, node: MapNode) {
   let current = node;
 
   while (true) {
-    const parentLink = spatialMap.links.find((link) => link.parentChild && link.target === current.id);
+    const parentLink = spatialMap.links.find(
+      (link) => link.parentChild && link.target === current.id,
+    );
     const parent = parentLink ? nodesById.get(parentLink.source) : undefined;
     if (!parent || seen.has(parent.id)) {
       break;
@@ -920,10 +1127,18 @@ function getDependencyChainLabels(spatialMap: SpatialMapData, node: MapNode) {
   const seen = new Set([node.id]);
 
   while (path.length < 6) {
-    const dependencyLink = getIncomingDependencyLinks(spatialMap.links, current.id)
+    const dependencyLink = getIncomingDependencyLinks(
+      spatialMap.links,
+      current.id,
+    )
       .map((link) => ({ link, source: nodesById.get(link.source) }))
-      .filter((item): item is { link: MapLink; source: MapNode } => Boolean(item.source))
-      .sort((left, right) => getNodeSortWeight(left.source) - getNodeSortWeight(right.source))[0];
+      .filter((item): item is { link: MapLink; source: MapNode } =>
+        Boolean(item.source),
+      )
+      .sort(
+        (left, right) =>
+          getNodeSortWeight(left.source) - getNodeSortWeight(right.source),
+      )[0];
 
     if (!dependencyLink || seen.has(dependencyLink.source.id)) {
       break;
@@ -938,7 +1153,12 @@ function getDependencyChainLabels(spatialMap: SpatialMapData, node: MapNode) {
 }
 
 function getIncomingDependencyLinks(links: MapLink[], nodeId: string) {
-  return links.filter((link) => !link.parentChild && link.relationship === "dependency" && link.target === nodeId);
+  return links.filter(
+    (link) =>
+      !link.parentChild &&
+      link.relationship === "dependency" &&
+      link.target === nodeId,
+  );
 }
 
 function getNodeSortWeight(node: MapNode) {
@@ -946,7 +1166,10 @@ function getNodeSortWeight(node: MapNode) {
 }
 
 function dedupeSequentialParts(parts: string[]) {
-  return parts.filter((part, index) => index === 0 || part.toLowerCase() !== parts[index - 1]?.toLowerCase());
+  return parts.filter(
+    (part, index) =>
+      index === 0 || part.toLowerCase() !== parts[index - 1]?.toLowerCase(),
+  );
 }
 
 function truncateFilenameBase(filename: string) {

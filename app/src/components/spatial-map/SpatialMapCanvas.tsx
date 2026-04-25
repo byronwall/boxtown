@@ -9,20 +9,25 @@ import type { SpatialMapViewMode } from "./spatial-map-canvas.types";
 import { SpatialMapProvider, useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapInspector } from "./SpatialMapInspector";
 import { SpatialMapImageProvider } from "./SpatialMapImages";
+import { SpatialMapMarkdownView } from "./SpatialMapMarkdownView";
 import { SpatialMapScene } from "./SpatialMapScene";
 import { SpatialMapToolbar } from "./SpatialMapToolbar";
 import { SpatialMapTreeView } from "./SpatialMapTreeView";
 
 const ContextNoteConversionRail = lazy(() =>
-  import("./context-note-conversion-flow/ContextNoteConversionRail").then((module) => ({
-    default: module.ContextNoteConversionRail,
-  })),
+  import("./context-note-conversion-flow/ContextNoteConversionRail").then(
+    (module) => ({
+      default: module.ContextNoteConversionRail,
+    }),
+  ),
 );
 
 const SourceDecompositionRail = lazy(() =>
-  import("./source-decomposition-flow/SourceDecompositionRail").then((module) => ({
-    default: module.SourceDecompositionRail,
-  })),
+  import("./source-decomposition-flow/SourceDecompositionRail").then(
+    (module) => ({
+      default: module.SourceDecompositionRail,
+    }),
+  ),
 );
 
 interface SpatialMapHeaderProps {
@@ -68,7 +73,9 @@ function SpatialMapCanvasLayout(props: {
       onProjectUpdated={props.onProjectUpdated}
     >
       <SpatialMapUrlSync />
-      <Box class={`spatial-map-shell${controller.inspectorOpen() ? "" : " spatial-map-shell--collapsed"}`}>
+      <Box
+        class={`spatial-map-shell${controller.inspectorOpen() ? "" : " spatial-map-shell--collapsed"}`}
+      >
         <Box class="spatial-map-main">
           <Box class="spatial-map-stage">
             <SpatialMapToolbar
@@ -76,11 +83,14 @@ function SpatialMapCanvasLayout(props: {
               project={props.project}
               onProjectUpdated={props.onProjectUpdated}
             />
-            <Show
-              when={controller.viewMode() === "canvas"}
-              fallback={<SpatialMapTreeView project={props.project} />}
-            >
+            <Show when={controller.viewMode() === "canvas"}>
               <SpatialMapScene />
+            </Show>
+            <Show when={controller.viewMode() === "tree"}>
+              <SpatialMapTreeView project={props.project} />
+            </Show>
+            <Show when={controller.viewMode() === "markdown"}>
+              <SpatialMapMarkdownView project={props.project} />
             </Show>
             <Show when={!props.hasNodes && controller.viewMode() === "canvas"}>
               <Box class="spatial-map-empty">
@@ -88,8 +98,9 @@ function SpatialMapCanvasLayout(props: {
                   Blank project grid
                 </Box>
                 <Box as="p" class="spatial-map-empty-copy">
-                  This project doesn’t have nodes yet. The route and canvas are ready for the next
-                  layer of project details and AI-assisted editing.
+                  This project doesn’t have nodes yet. The route and canvas are
+                  ready for the next layer of project details and AI-assisted
+                  editing.
                 </Box>
               </Box>
             </Show>
@@ -97,7 +108,12 @@ function SpatialMapCanvasLayout(props: {
 
           <Show
             when={!controller.addNodesOpen()}
-            fallback={<AddNodesFlowRail project={props.project} onProjectUpdated={props.onProjectUpdated} />}
+            fallback={
+              <AddNodesFlowRail
+                project={props.project}
+                onProjectUpdated={props.onProjectUpdated}
+              />
+            }
           >
             <Show
               when={!controller.sourceDecompositionOpen()}
@@ -142,14 +158,17 @@ type SpatialMapSearchParams = {
 
 function SpatialMapUrlSync() {
   const controller = useSpatialMap();
-  const [searchParams, setSearchParams] = useSearchParams<SpatialMapSearchParams>();
+  const [searchParams, setSearchParams] =
+    useSearchParams<SpatialMapSearchParams>();
 
   createEffect(() => {
     const nodeId = getStringParam(searchParams.node);
     const viewMode = parseViewMode(getStringParam(searchParams.view));
     const depthLevel = parsePositiveInteger(getStringParam(searchParams.depth));
     const showEdges = parseBooleanParam(getStringParam(searchParams.edges));
-    const inspectorOpen = parseInspectorParam(getStringParam(searchParams.inspector));
+    const inspectorOpen = parseInspectorParam(
+      getStringParam(searchParams.inspector),
+    );
     const isolatedNodeId = getStringParam(searchParams.isolate);
     const showLinked = parseBooleanParam(getStringParam(searchParams.linked));
     const nodeIds = controller.sourceNodesById();
@@ -159,7 +178,10 @@ function SpatialMapUrlSync() {
         controller.setViewMode(viewMode);
       }
 
-      if (depthLevel !== null && controller.visibleDepthLevel() !== depthLevel) {
+      if (
+        depthLevel !== null &&
+        controller.visibleDepthLevel() !== depthLevel
+      ) {
         controller.setVisibleDepthLevel(depthLevel);
       }
 
@@ -167,7 +189,10 @@ function SpatialMapUrlSync() {
         controller.setShowEdges(showEdges);
       }
 
-      if (inspectorOpen !== null && controller.inspectorOpen() !== inspectorOpen) {
+      if (
+        inspectorOpen !== null &&
+        controller.inspectorOpen() !== inspectorOpen
+      ) {
         controller.setInspectorOpen(inspectorOpen);
       }
 
@@ -179,7 +204,10 @@ function SpatialMapUrlSync() {
         controller.clearIsolation();
       }
 
-      if (showLinked !== null && controller.showLinkedInIsolation() !== showLinked) {
+      if (
+        showLinked !== null &&
+        controller.showLinkedInIsolation() !== showLinked
+      ) {
         controller.setShowLinkedInIsolation(showLinked);
       }
 
@@ -203,7 +231,8 @@ function SpatialMapUrlSync() {
     const nextParams = {
       node: selectedNodeId,
       view: viewMode === "canvas" ? null : viewMode,
-      depth: visibleDepthLevel === maxDepthLevel ? null : String(visibleDepthLevel),
+      depth:
+        visibleDepthLevel === maxDepthLevel ? null : String(visibleDepthLevel),
       edges: showEdges ? "1" : null,
       inspector: inspectorOpen ? null : "closed",
       isolate: isolatedNodeId,
@@ -237,7 +266,9 @@ function getNullableStringParam(value: string | string[] | undefined) {
 }
 
 function parseViewMode(value: string | undefined): SpatialMapViewMode | null {
-  return value === "canvas" || value === "tree" ? value : null;
+  return value === "canvas" || value === "tree" || value === "markdown"
+    ? value
+    : null;
 }
 
 function parsePositiveInteger(value: string | undefined) {

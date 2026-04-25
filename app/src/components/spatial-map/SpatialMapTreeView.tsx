@@ -3,19 +3,16 @@ import { Box, HStack, VStack } from "styled-system/jsx";
 
 import { getNodePrimaryMetadataText } from "~/lib/projects/node-metadata";
 import type { ProjectRecord } from "~/lib/projects/types";
-import type { MapNode, SpatialMapData } from "~/lib/spatial-map/types";
-import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
+import {
+  SpatialMapImageDropTarget,
+  SpatialMapImageStrip,
+} from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
-
-interface SpatialMapTreeItem {
-  node: MapNode;
-  childNodeIds: string[];
-}
-
-interface SpatialMapTree {
-  roots: string[];
-  items: Map<string, SpatialMapTreeItem>;
-}
+import {
+  buildSpatialMapTree,
+  type SpatialMapTree,
+  type SpatialMapTreeItem,
+} from "./spatial-map-tree";
 
 export function SpatialMapTreeView(props: { project: ProjectRecord }) {
   const spatialMap = useSpatialMap();
@@ -44,7 +41,12 @@ export function SpatialMapTreeView(props: { project: ProjectRecord }) {
           </Box>
         }
       >
-        <VStack alignItems="stretch" gap="1.5" class="spatial-map-tree-list" role="tree">
+        <VStack
+          alignItems="stretch"
+          gap="1.5"
+          class="spatial-map-tree-list"
+          role="tree"
+        >
           <For each={tree().roots}>
             {(nodeId) => {
               const item = () => tree().items.get(nodeId);
@@ -87,7 +89,10 @@ function SpatialMapTreeNode(props: {
 
   return (
     <Box class="spatial-map-tree-node">
-      <SpatialMapImageDropTarget nodeId={props.item.node.id} class="spatial-map-tree-drop-target">
+      <SpatialMapImageDropTarget
+        nodeId={props.item.node.id}
+        class="spatial-map-tree-drop-target"
+      >
         <div
           role="treeitem"
           tabindex="0"
@@ -105,29 +110,35 @@ function SpatialMapTreeNode(props: {
           }}
         >
           <span class="spatial-map-tree-rail" aria-hidden="true" />
-            <span class="spatial-map-tree-copy">
-              <span class="spatial-map-tree-label">{props.item.node.label}</span>
-              <span class="spatial-map-tree-purpose">
-                {getNodePrimaryMetadataText(
-                  props.item.node,
-                  props.nodeMetadataSchema,
-                  "No metadata",
-                )}
-              </span>
+          <span class="spatial-map-tree-copy">
+            <span class="spatial-map-tree-label">{props.item.node.label}</span>
+            <span class="spatial-map-tree-purpose">
+              {getNodePrimaryMetadataText(
+                props.item.node,
+                props.nodeMetadataSchema,
+                "No metadata",
+              )}
+            </span>
             <SpatialMapImageStrip node={props.item.node} variant="tree" />
           </span>
           <HStack gap="1" class="spatial-map-tree-meta">
             <span>{props.item.node.type}</span>
             <span>D{props.item.node.depth}</span>
             <span>
-              {children().length} {children().length === 1 ? "child" : "children"}
+              {children().length}{" "}
+              {children().length === 1 ? "child" : "children"}
             </span>
           </HStack>
         </div>
       </SpatialMapImageDropTarget>
 
       <Show when={children().length > 0}>
-        <VStack alignItems="stretch" gap="1" class="spatial-map-tree-children" role="group">
+        <VStack
+          alignItems="stretch"
+          gap="1"
+          class="spatial-map-tree-children"
+          role="group"
+        >
           <For each={children()}>
             {(child) => (
               <SpatialMapTreeNode
@@ -143,59 +154,4 @@ function SpatialMapTreeNode(props: {
       </Show>
     </Box>
   );
-}
-
-function buildSpatialMapTree(data: SpatialMapData): SpatialMapTree {
-  const items: Map<string, SpatialMapTreeItem> = new Map(
-    data.nodes.map((node) => [node.id, { node, childNodeIds: [] }]),
-  );
-  const parentIdsByChildId = new Map<string, Set<string>>();
-
-  for (const link of data.links) {
-    const source = items.get(link.source);
-    const target = items.get(link.target);
-    if (!source || !target || !link.parentChild) {
-      continue;
-    }
-
-    source.childNodeIds.push(target.node.id);
-    parentIdsByChildId.set(
-      target.node.id,
-      (parentIdsByChildId.get(target.node.id) ?? new Set()).add(source.node.id),
-    );
-  }
-
-  for (const item of items.values()) {
-    item.childNodeIds = sortNodeIds(item.childNodeIds, items);
-  }
-
-  const roots = sortNodeIds(
-    data.nodes
-      .filter((node) => (parentIdsByChildId.get(node.id)?.size ?? 0) === 0)
-      .map((node) => node.id),
-    items,
-  );
-
-  return { roots, items };
-}
-
-function sortNodeIds(nodeIds: string[], items: Map<string, SpatialMapTreeItem>) {
-  return [...nodeIds].sort((left, right) => {
-    const leftNode = items.get(left)?.node;
-    const rightNode = items.get(right)?.node;
-    if (!leftNode || !rightNode) {
-      return left < right ? -1 : left > right ? 1 : 0;
-    }
-
-    const depthDiff = leftNode.depth - rightNode.depth;
-    if (depthDiff !== 0) {
-      return depthDiff;
-    }
-
-    if (leftNode.label !== rightNode.label) {
-      return leftNode.label < rightNode.label ? -1 : 1;
-    }
-
-    return leftNode.id < rightNode.id ? -1 : leftNode.id > rightNode.id ? 1 : 0;
-  });
 }

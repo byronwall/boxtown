@@ -1,5 +1,11 @@
 import { A } from "@solidjs/router";
-import { FocusIcon, PlusIcon, SettingsIcon, SlidersHorizontalIcon, XIcon } from "lucide-solid";
+import {
+  FocusIcon,
+  PlusIcon,
+  SettingsIcon,
+  SlidersHorizontalIcon,
+  XIcon,
+} from "lucide-solid";
 import { For, createMemo } from "solid-js";
 import { Box, HStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
@@ -25,14 +31,20 @@ interface SpatialMapToolbarProps {
 
 export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
   const spatialMap = useSpatialMap();
-  const isolationLabel = createMemo(() => truncateIsolationLabel(spatialMap.isolationLabel()));
+  const isolationLabel = createMemo(() =>
+    truncateIsolationLabel(spatialMap.isolationLabel()),
+  );
 
   return (
     <Box class="spatial-map-topbar">
       <HStack gap="3" alignItems="center" class="spatial-map-topbar-copy">
         <Box class="spatial-map-title-row">
           {props.backHref ? (
-            <A href={props.backHref} class="spatial-map-backlink" aria-label={props.backLabel ?? "Back"}>
+            <A
+              href={props.backHref}
+              class="spatial-map-backlink"
+              aria-label={props.backLabel ?? "Back"}
+            >
               &lt; Back
             </A>
           ) : (
@@ -63,7 +75,12 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
         </Box>
       </HStack>
 
-      <HStack gap="1.5" flexWrap="wrap" justifyContent="flex-end" class="spatial-map-control-strip">
+      <HStack
+        gap="1.5"
+        flexWrap="wrap"
+        justifyContent="flex-end"
+        class="spatial-map-control-strip"
+      >
         {spatialMap.isolationModeActive() ? (
           <>
             <Text as="span" class="spatial-map-isolation-readout">
@@ -82,7 +99,10 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             </Button>
           </>
         ) : null}
-        <Menu.Root positioning={{ placement: "bottom-start", gutter: 4 }} size="sm">
+        <Menu.Root
+          positioning={{ placement: "bottom-start", gutter: 4 }}
+          size="sm"
+        >
           <Menu.Trigger
             asChild={(triggerProps) => (
               <Button
@@ -99,10 +119,16 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
           />
           <Menu.Positioner>
             <Menu.Content class="spatial-map-create-menu">
-              <Menu.Item value="add-nodes" onClick={() => spatialMap.openAddNodesFlow()}>
+              <Menu.Item
+                value="add-nodes"
+                onClick={() => spatialMap.openAddNodesFlow()}
+              >
                 <Menu.ItemText>Add Nodes</Menu.ItemText>
               </Menu.Item>
-              <Menu.Item value="decompose-source" onClick={() => spatialMap.openSourceDecompositionFlow()}>
+              <Menu.Item
+                value="decompose-source"
+                onClick={() => spatialMap.openSourceDecompositionFlow()}
+              >
                 <Menu.ItemText>Decompose Source</Menu.ItemText>
               </Menu.Item>
               <SpatialMapCreateContextNodeDialog
@@ -117,7 +143,10 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             </Menu.Content>
           </Menu.Positioner>
         </Menu.Root>
-        <Menu.Root positioning={{ placement: "bottom-end", gutter: 4 }} size="sm">
+        <Menu.Root
+          positioning={{ placement: "bottom-end", gutter: 4 }}
+          size="sm"
+        >
           <Menu.Trigger
             asChild={(triggerProps) => (
               <Button
@@ -162,7 +191,11 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             </Menu.Content>
           </Menu.Positioner>
         </Menu.Root>
-        <HStack gap="0" class="spatial-map-toggle-group" aria-label="Map view mode">
+        <HStack
+          gap="0"
+          class="spatial-map-toggle-group"
+          aria-label="Map view mode"
+        >
           <Button
             colorPalette="green"
             variant={spatialMap.viewMode() === "canvas" ? "surface" : "outline"}
@@ -183,13 +216,33 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
           >
             Tree
           </Button>
+          <Button
+            colorPalette="green"
+            variant={
+              spatialMap.viewMode() === "markdown" ? "surface" : "outline"
+            }
+            size="xs"
+            class={`spatial-map-button spatial-map-toggle-button${spatialMap.viewMode() === "markdown" ? " is-active" : ""}`}
+            aria-pressed={spatialMap.viewMode() === "markdown"}
+            onClick={() => spatialMap.setViewMode("markdown")}
+          >
+            Markdown
+          </Button>
         </HStack>
-        <HStack gap="0" class="spatial-map-toggle-group" aria-label="Displayed hierarchy depth">
+        <HStack
+          gap="0"
+          class="spatial-map-toggle-group"
+          aria-label="Displayed hierarchy depth"
+        >
           <For each={spatialMap.availableDepthLevels()}>
             {(level) => (
               <Button
                 colorPalette="green"
-                variant={spatialMap.visibleDepthLevel() === level ? "surface" : "outline"}
+                variant={
+                  spatialMap.visibleDepthLevel() === level
+                    ? "surface"
+                    : "outline"
+                }
                 size="xs"
                 class={`spatial-map-button spatial-map-depth-button${spatialMap.visibleDepthLevel() === level ? " is-active" : ""}`}
                 aria-label={`Show ${level} hierarchy ${level === 1 ? "level" : "levels"}`}

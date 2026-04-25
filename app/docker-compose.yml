@@ -9,7 +9,7 @@ services:
       HOST: 0.0.0.0
       PORT: 3000
       BASE_PATH: ${BASE_PATH:-/}
-      APP_DATA_DIR: ${APP_DATA_DIR:-/app/data}
+      APP_DATA_DIR: /app/data
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5-mini}
       OPENAI_HEAVY_MODEL: ${OPENAI_HEAVY_MODEL:-gpt-5.4}
@@ -18,7 +18,7 @@ services:
     volumes:
       - type: volume
         source: product-grid-data
-        target: ${APP_DATA_DIR:-/app/data}
+        target: /app/data
 
 volumes:
   product-grid-data:
