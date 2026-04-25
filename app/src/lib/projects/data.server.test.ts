@@ -98,6 +98,30 @@ describe("mergeGeneratedSpatialMapData", () => {
 });
 
 describe("createProjectOnDisk", () => {
+  it("uses APP_DATA_DIR when an explicit data directory is configured", async () => {
+    const originalDataDir = process.env.APP_DATA_DIR;
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-configured-data-"));
+    const dataDir = path.join(tempRoot, "persistent-data");
+
+    try {
+      process.env.APP_DATA_DIR = dataDir;
+
+      const created = await createProjectOnDisk({ name: "Persisted Deploy Data" });
+      const persisted = await readProjectByIdFromDisk(created.id);
+
+      expect(persisted?.name).toBe("Persisted Deploy Data");
+      expect(
+        existsSync(path.join(dataDir, "projects", "persisted-deploy-data", "project.json")),
+      ).toBe(true);
+    } finally {
+      if (originalDataDir === undefined) {
+        delete process.env.APP_DATA_DIR;
+      } else {
+        process.env.APP_DATA_DIR = originalDataDir;
+      }
+    }
+  });
+
   it("resolves the project data file when the server starts from the repo root", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-root-"));

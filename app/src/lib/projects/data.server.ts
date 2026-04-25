@@ -3,6 +3,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import type { GeneratedNodeBatch } from "~/lib/add-nodes/types";
+import { resolveAppDataDir } from "~/lib/server/data-dir";
 import { createParentChildLink, getLinkKey } from "~/lib/spatial-map/links";
 import type { MapNodeImage, SpatialMapData } from "~/lib/spatial-map/types";
 import { splitMarkdownIntoHeadingSections } from "./context-node-markdown";
@@ -952,19 +953,7 @@ export function safePathSegment(value: string) {
 }
 
 export function resolveProjectDataDir() {
-  const cwd = process.cwd();
-  const candidates = [
-    path.join(cwd, "data"),
-    path.join(cwd, "app", "data"),
-  ];
-
-  for (const candidate of candidates) {
-    if (existsSync(candidate)) {
-      return candidate;
-    }
-  }
-
-  return candidates[0];
+  return resolveAppDataDir();
 }
 
 export function getProjectsDirPath() {
