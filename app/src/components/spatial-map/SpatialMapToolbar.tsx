@@ -235,23 +235,28 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
           aria-label="Displayed hierarchy depth"
         >
           <For each={spatialMap.availableDepthLevels()}>
-            {(level) => (
-              <Button
-                colorPalette="green"
-                variant={
-                  spatialMap.visibleDepthLevel() === level
-                    ? "surface"
-                    : "outline"
-                }
-                size="xs"
-                class={`spatial-map-button spatial-map-depth-button${spatialMap.visibleDepthLevel() === level ? " is-active" : ""}`}
-                aria-label={`Show ${level} hierarchy ${level === 1 ? "level" : "levels"}`}
-                aria-pressed={spatialMap.visibleDepthLevel() === level}
-                onClick={() => spatialMap.setVisibleDepthLevel(level)}
-              >
-                {level}
-              </Button>
-            )}
+            {(level) => {
+              const selection = () =>
+                getDepthSelection(level, spatialMap.availableDepthLevels());
+              const active = () =>
+                spatialMap.visibleDepthSelection() === selection();
+              const label = () =>
+                getDepthLabel(level, spatialMap.availableDepthLevels());
+
+              return (
+                <Button
+                  colorPalette="green"
+                  variant={active() ? "surface" : "outline"}
+                  size="xs"
+                  class={`spatial-map-button spatial-map-depth-button${active() ? " is-active" : ""}`}
+                  aria-label={`Show ${label()} hierarchy ${level === 1 ? "level" : "levels"}`}
+                  aria-pressed={active()}
+                  onClick={() => spatialMap.setVisibleDepthLevel(selection())}
+                >
+                  {label()}
+                </Button>
+              );
+            }}
           </For>
         </HStack>
         {!spatialMap.inspectorOpen() ? <InspectorToggle inToolbar /> : null}
@@ -263,4 +268,12 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
 function truncateIsolationLabel(label: string | null) {
   const fallback = label ?? "Current node";
   return fallback.length > 16 ? `${fallback.slice(0, 15)}...` : fallback;
+}
+
+function getDepthSelection(level: number, availableLevels: number[]) {
+  return level === availableLevels.at(-1) ? "max" : level;
+}
+
+function getDepthLabel(level: number, availableLevels: number[]) {
+  return getDepthSelection(level, availableLevels) === "max" ? "Max" : level;
 }

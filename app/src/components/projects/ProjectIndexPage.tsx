@@ -33,37 +33,42 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
   return (
     <Box
       minH="100dvh"
-      color="#171c19"
-      backgroundColor="#c9cec6"
-      backgroundImage={`
-        repeating-linear-gradient(0deg, rgba(31,36,33,0.08) 0 1px, transparent 1px 32px),
-        repeating-linear-gradient(90deg, rgba(31,36,33,0.06) 0 1px, transparent 1px 32px)
-      `}
+      color="fg.default"
+      backgroundColor="olive.2"
+      backgroundImage="
+        repeating-linear-gradient(0deg, rgba(31,36,33,0.06) 0 1px, transparent 1px 32px),
+        repeating-linear-gradient(90deg, rgba(31,36,33,0.045) 0 1px, transparent 1px 32px),
+        linear-gradient(180deg, rgba(252,253,252,0.92), rgba(231,235,228,1))
+      "
     >
       <Box maxW="7xl" mx="auto" px={{ base: "3", md: "4" }} py={{ base: "3", md: "4" }}>
         <Box
-          borderWidth="2px"
-          borderColor="#414740"
-          bg="#d8ddd5"
-          boxShadow="inset 0 1px 0 rgba(255,255,255,0.22)"
+          borderWidth="1px"
+          borderColor="olive.8"
+          bg="olive.3"
+          borderRadius="0"
+          boxShadow="inset 0 1px 0 rgba(255,255,255,0.32)"
+          overflow="hidden"
         >
           <Stack gap="0">
-            <Box px={{ base: "3", md: "4" }} py="3" borderBottomWidth="1px" borderColor="#596057">
+            <Box px={{ base: "3", md: "4" }} py="3" borderBottomWidth="1px" borderColor="olive.8">
               <HStack justifyContent="space-between" alignItems="start" gap="4" flexWrap="wrap">
                 <Box maxW="2xl">
-                  <Heading as="h1" textStyle="lg" lineHeight="1.05">
+                  <Heading as="h1" textStyle="2xl" lineHeight="1.2">
                     Projects
                   </Heading>
-                  <Text mt="1" textStyle="sm" color="#4a524a">
+                  <Text mt="1" textStyle="sm" color="fg.muted">
                     Create a project, import one, or open existing work.
                   </Text>
                 </Box>
                 <HStack
                   gap="3"
                   borderWidth="1px"
-                  borderColor="#596057"
+                  borderColor="olive.7"
+                  borderRadius="0"
                   px="3"
                   py="2"
+                  bg="olive.2"
                   alignSelf={{ base: "stretch", md: "start" }}
                   flex={{ base: "1 1 100%", md: "0 0 auto" }}
                   flexWrap="wrap"
@@ -83,18 +88,18 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
               <Box
                 borderRightWidth={{ base: "0", lg: "1px" }}
                 borderBottomWidth={{ base: "1px", lg: "0" }}
-                borderColor="#596057"
-                bg="#d2d7cf"
+                borderColor="olive.8"
+                bg="olive.4"
               >
-                <Box px="3" py="3" borderBottomWidth="1px" borderColor="#6a7168">
-                  <Heading as="h2" textStyle="sm" lineHeight="1.05">
+                <Box px="3" py="3" borderBottomWidth="1px" borderColor="olive.8">
+                  <Heading as="h2" textStyle="md" lineHeight="1.2">
                     New project
                   </Heading>
-                  <Text mt="1" textStyle="sm" color="#4a524a">
+                  <Text mt="1" textStyle="sm" color="fg.muted">
                     Start with an empty grid.
                   </Text>
               </Box>
-              <Box px="3" py="3" borderBottomWidth="1px" borderColor="#6a7168">
+                <Box px="3" py="3" borderBottomWidth="1px" borderColor="olive.8">
                 <form action={props.createProjectActionUrl} method="post">
                   <VStack alignItems="stretch" gap="2">
                     <Field.Root>
@@ -105,12 +110,11 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
                         name="name"
                         placeholder="Untitled Project"
                         borderRadius="0"
-                        borderColor="#51584f"
-                        bg="#eef1eb"
+                        variant="surface"
                         h="9"
                         px="3"
                       />
-                      <Field.HelperText color="#4a524a">
+                      <Field.HelperText color="fg.muted">
                         Leave blank for an untitled grid.
                       </Field.HelperText>
                     </Field.Root>
@@ -135,17 +139,17 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
 
             <VStack alignItems="stretch" gap="0">
               <Box
-                px="3"
-                py="2"
+                px="4"
+                py="3"
                 borderBottomWidth="1px"
-                borderColor="#596057"
-                bg="#dfe3dd"
+                borderColor="olive.8"
+                bg="olive.2"
               >
                 <HStack justifyContent="space-between" alignItems="center" gap="4" flexWrap="wrap">
-                  <Heading as="h2" textStyle="sm">
+                  <Heading as="h2" textStyle="md">
                     Existing projects
                   </Heading>
-                  <Text textStyle="sm" color="#4a524a">
+                  <Text textStyle="sm" color="fg.muted">
                     {props.projects.length} total
                   </Text>
                 </HStack>
@@ -156,32 +160,32 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
                   {(project) => (
                     <Box
                       borderBottomWidth="1px"
-                      borderColor="#596057"
-                      bg="#e4e8e1"
-                      _hover={{ bg: "#edf0eb" }}
+                      borderColor="olive.7"
+                      bg="olive.2"
+                      _hover={{ bg: "olive.3" }}
                     >
                       <Grid
                         gridTemplateColumns={{ base: "1fr", md: "minmax(0, 1fr) 316px auto" }}
                         gap={{ base: "2", md: "3" }}
                         alignItems="center"
-                        px="3"
-                        py="2"
+                        px="4"
+                        py="3"
                       >
                         <Box minW="0">
                           <A href={`/projects/${project.id}`} style={{ display: "block", "text-decoration": "none", color: "inherit" }}>
-                            <Heading as="h3" textStyle="md" lineHeight="1.05">
+                            <Heading as="h3" textStyle="md" lineHeight="1.25">
                               {project.name}
                             </Heading>
-                            <Text mt="1" textStyle="sm" color="#414740" lineClamp="2">
+                            <Text mt="1" textStyle="sm" color="fg.muted" lineClamp="2">
                               {project.description}
                             </Text>
-                            <Text mt="2" textStyle="xs" color="#5b635b" fontFamily={monoFont}>
+                            <Text mt="2" textStyle="xs" color="fg.subtle" fontFamily={monoFont}>
                               {project.id}
                             </Text>
                           </A>
                         </Box>
 
-                        <HStack gap="3" color="#30362f" flexWrap="wrap" fontFamily={monoFont} textStyle="sm">
+                        <HStack gap="3" color="fg.muted" flexWrap="wrap" textStyle="sm">
                           <Text as="span">{project.nodeCount} nodes</Text>
                           <Text as="span">{project.linkCount} links</Text>
                           <Text as="span">{dateFormatter.format(new Date(project.updatedAt))}</Text>
@@ -214,7 +218,7 @@ function SummaryItem(props: { label: string; value: number }) {
       <Text as="span" textStyle="md" fontWeight="semibold">
         {props.value}
       </Text>
-      <Text as="span" textStyle="sm" color="#4a524a">
+      <Text as="span" textStyle="sm" color="fg.muted">
         {props.label}
       </Text>
     </HStack>

@@ -20,6 +20,7 @@ import type { PositionedMapNode, SpatialMapData } from "~/lib/spatial-map/types"
 import type {
   CameraState,
   SpatialMapCanvasController,
+  SpatialMapDepthLevel,
   SpatialMapViewMode,
 } from "./spatial-map-canvas.types";
 import {
@@ -83,9 +84,8 @@ export function useSpatialMapCanvasController(
   const [contextNoteConversionOpen, setContextNoteConversionOpen] = createSignal(false);
   const [sourceDecompositionOpen, setSourceDecompositionOpen] = createSignal(false);
   const [viewMode, setViewMode] = createSignal<SpatialMapViewMode>("canvas");
-  const [visibleDepthLevel, writeVisibleDepthLevel] = createSignal(
-    getDepthLevelCount(data()),
-  );
+  const [visibleDepthSelection, writeVisibleDepthSelection] =
+    createSignal<SpatialMapDepthLevel>("max");
   const [camera, writeCamera] = createSignal(initialCamera);
   const [isPanning, setIsPanning] = createSignal(false);
   const adjacency = createMemo(() => buildAdjacencyMap(data()));
@@ -103,6 +103,9 @@ export function useSpatialMapCanvasController(
   );
   const availableDepthLevels = createMemo(() =>
     Array.from({ length: getDepthLevelCount(isolatedData()) }, (_, index) => index + 1),
+  );
+  const visibleDepthLevel = createMemo(() =>
+    resolveVisibleDepthLevel(visibleDepthSelection(), availableDepthLevels()),
   );
   const visibleData = createMemo(() =>
     filterSpatialMapDataByDepthLevel(isolatedData(), visibleDepthLevel()),
@@ -174,7 +177,9 @@ export function useSpatialMapCanvasController(
 
   createEffect(() => {
     const maxLevel = availableDepthLevels().at(-1) ?? 1;
-    writeVisibleDepthLevel((current) => clampInteger(current, 1, maxLevel));
+    writeVisibleDepthSelection((current) =>
+      current === "max" ? current : clampInteger(current, 1, maxLevel),
+    );
   });
 
   createEffect(() => {
@@ -558,7 +563,7 @@ export function useSpatialMapCanvasController(
     setHoveredNodeId(null);
     setShowLinkedInIsolation(false);
     if (nodeId) {
-      writeVisibleDepthLevel(getDepthLevelCount(filterSpatialMapDataForIsolation(data(), nodeId)));
+      writeVisibleDepthSelection("max");
     }
     setIsolatedNodeId(nodeId);
     if (nodeId) {
@@ -662,6 +667,7 @@ export function useSpatialMapCanvasController(
     sourceNodesById,
     availableDepthLevels,
     visibleData,
+    visibleDepthSelection,
     visibleDepthLevel,
     viewMode,
     zoomPercent,
@@ -696,8 +702,13 @@ export function useSpatialMapCanvasController(
       }
     },
     setVisibleDepthLevel: (value) => {
+      if (value === "max") {
+        writeVisibleDepthSelection(value);
+        return;
+      }
+
       const maxLevel = availableDepthLevels().at(-1) ?? 1;
-      writeVisibleDepthLevel(clampInteger(value, 1, maxLevel));
+      writeVisibleDepthSelection(clampInteger(value, 1, maxLevel));
     },
     toggleLinkedInIsolation: toggleLinkedIsolation,
     toggleEdges: () => setShowEdges((current) => !current),
@@ -738,6 +749,14 @@ function getDepthLevelCount(data: SpatialMapData) {
 
   const depths = data.nodes.map((node) => node.depth);
   return Math.max(Math.max(...depths) - Math.min(...depths) + 1, 1);
+}
+
+function resolveVisibleDepthLevel(
+  selection: SpatialMapDepthLevel,
+  availableLevels: number[],
+) {
+  const maxLevel = availableLevels.at(-1) ?? 1;
+  return selection === "max" ? maxLevel : clampInteger(selection, 1, maxLevel);
 }
 
 function filterSpatialMapDataByDepthLevel(

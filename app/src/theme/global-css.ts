@@ -13,7 +13,7 @@ export const globalCss = {
     body: {
       minHeight: "100vh",
       background:
-        "radial-gradient(circle at top, token(colors.green.a4) 0%, transparent 34%), linear-gradient(180deg, token(colors.gray.1) 0%, token(colors.green.1) 100%)",
+        "radial-gradient(circle at top, token(colors.green.a3) 0%, transparent 30%), linear-gradient(180deg, token(colors.gray.1) 0%, token(colors.olive.2) 100%)",
       color: "fg.default",
       textRendering: "optimizeLegibility",
       WebkitFontSmoothing: "antialiased",

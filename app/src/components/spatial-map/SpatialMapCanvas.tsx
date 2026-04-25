@@ -5,7 +5,10 @@ import type { ProjectRecord } from "~/lib/projects/types";
 
 import "./spatial-map.css";
 import { AddNodesFlowRail } from "./add-nodes-flow/AddNodesFlowRail";
-import type { SpatialMapViewMode } from "./spatial-map-canvas.types";
+import type {
+  SpatialMapDepthLevel,
+  SpatialMapViewMode,
+} from "./spatial-map-canvas.types";
 import { SpatialMapProvider, useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapInspector } from "./SpatialMapInspector";
 import { SpatialMapImageProvider } from "./SpatialMapImages";
@@ -164,7 +167,7 @@ function SpatialMapUrlSync() {
   createEffect(() => {
     const nodeId = getStringParam(searchParams.node);
     const viewMode = parseViewMode(getStringParam(searchParams.view));
-    const depthLevel = parsePositiveInteger(getStringParam(searchParams.depth));
+    const depthLevel = parseDepthLevel(getStringParam(searchParams.depth));
     const showEdges = parseBooleanParam(getStringParam(searchParams.edges));
     const inspectorOpen = parseInspectorParam(
       getStringParam(searchParams.inspector),
@@ -179,10 +182,9 @@ function SpatialMapUrlSync() {
       }
 
       if (
-        depthLevel !== null &&
-        controller.visibleDepthLevel() !== depthLevel
+        controller.visibleDepthSelection() !== (depthLevel ?? "max")
       ) {
-        controller.setVisibleDepthLevel(depthLevel);
+        controller.setVisibleDepthLevel(depthLevel ?? "max");
       }
 
       if (showEdges !== null && controller.showEdges() !== showEdges) {
@@ -221,8 +223,7 @@ function SpatialMapUrlSync() {
   createEffect(() => {
     const selectedNodeId = controller.selectedNodeId();
     const viewMode = controller.viewMode();
-    const visibleDepthLevel = controller.visibleDepthLevel();
-    const maxDepthLevel = controller.availableDepthLevels().at(-1) ?? 1;
+    const visibleDepthSelection = controller.visibleDepthSelection();
     const showEdges = controller.showEdges();
     const inspectorOpen = controller.inspectorOpen();
     const isolatedNodeId = controller.isolatedNodeId();
@@ -232,7 +233,7 @@ function SpatialMapUrlSync() {
       node: selectedNodeId,
       view: viewMode === "canvas" ? null : viewMode,
       depth:
-        visibleDepthLevel === maxDepthLevel ? null : String(visibleDepthLevel),
+        visibleDepthSelection === "max" ? null : String(visibleDepthSelection),
       edges: showEdges ? "1" : null,
       inspector: inspectorOpen ? null : "closed",
       isolate: isolatedNodeId,
@@ -271,9 +272,13 @@ function parseViewMode(value: string | undefined): SpatialMapViewMode | null {
     : null;
 }
 
-function parsePositiveInteger(value: string | undefined) {
+function parseDepthLevel(value: string | undefined): SpatialMapDepthLevel | null {
   if (!value) {
     return null;
+  }
+
+  if (value === "max") {
+    return value;
   }
 
   const parsed = Number.parseInt(value, 10);

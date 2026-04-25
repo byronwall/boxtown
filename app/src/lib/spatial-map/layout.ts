@@ -12,7 +12,7 @@ const sizeByDepth: Record<
 > = {
   0: { area: 20_240, minWidth: 184, maxWidth: 252, fontSize: 22, metaSize: 12 },
   1: { area: 12_580, minWidth: 148, maxWidth: 212, fontSize: 16, metaSize: 11 },
-  2: { area: 6_960, minWidth: 112, maxWidth: 164, fontSize: 12, metaSize: 10 },
+  2: { area: 6_960, minWidth: 112, maxWidth: 164, fontSize: 16, metaSize: 10 },
 };
 const SHALLOW_VISIBLE_DEPTH_SCALE = 1.32;
 const DEEP_VISIBLE_DEPTH_SCALE = 0.8;

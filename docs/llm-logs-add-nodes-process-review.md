@@ -248,3 +248,175 @@ A 10/10 add-nodes run should satisfy these conditions:
 The current pipeline is a good structured-output prototype. It reliably makes plausible graph content. It does not yet reliably deliver the best user experience because it treats clarification, generation, and persistence as a linear happy path.
 
 To get to 10, the process needs fewer generic questions, stronger intent preservation, adaptive depth, a critique-and-repair loop, and a preview/apply model. The most important immediate change is adding a pre-persist evaluator that scores the node batch against the original user request and forces a repair when the output is merely plausible instead of clearly satisfying.
+
+## Markdown-First Generation Vision
+
+The intuition that the process may be over-investing in structured generation is probably correct.
+
+The current prompts ask the model to satisfy a schema while also doing product thinking, graph design, naming, metadata writing, and link planning. That is a lot of simultaneous constraint. The model can do it, but the output tends to become tidy, conservative, and count-shaped. It spends capacity on staying valid instead of exploring the user's domain deeply.
+
+A better split may be:
+
+1. Let the model write a rich, loosely structured markdown expansion.
+2. Parse that markdown into graph candidates.
+3. Validate the parsed graph deterministically.
+4. Use an LLM repair pass only when parsing, coverage, or graph semantics fail.
+
+This would let the main generation pass optimize for usefulness and coverage. Structure becomes a post-processing concern.
+
+### Why This Could Improve Quality
+
+Markdown is closer to how the model naturally explains and organizes ideas. For feature expansion, the most valuable output is often a hierarchy of concepts with notes, edge cases, flows, and rationale. A markdown outline can carry that naturally:
+
+```markdown
+## Inline Editing
+
+- Edit buffer
+  Purpose: Hold original and draft label during an active rename.
+  Implementation: Store draft, original value, dirty flag, and active node id.
+  Connects to: Edit activation, Commit/cancel edit
+
+- Label validation
+  Purpose: Prevent invalid labels before commit.
+  Implementation: Check empty text, length, duplicates, and schema rules.
+  Connects to: Validation, Inline errors
+```
+
+That format lets the model "riff" on the feature and include richer supporting material. A parser can later turn headings and bullets into nodes, metadata, and links.
+
+The likely benefits:
+
+- Better coverage of the user's actual request.
+- More natural grouping and naming.
+- More implementation detail when requested.
+- Less tendency to stop at exactly 8 nodes because the schema prompt says 5-10.
+- Easier human preview because markdown is readable before graph conversion.
+- Better debugging because failures are visible as text, not opaque schema misses.
+
+### Risks
+
+The risks are real but manageable:
+
+- Markdown can be inconsistent.
+- Link references may be ambiguous.
+- The model may write prose that is useful but not directly graph-shaped.
+- Parsing can silently drop nuance if the markdown contract is too loose.
+- Repair passes can add latency.
+
+The answer is not "anything goes" markdown. It should be loose enough for good generation, but regular enough to parse.
+
+### Suggested Markdown Contract
+
+Use a lightweight house style instead of strict JSON:
+
+```markdown
+# Graph Expansion
+
+## Summary
+One paragraph describing what this expansion adds and why.
+
+## Nodes
+
+### Node: Inline editing
+- Purpose: Edit a node label directly in the tree.
+- Implementation: Render the selected row label as an inline input.
+- Parent: Testing
+- Links: Selection state (dependency), Keyboard shortcuts (related)
+
+### Node: Edit buffer
+- Purpose: Hold original and draft label for one active edit.
+- Implementation: Store draft text, original text, dirty state, and active node id.
+- Parent: Inline editing
+- Links: Edit activation (dependency)
+
+## Coverage
+- "edit in place": Inline editing, Edit activation, Commit/cancel edit
+- "selection": Selection state, Focus restore
+- "arrow keys": Arrow reorder, Indent/outdent, Shortcut handoff
+- "drag drop to move nodes to new roots": Drop indicators, Root reparenting, Drag guard
+```
+
+This is still structured, but it is structure for reading and writing, not structure for direct persistence.
+
+### Proposed Markdown-First Pipeline
+
+1. **Intent extraction**
+   - Keep this small and deterministic where possible.
+   - Decide whether to ask a question or proceed.
+
+2. **Markdown draft generation**
+   - Ask the model for a useful graph expansion in the markdown contract.
+   - Encourage it to include as much detail as the request warrants.
+   - Do not force a fixed node count unless the user asked for one.
+
+3. **Markdown parser**
+   - Parse headings into node groups.
+   - Parse `Purpose`, `Implementation`, `Parent`, and `Links` fields.
+   - Preserve extra prose as node context or preview-only rationale.
+
+4. **Deterministic graph normalization**
+   - Slug labels into IDs.
+   - Resolve parent names to existing or generated nodes.
+   - Resolve links by exact label, alias, or selected-node context.
+   - Detect duplicates against existing graph labels and semantic aliases.
+
+5. **Validation**
+   - Check every node has a label and parent or attachment strategy.
+   - Check all links resolve.
+   - Check metadata only uses allowed keys.
+   - Check requested coverage phrases map to nodes.
+   - Check graph depth and parent-child semantics are coherent.
+
+6. **Repair pass**
+   - If parsing fails, send the markdown plus parse errors back to the model.
+   - Ask for corrected markdown in the same contract.
+   - If graph validation fails, ask for a minimal patch rather than a full rewrite.
+
+7. **Critique pass**
+   - Score the parsed graph against the original user request.
+   - Repair once if the score is low or coverage is incomplete.
+
+8. **Preview**
+   - Show the readable markdown summary and the parsed nodes/links.
+   - Let the user apply, request more detail, or narrow scope.
+
+9. **Persist**
+   - Store the parsed graph plus the original markdown draft.
+   - Log generated labels, normalized IDs, and repair history.
+
+10. **Follow-ups**
+   - Generate follow-up suggestions from both the persisted graph and the original markdown coverage section.
+
+### Hybrid Alternative
+
+A strong compromise is to use markdown for the creative pass and structured output only for the parser pass.
+
+The LLM would first generate markdown freely. Then a second, cheaper call would convert that markdown into the exact schema. This second call is not asked to invent content; it is only asked to transcribe and normalize. That should reduce cognitive load on the model and make failures easier to repair.
+
+Pipeline:
+
+1. `gpt-5.4` or heavier model writes the markdown expansion.
+2. `gpt-5-mini` converts markdown to structured nodes/links.
+3. Deterministic validator checks the structured result.
+4. `gpt-5-mini` repairs conversion issues if needed.
+5. Optional heavier critique only when confidence is low.
+
+This keeps schema benefits without making the creative generation pass schema-bound.
+
+### What I Would Change First
+
+I would prototype the markdown-first path behind a feature flag for add-node runs:
+
+1. Keep the existing structured pipeline as fallback.
+2. Add markdown draft generation for requests with high intent confidence.
+3. Build a parser for a strict-enough markdown contract.
+4. Run both pipelines on the same brief in logs, but only persist one.
+5. Compare outputs on coverage, usefulness, node count, latency, and user edits after apply.
+
+The first success metric should not be parse success. It should be whether the markdown-first output better captures what the user asked for.
+
+### Expected Outcome
+
+This approach should produce more complete, more human-feeling graph expansions. It should especially help with requests like "add a bunch of detail", "make this richer", "break down implementation", and "map the UX flow", where the best answer needs breadth, nuance, and prose before it needs perfect structure.
+
+The structured schema should still exist, but it should move later in the pipeline. Let the model think and write first; make the system parse, validate, and repair afterward.

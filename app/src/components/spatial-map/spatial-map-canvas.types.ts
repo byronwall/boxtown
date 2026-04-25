@@ -6,6 +6,7 @@ import type {
 } from "~/lib/spatial-map/types";
 
 export type SpatialMapViewMode = "canvas" | "tree" | "markdown";
+export type SpatialMapDepthLevel = number | "max";
 
 export interface CameraState {
   x: number;
@@ -81,6 +82,7 @@ export interface SpatialMapCanvasController {
   sourceDecompositionOpen: Accessor<boolean>;
   availableDepthLevels: Accessor<number[]>;
   visibleData: Accessor<SpatialMapData>;
+  visibleDepthSelection: Accessor<SpatialMapDepthLevel>;
   visibleDepthLevel: Accessor<number>;
   viewMode: Accessor<SpatialMapViewMode>;
   zoomPercent: Accessor<string>;
@@ -98,7 +100,7 @@ export interface SpatialMapCanvasController {
     value: boolean | ((current: boolean) => boolean),
   ) => void;
   setViewMode: (value: SpatialMapViewMode) => void;
-  setVisibleDepthLevel: (value: number) => void;
+  setVisibleDepthLevel: (value: SpatialMapDepthLevel) => void;
   toggleLinkedInIsolation: () => void;
   toggleEdges: () => void;
   reflowLayout: () => void;

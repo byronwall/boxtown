@@ -26,9 +26,11 @@ export function ProjectImportControl() {
             name="archive"
             accept=".zip,application/zip"
             class={css({
-              bg: "#eef1eb",
-              borderColor: "#51584f",
+              bg: "olive.2",
+              borderColor: "olive.8",
               borderWidth: "1px",
+              borderRadius: "0",
+              color: "fg.default",
               fontFamily: monoFont,
               fontSize: "xs",
               h: "10",
@@ -36,7 +38,7 @@ export function ProjectImportControl() {
               py: "2",
             })}
           />
-          <Field.HelperText color="#4a524a">
+          <Field.HelperText color="fg.muted">
             Choose a project ZIP file.
           </Field.HelperText>
         </Field.Root>
