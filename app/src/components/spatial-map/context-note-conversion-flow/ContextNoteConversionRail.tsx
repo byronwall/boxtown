@@ -8,6 +8,7 @@ import { getTreeCheckedState, toggleTreeSelection } from "~/lib/context-note-con
 import type { ConversionCandidateTreeItem } from "~/lib/context-note-conversion/types";
 import { getNodePrimaryMetadataText } from "~/lib/projects/node-metadata";
 import type { ProjectRecord } from "~/lib/projects/types";
+import { SpatialMapInspectorHeader } from "~/components/spatial-map/SpatialMapInspectorHeader";
 import { useSpatialMap } from "~/components/spatial-map/SpatialMapContext";
 import { useContextNoteConversionFlow } from "./useContextNoteConversionFlow";
 
@@ -65,30 +66,16 @@ export function ContextNoteConversionRail(props: ContextNoteConversionRailProps)
 
   return (
     <Box class="spatial-map-inspector-rail">
-      <button
-        type="button"
-        class="spatial-map-inspector-toggle"
-        onClick={closeRail}
-        aria-label="Close context note conversion panel"
-      >
-        ×
-      </button>
-
       <aside id="spatial-map-context-note-conversion" class="spatial-map-inspector spatial-map-add-nodes-rail">
         <VStack alignItems="stretch" gap="3" h="full">
-          <VStack alignItems="start" gap="1" class="spatial-map-inspector-header">
-            <Text as="span" textStyle="xs" class="spatial-map-kicker">
-              Convert Context Node
-            </Text>
-            <Box class="spatial-map-inspector-header-copy">
-              <Box as="h2" class="spatial-map-inspector-title">
-                Convert loose context into structured nodes
-              </Box>
-              <Text as="p" class="spatial-map-inspector-copy">
-                Answer the generated questions, review the candidate hierarchy, and only add the pieces worth promoting into the map.
-              </Text>
-            </Box>
-          </VStack>
+          <SpatialMapInspectorHeader
+            kicker="Convert Context Node"
+            title="Convert loose context into structured nodes"
+            description="Answer the generated questions, review the candidate hierarchy, and only add the pieces worth promoting into the map."
+            controls="spatial-map-context-note-conversion"
+            closeLabel="Close context note conversion panel"
+            onClose={closeRail}
+          />
 
           <Box class="spatial-map-inspector-section">
             <InspectorRow label="Project" value={props.project.name} />

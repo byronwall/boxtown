@@ -17,6 +17,8 @@ import { useSpatialMap } from "./SpatialMapContext";
 interface SpatialMapCreateContextNodeDialogProps {
   project: ProjectRecord;
   onProjectUpdated?: (project: ProjectRecord) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   trigger?: (open: () => void) => JSX.Element;
 }
 
@@ -25,7 +27,7 @@ export function SpatialMapCreateContextNodeDialog(
 ) {
   const spatialMap = useSpatialMap();
   const createContextNodeSubmission = useSubmission(createProjectContextNode);
-  const [open, setOpen] = createSignal(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = createSignal(false);
   const [label, setLabel] = createSignal("");
   const [context, setContext] = createSignal("");
   const [metadataDraft, setMetadataDraft] = createSignal<Record<string, string>>({});
@@ -38,6 +40,7 @@ export function SpatialMapCreateContextNodeDialog(
   const headingDepthOptions = createMemo(() =>
     Array.from({ length: detectedMaxHeadingDepth() }, (_, index) => index + 1),
   );
+  const open = () => props.open ?? uncontrolledOpen();
 
   const reset = () => {
     setLabel("");
@@ -63,7 +66,8 @@ export function SpatialMapCreateContextNodeDialog(
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
-    setOpen(nextOpen);
+    props.onOpenChange?.(nextOpen);
+    setUncontrolledOpen(nextOpen);
     if (!nextOpen) {
       reset();
     }
@@ -76,7 +80,7 @@ export function SpatialMapCreateContextNodeDialog(
     }
 
     props.onProjectUpdated?.(result.project);
-    setOpen(false);
+    handleOpenChange(false);
     setLabel("");
     setContext("");
     queueMicrotask(() => {
@@ -110,14 +114,14 @@ export function SpatialMapCreateContextNodeDialog(
   return (
     <>
       {props.trigger ? (
-        props.trigger(() => setOpen(true))
+        props.trigger(() => handleOpenChange(true))
       ) : (
         <Button
           colorPalette="green"
           variant="surface"
           size="xs"
           class="spatial-map-button spatial-map-button--strong"
-          onClick={() => setOpen(true)}
+          onClick={() => handleOpenChange(true)}
         >
           New Context Node
         </Button>

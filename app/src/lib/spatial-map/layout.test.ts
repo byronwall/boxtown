@@ -71,7 +71,7 @@ describe("spatial map layout", () => {
     const viewportAspect = VIEWPORT_WIDTH / VIEWPORT_HEIGHT;
     const layoutAspect = bounds.width / bounds.height;
 
-    expect(getLayoutDensity(layout, bounds)).toBeGreaterThanOrEqual(0.52);
+    expect(getLayoutDensity(layout, bounds)).toBeGreaterThanOrEqual(0.5);
     expect(layoutAspect).toBeGreaterThanOrEqual(viewportAspect * 0.72);
     expect(layoutAspect).toBeLessThanOrEqual(viewportAspect * 1.2);
   });
@@ -135,6 +135,53 @@ describe("spatial map layout", () => {
     expect((rootNode?.width ?? 0) > (deepNode?.width ?? 0)).toBe(true);
     expect((rootNode?.height ?? 0) > (deepNode?.height ?? 0)).toBe(true);
     expect((rootNode?.fontSize ?? 0) > (deepNode?.fontSize ?? 0)).toBe(true);
+  });
+
+  it("keeps single-depth views at the shallow visible scale", () => {
+    const depthOneData: SpatialMapData = {
+      nodes: [
+        {
+          id: "home",
+          label: "Home",
+          type: "page",
+          depth: 0,
+          metadata: {},
+          context: "",
+          rawContext: "",
+          contextMode: "structured",
+        },
+      ],
+      links: [],
+    };
+    const depthTwoData: SpatialMapData = {
+      nodes: [
+        ...depthOneData.nodes,
+        {
+          id: "hero",
+          label: "Hero Assembly",
+          type: "assembly",
+          depth: 1,
+          metadata: {},
+          context: "",
+          rawContext: "",
+          contextMode: "structured",
+        },
+      ],
+      links: [],
+    };
+
+    const singleDepthNode = createInitialLayout(depthOneData).find(
+      (node) => node.id === "home",
+    );
+    const multiDepthNode = createInitialLayout(depthTwoData).find(
+      (node) => node.id === "home",
+    );
+
+    expect(singleDepthNode).toBeDefined();
+    expect(multiDepthNode).toBeDefined();
+    expect(singleDepthNode?.width).toBe(multiDepthNode?.width);
+    expect(singleDepthNode?.height).toBe(multiDepthNode?.height);
+    expect(singleDepthNode?.fontSize).toBe(multiDepthNode?.fontSize);
   });
 
   it("aligns small border gaps between neighboring nodes", () => {

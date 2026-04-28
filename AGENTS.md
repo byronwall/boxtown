@@ -30,10 +30,16 @@ Run inside `app/`:
 - `pnpm build`
 - `pnpm start`
 
+## Prototype Verification
+
+- This is a prototype; conserve tokens and avoid routine browser automation unless the user explicitly asks for it.
+- Only run Playwright MCP, in-browser tools, screenshots, or browser-driven QA when the prompt specifically requires them.
+- Only add or run tests when the user asks for tests, the task is explicitly test-focused, or the change is risky enough that skipping tests would leave an important behavior unverified.
+- For ordinary prototype edits, use targeted code review and lightweight checks instead of defaulting to full browser/test passes.
+
 ## Key Paths
 
 - App entry: `app/src/app.tsx`
-- Style brief: `docs/design-brief-industrial-ui.md` (consult and follow for all frontend work)
 - Shared UI wrappers: `app/src/components/ui/`
 - Router action URL helper: `app/src/lib/router/action-url.ts`
 - Theme + recipes: `app/src/theme/`
@@ -41,7 +47,6 @@ Run inside `app/`:
 
 ## UI Conventions
 
-- Treat `docs/design-brief-industrial-ui.md` as a key frontend document. Consult it before making frontend changes and follow it unless the user explicitly directs otherwise.
 - Prefer simplified shared wrappers when they fit:
   - `SimpleDialog`
   - `SimplePopover`

@@ -26,10 +26,10 @@ export function ProjectImportControl() {
             name="archive"
             accept=".zip,application/zip"
             class={css({
-              bg: "olive.2",
-              borderColor: "olive.8",
+              bg: "olive.1",
+              borderColor: "olive.7",
               borderWidth: "1px",
-              borderRadius: "0",
+              borderRadius: "l1",
               color: "fg.default",
               fontFamily: monoFont,
               fontSize: "xs",
@@ -48,7 +48,7 @@ export function ProjectImportControl() {
           loading={submission.pending}
           loadingText="Importing"
           variant="outline"
-          borderRadius="0"
+          borderRadius="l1"
           h="10"
         >
           <Box as={Upload} boxSize="4" />

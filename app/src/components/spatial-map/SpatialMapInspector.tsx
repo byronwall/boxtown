@@ -19,6 +19,7 @@ import { SpatialMapGenerateImageControl } from "./SpatialMapGenerateImageControl
 import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
+import { SpatialMapInspectorHeader } from "./SpatialMapInspectorHeader";
 
 interface SpatialMapInspectorProps {
   project: ProjectRecord;
@@ -112,14 +113,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         class={`spatial-map-inspector${spatialMap.inspectorOpen() ? "" : " is-collapsed"}`}
       >
         <VStack alignItems="start" gap="2" h="full">
-          <Box class="spatial-map-inspector-header">
-            <VStack alignItems="start" gap="1" class="spatial-map-inspector-header-copy">
-              <Box as="h2" class="spatial-map-inspector-title">
-                {spatialMap.selectedNode()?.label ?? "Select an item"}
-              </Box>
-            </VStack>
-            <InspectorToggle inToolbar={false} />
-          </Box>
+          <SpatialMapInspectorHeader title={spatialMap.selectedNode()?.label ?? "Select an item"} />
 
           <Box class="spatial-map-inspector-section spatial-map-inspector-summary">
             <HStack gap="1.5" flexWrap="wrap">
@@ -553,26 +547,6 @@ function ContextPreviewDialog(props: {
     >
       <ContextPreview context={props.context} class="is-dialog" />
     </SimpleDialog>
-  );
-}
-
-export function InspectorToggle(props: { inToolbar: boolean }) {
-  const spatialMap = useSpatialMap();
-
-  return (
-    <button
-      type="button"
-      class={`spatial-map-inspector-toggle${props.inToolbar ? " is-toolbar" : ""}`}
-      onClick={() => spatialMap.setInspectorOpen((current) => !current)}
-      aria-expanded={spatialMap.inspectorOpen()}
-      aria-controls="spatial-map-inspector"
-      aria-label={spatialMap.inspectorOpen() ? "Hide inspector panel" : "Show inspector panel"}
-      title={spatialMap.inspectorOpen() ? "Hide inspector panel" : "Show inspector panel"}
-    >
-      <span aria-hidden="true" class="spatial-map-inspector-toggle-icon">
-        {spatialMap.inspectorOpen() ? ">" : "<"}
-      </span>
-    </button>
   );
 }
 

@@ -5,6 +5,7 @@ import { Text } from "~/components/ui/text";
 import { Textarea } from "~/components/ui/textarea";
 import { Tooltip } from "~/components/ui/tooltip";
 import type { ProjectRecord } from "~/lib/projects/types";
+import { SpatialMapInspectorHeader } from "~/components/spatial-map/SpatialMapInspectorHeader";
 import { useSpatialMap } from "~/components/spatial-map/SpatialMapContext";
 import { useAddNodesFlow } from "./useAddNodesFlow";
 
@@ -36,31 +37,16 @@ export function AddNodesFlowRail(props: AddNodesFlowRailProps) {
 
   return (
     <Box class="spatial-map-inspector-rail">
-      <button
-        type="button"
-        class="spatial-map-inspector-toggle"
-        onClick={closeRail}
-        aria-label="Close add nodes panel"
-      >
-        ×
-      </button>
-
       <aside id="spatial-map-add-nodes" class="spatial-map-inspector spatial-map-add-nodes-rail">
         <VStack alignItems="stretch" gap="3" h="full">
-          <VStack alignItems="start" gap="1" class="spatial-map-inspector-header">
-            <Text as="span" textStyle="xs" class="spatial-map-kicker">
-              Add Nodes
-            </Text>
-            <Box class="spatial-map-inspector-header-copy">
-              <Box as="h2" class="spatial-map-inspector-title">
-                Expand project graph
-              </Box>
-              <Text as="p" class="spatial-map-inspector-copy">
-                Start with a short brief, answer the generated questions, and persist a new node cluster
-                directly into this project.
-              </Text>
-            </Box>
-          </VStack>
+          <SpatialMapInspectorHeader
+            kicker="Add Nodes"
+            title="Expand project graph"
+            description="Start with a short brief, answer the generated questions, and persist a new node cluster directly into this project."
+            controls="spatial-map-add-nodes"
+            closeLabel="Close add nodes panel"
+            onClose={closeRail}
+          />
 
           <Box class="spatial-map-inspector-section">
             <InspectorRow label="Project" value={props.project.name} />

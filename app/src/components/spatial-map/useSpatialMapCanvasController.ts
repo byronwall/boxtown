@@ -140,6 +140,15 @@ export function useSpatialMapCanvasController(
   const selectedNodeRelations = createMemo(() =>
     describeRelations(data().links, sourceNodesById(), selectedNode()),
   );
+  const setVisibleDepthLevel = (value: SpatialMapDepthLevel) => {
+    if (value === "max") {
+      writeVisibleDepthSelection(value);
+      return;
+    }
+
+    const maxLevel = availableDepthLevels().at(-1) ?? 1;
+    writeVisibleDepthSelection(clampInteger(value, 1, maxLevel));
+  };
   const zoomPercent = createMemo(() => {
     const currentCamera = camera();
     const scaleX = VIEWPORT_WIDTH / currentCamera.width;
@@ -428,6 +437,13 @@ export function useSpatialMapCanvasController(
       return;
     }
 
+    const depthShortcut = getDepthShortcutSelection(event, availableDepthLevels());
+    if (depthShortcut !== null) {
+      event.preventDefault();
+      setVisibleDepthLevel(depthShortcut);
+      return;
+    }
+
     if (event.key.toLowerCase() === "f") {
       event.preventDefault();
       fitCameraToNodes();
@@ -701,15 +717,7 @@ export function useSpatialMapCanvasController(
         scheduleViewportFit();
       }
     },
-    setVisibleDepthLevel: (value) => {
-      if (value === "max") {
-        writeVisibleDepthSelection(value);
-        return;
-      }
-
-      const maxLevel = availableDepthLevels().at(-1) ?? 1;
-      writeVisibleDepthSelection(clampInteger(value, 1, maxLevel));
-    },
+    setVisibleDepthLevel,
     toggleLinkedInIsolation: toggleLinkedIsolation,
     toggleEdges: () => setShowEdges((current) => !current),
     reflowLayout: () => {
@@ -757,6 +765,40 @@ function resolveVisibleDepthLevel(
 ) {
   const maxLevel = availableLevels.at(-1) ?? 1;
   return selection === "max" ? maxLevel : clampInteger(selection, 1, maxLevel);
+}
+
+function getDepthShortcutSelection(
+  event: KeyboardEvent,
+  availableLevels: number[],
+): SpatialMapDepthLevel | null {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+    return null;
+  }
+
+  const level = getKeyboardDigit(event);
+  if (level === null) {
+    return null;
+  }
+
+  const maxLevel = availableLevels.at(-1) ?? 1;
+  if (level === 0 || level >= maxLevel) {
+    return "max";
+  }
+
+  if (!availableLevels.includes(level)) {
+    return null;
+  }
+
+  return level;
+}
+
+function getKeyboardDigit(event: KeyboardEvent) {
+  if (/^[0-9]$/.test(event.key)) {
+    return Number(event.key);
+  }
+
+  const codeDigit = /^(?:Digit|Numpad)([0-9])$/.exec(event.code)?.[1];
+  return codeDigit ? Number(codeDigit) : null;
 }
 
 function filterSpatialMapDataByDepthLevel(

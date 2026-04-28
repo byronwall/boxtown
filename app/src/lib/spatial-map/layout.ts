@@ -14,8 +14,9 @@ const sizeByDepth: Record<
   1: { area: 12_580, minWidth: 148, maxWidth: 212, fontSize: 16, metaSize: 11 },
   2: { area: 6_960, minWidth: 112, maxWidth: 164, fontSize: 16, metaSize: 10 },
 };
+const CANVAS_NODE_TEXT_SCALE = 1.15;
 const SHALLOW_VISIBLE_DEPTH_SCALE = 1.32;
-const DEEP_VISIBLE_DEPTH_SCALE = 0.8;
+const DEEP_VISIBLE_DEPTH_SCALE = 1;
 
 export type AdjacencyMap = Map<string, Set<string>>;
 
@@ -30,8 +31,8 @@ export function getNodeSize(depth: number, label = ""): NodeSize {
   return {
     width,
     height,
-    fontSize: base.fontSize,
-    metaSize: base.metaSize,
+    fontSize: roundToTenth(base.fontSize * CANVAS_NODE_TEXT_SCALE),
+    metaSize: roundToTenth(base.metaSize * CANVAS_NODE_TEXT_SCALE),
   };
 }
 
@@ -84,8 +85,8 @@ function getVisibleDepthNodeSize(
   return {
     width: roundEven(Math.max(48, baseSize.width * scale)),
     height: roundEven(Math.max(48, baseSize.height * scale)),
-    fontSize: Math.max(10, Math.round(baseSize.fontSize * scale * 10) / 10),
-    metaSize: Math.max(9, Math.round(baseSize.metaSize * scale * 10) / 10),
+    fontSize: Math.max(10, roundToTenth(baseSize.fontSize * scale)),
+    metaSize: Math.max(9, roundToTenth(baseSize.metaSize * scale)),
   };
 }
 
@@ -111,7 +112,7 @@ function getRelativeDepth(
 ) {
   const span = range.maxDepth - range.minDepth;
   if (span <= 0) {
-    return null;
+    return 0;
   }
 
   return (depth - range.minDepth) / span;
@@ -123,6 +124,10 @@ function interpolateNumber(start: number, end: number, progress: number) {
 
 function roundEven(value: number) {
   return Math.max(2, Math.round(value / 2) * 2);
+}
+
+function roundToTenth(value: number) {
+  return Math.round(value * 10) / 10;
 }
 
 export function filterSpatialMapDataByRelatedNodes(

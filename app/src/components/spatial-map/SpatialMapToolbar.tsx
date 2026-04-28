@@ -6,7 +6,7 @@ import {
   SlidersHorizontalIcon,
   XIcon,
 } from "lucide-solid";
-import { For, createMemo } from "solid-js";
+import { For, createMemo, createSignal } from "solid-js";
 import { Box, HStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import { IconButton } from "~/components/ui/icon-button";
@@ -17,7 +17,7 @@ import type { ProjectRecord } from "~/lib/projects/types";
 import { ProjectMetadataSettingsDialog } from "./ProjectMetadataSettingsDialog";
 import { SpatialMapCreateContextNodeDialog } from "./SpatialMapCreateContextNodeDialog";
 import { useSpatialMap } from "./SpatialMapContext";
-import { InspectorToggle } from "./SpatialMapInspector";
+import { InspectorToggle } from "./SpatialMapInspectorHeader";
 
 interface SpatialMapToolbarProps {
   project: ProjectRecord;
@@ -31,6 +31,7 @@ interface SpatialMapToolbarProps {
 
 export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
   const spatialMap = useSpatialMap();
+  const [contextNodeDialogOpen, setContextNodeDialogOpen] = createSignal(false);
   const isolationLabel = createMemo(() =>
     truncateIsolationLabel(spatialMap.isolationLabel()),
   );
@@ -131,18 +132,22 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
               >
                 <Menu.ItemText>Decompose Source</Menu.ItemText>
               </Menu.Item>
-              <SpatialMapCreateContextNodeDialog
-                project={props.project}
-                onProjectUpdated={props.onProjectUpdated}
-                trigger={(open) => (
-                  <Menu.Item value="new-context-node" onClick={open}>
-                    <Menu.ItemText>New Context Node</Menu.ItemText>
-                  </Menu.Item>
-                )}
-              />
+              <Menu.Item
+                value="new-context-node"
+                onClick={() => setContextNodeDialogOpen(true)}
+              >
+                <Menu.ItemText>New Context Node</Menu.ItemText>
+              </Menu.Item>
             </Menu.Content>
           </Menu.Positioner>
         </Menu.Root>
+        <SpatialMapCreateContextNodeDialog
+          project={props.project}
+          onProjectUpdated={props.onProjectUpdated}
+          open={contextNodeDialogOpen()}
+          onOpenChange={setContextNodeDialogOpen}
+          trigger={() => null}
+        />
         <Menu.Root
           positioning={{ placement: "bottom-end", gutter: 4 }}
           size="sm"

@@ -5,8 +5,8 @@
   --spatial-map-panel-border: rgba(54, 62, 55, 0.34);
   --spatial-map-panel-border-strong: rgba(27, 32, 28, 0.56);
   --spatial-map-copy: #171c19;
-  --spatial-map-copy-muted: rgba(23, 28, 25, 0.72);
-  --spatial-map-copy-dim: rgba(23, 28, 25, 0.54);
+  --spatial-map-copy-muted: #323b35;
+  --spatial-map-copy-dim: #475249;
   --spatial-map-blue-fill: #d6e0e8;
   --spatial-map-blue-fill-hover: #c8d6e1;
   --spatial-map-blue-stroke: #63798c;
@@ -860,10 +860,10 @@
   width: 100%;
   height: 100%;
   display: block;
-  background: linear-gradient(rgba(26, 33, 28, 0.11) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(26, 33, 28, 0.11) 1px, transparent 1px),
-    linear-gradient(rgba(26, 33, 28, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(26, 33, 28, 0.04) 1px, transparent 1px);
+  background: linear-gradient(rgba(26, 33, 28, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 33, 28, 0.055) 1px, transparent 1px),
+    linear-gradient(rgba(26, 33, 28, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(26, 33, 28, 0.018) 1px, transparent 1px);
   background-size:
     80px 80px,
     80px 80px,
@@ -1394,12 +1394,34 @@
   height: calc(100dvh - 24px);
   max-height: calc(100dvh - 24px) !important;
   padding-block: 12px;
-  border-color: rgba(34, 41, 36, 0.34);
+  border: 1px solid rgba(96, 101, 95, 0.72);
+  background: rgba(252, 253, 252, 0.94);
+  box-shadow:
+    0 28px 70px rgba(29, 33, 28, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.64),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
   gap: 8px;
 }
 
 body:has(.spatial-map-image-viewer-dialog) {
   overflow: hidden;
+}
+
+.dialog__backdrop:has(+ .dialog__positioner .spatial-map-image-viewer-dialog) {
+  background:
+    radial-gradient(circle at 15% 8%, rgba(48, 164, 108, 0.16), transparent 28rem),
+    radial-gradient(circle at 88% 20%, rgba(137, 142, 135, 0.14), transparent 30rem),
+    repeating-linear-gradient(
+      0deg,
+      rgba(31, 36, 33, 0.06) 0 1px,
+      transparent 1px 40px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(31, 36, 33, 0.045) 0 1px,
+      transparent 1px 40px
+    ),
+    linear-gradient(180deg, rgba(248, 250, 248, 0.88), rgba(223, 226, 223, 0.92));
 }
 
 .dialog__positioner:has(.spatial-map-image-viewer-dialog) {
@@ -1427,6 +1449,7 @@ body:has(.spatial-map-image-viewer-dialog) {
   height: 100%;
   min-width: 0;
   min-height: 0;
+  background: #eff1ef;
 }
 
 .spatial-map-image-viewer-layout[data-has-thumbnails="false"] {
@@ -1450,8 +1473,9 @@ body:has(.spatial-map-image-viewer-dialog) {
 .spatial-map-image-viewer-thumbs {
   min-height: 0;
   overflow: auto;
-  padding: 0 6px 0 0;
-  border-right: 1px solid rgba(34, 41, 36, 0.22);
+  padding: 8px;
+  border-right: 1px solid rgba(96, 101, 95, 0.34);
+  background: rgba(239, 241, 239, 0.86);
 }
 
 .spatial-map-image-viewer-main {
@@ -1464,15 +1488,17 @@ body:has(.spatial-map-image-viewer-dialog) {
   width: 100%;
   height: 172px;
   padding: 0;
-  border: 1px solid rgba(34, 41, 36, 0.28);
-  border-radius: 0;
+  border: 1px solid rgba(96, 101, 95, 0.38);
+  border-radius: 4px;
   background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.05) 1px,
+      rgba(31, 36, 33, 0.055) 1px,
       transparent 1px
     ),
-    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), #1b201d;
+    linear-gradient(rgba(31, 36, 33, 0.055) 1px, transparent 1px),
+    rgba(248, 250, 248, 0.92);
   background-size: 16px 16px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   cursor: pointer;
   overflow: hidden;
 }
@@ -1483,8 +1509,9 @@ body:has(.spatial-map-image-viewer-dialog) {
   outline: none;
   border-color: rgba(45, 111, 72, 0.92);
   box-shadow:
-    inset 0 0 0 1px rgba(45, 111, 72, 0.56),
-    0 0 0 1px rgba(45, 111, 72, 0.18);
+    inset 3px 0 0 rgba(48, 164, 108, 0.95),
+    inset 0 0 0 1px rgba(45, 111, 72, 0.42),
+    0 8px 22px rgba(29, 33, 28, 0.12);
 }
 
 .spatial-map-image-viewer-thumb img {
@@ -1500,9 +1527,9 @@ body:has(.spatial-map-image-viewer-dialog) {
   top: 6px;
   min-width: 22px;
   padding: 3px 5px;
-  border: 1px solid rgba(244, 248, 243, 0.28);
-  background: rgba(15, 47, 29, 0.9);
-  color: #f5f8f3;
+  border: 1px solid rgba(45, 111, 72, 0.46);
+  background: rgba(229, 239, 229, 0.94);
+  color: #254f36;
   font-family: "SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace;
   font-size: 10px;
   line-height: 1;
@@ -1522,21 +1549,30 @@ body:has(.spatial-map-image-viewer-dialog) {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid rgba(34, 41, 36, 0.34);
+  border: 1px solid rgba(96, 101, 95, 0.48);
+  border-radius: 4px;
   background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.08) 1px,
+      rgba(31, 36, 33, 0.055) 1px,
       transparent 1px
     ),
-    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px), #171b18;
-  background-size: 24px 24px;
+    linear-gradient(rgba(31, 36, 33, 0.055) 1px, transparent 1px),
+    radial-gradient(circle at 12% 8%, rgba(48, 164, 108, 0.1), transparent 24rem),
+    rgba(248, 250, 248, 0.92);
+  background-size: 24px 24px, 24px 24px, auto, auto;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    0 14px 36px rgba(29, 33, 28, 0.12);
   cursor: grab;
   touch-action: none;
 }
 
 .spatial-map-image-viewer-dialog .dialog__header {
   min-width: 0;
-  padding-bottom: 0;
+  margin-inline: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(96, 101, 95, 0.28);
+  background: rgba(248, 250, 248, 0.9);
 }
 
 .spatial-map-image-viewer-header-tools {
@@ -1614,10 +1650,11 @@ body:has(.spatial-map-image-viewer-dialog) {
   height: 56px;
   padding: 0;
   place-items: center;
-  border: 1px solid rgba(214, 222, 211, 0.34);
-  border-radius: 0;
-  background: rgba(19, 24, 21, 0.84);
-  color: #f5f8f3;
+  border: 1px solid rgba(96, 101, 95, 0.46);
+  border-radius: 4px;
+  background: rgba(252, 253, 252, 0.88);
+  color: #1d211c;
+  box-shadow: 0 12px 28px rgba(29, 33, 28, 0.16);
   cursor: pointer;
   transform: translateY(-50%);
 }
@@ -1625,8 +1662,9 @@ body:has(.spatial-map-image-viewer-dialog) {
 .spatial-map-image-viewer-arrow:hover,
 .spatial-map-image-viewer-arrow:focus-visible {
   outline: none;
-  border-color: rgba(127, 171, 143, 0.86);
-  background: rgba(15, 47, 29, 0.92);
+  border-color: rgba(45, 111, 72, 0.82);
+  background: rgba(229, 239, 229, 0.96);
+  color: #143d25;
 }
 
 .spatial-map-image-viewer-arrow.is-previous {
@@ -1671,8 +1709,8 @@ body:has(.spatial-map-image-viewer-dialog) {
   min-height: 20px;
   align-items: center;
   padding: 0 6px;
-  border: 1px solid rgba(34, 41, 36, 0.14);
-  background: rgba(244, 246, 242, 0.74);
+  border: 1px solid rgba(96, 101, 95, 0.24);
+  background: rgba(248, 250, 248, 0.82);
 }
 
 .spatial-map-context-markdown.is-dialog {
@@ -2006,7 +2044,7 @@ body:has(.spatial-map-image-viewer-dialog) {
     overflow-y: hidden;
     padding: 0 0 6px;
     border-right: 0;
-    border-bottom: 1px solid rgba(34, 41, 36, 0.22);
+    border-bottom: 1px solid rgba(96, 101, 95, 0.34);
   }
 
   .spatial-map-image-viewer-thumb {
@@ -2121,7 +2159,7 @@ body:has(.spatial-map-image-viewer-dialog) {
 
 .spatial-map-subtitle {
   max-width: 64ch;
-  color: rgba(23, 28, 25, 0.7);
+  color: var(--spatial-map-copy-muted);
 }
 
 .spatial-map-eyebrow,
@@ -2195,12 +2233,12 @@ body:has(.spatial-map-image-viewer-dialog) {
   border-color: rgba(27, 32, 28, 0.48);
   border-radius: 0;
   background:
-    linear-gradient(90deg, rgba(35, 42, 37, 0.12) 1px, transparent 1px),
-    linear-gradient(rgba(35, 42, 37, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(35, 42, 37, 0.045) 1px, transparent 1px),
+    linear-gradient(rgba(35, 42, 37, 0.045) 1px, transparent 1px),
     #eef1eb;
   background-size:
-    32px 32px,
-    32px 32px,
+    48px 48px,
+    48px 48px,
     auto;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.34),
@@ -2215,9 +2253,9 @@ body:has(.spatial-map-image-viewer-dialog) {
   align-items: center;
   margin-bottom: 8px;
   padding: 10px 12px;
-  border-color: rgba(27, 32, 28, 0.34);
+  border-color: rgba(27, 32, 28, 0.5);
   border-radius: 0;
-  background: rgba(230, 234, 226, 0.92);
+  background: rgba(238, 241, 235, 0.98);
   backdrop-filter: none;
 }
 
@@ -2229,7 +2267,7 @@ body:has(.spatial-map-image-viewer-dialog) {
 
 .spatial-map-tree-subtitle {
   margin-top: 3px;
-  color: #64748b;
+  color: #2f3a33;
   font-size: 12px;
   line-height: 1.4;
 }
@@ -2245,9 +2283,9 @@ body:has(.spatial-map-image-viewer-dialog) {
 .spatial-map-tree-row {
   min-height: 52px;
   padding: 8px 10px 8px 0;
-  border-color: rgba(44, 52, 46, 0.28);
+  border-color: color-mix(in srgb, var(--spatial-map-tree-stroke) 78%, #1b201c);
   border-radius: 0;
-  background: rgba(239, 242, 237, 0.94);
+  background: color-mix(in srgb, var(--spatial-map-tree-fill) 88%, #f8faf6);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
   transition:
     background-color 180ms ease,
@@ -2283,26 +2321,36 @@ body:has(.spatial-map-image-viewer-dialog) {
 }
 
 .spatial-map-tree-purpose {
-  color: #667085;
+  color: #2f3a33;
   font-size: 12px;
+  font-weight: 500;
 }
 
 .spatial-map-tree-meta {
   gap: 5px !important;
+  color: #303b34;
+  font-weight: 600;
 }
 
 .spatial-map-tree-meta span,
 .spatial-map-inspector-chip,
 .spatial-map-image-viewer-meta span {
-  border-color: rgba(44, 52, 46, 0.24);
+  border-color: rgba(44, 52, 46, 0.34);
   border-radius: 0;
-  background: rgba(239, 242, 237, 0.84);
+  background: rgba(246, 248, 244, 0.94);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.spatial-map-image-viewer-meta span {
+  border-color: rgba(96, 101, 95, 0.24);
+  border-radius: 4px;
+  background: rgba(248, 250, 248, 0.82);
 }
 
 .spatial-map-tree-meta span {
   min-height: 21px;
   padding: 0 8px;
+  color: #303b34;
 }
 
 .spatial-map-inspector {
@@ -2345,7 +2393,7 @@ body:has(.spatial-map-image-viewer-dialog) {
 .spatial-map-inspector-row-label,
 .spatial-map-relation-title,
 .spatial-map-inspector-section-title {
-  color: rgba(23, 28, 25, 0.58);
+  color: var(--spatial-map-copy-dim);
   font-weight: 700;
 }
 

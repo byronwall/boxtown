@@ -10,6 +10,7 @@ import { getNodePrimaryMetadataText } from "~/lib/projects/node-metadata";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { useSpatialMap } from "~/components/spatial-map/SpatialMapContext";
 import { getImageFilesFromDataTransfer } from "~/components/spatial-map/SpatialMapImages";
+import { SpatialMapInspectorHeader } from "~/components/spatial-map/SpatialMapInspectorHeader";
 import { isEditableTarget } from "~/components/spatial-map/spatial-map-dom";
 import { SourceImagePreview, SourceImagePreviewDialog } from "./SourceImagePreview";
 import { useSourceDecompositionFlow } from "./useSourceDecompositionFlow";
@@ -94,31 +95,16 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
 
   return (
     <Box class="spatial-map-inspector-rail">
-      <button
-        type="button"
-        class="spatial-map-inspector-toggle"
-        onClick={closeRail}
-        aria-label="Close source decomposition panel"
-      >
-        ×
-      </button>
-
       <aside id="spatial-map-source-decomposition" class="spatial-map-inspector spatial-map-add-nodes-rail">
         <VStack alignItems="stretch" gap="3" h="full">
-          <VStack alignItems="start" gap="1" class="spatial-map-inspector-header">
-            <Text as="span" textStyle="xs" class="spatial-map-kicker">
-              Source Decomp
-            </Text>
-            <Box class="spatial-map-inspector-header-copy">
-              <Box as="h2" class="spatial-map-inspector-title">
-                Convert inspiration into graph nodes
-              </Box>
-              <Text as="p" class="spatial-map-inspector-copy">
-                Paste or drop screenshots, add optional notes, then review the generated layout,
-                block, component, and theme nodes before accepting them.
-              </Text>
-            </Box>
-          </VStack>
+          <SpatialMapInspectorHeader
+            kicker="Source Decomp"
+            title="Convert inspiration into graph nodes"
+            description="Paste or drop screenshots, add optional notes, then review the generated layout, block, component, and theme nodes before accepting them."
+            controls="spatial-map-source-decomposition"
+            closeLabel="Close source decomposition panel"
+            onClose={closeRail}
+          />
 
           <Box class="spatial-map-inspector-section">
             <InspectorRow label="Project" value={props.project.name} />
