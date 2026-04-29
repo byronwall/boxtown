@@ -267,16 +267,15 @@ export const createProjectChildNode = action(
     if (typeof projectId !== "string" || projectId.trim().length === 0) {
       throw new Error("A project id is required.");
     }
-    if (typeof parentNodeId !== "string" || parentNodeId.trim().length === 0) {
-      throw new Error("A parent node id is required.");
-    }
     if (typeof title !== "string" || title.trim().length === 0) {
       throw new Error("A node title is required.");
     }
 
     return createChildNodeOnDisk({
       projectId,
-      parentNodeId,
+      parentNodeId: typeof parentNodeId === "string" && parentNodeId.trim().length > 0
+        ? parentNodeId
+        : null,
       title,
     });
   },

@@ -40,7 +40,7 @@ export interface EdgeVisualState {
 }
 
 export interface ChildNodeDraft {
-  parentNodeId: string;
+  parentNodeId: string | null;
 }
 
 export interface ViewportPointerHandlers {
@@ -111,6 +111,7 @@ export interface SpatialMapCanvasController {
   toggleEdges: () => void;
   reflowLayout: () => void;
   fitCameraToNodes: () => void;
+  openChildNodeDraft: (parentNodeId?: string | null) => void;
   openAddNodesFlow: () => void;
   openContextNoteConversionFlow: () => void;
   openSourceDecompositionFlow: () => void;

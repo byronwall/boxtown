@@ -90,6 +90,7 @@ interface SpatialMapSceneProps {
 
 export function SpatialMapScene(props: SpatialMapSceneProps) {
   const controller = useSpatialMap();
+  const hasRootNodeDraft = createMemo(() => controller.childNodeDraft()?.parentNodeId === null);
   const draftParentNode = createMemo(() => {
     const parentNodeId = controller.childNodeDraft()?.parentNodeId;
     if (!parentNodeId) {
@@ -169,6 +170,12 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
               />
             )}
           </Show>
+          <Show when={hasRootNodeDraft()}>
+            <ChildNodePlaceholder
+              project={props.project}
+              onProjectUpdated={props.onProjectUpdated}
+            />
+          </Show>
         </g>
       </svg>
     </Box>
@@ -176,7 +183,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
 }
 
 function ChildNodePlaceholder(props: {
-  parentNode: NodeVisualState["node"];
+  parentNode?: NodeVisualState["node"];
   project: ProjectRecord;
   onProjectUpdated?: (project: ProjectRecord) => void;
 }) {
@@ -186,16 +193,21 @@ function ChildNodePlaceholder(props: {
     return (
       formData instanceof FormData &&
       formData.get("projectId") === props.project.id &&
-      formData.get("parentNodeId") === props.parentNode.id
+      (props.parentNode
+        ? formData.get("parentNodeId") === props.parentNode.id
+        : !formData.get("parentNodeId"))
     );
   });
   const [title, setTitle] = createSignal("");
   let inputRef: HTMLInputElement | undefined;
 
-  const width = () => Math.max(164, Math.min(220, props.parentNode.width * 0.96));
+  const width = () => Math.max(164, Math.min(220, (props.parentNode?.width ?? 220) * 0.96));
   const height = () => 86;
-  const x = () => props.parentNode.x - width() / 2;
-  const y = () => props.parentNode.y + props.parentNode.height / 2 + 34;
+  const x = () => (props.parentNode?.x ?? VIEWPORT_WIDTH / 2) - width() / 2;
+  const y = () =>
+    props.parentNode
+      ? props.parentNode.y + props.parentNode.height / 2 + 34
+      : VIEWPORT_HEIGHT / 2 - height() / 2;
 
   createEffect(() => {
     inputRef?.focus();
@@ -231,9 +243,10 @@ function ChildNodePlaceholder(props: {
   const applyOptimisticChild = (nextTitle: string) => {
     const nodeId = createUniqueNodeId(
       nextTitle,
-      props.parentNode.type,
+      props.parentNode?.type ?? "page",
       new Set(props.project.spatialMap.nodes.map((node) => node.id)),
     );
+    const nodeType = props.parentNode?.type ?? "page";
 
     props.onProjectUpdated?.({
       ...props.project,
@@ -245,19 +258,21 @@ function ChildNodePlaceholder(props: {
           {
             id: nodeId,
             label: nextTitle,
-            type: props.parentNode.type,
+            type: nodeType,
             status: DEFAULT_MAP_NODE_STATUS,
-            depth: props.parentNode.depth + 1,
+            depth: props.parentNode ? props.parentNode.depth + 1 : 0,
             metadata: {},
             context: "",
             rawContext: "",
-            contextMode: props.parentNode.contextMode,
+            contextMode: props.parentNode?.contextMode ?? "structured",
           },
         ],
-        links: [
-          ...props.project.spatialMap.links,
-          createParentChildLink({ source: props.parentNode.id, target: nodeId }),
-        ],
+        links: props.parentNode
+          ? [
+              ...props.project.spatialMap.links,
+              createParentChildLink({ source: props.parentNode.id, target: nodeId }),
+            ]
+          : props.project.spatialMap.links,
       },
     });
     controller.clearChildNodeDraft();
@@ -294,7 +309,11 @@ function ChildNodePlaceholder(props: {
           }}
         >
           <input type="hidden" name="projectId" value={props.project.id} />
-          <input type="hidden" name="parentNodeId" value={props.parentNode.id} />
+          <Show when={props.parentNode}>
+            {(parentNode) => (
+              <input type="hidden" name="parentNodeId" value={parentNode().id} />
+            )}
+          </Show>
           <Input
             ref={inputRef}
             aria-label="New child node title"

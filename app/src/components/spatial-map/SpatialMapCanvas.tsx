@@ -1,6 +1,7 @@
 import { useSearchParams } from "@solidjs/router";
 import { createEffect, lazy, Show, untrack } from "solid-js";
 import { Box } from "styled-system/jsx";
+import { Button } from "~/components/ui/button";
 import type { ProjectRecord } from "~/lib/projects/types";
 
 import "./spatial-map.css";
@@ -97,7 +98,13 @@ function SpatialMapCanvasLayout(props: {
                 onProjectUpdated={props.onProjectUpdated}
               />
             </Show>
-            <Show when={!props.hasNodes && controller.viewMode() === "canvas"}>
+            <Show
+              when={
+                !props.hasNodes &&
+                controller.viewMode() === "canvas" &&
+                !controller.childNodeDraft()
+              }
+            >
               <Box class="spatial-map-empty">
                 <Box as="h2" class="spatial-map-empty-title">
                   Blank project grid
@@ -107,6 +114,14 @@ function SpatialMapCanvasLayout(props: {
                   ready for the next layer of project details and AI-assisted
                   editing.
                 </Box>
+                <Button
+                  colorPalette="green"
+                  size="xs"
+                  class="spatial-map-empty-action"
+                  onClick={() => controller.openChildNodeDraft(null)}
+                >
+                  Create node
+                </Button>
               </Box>
             </Show>
           </Box>

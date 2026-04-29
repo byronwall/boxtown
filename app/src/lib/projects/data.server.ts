@@ -56,7 +56,7 @@ interface CreateContextNodeInput {
 
 interface CreateChildNodeInput {
   projectId: string;
-  parentNodeId: string;
+  parentNodeId: string | null;
   title: string;
 }
 
@@ -698,25 +698,28 @@ export async function createChildNodeOnDisk(
   }
 
   const current = records[recordIndex];
-  const parentNode = current.spatialMap.nodes.find((node) => node.id === input.parentNodeId);
+  const parentNode = input.parentNodeId
+    ? current.spatialMap.nodes.find((node) => node.id === input.parentNodeId) ?? null
+    : null;
 
-  if (!parentNode) {
+  if (input.parentNodeId && !parentNode) {
     throw new Error("Parent node not found.");
   }
 
   const label = input.title.trim() || "Untitled node";
   const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));
-  const nodeId = reserveUniqueNodeId(label, parentNode.type, existingIds);
+  const nodeType = parentNode?.type ?? "page";
+  const nodeId = reserveUniqueNodeId(label, nodeType, existingIds);
   const node = {
     id: nodeId,
     label,
-    type: parentNode.type,
+    type: nodeType,
     status: DEFAULT_MAP_NODE_STATUS,
-    depth: parentNode.depth + 1,
+    depth: parentNode ? parentNode.depth + 1 : 0,
     metadata: {},
     context: "",
     rawContext: "",
-    contextMode: parentNode.contextMode,
+    contextMode: parentNode?.contextMode ?? "structured",
   } satisfies SpatialMapData["nodes"][number];
 
   const nextRecord: ProjectRecord = {
@@ -725,10 +728,12 @@ export async function createChildNodeOnDisk(
     spatialMap: {
       ...current.spatialMap,
       nodes: [...current.spatialMap.nodes, node],
-      links: [
-        ...current.spatialMap.links,
-        createParentChildLink({ source: parentNode.id, target: node.id }),
-      ],
+      links: parentNode
+        ? [
+            ...current.spatialMap.links,
+            createParentChildLink({ source: parentNode.id, target: node.id }),
+          ]
+        : current.spatialMap.links,
     },
   };
 

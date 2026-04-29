@@ -191,7 +191,6 @@
   border: 1px solid var(--spatial-map-panel-border);
   background: rgba(246, 248, 244, 0.9);
   box-shadow: 0 16px 40px rgba(23, 27, 24, 0.14);
-  pointer-events: none;
   transform: translate(-50%, -50%);
 }
 
@@ -207,6 +206,10 @@
   color: var(--spatial-map-copy-muted);
   font-size: 12px;
   line-height: 1.6;
+}
+
+.spatial-map-empty-action {
+  margin-top: 12px;
 }
 
 .spatial-map-inspector-row-value,

@@ -83,7 +83,7 @@ export function useSpatialMapCanvasController(
   const [addNodesOpen, setAddNodesOpen] = createSignal(false);
   const [contextNoteConversionOpen, setContextNoteConversionOpen] = createSignal(false);
   const [sourceDecompositionOpen, setSourceDecompositionOpen] = createSignal(false);
-  const [childNodeDraft, setChildNodeDraft] = createSignal<{ parentNodeId: string } | null>(null);
+  const [childNodeDraft, setChildNodeDraft] = createSignal<{ parentNodeId: string | null } | null>(null);
   const [viewMode, setViewMode] = createSignal<SpatialMapViewMode>("canvas");
   const [visibleDepthSelection, writeVisibleDepthSelection] =
     createSignal<SpatialMapDepthLevel>("max");
@@ -433,6 +433,10 @@ export function useSpatialMapCanvasController(
     };
   };
 
+  const openChildNodeDraft = (parentNodeId: string | null = selectedNodeId()) => {
+    setChildNodeDraft({ parentNodeId });
+  };
+
   const handleWindowKeyDown = (event: KeyboardEvent) => {
     if (isEditableTarget(event.target)) {
       return;
@@ -440,9 +444,9 @@ export function useSpatialMapCanvasController(
 
     if (event.key.toLowerCase() === "c" && !event.metaKey && !event.ctrlKey && !event.altKey) {
       const parentNodeId = selectedNodeId();
-      if (viewMode() === "canvas" && parentNodeId) {
+      if (viewMode() === "canvas") {
         event.preventDefault();
-        setChildNodeDraft({ parentNodeId });
+        openChildNodeDraft(parentNodeId);
       }
       return;
     }
@@ -703,6 +707,7 @@ export function useSpatialMapCanvasController(
     closeSourceDecompositionFlow: () => setSourceDecompositionOpen(false),
     clearIsolation: () => applyIsolation(null),
     clearChildNodeDraft: () => setChildNodeDraft(null),
+    openChildNodeDraft,
     openAddNodesFlow: () => {
       setContextNoteConversionOpen(false);
       setSourceDecompositionOpen(false);
