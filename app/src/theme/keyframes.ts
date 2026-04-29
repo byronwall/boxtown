@@ -122,4 +122,15 @@ export const keyframes = defineKeyframes({
       insetBlockStart: "var(--animate-to-y)",
     },
   },
+  "edit-in-place-confirmed": {
+    "0%": { textShadow: "0 0 0 transparent" },
+    "35%": { textShadow: "0 0 14px rgba(30, 79, 57, 0.42)" },
+    "100%": { textShadow: "0 0 0 transparent" },
+  },
+  "edit-in-place-reverted": {
+    "0%": { transform: "rotate(0deg)" },
+    "25%": { transform: "rotate(1deg)" },
+    "60%": { transform: "rotate(-1deg)" },
+    "100%": { transform: "rotate(0deg)" },
+  },
 });

@@ -10,9 +10,9 @@ const sizeByDepth: Record<
   number,
   Omit<NodeSize, "width" | "height"> & { area: number; minWidth: number; maxWidth: number }
 > = {
-  0: { area: 20_240, minWidth: 184, maxWidth: 252, fontSize: 22, metaSize: 12 },
-  1: { area: 12_580, minWidth: 148, maxWidth: 212, fontSize: 16, metaSize: 11 },
-  2: { area: 6_960, minWidth: 112, maxWidth: 164, fontSize: 16, metaSize: 10 },
+  0: { area: 20_240, minWidth: 192, maxWidth: 262, fontSize: 22, metaSize: 12 },
+  1: { area: 12_580, minWidth: 154, maxWidth: 220, fontSize: 16, metaSize: 11 },
+  2: { area: 6_960, minWidth: 120, maxWidth: 172, fontSize: 16, metaSize: 10 },
 };
 const CANVAS_NODE_TEXT_SCALE = 1.15;
 const SHALLOW_VISIBLE_DEPTH_SCALE = 1.32;
@@ -23,7 +23,7 @@ export type AdjacencyMap = Map<string, Set<string>>;
 export function getNodeSize(depth: number, label = ""): NodeSize {
   const base = sizeByDepth[depth] ?? sizeByDepth[2];
   const labelLength = label.trim().length;
-  const aspect = clamp(1.55 + (labelLength - 10) * 0.055, 1.35, 2.2);
+  const aspect = clamp(1.66 + (labelLength - 10) * 0.06, 1.44, 2.36);
   const rawWidth = Math.sqrt(base.area * aspect);
   const width = clamp(Math.round(rawWidth / 2) * 2, base.minWidth, base.maxWidth);
   const height = Math.max(48, Math.round((base.area / width) / 2) * 2);

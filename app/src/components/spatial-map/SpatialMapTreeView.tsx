@@ -20,19 +20,6 @@ export function SpatialMapTreeView(props: { project: ProjectRecord }) {
 
   return (
     <Box class="spatial-map-tree-viewport">
-      <Box class="spatial-map-tree-header">
-        <Box>
-          <Box as="h2" class="spatial-map-tree-title">
-            Hierarchy Tree
-          </Box>
-          <Box as="p" class="spatial-map-tree-subtitle">
-            Showing {spatialMap.visibleData().nodes.length} nodes across{" "}
-            {spatialMap.visibleDepthLevel()} visible{" "}
-            {spatialMap.visibleDepthLevel() === 1 ? "level" : "levels"}.
-          </Box>
-        </Box>
-      </Box>
-
       <Show
         when={tree().roots.length > 0}
         fallback={

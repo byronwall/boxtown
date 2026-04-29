@@ -3,6 +3,7 @@ import { For, Show, createEffect, createMemo, createSignal, onMount } from "soli
 import { Box, HStack, VStack } from "styled-system/jsx";
 import { MarkdownRenderer } from "~/components/markdown-renderer";
 import { Button } from "~/components/ui/button";
+import { EditInPlace } from "~/components/ui/edit-in-place";
 import * as Field from "~/components/ui/field";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { Textarea } from "~/components/ui/textarea";
@@ -10,6 +11,7 @@ import { toaster } from "~/components/ui/toast";
 import {
   updateProjectNodeContext,
   updateProjectNodeMetadata,
+  updateProjectNodeTitle,
 } from "~/lib/projects/data";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
@@ -44,6 +46,14 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
       formData.get("nodeId") === spatialMap.selectedNodeId()
     );
   });
+  const saveTitleSubmission = useSubmission(updateProjectNodeTitle, (input) => {
+    const formData = input[0];
+    return (
+      formData instanceof FormData &&
+      formData.get("projectId") === props.project.id &&
+      formData.get("nodeId") === spatialMap.selectedNodeId()
+    );
+  });
   const selectedNode = createMemo(() => spatialMap.selectedNode());
   const [contextDraft, setContextDraft] = createSignal("");
   const [metadataDraft, setMetadataDraft] = createSignal<Record<string, string>>({});
@@ -52,6 +62,8 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const [isHydrated, setIsHydrated] = createSignal(false);
   const contextFormId = "spatial-map-context-form";
   const metadataFormId = "spatial-map-metadata-form";
+  let titleFormRef: HTMLFormElement | undefined;
+  let titleInputRef: HTMLInputElement | undefined;
   const isContextOnlyNode = createMemo(() => selectedNode()?.contextMode === "context-only");
   const metadataIsDirty = createMemo(() => {
     const node = selectedNode();
@@ -106,6 +118,32 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     saveMetadataSubmission.clear();
   });
 
+  createEffect(() => {
+    const result = saveTitleSubmission.result;
+    if (!result || saveTitleSubmission.pending) {
+      return;
+    }
+
+    const label = result.spatialMap.nodes.find((node) => node.id === spatialMap.selectedNodeId())?.label;
+    props.onProjectUpdated?.(result);
+    toaster.success({
+      title: "Node renamed",
+      description: `${label ?? "This node"} is now the selected node title.`,
+    });
+    saveTitleSubmission.clear();
+  });
+
+  const submitTitle = (value: string) => {
+    const node = selectedNode();
+    if (!node) return;
+
+    const title = value.trim();
+    if (!title || title === node.label) return;
+
+    if (titleInputRef) titleInputRef.value = title;
+    titleFormRef?.requestSubmit();
+  };
+
   return (
     <Box class="spatial-map-inspector-rail">
       <aside
@@ -113,7 +151,33 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         class={`spatial-map-inspector${spatialMap.inspectorOpen() ? "" : " is-collapsed"}`}
       >
         <VStack alignItems="start" gap="2" h="full">
-          <SpatialMapInspectorHeader title={spatialMap.selectedNode()?.label ?? "Select an item"} />
+          <SpatialMapInspectorHeader
+            title={spatialMap.selectedNode()?.label ?? "Select an item"}
+            titleContent={
+              <Show when={selectedNode()} fallback={spatialMap.selectedNode()?.label ?? "Select an item"}>
+                {(node) => (
+                  <EditInPlace
+                    value={node().label}
+                    disabled={saveTitleSubmission.pending}
+                    aria-label="Selected node title"
+                    class="spatial-map-inspector-title-edit"
+                    onConfirm={submitTitle}
+                  />
+                )}
+              </Show>
+            }
+          />
+
+          <form
+            ref={titleFormRef}
+            method="post"
+            action={normalizeActionUrl(updateProjectNodeTitle.url)}
+            hidden
+          >
+            <input type="hidden" name="projectId" value={props.project.id} />
+            <input type="hidden" name="nodeId" value={spatialMap.selectedNodeId() ?? ""} />
+            <input ref={titleInputRef} type="hidden" name="title" value={spatialMap.selectedNode()?.label ?? ""} />
+          </form>
 
           <Box class="spatial-map-inspector-section spatial-map-inspector-summary">
             <HStack gap="1.5" flexWrap="wrap">

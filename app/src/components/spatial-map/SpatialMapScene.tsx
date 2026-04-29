@@ -62,7 +62,8 @@ const NODE_LABEL_HORIZONTAL_PADDING = 8;
 const NODE_LABEL_TOP_PADDING = 7;
 const NODE_LABEL_IMAGE_GAP = 10;
 const NODE_LABEL_META_GAP = 8;
-const NODE_LABEL_BOTTOM_PADDING = 16;
+const NODE_LABEL_MIN_BOTTOM_PADDING = 7;
+const NODE_LABEL_BOTTOM_PADDING_RATIO = 0.11;
 const NODE_LABEL_LINE_HEIGHT = 1.08;
 const SVG_TEXT_WIDTH_FACTOR = 0.58;
 
@@ -154,7 +155,9 @@ function SpatialMapNode(props: {
   const imageHeight = () => (hasImages() ? Math.min(54, props.item.node.height * 0.38) : 0);
   const fallbackTone = () => getNodeTypeFallbackTone(props.item.node.type);
   const metaFontSize = () => props.item.node.metaSize;
-  const metaBaselineY = () => props.item.node.height - NODE_LABEL_BOTTOM_PADDING;
+  const metaBaselineY = () =>
+    props.item.node.height -
+    Math.max(NODE_LABEL_MIN_BOTTOM_PADDING, props.item.node.height * NODE_LABEL_BOTTOM_PADDING_RATIO);
   const labelAreaTop = () =>
     hasImages() ? NODE_LABEL_TOP_PADDING + imageHeight() + NODE_LABEL_IMAGE_GAP : NODE_LABEL_TOP_PADDING;
   const labelAreaBottom = () => Math.max(labelAreaTop() + 1, metaBaselineY() - metaFontSize() - NODE_LABEL_META_GAP);

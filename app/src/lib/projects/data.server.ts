@@ -32,6 +32,12 @@ interface UpdateProjectNodeContextInput {
   context: string;
 }
 
+interface UpdateProjectNodeTitleInput {
+  projectId: string;
+  nodeId: string;
+  title: string;
+}
+
 interface CreateContextNodeInput {
   projectId: string;
   label: string;
@@ -260,6 +266,42 @@ export async function updateProjectNodeContextOnDisk(
 
   const nextNodes = current.spatialMap.nodes.map((node, index) =>
     index === nodeIndex ? { ...node, context: input.context } : node,
+  );
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: nextNodes,
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return nextRecord;
+}
+
+export async function updateProjectNodeTitleOnDisk(
+  input: UpdateProjectNodeTitleInput,
+): Promise<ProjectRecord> {
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
+
+  if (nodeIndex === -1) {
+    throw new Error("Node not found.");
+  }
+
+  const title = input.title.trim() || "Untitled node";
+  const nextNodes = current.spatialMap.nodes.map((node, index) =>
+    index === nodeIndex ? { ...node, label: title } : node,
   );
 
   const nextRecord: ProjectRecord = {

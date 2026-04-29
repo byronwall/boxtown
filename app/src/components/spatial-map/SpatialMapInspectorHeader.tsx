@@ -1,10 +1,12 @@
 import { Show, createMemo } from "solid-js";
+import type { JSX } from "solid-js";
 import { Box, VStack } from "styled-system/jsx";
 import { Text } from "~/components/ui/text";
 import { useSpatialMap } from "./SpatialMapContext";
 
 interface SpatialMapInspectorHeaderProps {
   title: string;
+  titleContent?: JSX.Element;
   kicker?: string;
   description?: string;
   controls?: string;
@@ -23,9 +25,16 @@ export function SpatialMapInspectorHeader(props: SpatialMapInspectorHeaderProps)
             </Text>
           )}
         </Show>
-        <Box as="h2" class="spatial-map-inspector-title">
-          {props.title}
-        </Box>
+        <Show
+          when={props.titleContent}
+          fallback={<Box as="h2" class="spatial-map-inspector-title">{props.title}</Box>}
+        >
+          {(titleContent) => (
+            <Box as="h2" class="spatial-map-inspector-title">
+              {titleContent()}
+            </Box>
+          )}
+        </Show>
         <Show when={props.description}>
           {(description) => (
             <Text as="p" class="spatial-map-inspector-copy">

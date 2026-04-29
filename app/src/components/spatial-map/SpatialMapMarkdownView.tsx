@@ -32,19 +32,6 @@ export function SpatialMapMarkdownView(props: { project: ProjectRecord }) {
 
   return (
     <Box class="spatial-map-markdown-viewport">
-      <Box class="spatial-map-tree-header">
-        <Box>
-          <Box as="h2" class="spatial-map-tree-title">
-            Markdown
-          </Box>
-          <Box as="p" class="spatial-map-tree-subtitle">
-            Rendering {spatialMap.visibleData().nodes.length} active nodes
-            across {spatialMap.visibleDepthLevel()} visible{" "}
-            {spatialMap.visibleDepthLevel() === 1 ? "level" : "levels"}.
-          </Box>
-        </Box>
-      </Box>
-
       <Show
         when={markdown().trim().length > 0}
         fallback={
@@ -203,10 +190,9 @@ function appendMetadata(
     return;
   }
 
-  lines.push("", "**Metadata**", "");
+  lines.push("", "| | |", "| --- | --- |");
   for (const entry of entries) {
-    lines.push(`- **${escapeInlineMarkdown(entry.label)}**`);
-    lines.push(...formatNestedListValue(entry.value));
+    lines.push(formatMetadataTableRow(entry.label, entry.value));
   }
 }
 
@@ -222,17 +208,14 @@ function formatImageMarkdown(image: MapNodeImage) {
   return `[${escapeInlineMarkdown(label)}](${src})`;
 }
 
-function formatNestedListValue(value: string) {
+function formatMetadataTableRow(label: string, value: string) {
   const lines = value
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
+  const displayValue = lines.length > 0 ? lines.join("<br />") : "Empty";
 
-  if (lines.length === 0) {
-    return ["  - Empty"];
-  }
-
-  return lines.map((line) => `  - ${escapeInlineMarkdown(line)}`);
+  return `| **${escapeInlineMarkdown(label)}** | ${escapeInlineMarkdown(displayValue)} |`;
 }
 
 function escapeHeadingText(value: string) {
