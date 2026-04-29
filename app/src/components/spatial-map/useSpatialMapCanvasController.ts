@@ -83,6 +83,7 @@ export function useSpatialMapCanvasController(
   const [addNodesOpen, setAddNodesOpen] = createSignal(false);
   const [contextNoteConversionOpen, setContextNoteConversionOpen] = createSignal(false);
   const [sourceDecompositionOpen, setSourceDecompositionOpen] = createSignal(false);
+  const [childNodeDraft, setChildNodeDraft] = createSignal<{ parentNodeId: string } | null>(null);
   const [viewMode, setViewMode] = createSignal<SpatialMapViewMode>("canvas");
   const [visibleDepthSelection, writeVisibleDepthSelection] =
     createSignal<SpatialMapDepthLevel>("max");
@@ -437,6 +438,15 @@ export function useSpatialMapCanvasController(
       return;
     }
 
+    if (event.key.toLowerCase() === "c" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      const parentNodeId = selectedNodeId();
+      if (viewMode() === "canvas" && parentNodeId) {
+        event.preventDefault();
+        setChildNodeDraft({ parentNodeId });
+      }
+      return;
+    }
+
     const depthShortcut = getDepthShortcutSelection(event, availableDepthLevels());
     if (depthShortcut !== null) {
       event.preventDefault();
@@ -668,6 +678,7 @@ export function useSpatialMapCanvasController(
     addNodesOpen,
     contextNoteConversionOpen,
     sourceDecompositionOpen,
+    childNodeDraft,
     edgeState,
     isolatedNodeId,
     isolationLabel,
@@ -691,6 +702,7 @@ export function useSpatialMapCanvasController(
     closeContextNoteConversionFlow: () => setContextNoteConversionOpen(false),
     closeSourceDecompositionFlow: () => setSourceDecompositionOpen(false),
     clearIsolation: () => applyIsolation(null),
+    clearChildNodeDraft: () => setChildNodeDraft(null),
     openAddNodesFlow: () => {
       setContextNoteConversionOpen(false);
       setSourceDecompositionOpen(false);

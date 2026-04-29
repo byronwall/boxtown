@@ -221,18 +221,6 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
           >
             Tree
           </Button>
-          <Button
-            colorPalette="green"
-            variant={
-              spatialMap.viewMode() === "markdown" ? "surface" : "outline"
-            }
-            size="xs"
-            class={`spatial-map-button spatial-map-toggle-button${spatialMap.viewMode() === "markdown" ? " is-active" : ""}`}
-            aria-pressed={spatialMap.viewMode() === "markdown"}
-            onClick={() => spatialMap.setViewMode("markdown")}
-          >
-            Markdown
-          </Button>
         </HStack>
         <HStack
           gap="0"

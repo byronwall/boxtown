@@ -1,7 +1,19 @@
+export const mapNodeStatuses = [
+  "planned",
+  "implemented",
+  "working",
+  "blocked",
+  "needs-review",
+  "deprecated",
+] as const;
+
+export type MapNodeStatus = (typeof mapNodeStatuses)[number];
+
 export interface MapNode {
   id: string;
   label: string;
   type: string;
+  status: MapNodeStatus;
   depth: number;
   metadata: Record<string, string>;
   context: string;

@@ -75,6 +75,7 @@ function buildSourceNode(overrides: Partial<MapNode> = {}): MapNode {
     rawContext: "Original note context",
     contextMode: "context-only",
     ...overrides,
+    status: overrides.status ?? "planned",
   };
 }
 
@@ -92,6 +93,7 @@ function buildProject(sourceNode: MapNode = buildSourceNode()): ProjectRecord {
           id: "page-home",
           label: "Home",
           type: "page",
+          status: "planned",
           depth: 0,
           metadata: {
             purpose: "Purpose",
@@ -333,6 +335,7 @@ describe("context note conversion service", () => {
             id: "page-candidate-root",
             label: "Candidate Root",
             type: "page",
+            status: "planned",
             depth: 0,
             metadata: {
               purpose: "Root purpose",

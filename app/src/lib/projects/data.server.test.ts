@@ -695,6 +695,7 @@ function buildNode(input: {
     id: input.id,
     label: input.label,
     type: input.type,
+    status: "planned" as const,
     depth: input.depth,
     metadata: input.metadata ?? {},
     context: input.context ?? "",

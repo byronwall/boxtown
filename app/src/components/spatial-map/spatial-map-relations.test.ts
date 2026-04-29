@@ -14,6 +14,7 @@ const baseNode: PositionedMapNode = {
   metadata: {},
   metaSize: 10,
   rawContext: "",
+  status: "planned",
   type: "page",
   vx: 0,
   vy: 0,

@@ -52,6 +52,7 @@ export function buildAdjacencyMap(data: SpatialMapData): AdjacencyMap {
 
 export function createInitialLayout(data: SpatialMapData): PositionedMapNode[] {
   const adjacency = buildAdjacencyMap(data);
+  const hierarchy = buildHierarchyIndex(data);
   const visibleDepthRange = getVisibleDepthRange(data.nodes);
   const positionedNodes = data.nodes.map((node) => ({
     ...node,
@@ -62,7 +63,7 @@ export function createInitialLayout(data: SpatialMapData): PositionedMapNode[] {
     vy: 0,
   }));
 
-  return resetLayout(positionedNodes, adjacency);
+  return resetLayout(positionedNodes, adjacency, hierarchy);
 }
 
 function getVisibleDepthNodeSize(
@@ -179,6 +180,7 @@ export function filterSpatialMapDataForIsolation(
 export function resetLayout(
   nodes: PositionedMapNode[],
   adjacency: AdjacencyMap,
+  hierarchy = createEmptyHierarchyIndex(),
 ): PositionedMapNode[] {
   const nextNodes = nodes.map((node) => ({
     ...node,
@@ -195,29 +197,25 @@ export function resetLayout(
     node.y = VIEWPORT_CENTER_Y + Math.sin(angle) * pageRadius;
   });
 
-  const assemblies = nextNodes.filter((node) => node.depth === 1);
+  const assemblies = sortNodesForPlacement(nextNodes.filter((node) => node.depth === 1));
   assemblies.forEach((node, index) => {
-    const parentId = [...(adjacency.get(node.id) ?? [])].find((id) => {
-      return nodesById.get(id)?.depth === 0;
-    });
-    const parent = parentId ? nodesById.get(parentId) : undefined;
+    const parent = getPrimaryPlacedParent(node, nodesById, hierarchy) ??
+      getShallowAdjacentParent(node, nodesById, adjacency);
     const angle = (index % 5) * (Math.PI / 2.5);
     node.x = (parent?.x ?? VIEWPORT_CENTER_X) + Math.cos(angle) * 150;
     node.y = (parent?.y ?? VIEWPORT_CENTER_Y) + Math.sin(angle) * 110;
   });
 
-  const components = nextNodes.filter((node) => node.depth >= 2);
+  const components = sortNodesForPlacement(nextNodes.filter((node) => node.depth >= 2));
   components.forEach((node, index) => {
-    const parentId = [...(adjacency.get(node.id) ?? [])].find((id) => {
-      return nodesById.get(id)?.depth === 1;
-    });
-    const parent = parentId ? nodesById.get(parentId) : undefined;
+    const parent = getPrimaryPlacedParent(node, nodesById, hierarchy) ??
+      getShallowAdjacentParent(node, nodesById, adjacency);
     const angle = (index % 6) * (Math.PI / 3);
     node.x = (parent?.x ?? VIEWPORT_CENTER_X) + Math.cos(angle) * 110;
     node.y = (parent?.y ?? VIEWPORT_CENTER_Y) + Math.sin(angle) * 80;
   });
 
-  return solveStaticLayout(nextNodes, adjacency);
+  return solveStaticLayout(nextNodes, adjacency, hierarchy);
 }
 
 export function getRelatedSet(
@@ -348,6 +346,50 @@ function buildHierarchyIndex(data: SpatialMapData) {
   return { childrenByParentId, parentsByChildId };
 }
 
+function createEmptyHierarchyIndex() {
+  return {
+    childrenByParentId: new Map<string, Set<string>>(),
+    parentsByChildId: new Map<string, Set<string>>(),
+  };
+}
+
+function getPrimaryPlacedParent(
+  node: PositionedMapNode,
+  placedById: Map<string, PositionedMapNode>,
+  hierarchy: ReturnType<typeof buildHierarchyIndex>,
+) {
+  const parentIds = hierarchy.parentsByChildId.get(node.id);
+  if (!parentIds) {
+    return undefined;
+  }
+
+  return [...parentIds]
+    .map((id) => placedById.get(id))
+    .filter((item): item is PositionedMapNode => Boolean(item))
+    .sort((left, right) => {
+      const depthDiff = right.depth - left.depth;
+      if (depthDiff !== 0) {
+        return depthDiff;
+      }
+
+      return right.width * right.height - left.width * left.height;
+    })[0];
+}
+
+function getShallowAdjacentParent(
+  node: PositionedMapNode,
+  nodesById: Map<string, PositionedMapNode>,
+  adjacency: AdjacencyMap,
+) {
+  return [...(adjacency.get(node.id) ?? [])]
+    .map((id) => nodesById.get(id))
+    .filter(
+      (item): item is PositionedMapNode =>
+        item !== undefined && item.depth < node.depth,
+    )
+    .sort((left, right) => right.depth - left.depth)[0];
+}
+
 export function stepLayout(
   nodes: PositionedMapNode[],
   adjacency: AdjacencyMap,
@@ -454,6 +496,7 @@ export function stepLayout(
 export function solveStaticLayout(
   nodes: PositionedMapNode[],
   adjacency: AdjacencyMap,
+  hierarchy = createEmptyHierarchyIndex(),
 ): PositionedMapNode[] {
   let nextNodes = nodes.map((node) => ({ ...node, vx: 0, vy: 0 }));
 
@@ -472,7 +515,7 @@ export function solveStaticLayout(
   }
 
   nextNodes = consolidateLayout(nextNodes, adjacency);
-  nextNodes = packLayout(nextNodes, adjacency);
+  nextNodes = packLayout(nextNodes, adjacency, hierarchy);
   nextNodes = sealLayout(nextNodes, adjacency);
   nextNodes = rebalanceLayoutAspect(nextNodes);
   nextNodes = sealLayout(nextNodes, adjacency);
@@ -482,6 +525,7 @@ export function solveStaticLayout(
   nextNodes = alignLayoutBorders(nextNodes, adjacency);
   nextNodes = recenterLayout(nextNodes, 20);
   nextNodes = resolveOverlaps(nextNodes);
+  nextNodes = sealParentChildBorders(nextNodes, adjacency, hierarchy);
 
   return nextNodes.map((node) => ({ ...node, vx: 0, vy: 0 }));
 }
@@ -712,6 +756,7 @@ function resolveOverlaps(nodes: PositionedMapNode[]) {
 function packLayout(
   nodes: PositionedMapNode[],
   adjacency: AdjacencyMap,
+  hierarchy: ReturnType<typeof buildHierarchyIndex>,
 ): PositionedMapNode[] {
   const nextNodes = nodes.map((node) => ({ ...node }));
   const placedNodes: PositionedMapNode[] = [];
@@ -719,27 +764,16 @@ function packLayout(
   const horizontalGap = 0;
   const verticalGap = 0;
   const margin = 20;
-  const orderedNodes = [...nextNodes].sort((left, right) => {
-    const depthDiff = left.depth - right.depth;
-    if (depthDiff !== 0) {
-      return depthDiff;
-    }
-
-    const degreeDiff =
-      (adjacency.get(right.id)?.size ?? 0) - (adjacency.get(left.id)?.size ?? 0);
-    if (degreeDiff !== 0) {
-      return degreeDiff;
-    }
-
-    return right.width * right.height - left.width * left.height;
-  });
+  const orderedNodes = sortNodesForPlacement(nextNodes, adjacency);
 
   for (const node of orderedNodes) {
-    const target = getPackingTarget(node, adjacency, placedById);
+    const parent = getPrimaryPlacedParent(node, placedById, hierarchy);
+    const target = getPackingTarget(node, adjacency, placedById, parent);
     const candidate = findBestPackedPosition(
       placedNodes,
       node,
       target,
+      parent,
       horizontalGap,
       verticalGap,
       margin,
@@ -751,6 +785,31 @@ function packLayout(
   }
 
   return recenterLayout(nextNodes, margin);
+}
+
+function sortNodesForPlacement(nodes: PositionedMapNode[], adjacency?: AdjacencyMap) {
+  return [...nodes].sort((left, right) => {
+    const depthDiff = left.depth - right.depth;
+    if (depthDiff !== 0) {
+      return depthDiff;
+    }
+
+    const leftArea = left.width * left.height;
+    const rightArea = right.width * right.height;
+    const areaDiff = rightArea - leftArea;
+    const areaRatio = Math.max(leftArea, rightArea) / Math.max(Math.min(leftArea, rightArea), 1);
+    if (areaRatio > 1.08 && areaDiff !== 0) {
+      return areaDiff;
+    }
+
+    const degreeDiff =
+      (adjacency?.get(right.id)?.size ?? 0) - (adjacency?.get(left.id)?.size ?? 0);
+    if (degreeDiff !== 0) {
+      return degreeDiff;
+    }
+
+    return left.id.localeCompare(right.id);
+  });
 }
 
 function sealLayout(
@@ -789,11 +848,96 @@ function sealLayout(
   return nextNodes;
 }
 
+function sealParentChildBorders(
+  nodes: PositionedMapNode[],
+  adjacency: AdjacencyMap,
+  hierarchy: ReturnType<typeof buildHierarchyIndex>,
+) {
+  const nextNodes = nodes.map((node) => ({ ...node }));
+  const nodesById = new Map(nextNodes.map((node) => [node.id, node]));
+
+  for (const node of sortNodesForPlacement(nextNodes)) {
+    const parent = getPrimaryPlacedParent(node, nodesById, hierarchy);
+    if (!parent || measureSharedBorder([parent], node, node).touchingNeighbors > 0) {
+      continue;
+    }
+
+    const otherNodes = nextNodes.filter((item) => item.id !== node.id);
+    const target = getPackingTarget(node, adjacency, nodesById, parent);
+    const candidate =
+      findBestParentTouchPosition(otherNodes, node, parent, target, 20) ??
+      findBestPackedPosition(otherNodes, node, target, parent, 0, 0, 20);
+
+    if (!wouldOverlapAtPosition(otherNodes, node, candidate.x, candidate.y)) {
+      node.x = candidate.x;
+      node.y = candidate.y;
+    }
+  }
+
+  return nextNodes;
+}
+
+function findBestParentTouchPosition(
+  placedNodes: PositionedMapNode[],
+  node: PositionedMapNode,
+  parent: PositionedMapNode,
+  target: { x: number; y: number },
+  margin: number,
+) {
+  const rawCandidates = [
+    { x: parent.x + (parent.width + node.width) / 2, y: parent.y },
+    { x: parent.x - (parent.width + node.width) / 2, y: parent.y },
+    { x: parent.x, y: parent.y + (parent.height + node.height) / 2 },
+    { x: parent.x, y: parent.y - (parent.height + node.height) / 2 },
+  ];
+  let bestCandidate: { x: number; y: number; score: number } | null = null;
+
+  for (const rawCandidate of rawCandidates) {
+    const candidate = clampPosition(node, rawCandidate.x, rawCandidate.y, margin);
+    if (wouldOverlapAtPosition(placedNodes, node, candidate.x, candidate.y)) {
+      continue;
+    }
+
+    const contact = measureSharedBorder([parent], node, candidate);
+    if (contact.touchingNeighbors === 0) {
+      continue;
+    }
+
+    const score = scorePackedCandidate(placedNodes, node, candidate, target, parent);
+    if (!bestCandidate || score < bestCandidate.score) {
+      bestCandidate = { ...candidate, score };
+    }
+  }
+
+  return bestCandidate;
+}
+
 function getPackingTarget(
   node: PositionedMapNode,
   adjacency: AdjacencyMap,
   placedById: Map<string, PositionedMapNode>,
+  parent: PositionedMapNode | undefined,
 ) {
+  if (parent) {
+    const neighbors = [...(adjacency.get(node.id) ?? [])]
+      .map((id) => placedById.get(id))
+      .filter((item): item is PositionedMapNode => Boolean(item));
+
+    if (neighbors.length === 0) {
+      return { x: parent.x, y: parent.y };
+    }
+
+    const averageX =
+      neighbors.reduce((sum, neighbor) => sum + neighbor.x, 0) / neighbors.length;
+    const averageY =
+      neighbors.reduce((sum, neighbor) => sum + neighbor.y, 0) / neighbors.length;
+
+    return {
+      x: parent.x * 0.56 + averageX * 0.44,
+      y: parent.y * 0.56 + averageY * 0.44,
+    };
+  }
+
   const neighbors = [...(adjacency.get(node.id) ?? [])]
     .map((id) => placedById.get(id))
     .filter((item): item is PositionedMapNode => Boolean(item));
@@ -815,6 +959,7 @@ function findBestPackedPosition(
   placedNodes: PositionedMapNode[],
   node: PositionedMapNode,
   target: { x: number; y: number },
+  parent: PositionedMapNode | undefined,
   horizontalGap: number,
   verticalGap: number,
   margin: number,
@@ -831,7 +976,9 @@ function findBestPackedPosition(
 
   addCandidate(target.x, target.y);
 
-  for (const placed of placedNodes) {
+  const anchorNodes = parent ? [parent, ...placedNodes.filter((placed) => placed.id !== parent.id)] : placedNodes;
+
+  for (const placed of anchorNodes) {
     addCandidate(
       placed.x + (placed.width + node.width) / 2 + horizontalGap,
       placed.y,
@@ -873,7 +1020,7 @@ function findBestPackedPosition(
       continue;
     }
 
-    const score = scorePackedCandidate(placedNodes, node, candidate, target);
+    const score = scorePackedCandidate(placedNodes, node, candidate, target, parent);
     if (!bestCandidate || score < bestCandidate.score) {
       bestCandidate = { ...candidate, score };
     }
@@ -883,7 +1030,14 @@ function findBestPackedPosition(
     return bestCandidate;
   }
 
-  const fallback = findNearestOpenPositionFromTarget(placedNodes, node, target, 6, margin);
+  const fallback = findNearestOpenPositionFromTarget(
+    placedNodes,
+    node,
+    target,
+    parent,
+    6,
+    margin,
+  );
   if (fallback) {
     return fallback;
   }
@@ -896,6 +1050,7 @@ function scorePackedCandidate(
   node: PositionedMapNode,
   candidate: { x: number; y: number },
   target: { x: number; y: number },
+  parent: PositionedMapNode | undefined,
 ) {
   const distanceToTarget = Math.hypot(candidate.x - target.x, candidate.y - target.y);
   const bounds = getLayoutBounds([
@@ -916,17 +1071,26 @@ function scorePackedCandidate(
   const aspectError = Math.log(aspect / desiredAspect);
   const aspectPenalty = Math.abs(aspectError) * 660 + Math.max(0, -aspectError) * 520;
   const contact = measureSharedBorder(placedNodes, node, candidate);
-  const targetBlobArea = nodeArea / 0.72;
-  const sparsePenalty = Math.max(0, area / targetBlobArea - 1) * 120;
+  const parentContact = parent
+    ? measureSharedBorder([parent], node, candidate)
+    : { sharedBorder: 0, touchingNeighbors: 0 };
+  const targetBlobArea = nodeArea / 0.78;
+  const sparsePenalty = Math.max(0, area / targetBlobArea - 1) * 240;
+  const parentDistancePenalty = parent
+    ? Math.hypot(candidate.x - parent.x, candidate.y - parent.y) * 0.16
+    : 0;
 
   return (
     distanceToTarget * 0.22 +
-    area * 0.0007 +
-    perimeter * 0.018 +
+    parentDistancePenalty +
+    area * 0.001 +
+    perimeter * 0.026 +
     aspectPenalty +
     sparsePenalty -
     contact.sharedBorder * 5 -
-    contact.touchingNeighbors * 80
+    contact.touchingNeighbors * 80 -
+    parentContact.sharedBorder * 24 -
+    parentContact.touchingNeighbors * 520
   );
 }
 
@@ -973,6 +1137,7 @@ function findNearestOpenPositionFromTarget(
   placedNodes: PositionedMapNode[],
   node: PositionedMapNode,
   target: { x: number; y: number },
+  parent: PositionedMapNode | undefined,
   step: number,
   margin: number,
 ) {
@@ -997,7 +1162,7 @@ function findNearestOpenPositionFromTarget(
           continue;
         }
 
-        const score = scorePackedCandidate(placedNodes, node, candidate, target);
+        const score = scorePackedCandidate(placedNodes, node, candidate, target, parent);
         if (!bestCandidate || score < bestCandidate.score) {
           bestCandidate = { ...candidate, score };
         }

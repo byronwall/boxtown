@@ -18,7 +18,8 @@ import {
   startLlmSession,
   withLlmCallLogging,
 } from "~/lib/llm-logging/logger.server";
-import type { MapLink, MapNode } from "~/lib/spatial-map/types";
+import { DEFAULT_MAP_NODE_STATUS, isMapNodeStatus } from "~/lib/spatial-map/node-status";
+import { mapNodeStatuses, type MapLink, type MapNode } from "~/lib/spatial-map/types";
 import { buildCandidateTree } from "./tree";
 import {
   getContextNoteConversionRunSnapshot,
@@ -102,6 +103,7 @@ function createCandidateBatchSchema(
         id: z.string().min(1),
         label: z.string().min(1),
         type: z.string().min(1),
+        status: z.enum(mapNodeStatuses).default(DEFAULT_MAP_NODE_STATUS),
         depth: z.number().int().min(0),
         metadata: createNodeMetadataObjectSchema(nodeMetadataSchema),
         context: z.string().default(""),
@@ -294,6 +296,7 @@ function sanitizeCandidateNodes(
 ) {
   return nodes.map((node) => ({
     ...node,
+    status: isMapNodeStatus(node.status) ? node.status : DEFAULT_MAP_NODE_STATUS,
     metadata: sanitizeNodeMetadata(node.metadata, nodeMetadataSchema, {
       omitDefaultValues: true,
     }),
@@ -359,6 +362,7 @@ function sanitizeCandidateBatch(
 ): ConversionCandidateBatch {
   const nodes = batch.nodes.map((node) => ({
     ...node,
+    status: isMapNodeStatus(node.status) ? node.status : DEFAULT_MAP_NODE_STATUS,
     metadata: sanitizeNodeMetadata(node.metadata, nodeMetadataSchema, {
       omitDefaultValues: true,
     }),

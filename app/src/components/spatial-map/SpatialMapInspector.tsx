@@ -11,14 +11,17 @@ import { toaster } from "~/components/ui/toast";
 import {
   updateProjectNodeContext,
   updateProjectNodeMetadata,
-  updateProjectNodeTitle,
 } from "~/lib/projects/data";
+import { patchProjectNode } from "~/lib/projects/client-mutations";
+import { updateProjectNode } from "~/lib/projects/optimistic";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
 import { Text } from "~/components/ui/text";
-import type { MapNode } from "~/lib/spatial-map/types";
+import { getMapNodeStatusLabel } from "~/lib/spatial-map/node-status";
+import { type MapNode, type MapNodeStatus } from "~/lib/spatial-map/types";
 import { SpatialMapGenerateImageControl } from "./SpatialMapGenerateImageControl";
 import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
+import { SpatialMapNodeStatusMenu } from "./SpatialMapNodeStatusMenu";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { SpatialMapInspectorHeader } from "./SpatialMapInspectorHeader";
@@ -46,25 +49,43 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
       formData.get("nodeId") === spatialMap.selectedNodeId()
     );
   });
-  const saveTitleSubmission = useSubmission(updateProjectNodeTitle, (input) => {
-    const formData = input[0];
-    return (
-      formData instanceof FormData &&
-      formData.get("projectId") === props.project.id &&
-      formData.get("nodeId") === spatialMap.selectedNodeId()
-    );
-  });
   const selectedNode = createMemo(() => spatialMap.selectedNode());
   const [contextDraft, setContextDraft] = createSignal("");
   const [metadataDraft, setMetadataDraft] = createSignal<Record<string, string>>({});
   const [editingContext, setEditingContext] = createSignal(false);
   const [contextDialogOpen, setContextDialogOpen] = createSignal(false);
   const [isHydrated, setIsHydrated] = createSignal(false);
+  const [titlePending, setTitlePending] = createSignal(false);
+  const [statusPending, setStatusPending] = createSignal(false);
+  const [optimisticTitle, setOptimisticTitle] = createSignal<{
+    nodeId: string;
+    previousTitle: string;
+    title: string;
+  } | null>(null);
+  const [optimisticStatus, setOptimisticStatus] = createSignal<{
+    nodeId: string;
+    previousStatus: MapNodeStatus;
+    status: MapNodeStatus;
+  } | null>(null);
   const contextFormId = "spatial-map-context-form";
   const metadataFormId = "spatial-map-metadata-form";
-  let titleFormRef: HTMLFormElement | undefined;
-  let titleInputRef: HTMLInputElement | undefined;
   const isContextOnlyNode = createMemo(() => selectedNode()?.contextMode === "context-only");
+  const selectedNodeTitle = createMemo(() => {
+    const node = selectedNode();
+    if (!node) return "Select an item";
+
+    const optimistic = optimisticTitle();
+    return optimistic?.nodeId === node.id ? optimistic.title : node.label;
+  });
+  const selectedNodeWithOptimisticStatus = createMemo(() => {
+    const node = selectedNode();
+    if (!node) return null;
+
+    const optimistic = optimisticStatus();
+    return optimistic?.nodeId === node.id
+      ? { ...node, status: optimistic.status }
+      : node;
+  });
   const metadataIsDirty = createMemo(() => {
     const node = selectedNode();
     if (!node) {
@@ -118,30 +139,113 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     saveMetadataSubmission.clear();
   });
 
-  createEffect(() => {
-    const result = saveTitleSubmission.result;
-    if (!result || saveTitleSubmission.pending) {
+  const rollBackTitle = (error: unknown) => {
+    const optimistic = optimisticTitle();
+    if (!optimistic) {
       return;
     }
 
-    const label = result.spatialMap.nodes.find((node) => node.id === spatialMap.selectedNodeId())?.label;
-    props.onProjectUpdated?.(result);
-    toaster.success({
-      title: "Node renamed",
-      description: `${label ?? "This node"} is now the selected node title.`,
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, optimistic.nodeId, (projectNode) => ({
+        ...projectNode,
+        label: optimistic.previousTitle,
+      })),
+    );
+    setOptimisticTitle(null);
+    toaster.error({
+      title: "Rename failed",
+      description:
+        error instanceof Error
+          ? error.message
+          : "The selected node title could not be updated.",
     });
-    saveTitleSubmission.clear();
-  });
+  };
 
-  const submitTitle = (value: string) => {
+  const rollBackStatus = (error: unknown) => {
+    const optimistic = optimisticStatus();
+    if (!optimistic) {
+      return;
+    }
+
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, optimistic.nodeId, (projectNode) => ({
+        ...projectNode,
+        status: optimistic.previousStatus,
+      })),
+    );
+    setOptimisticStatus(null);
+    toaster.error({
+      title: "Status update failed",
+      description:
+        error instanceof Error
+          ? error.message
+          : "The selected node status could not be updated.",
+    });
+  };
+
+  const submitTitle = async (value: string) => {
     const node = selectedNode();
-    if (!node) return;
+    if (!node || titlePending()) return;
 
     const title = value.trim();
     if (!title || title === node.label) return;
 
-    if (titleInputRef) titleInputRef.value = title;
-    titleFormRef?.requestSubmit();
+    setTitlePending(true);
+    setOptimisticTitle({ nodeId: node.id, previousTitle: node.label, title });
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, node.id, (projectNode) => ({
+        ...projectNode,
+        label: title,
+      })),
+    );
+
+    try {
+      const result = await patchProjectNode(props.project.id, node.id, { title });
+      const label = result.spatialMap.nodes.find((item) => item.id === node.id)?.label;
+      props.onProjectUpdated?.(result);
+      toaster.success({
+        title: "Node renamed",
+        description: `${label ?? "This node"} is now the selected node title.`,
+      });
+      setOptimisticTitle(null);
+    } catch (error) {
+      rollBackTitle(error);
+    } finally {
+      setTitlePending(false);
+    }
+  };
+
+  const submitStatus = async (status: MapNodeStatus) => {
+    const node = selectedNode();
+    if (!node || statusPending() || status === node.status) return;
+
+    setStatusPending(true);
+    setOptimisticStatus({
+      nodeId: node.id,
+      previousStatus: node.status,
+      status,
+    });
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, node.id, (projectNode) => ({
+        ...projectNode,
+        status,
+      })),
+    );
+
+    try {
+      const result = await patchProjectNode(props.project.id, node.id, { status });
+      const updatedNode = result.spatialMap.nodes.find((item) => item.id === node.id);
+      props.onProjectUpdated?.(result);
+      toaster.success({
+        title: "Status updated",
+        description: `${updatedNode?.label ?? "This node"} is now ${getMapNodeStatusLabel(updatedNode?.status ?? status)}.`,
+      });
+      setOptimisticStatus(null);
+    } catch (error) {
+      rollBackStatus(error);
+    } finally {
+      setStatusPending(false);
+    }
   };
 
   return (
@@ -152,35 +256,37 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
       >
         <VStack alignItems="start" gap="2" h="full">
           <SpatialMapInspectorHeader
-            title={spatialMap.selectedNode()?.label ?? "Select an item"}
+            title={selectedNodeTitle()}
             titleContent={
-              <Show when={selectedNode()} fallback={spatialMap.selectedNode()?.label ?? "Select an item"}>
-                {(node) => (
-                  <EditInPlace
-                    value={node().label}
-                    disabled={saveTitleSubmission.pending}
-                    aria-label="Selected node title"
-                    class="spatial-map-inspector-title-edit"
-                    onConfirm={submitTitle}
-                  />
-                )}
+              <Show when={Boolean(selectedNode())} fallback={selectedNodeTitle()}>
+                <EditInPlace
+                  value={selectedNodeTitle()}
+                  disabled={titlePending()}
+                  aria-label="Selected node title"
+                  class="spatial-map-inspector-title-edit"
+                  onConfirm={(value) => {
+                    void submitTitle(value);
+                  }}
+                />
               </Show>
             }
           />
 
-          <form
-            ref={titleFormRef}
-            method="post"
-            action={normalizeActionUrl(updateProjectNodeTitle.url)}
-            hidden
-          >
-            <input type="hidden" name="projectId" value={props.project.id} />
-            <input type="hidden" name="nodeId" value={spatialMap.selectedNodeId() ?? ""} />
-            <input ref={titleInputRef} type="hidden" name="title" value={spatialMap.selectedNode()?.label ?? ""} />
-          </form>
-
           <Box class="spatial-map-inspector-section spatial-map-inspector-summary">
             <HStack gap="1.5" flexWrap="wrap">
+              <Show when={selectedNodeWithOptimisticStatus()}>
+                {(node) => (
+                  <SpatialMapNodeStatusMenu
+                    node={node()}
+                    pending={statusPending()}
+                    showLabel
+                    variant="inspector"
+                    onChange={(status) => {
+                      void submitStatus(status);
+                    }}
+                  />
+                )}
+              </Show>
               <InspectorChip label="ID" value={spatialMap.selectedNode()?.id ?? "None"} />
               <InspectorChip label="Type" value={spatialMap.selectedNode()?.type ?? "Unknown"} />
               <InspectorChip label="Mode" value={selectedNode()?.contextMode ?? "Unknown"} />

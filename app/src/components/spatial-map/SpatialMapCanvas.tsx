@@ -12,7 +12,6 @@ import type {
 import { SpatialMapProvider, useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapInspector } from "./SpatialMapInspector";
 import { SpatialMapImageProvider } from "./SpatialMapImages";
-import { SpatialMapMarkdownView } from "./SpatialMapMarkdownView";
 import { SpatialMapScene } from "./SpatialMapScene";
 import { SpatialMapToolbar } from "./SpatialMapToolbar";
 import { SpatialMapTreeView } from "./SpatialMapTreeView";
@@ -87,13 +86,16 @@ function SpatialMapCanvasLayout(props: {
               onProjectUpdated={props.onProjectUpdated}
             />
             <Show when={controller.viewMode() === "canvas"}>
-              <SpatialMapScene />
+              <SpatialMapScene
+                project={props.project}
+                onProjectUpdated={props.onProjectUpdated}
+              />
             </Show>
             <Show when={controller.viewMode() === "tree"}>
-              <SpatialMapTreeView project={props.project} />
-            </Show>
-            <Show when={controller.viewMode() === "markdown"}>
-              <SpatialMapMarkdownView project={props.project} />
+              <SpatialMapTreeView
+                project={props.project}
+                onProjectUpdated={props.onProjectUpdated}
+              />
             </Show>
             <Show when={!props.hasNodes && controller.viewMode() === "canvas"}>
               <Box class="spatial-map-empty">
@@ -267,9 +269,11 @@ function getNullableStringParam(value: string | string[] | undefined) {
 }
 
 function parseViewMode(value: string | undefined): SpatialMapViewMode | null {
-  return value === "canvas" || value === "tree" || value === "markdown"
-    ? value
-    : null;
+  if (value === "markdown") {
+    return "tree";
+  }
+
+  return value === "canvas" || value === "tree" ? value : null;
 }
 
 function parseDepthLevel(value: string | undefined): SpatialMapDepthLevel | null {

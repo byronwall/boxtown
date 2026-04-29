@@ -65,6 +65,38 @@ describe("spatial map layout", () => {
     expect(touchingPairs).toBeGreaterThanOrEqual(20);
   });
 
+  it("places smaller children against their explicit parent when possible", () => {
+    const layout = createInitialLayout({
+      nodes: [
+        createMapNode("root", "Root", 0),
+        createMapNode("large-child", "Large Child", 1),
+        createMapNode("small-child", "Small Child", 2),
+      ],
+      links: [
+        { source: "root", target: "large-child", parentChild: true },
+        { source: "large-child", target: "small-child", parentChild: true },
+      ],
+    });
+    const nodesById = new Map(layout.map((node) => [node.id, node]));
+    const root = nodesById.get("root");
+    const largeChild = nodesById.get("large-child");
+    const smallChild = nodesById.get("small-child");
+
+    expect(root).toBeDefined();
+    expect(largeChild).toBeDefined();
+    expect(smallChild).toBeDefined();
+    expect((root?.width ?? 0) * (root?.height ?? 0)).toBeGreaterThan(
+      (largeChild?.width ?? 0) * (largeChild?.height ?? 0),
+    );
+    expect((largeChild?.width ?? 0) * (largeChild?.height ?? 0)).toBeGreaterThan(
+      (smallChild?.width ?? 0) * (smallChild?.height ?? 0),
+    );
+    expect(root && largeChild ? rectanglesTouch(root, largeChild) : false).toBe(true);
+    expect(largeChild && smallChild ? rectanglesTouch(largeChild, smallChild) : false).toBe(
+      true,
+    );
+  });
+
   it("keeps the packed bounds reasonably close to the viewport aspect ratio", () => {
     const layout = createInitialLayout(parsedData);
     const bounds = getLayoutBounds(layout);
@@ -106,6 +138,7 @@ describe("spatial map layout", () => {
           id: "root",
           label: "Root",
           type: "page",
+          status: "planned",
           depth: 0,
           metadata: {},
           context: "",
@@ -116,6 +149,7 @@ describe("spatial map layout", () => {
           id: "deep",
           label: "Deep",
           type: "component",
+          status: "planned",
           depth: 3,
           metadata: {},
           context: "",
@@ -144,6 +178,7 @@ describe("spatial map layout", () => {
           id: "home",
           label: "Home",
           type: "page",
+          status: "planned",
           depth: 0,
           metadata: {},
           context: "",
@@ -160,6 +195,7 @@ describe("spatial map layout", () => {
           id: "hero",
           label: "Hero Assembly",
           type: "assembly",
+          status: "planned",
           depth: 1,
           metadata: {},
           context: "",
@@ -290,6 +326,7 @@ function createPositionedNode(
     id,
     label: id,
     type: "page",
+    status: "planned",
     depth: 0,
     metadata: {},
     context: "",
@@ -303,6 +340,20 @@ function createPositionedNode(
     y,
     vx: 0,
     vy: 0,
+  };
+}
+
+function createMapNode(id: string, label: string, depth: number) {
+  return {
+    id,
+    label,
+    type: depth === 0 ? "page" : depth === 1 ? "assembly" : "component",
+    status: "planned" as const,
+    depth,
+    metadata: {},
+    context: "",
+    rawContext: "",
+    contextMode: "structured" as const,
   };
 }
 

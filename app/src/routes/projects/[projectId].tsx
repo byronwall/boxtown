@@ -16,8 +16,10 @@ export default function ProjectRoute() {
     return getProjectById(projectId);
   });
 
+  const stableProject = () => project.latest;
+
   return (
-    <Show when={project()}>
+    <Show when={stableProject()}>
       {(resolvedProject) => (
         <>
           <PageMeta

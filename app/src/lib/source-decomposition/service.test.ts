@@ -73,6 +73,7 @@ function buildProject(): ProjectRecord {
           id: "existing-page",
           label: "Existing Page",
           type: "page",
+          status: "planned",
           depth: 0,
           metadata: {
             purpose: "Existing purpose",
@@ -114,6 +115,7 @@ describe("source decomposition service", () => {
             id: "candidate-root",
             label: "Purchases",
             type: "page",
+            status: "planned",
             depth: 0,
             metadata: {
               purpose: "Root purpose",
@@ -128,6 +130,7 @@ describe("source decomposition service", () => {
             id: "candidate-child",
             label: "Filter Bar",
             type: "region",
+            status: "planned",
             depth: 1,
             metadata: {
               purpose: "Child purpose",
@@ -226,6 +229,7 @@ describe("source decomposition service", () => {
             id: "page-purchases",
             label: "Purchases",
             type: "page",
+            status: "planned",
             depth: 0,
             metadata: {
               purpose: "Root purpose",
@@ -240,6 +244,7 @@ describe("source decomposition service", () => {
             id: "region-filter-bar",
             label: "Filter Bar",
             type: "region",
+            status: "planned",
             depth: 1,
             metadata: {
               purpose: "Child purpose",

@@ -5,8 +5,8 @@ import lucidePreprocess from "vite-plugin-lucide-preprocess";
 const basePath = process.env.BASE_PATH?.trim();
 const normalizedBasePath =
   !basePath || basePath === "/"
-    ? "/"
-    : `/${basePath.replace(/^\/+|\/+$/g, "")}/`;
+    ? ""
+    : `/${basePath.replace(/^\/+|\/+$/g, "")}`;
 
 export default defineConfig({
   server: {

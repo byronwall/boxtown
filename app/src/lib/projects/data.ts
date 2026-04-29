@@ -140,6 +140,35 @@ export const updateProjectNodeTitle = action(
   "update-project-node-title",
 );
 
+export const updateProjectNodeStatus = action(
+  async (formData: FormData) => {
+    "use server";
+    const { updateProjectNodeStatusOnDisk } = await import("./data.server");
+    const { isMapNodeStatus } = await import("~/lib/spatial-map/node-status");
+
+    const projectId = formData.get("projectId");
+    const nodeId = formData.get("nodeId");
+    const status = formData.get("status");
+
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+    if (typeof nodeId !== "string" || nodeId.trim().length === 0) {
+      throw new Error("A node id is required.");
+    }
+    if (!isMapNodeStatus(status)) {
+      throw new Error("A valid node status is required.");
+    }
+
+    return updateProjectNodeStatusOnDisk({
+      projectId,
+      nodeId,
+      status,
+    });
+  },
+  "update-project-node-status",
+);
+
 export const addProjectNodeImages = action(
   async (formData: FormData) => {
     "use server";
@@ -224,6 +253,34 @@ export const createProjectContextNode = action(
     });
   },
   "create-project-context-node",
+);
+
+export const createProjectChildNode = action(
+  async (formData: FormData) => {
+    "use server";
+    const { createChildNodeOnDisk } = await import("./data.server");
+
+    const projectId = formData.get("projectId");
+    const parentNodeId = formData.get("parentNodeId");
+    const title = formData.get("title");
+
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+    if (typeof parentNodeId !== "string" || parentNodeId.trim().length === 0) {
+      throw new Error("A parent node id is required.");
+    }
+    if (typeof title !== "string" || title.trim().length === 0) {
+      throw new Error("A node title is required.");
+    }
+
+    return createChildNodeOnDisk({
+      projectId,
+      parentNodeId,
+      title,
+    });
+  },
+  "create-project-child-node",
 );
 
 export const updateProjectNodeMetadata = action(

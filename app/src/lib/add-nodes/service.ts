@@ -30,6 +30,8 @@ import {
   appendGeneratedNodesToProjectOnDisk,
 } from "~/lib/projects/data.server";
 import { readProjectByIdFromDisk } from "~/lib/projects/data.server";
+import { DEFAULT_MAP_NODE_STATUS, isMapNodeStatus } from "~/lib/spatial-map/node-status";
+import { mapNodeStatuses } from "~/lib/spatial-map/types";
 
 const questionSetSchema = z.object({
   questions: z.array(
@@ -293,6 +295,7 @@ function createGeneratedNodeBatchSchema(
           id: z.string().min(1),
           label: z.string().min(1),
           type: z.string().min(1),
+          status: z.enum(mapNodeStatuses).default(DEFAULT_MAP_NODE_STATUS),
           depth: z.number().int().min(0),
           metadata: createNodeMetadataObjectSchema(nodeMetadataSchema),
           context: z.string().default(""),
@@ -312,6 +315,7 @@ function sanitizeGeneratedBatch(
     ...batch,
     nodes: batch.nodes.map((node) => ({
       ...node,
+      status: isMapNodeStatus(node.status) ? node.status : DEFAULT_MAP_NODE_STATUS,
       metadata: sanitizeNodeMetadata(node.metadata, nodeMetadataSchema, {
         omitDefaultValues: true,
       }),

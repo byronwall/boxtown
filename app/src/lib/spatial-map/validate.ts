@@ -1,4 +1,5 @@
 import type { MapLink, MapNode, MapNodeImage, SpatialMapData } from "~/lib/spatial-map/types";
+import { DEFAULT_MAP_NODE_STATUS, isMapNodeStatus } from "./node-status";
 import { isMapLinkRelationship } from "./links";
 import {
   DEFAULT_NOTE_IMPLEMENTATION,
@@ -40,6 +41,7 @@ function parseMapNode(
     id,
     label,
     type,
+    status,
     depth,
     metadata,
     purpose,
@@ -52,6 +54,11 @@ function parseMapNode(
   if (!isNonEmptyString(id)) throw new Error("Node id must be a non-empty string.");
   if (!isNonEmptyString(label)) throw new Error("Node label must be a non-empty string.");
   if (!isNonEmptyString(type)) throw new Error("Node type must be a non-empty string.");
+  if (status !== undefined && !isMapNodeStatus(status)) {
+    throw new Error(
+      'Node status must be one of "planned", "implemented", "working", "blocked", "needs-review", or "deprecated".',
+    );
+  }
   if (typeof depth !== "number" || !Number.isInteger(depth) || depth < 0) {
     throw new Error("Node depth must be a non-negative integer.");
   }
@@ -95,6 +102,7 @@ function parseMapNode(
     id,
     label,
     type,
+    status: isMapNodeStatus(status) ? status : DEFAULT_MAP_NODE_STATUS,
     depth,
     metadata: metadataRecord,
     context: resolvedContext,

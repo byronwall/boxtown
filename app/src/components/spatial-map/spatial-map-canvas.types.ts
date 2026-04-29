@@ -5,7 +5,7 @@ import type {
   SpatialMapData,
 } from "~/lib/spatial-map/types";
 
-export type SpatialMapViewMode = "canvas" | "tree" | "markdown";
+export type SpatialMapViewMode = "canvas" | "tree";
 export type SpatialMapDepthLevel = number | "max";
 
 export interface CameraState {
@@ -37,6 +37,10 @@ export interface EdgeVisualState {
   linkId: string;
   path: string;
   opacity: number;
+}
+
+export interface ChildNodeDraft {
+  parentNodeId: string;
 }
 
 export interface ViewportPointerHandlers {
@@ -80,6 +84,7 @@ export interface SpatialMapCanvasController {
   showLinkedInIsolation: Accessor<boolean>;
   sourceNodesById: Accessor<Map<string, MapNode>>;
   sourceDecompositionOpen: Accessor<boolean>;
+  childNodeDraft: Accessor<ChildNodeDraft | null>;
   availableDepthLevels: Accessor<number[]>;
   visibleData: Accessor<SpatialMapData>;
   visibleDepthSelection: Accessor<SpatialMapDepthLevel>;
@@ -90,6 +95,7 @@ export interface SpatialMapCanvasController {
   closeContextNoteConversionFlow: () => void;
   closeSourceDecompositionFlow: () => void;
   clearIsolation: () => void;
+  clearChildNodeDraft: () => void;
   isolateNode: (nodeId: string) => void;
   setInspectorOpen: (value: boolean | ((current: boolean) => boolean)) => void;
   setSelectedNodeId: (

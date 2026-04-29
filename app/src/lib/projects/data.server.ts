@@ -5,7 +5,8 @@ import path from "node:path";
 import type { GeneratedNodeBatch } from "~/lib/add-nodes/types";
 import { resolveAppDataDir } from "~/lib/server/data-dir";
 import { createParentChildLink, getLinkKey } from "~/lib/spatial-map/links";
-import type { MapNodeImage, SpatialMapData } from "~/lib/spatial-map/types";
+import { DEFAULT_MAP_NODE_STATUS, isMapNodeStatus } from "~/lib/spatial-map/node-status";
+import type { MapNodeImage, MapNodeStatus, SpatialMapData } from "~/lib/spatial-map/types";
 import { splitMarkdownIntoHeadingSections } from "./context-node-markdown";
 import {
   createDefaultProjectNodeMetadataSchema,
@@ -38,6 +39,12 @@ interface UpdateProjectNodeTitleInput {
   title: string;
 }
 
+interface UpdateProjectNodeStatusInput {
+  projectId: string;
+  nodeId: string;
+  status: MapNodeStatus;
+}
+
 interface CreateContextNodeInput {
   projectId: string;
   label: string;
@@ -45,6 +52,12 @@ interface CreateContextNodeInput {
   metadata?: Record<string, unknown>;
   splitByHeadingLevel?: boolean;
   maxHeadingDepth?: number;
+}
+
+interface CreateChildNodeInput {
+  projectId: string;
+  parentNodeId: string;
+  title: string;
 }
 
 interface UpdateProjectNodeMetadataInput {
@@ -179,6 +192,7 @@ export function mergeGeneratedSpatialMapData(
     nextNodes.push({
       ...node,
       id: stableId,
+      status: node.status ?? DEFAULT_MAP_NODE_STATUS,
       metadata: sanitizeNodeMetadata(node.metadata, nodeMetadataSchema, {
         omitDefaultValues: true,
       }),
@@ -302,6 +316,45 @@ export async function updateProjectNodeTitleOnDisk(
   const title = input.title.trim() || "Untitled node";
   const nextNodes = current.spatialMap.nodes.map((node, index) =>
     index === nodeIndex ? { ...node, label: title } : node,
+  );
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: nextNodes,
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return nextRecord;
+}
+
+export async function updateProjectNodeStatusOnDisk(
+  input: UpdateProjectNodeStatusInput,
+): Promise<ProjectRecord> {
+  if (!isMapNodeStatus(input.status)) {
+    throw new Error("Invalid node status.");
+  }
+
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
+
+  if (nodeIndex === -1) {
+    throw new Error("Node not found.");
+  }
+
+  const nextNodes = current.spatialMap.nodes.map((node, index) =>
+    index === nodeIndex ? { ...node, status: input.status } : node,
   );
 
   const nextRecord: ProjectRecord = {
@@ -634,6 +687,56 @@ export async function createContextNodeOnDisk(
   };
 }
 
+export async function createChildNodeOnDisk(
+  input: CreateChildNodeInput,
+): Promise<{ nodeId: string; project: ProjectRecord }> {
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const parentNode = current.spatialMap.nodes.find((node) => node.id === input.parentNodeId);
+
+  if (!parentNode) {
+    throw new Error("Parent node not found.");
+  }
+
+  const label = input.title.trim() || "Untitled node";
+  const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));
+  const nodeId = reserveUniqueNodeId(label, parentNode.type, existingIds);
+  const node = {
+    id: nodeId,
+    label,
+    type: parentNode.type,
+    status: DEFAULT_MAP_NODE_STATUS,
+    depth: parentNode.depth + 1,
+    metadata: {},
+    context: "",
+    rawContext: "",
+    contextMode: parentNode.contextMode,
+  } satisfies SpatialMapData["nodes"][number];
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: [...current.spatialMap.nodes, node],
+      links: [
+        ...current.spatialMap.links,
+        createParentChildLink({ source: parentNode.id, target: node.id }),
+      ],
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return { nodeId, project: nextRecord };
+}
+
 function createSingleContextNode(input: {
   label: string;
   context: string;
@@ -732,6 +835,7 @@ function createContextNoteNode(input: {
     id: input.id,
     label: input.label,
     type: "note",
+    status: DEFAULT_MAP_NODE_STATUS,
     depth: input.depth,
     metadata: input.metadata,
     context: input.context,

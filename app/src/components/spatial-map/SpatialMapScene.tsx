@@ -1,7 +1,19 @@
-import { For, Show } from "solid-js";
+import { useSubmission } from "@solidjs/router";
+import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import { Box } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { toaster } from "~/components/ui/toast";
+import { createProjectChildNode } from "~/lib/projects/data";
+import type { ProjectRecord } from "~/lib/projects/types";
+import { normalizeActionUrl } from "~/lib/router/action-url";
+import { createParentChildLink } from "~/lib/spatial-map/links";
 import { VIEWPORT_HEIGHT, VIEWPORT_WIDTH } from "~/lib/spatial-map/layout";
+import {
+  DEFAULT_MAP_NODE_STATUS,
+  getMapNodeStatusGlyph,
+  getMapNodeStatusLabel,
+} from "~/lib/spatial-map/node-status";
 
 import type { NodeVisualState } from "./spatial-map-canvas.types";
 import { getImageFilesFromDataTransfer, useSpatialMapImages } from "./SpatialMapImages";
@@ -66,9 +78,26 @@ const NODE_LABEL_MIN_BOTTOM_PADDING = 7;
 const NODE_LABEL_BOTTOM_PADDING_RATIO = 0.11;
 const NODE_LABEL_LINE_HEIGHT = 1.08;
 const SVG_TEXT_WIDTH_FACTOR = 0.58;
+const NODE_STATUS_BADGE_SIZE = 17;
+const NODE_STATUS_BADGE_MARGIN = 6;
+const NODE_STATUS_LABEL_GAP = 5;
+const NODE_STATUS_LABEL_WIDTH_FACTOR = 6.2;
 
-export function SpatialMapScene() {
+interface SpatialMapSceneProps {
+  project: ProjectRecord;
+  onProjectUpdated?: (project: ProjectRecord) => void;
+}
+
+export function SpatialMapScene(props: SpatialMapSceneProps) {
   const controller = useSpatialMap();
+  const draftParentNode = createMemo(() => {
+    const parentNodeId = controller.childNodeDraft()?.parentNodeId;
+    if (!parentNodeId) {
+      return null;
+    }
+
+    return controller.orderedNodes().find((item) => item.node.id === parentNodeId)?.node ?? null;
+  });
 
   return (
     <Box
@@ -131,10 +160,198 @@ export function SpatialMapScene() {
               )}
             </For>
           </g>
+          <Show when={draftParentNode()}>
+            {(parentNode) => (
+              <ChildNodePlaceholder
+                parentNode={parentNode()}
+                project={props.project}
+                onProjectUpdated={props.onProjectUpdated}
+              />
+            )}
+          </Show>
         </g>
       </svg>
     </Box>
   );
+}
+
+function ChildNodePlaceholder(props: {
+  parentNode: NodeVisualState["node"];
+  project: ProjectRecord;
+  onProjectUpdated?: (project: ProjectRecord) => void;
+}) {
+  const controller = useSpatialMap();
+  const submission = useSubmission(createProjectChildNode, (input) => {
+    const formData = input[0];
+    return (
+      formData instanceof FormData &&
+      formData.get("projectId") === props.project.id &&
+      formData.get("parentNodeId") === props.parentNode.id
+    );
+  });
+  const [title, setTitle] = createSignal("");
+  let inputRef: HTMLInputElement | undefined;
+
+  const width = () => Math.max(164, Math.min(220, props.parentNode.width * 0.96));
+  const height = () => 86;
+  const x = () => props.parentNode.x - width() / 2;
+  const y = () => props.parentNode.y + props.parentNode.height / 2 + 34;
+
+  createEffect(() => {
+    inputRef?.focus();
+  });
+
+  createEffect(() => {
+    const result = submission.result;
+    if (!result || submission.pending) {
+      return;
+    }
+
+    props.onProjectUpdated?.(result.project);
+    controller.clearChildNodeDraft();
+    queueMicrotask(() => controller.setSelectedNodeId(result.nodeId));
+    submission.clear();
+  });
+
+  createEffect(() => {
+    if (!submission.error || submission.pending) {
+      return;
+    }
+
+    toaster.error({
+      title: "Child node was not created",
+      description:
+        submission.error instanceof Error
+          ? submission.error.message
+          : "The server action failed. Try again after the dev server reconnects.",
+    });
+    submission.clear();
+  });
+
+  const applyOptimisticChild = (nextTitle: string) => {
+    const nodeId = createUniqueNodeId(
+      nextTitle,
+      props.parentNode.type,
+      new Set(props.project.spatialMap.nodes.map((node) => node.id)),
+    );
+
+    props.onProjectUpdated?.({
+      ...props.project,
+      updatedAt: new Date().toISOString(),
+      spatialMap: {
+        ...props.project.spatialMap,
+        nodes: [
+          ...props.project.spatialMap.nodes,
+          {
+            id: nodeId,
+            label: nextTitle,
+            type: props.parentNode.type,
+            status: DEFAULT_MAP_NODE_STATUS,
+            depth: props.parentNode.depth + 1,
+            metadata: {},
+            context: "",
+            rawContext: "",
+            contextMode: props.parentNode.contextMode,
+          },
+        ],
+        links: [
+          ...props.project.spatialMap.links,
+          createParentChildLink({ source: props.parentNode.id, target: nodeId }),
+        ],
+      },
+    });
+    controller.clearChildNodeDraft();
+    queueMicrotask(() => controller.setSelectedNodeId(nodeId));
+  };
+
+  return (
+    <g
+      class="spatial-map-node-placeholder"
+      transform={`translate(${x()}, ${y()})`}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <rect class="spatial-map-node-placeholder-body" width={width()} height={height()} />
+      <foreignObject x="8" y="8" width={width() - 16} height={height() - 16}>
+        <form
+          class="spatial-map-node-placeholder-form"
+          action={normalizeActionUrl(createProjectChildNode.url)}
+          method="post"
+          onSubmit={(event) => {
+            const nextTitle = title().trim();
+            if (!nextTitle) {
+              event.preventDefault();
+              return;
+            }
+
+            applyOptimisticChild(nextTitle);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              controller.clearChildNodeDraft();
+            }
+          }}
+        >
+          <input type="hidden" name="projectId" value={props.project.id} />
+          <input type="hidden" name="parentNodeId" value={props.parentNode.id} />
+          <Input
+            ref={inputRef}
+            aria-label="New child node title"
+            name="title"
+            required
+            value={title()}
+            disabled={submission.pending}
+            placeholder="Node title"
+            size="xs"
+            onInput={(event) => setTitle(event.currentTarget.value)}
+          />
+          <div class="spatial-map-node-placeholder-actions">
+            <Button
+              size="xs"
+              variant="plain"
+              disabled={submission.pending}
+              onClick={() => controller.clearChildNodeDraft()}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="xs"
+              colorPalette="green"
+              disabled={!title().trim()}
+              loading={submission.pending}
+              type="submit"
+            >
+              Accept
+            </Button>
+          </div>
+        </form>
+      </foreignObject>
+    </g>
+  );
+}
+
+function createUniqueNodeId(label: string, type: string, existingIds: Set<string>) {
+  const baseId = slugifyProjectName(`${type}-${label}`);
+  if (!existingIds.has(baseId)) {
+    return baseId;
+  }
+
+  let suffix = 2;
+  while (existingIds.has(`${baseId}-${suffix}`)) {
+    suffix += 1;
+  }
+
+  return `${baseId}-${suffix}`;
+}
+
+function slugifyProjectName(name: string) {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return slug || "project";
 }
 
 function SpatialMapNode(props: {
@@ -188,6 +405,9 @@ function SpatialMapNode(props: {
     labelAreaTop() +
     Math.max(0, (availableLabelHeight() - labelBlockHeight()) / 2) +
     labelFontSize() * 0.78;
+  const statusLabel = () => getMapNodeStatusLabel(props.item.node.status);
+  const statusLabelWidth = () =>
+    Math.max(46, statusLabel().length * NODE_STATUS_LABEL_WIDTH_FACTOR + 14);
 
   return (
     <g
@@ -310,6 +530,47 @@ function SpatialMapNode(props: {
       >
         {props.item.node.type}
       </text>
+      <g
+        class={`spatial-map-node-status spatial-map-node-status--${props.item.node.status}`}
+        transform={`translate(${NODE_STATUS_BADGE_MARGIN}, ${props.item.node.height - NODE_STATUS_BADGE_MARGIN - NODE_STATUS_BADGE_SIZE})`}
+        aria-label={`Status: ${statusLabel()}`}
+      >
+        <rect
+          class="spatial-map-node-status-hit-area"
+          x="0"
+          y="0"
+          width={NODE_STATUS_BADGE_SIZE}
+          height={NODE_STATUS_BADGE_SIZE}
+        />
+        <rect
+          class="spatial-map-node-status-label-bg"
+          x={NODE_STATUS_BADGE_SIZE + NODE_STATUS_LABEL_GAP - 1}
+          y="0"
+          width={statusLabelWidth()}
+          height={NODE_STATUS_BADGE_SIZE}
+        />
+        <circle
+          class="spatial-map-node-status-dot"
+          cx={NODE_STATUS_BADGE_SIZE / 2}
+          cy={NODE_STATUS_BADGE_SIZE / 2}
+          r={NODE_STATUS_BADGE_SIZE / 2 - 1}
+        />
+        <text
+          class="spatial-map-node-status-glyph"
+          x={NODE_STATUS_BADGE_SIZE / 2}
+          y={NODE_STATUS_BADGE_SIZE / 2 + 3.5}
+          text-anchor="middle"
+        >
+          {getMapNodeStatusGlyph(props.item.node.status)}
+        </text>
+        <text
+          class="spatial-map-node-status-label"
+          x={NODE_STATUS_BADGE_SIZE + NODE_STATUS_LABEL_GAP + 6}
+          y={NODE_STATUS_BADGE_SIZE / 2 + 3.5}
+        >
+          {statusLabel()}
+        </text>
+      </g>
     </g>
   );
 }
