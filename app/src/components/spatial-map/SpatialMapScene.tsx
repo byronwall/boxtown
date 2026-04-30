@@ -168,6 +168,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
     return nodeId ? getDescendantNodeIds(props.project.spatialMap, nodeId) : new Set<string>();
   });
   let moveFormRef: HTMLFormElement | undefined;
+  let moveNodeIdInputRef: HTMLInputElement | undefined;
   let moveParentNodeIdInputRef: HTMLInputElement | undefined;
 
   createEffect(() => {
@@ -199,7 +200,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
 
   const moveSelectedNode = (parentNodeId: string | null) => {
     const nodeId = controller.reparentingNodeId();
-    if (!nodeId || !moveFormRef || !moveParentNodeIdInputRef) {
+    if (!nodeId || !moveFormRef || !moveNodeIdInputRef || !moveParentNodeIdInputRef) {
       return;
     }
     if (parentNodeId === nodeId) {
@@ -214,9 +215,11 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       return;
     }
 
+    moveNodeIdInputRef.value = nodeId;
     moveParentNodeIdInputRef.value = parentNodeId ?? "";
     props.onProjectUpdated?.(moveProjectNodeOptimistically(props.project, nodeId, parentNodeId));
     moveFormRef.requestSubmit();
+    controller.clearReparentingNode();
   };
 
   return (
@@ -313,7 +316,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
         hidden
       >
         <input type="hidden" name="projectId" value={props.project.id} />
-        <input type="hidden" name="nodeId" value={controller.reparentingNodeId() ?? ""} />
+        <input ref={moveNodeIdInputRef} type="hidden" name="nodeId" />
         <input ref={moveParentNodeIdInputRef} type="hidden" name="parentNodeId" />
       </form>
       <Show when={reparentingNode()}>

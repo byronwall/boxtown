@@ -1,8 +1,16 @@
-import { createMemo, createSignal, For, Show } from "solid-js";
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  onMount,
+  Show,
+} from "solid-js";
 import { Dynamic } from "solid-js/web";
 import { Box, VStack } from "styled-system/jsx";
 
 import { MarkdownRenderer } from "~/components/markdown-renderer";
+import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
 import { patchProjectNode } from "~/lib/projects/client-mutations";
 import { getNodeMetadataEntries } from "~/lib/projects/node-metadata";
@@ -296,6 +304,11 @@ function SpatialMapTreeNode(props: {
           </Show>
           <article class="spatial-map-tree-content">
             <NodeHeading node={props.item.node} depth={props.depth} />
+            <Show when={(props.item.node.images ?? []).length > 0}>
+              <Box class="spatial-map-tree-rich-content">
+                <SpatialMapImageStrip node={props.item.node} variant="tree" />
+              </Box>
+            </Show>
             <Box class="spatial-map-tree-node-meta">
               <SpatialMapNodeStatusMenu
                 node={nodeWithOptimisticStatus()}
@@ -320,14 +333,7 @@ function SpatialMapTreeNode(props: {
               </span>
             </Box>
             <Show when={context().length > 0}>
-              <Box class="spatial-map-tree-context">
-                <MarkdownRenderer>{context()}</MarkdownRenderer>
-              </Box>
-            </Show>
-            <Show when={(props.item.node.images ?? []).length > 0}>
-              <Box class="spatial-map-tree-rich-content">
-                <SpatialMapImageStrip node={props.item.node} variant="tree" />
-              </Box>
+              <TreeContext content={context()} nodeLabel={props.item.node.label} />
             </Show>
             <Show when={metadataEntries().length > 0}>
               <Box class="spatial-map-tree-metadata-wrap">
@@ -383,6 +389,59 @@ function SpatialMapTreeNode(props: {
           </For>
         </VStack>
       </Show>
+    </Box>
+  );
+}
+
+function TreeContext(props: { content: string; nodeLabel: string }) {
+  let contentRef: HTMLDivElement | undefined;
+  const [isDialogOpen, setIsDialogOpen] = createSignal(false);
+  const [canExpand, setCanExpand] = createSignal(false);
+
+  const measureOverflow = () => {
+    if (!contentRef) return;
+    setCanExpand(contentRef.scrollHeight > contentRef.clientHeight + 1);
+  };
+
+  onMount(measureOverflow);
+
+  createEffect(() => {
+    props.content;
+    queueMicrotask(measureOverflow);
+  });
+
+  return (
+    <Box class="spatial-map-tree-context-wrap">
+      <Box
+        ref={contentRef}
+        class="spatial-map-tree-context spatial-map-tree-context--collapsed"
+      >
+        <MarkdownRenderer>{props.content}</MarkdownRenderer>
+      </Box>
+      <Show when={canExpand()}>
+        <button
+          type="button"
+          class="spatial-map-tree-context-expand"
+          onClick={(event) => {
+            event.stopPropagation();
+            setIsDialogOpen(true);
+          }}
+        >
+          Open full context
+        </button>
+      </Show>
+      <SimpleDialog
+        open={isDialogOpen()}
+        onOpenChange={setIsDialogOpen}
+        title={`${props.nodeLabel} Context`}
+        description="Large markdown view for longer context notes and working material."
+        maxW="min(800px, 90vw)"
+        contentClass="spatial-map-context-dialog"
+      >
+        <Box class="spatial-map-context-markdown is-dialog">
+          <MarkdownRenderer>{props.content}</MarkdownRenderer>
+        </Box>
+      </SimpleDialog>
     </Box>
   );
 }
