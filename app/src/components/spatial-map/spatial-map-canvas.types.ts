@@ -71,12 +71,14 @@ export interface SpatialMapCanvasController {
   sceneTransform: Accessor<string>;
   contextNoteConversionOpen: Accessor<boolean>;
   deleteNodeConfirmId: Accessor<string | null>;
+  unsafeDeleteNodeRequest: Accessor<{ nodeId: string; requestId: number } | null>;
   edgeState: Accessor<EdgeVisualState[]>;
   isolatedNodeId: Accessor<string | null>;
   isolationLabel: Accessor<string | null>;
   isolationModeActive: Accessor<boolean>;
   inspectorOpen: Accessor<boolean>;
   isPanning: Accessor<boolean>;
+  reparentingNodeId: Accessor<string | null>;
   orderedNodes: Accessor<NodeVisualState[]>;
   selectedNodeId: Accessor<string | null>;
   selectedNodeRelations: Accessor<{
@@ -102,7 +104,9 @@ export interface SpatialMapCanvasController {
   closeSourceDecompositionFlow: () => void;
   clearIsolation: () => void;
   clearDeleteNodeConfirm: () => void;
+  clearUnsafeDeleteNodeRequest: () => void;
   clearChildNodeDraft: () => void;
+  clearReparentingNode: () => void;
   isolateNode: (nodeId: string) => void;
   setInspectorOpen: (value: boolean | ((current: boolean) => boolean)) => void;
   setSelectedNodeId: (

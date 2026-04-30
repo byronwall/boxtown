@@ -243,6 +243,40 @@
     inset 0 -1px 0 rgba(44, 52, 46, 0.14);
 }
 
+.spatial-map-reparent-message {
+  position: absolute;
+  right: 10px;
+  bottom: 48px;
+  z-index: 4;
+  width: min(360px, calc(100% - 20px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(24, 29, 26, 0.34);
+  background: rgba(250, 252, 247, 0.98);
+  color: var(--spatial-map-copy);
+  pointer-events: auto;
+  box-shadow:
+    0 12px 28px rgba(20, 25, 22, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.58);
+}
+
+.spatial-map-reparent-copy {
+  min-width: 0;
+  flex: 1;
+  color: var(--spatial-map-copy-dim);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.spatial-map-reparent-actions {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 4px;
+  flex: none;
+}
+
 .spatial-map-color-controls {
   position: absolute;
   left: 50%;
@@ -3137,8 +3171,8 @@ body:has(.spatial-map-image-viewer-dialog) {
 }
 
 .spatial-map-command-menu {
-  width: min(920px, calc(100dvw - 48px)) !important;
-  max-width: min(920px, calc(100dvw - 48px)) !important;
+  width: min(600px, calc(100dvw - 32px)) !important;
+  max-width: min(600px, calc(100dvw - 32px)) !important;
   border: 1px solid rgba(96, 101, 95, 0.62) !important;
   border-radius: 10px !important;
   background:
@@ -3188,14 +3222,14 @@ body:has(.spatial-map-image-viewer-dialog) {
 .spatial-map-command-results {
   width: 100%;
   max-height: min(440px, 58vh);
-  padding: 7px;
+  padding: 5px;
   overflow-y: auto;
 }
 
 .spatial-map-command-result {
   display: block;
   width: 100%;
-  padding: 10px;
+  padding: 8px 10px;
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
@@ -3206,6 +3240,10 @@ body:has(.spatial-map-image-viewer-dialog) {
     background-color 160ms ease,
     border-color 160ms ease,
     box-shadow 160ms ease;
+}
+
+.spatial-map-command-result-row {
+  min-width: 0;
 }
 
 .spatial-map-command-result:hover,
@@ -3221,6 +3259,7 @@ body:has(.spatial-map-image-viewer-dialog) {
 }
 
 .spatial-map-command-result-title {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   font-weight: 760;
@@ -3242,12 +3281,21 @@ body:has(.spatial-map-image-viewer-dialog) {
 
 .spatial-map-command-result-match {
   display: flex;
+  flex: 2 1 180px;
   min-width: 0;
   gap: 8px;
-  margin-top: 5px;
   color: var(--spatial-map-copy-muted);
   font-size: 12px;
-  line-height: 1.35;
+  line-height: 1.25;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.spatial-map-command-result-match-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .spatial-map-command-result-match span {

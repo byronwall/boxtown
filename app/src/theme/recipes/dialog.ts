@@ -54,15 +54,17 @@ export const dialog = defineSlotRecipe({
     },
     closeTrigger: {
       pos: "absolute",
-      top: "3",
-      insetEnd: "3",
+      top: "-8",
+      insetEnd: "4",
+      zIndex: "1",
       borderWidth: "1px",
       borderColor: "olive.7",
       borderRadius: "l1",
-      bg: "olive.1",
-      boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.78)",
+      bg: "rgba(252, 253, 252, 0.96)",
+      boxShadow:
+        "0 12px 28px rgba(29, 33, 28, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9)",
       _hover: {
-        bg: "olive.2",
+        bg: "white",
         borderColor: "olive.8",
       },
       _focusVisible: {

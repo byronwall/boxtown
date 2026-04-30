@@ -1,12 +1,11 @@
 import { A } from "@solidjs/router";
 import {
-  FocusIcon,
   PlusIcon,
   SettingsIcon,
   SlidersHorizontalIcon,
   XIcon,
 } from "lucide-solid";
-import { For, createMemo, createSignal } from "solid-js";
+import { For, createSignal } from "solid-js";
 import { Box, HStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import { IconButton } from "~/components/ui/icon-button";
@@ -35,9 +34,6 @@ interface SpatialMapToolbarProps {
 export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
   const spatialMap = useSpatialMap();
   const [contextNodeDialogOpen, setContextNodeDialogOpen] = createSignal(false);
-  const isolationLabel = createMemo(() =>
-    truncateIsolationLabel(spatialMap.isolationLabel()),
-  );
 
   return (
     <Box class="spatial-map-topbar">
@@ -112,22 +108,16 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
         class="spatial-map-control-strip"
       >
         {spatialMap.isolationModeActive() ? (
-          <>
-            <Text as="span" class="spatial-map-isolation-readout">
-              <FocusIcon size={14} aria-hidden="true" />
-              <span>{isolationLabel()}</span>
-            </Text>
-            <Button
-              colorPalette="green"
-              variant="outline"
-              size="xs"
-              class="spatial-map-button spatial-map-icon-button spatial-map-isolation-clear"
-              aria-label="Clear isolation"
-              onClick={() => spatialMap.clearIsolation()}
-            >
-              <XIcon size={14} aria-hidden="true" />
-            </Button>
-          </>
+          <Button
+            colorPalette="green"
+            variant="outline"
+            size="xs"
+            class="spatial-map-button spatial-map-icon-button spatial-map-isolation-clear"
+            aria-label="Clear isolation"
+            onClick={() => spatialMap.clearIsolation()}
+          >
+            <XIcon size={14} aria-hidden="true" />
+          </Button>
         ) : null}
         <Menu.Root
           positioning={{ placement: "bottom-start", gutter: 4 }}
@@ -285,11 +275,6 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
       </HStack>
     </Box>
   );
-}
-
-function truncateIsolationLabel(label: string | null) {
-  const fallback = label ?? "Current node";
-  return fallback.length > 16 ? `${fallback.slice(0, 15)}...` : fallback;
 }
 
 function getDepthSelection(level: number, availableLevels: number[]) {

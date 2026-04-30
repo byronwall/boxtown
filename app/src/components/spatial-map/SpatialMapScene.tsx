@@ -4,7 +4,7 @@ import { Box } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
-import { createProjectChildNode } from "~/lib/projects/data";
+import { createProjectChildNode, moveProjectNode } from "~/lib/projects/data";
 import { getProjectNodeType } from "~/lib/projects/node-types";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
@@ -151,6 +151,73 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
 
     return controller.orderedNodes().find((item) => item.node.id === parentNodeId)?.node ?? null;
   });
+  const moveSubmission = useSubmission(moveProjectNode, (input) => {
+    const formData = input[0];
+    return (
+      formData instanceof FormData &&
+      formData.get("projectId") === props.project.id &&
+      formData.get("nodeId") === controller.reparentingNodeId()
+    );
+  });
+  const reparentingNode = createMemo(() => {
+    const nodeId = controller.reparentingNodeId();
+    return nodeId ? controller.sourceNodesById().get(nodeId) ?? null : null;
+  });
+  const reparentDescendantIds = createMemo(() => {
+    const nodeId = controller.reparentingNodeId();
+    return nodeId ? getDescendantNodeIds(props.project.spatialMap, nodeId) : new Set<string>();
+  });
+  let moveFormRef: HTMLFormElement | undefined;
+  let moveParentNodeIdInputRef: HTMLInputElement | undefined;
+
+  createEffect(() => {
+    const result = moveSubmission.result;
+    if (!result || moveSubmission.pending) {
+      return;
+    }
+
+    props.onProjectUpdated?.(result);
+    controller.clearReparentingNode();
+    toaster.success({ title: "Node moved" });
+    moveSubmission.clear();
+  });
+
+  createEffect(() => {
+    if (!moveSubmission.error || moveSubmission.pending) {
+      return;
+    }
+
+    toaster.error({
+      title: "Node was not moved",
+      description:
+        moveSubmission.error instanceof Error
+          ? moveSubmission.error.message
+          : "The server action failed. Try again after the dev server reconnects.",
+    });
+    moveSubmission.clear();
+  });
+
+  const moveSelectedNode = (parentNodeId: string | null) => {
+    const nodeId = controller.reparentingNodeId();
+    if (!nodeId || !moveFormRef || !moveParentNodeIdInputRef) {
+      return;
+    }
+    if (parentNodeId === nodeId) {
+      toaster.error({ title: "Choose a different parent" });
+      return;
+    }
+    if (parentNodeId && reparentDescendantIds().has(parentNodeId)) {
+      toaster.error({
+        title: "Choose a different parent",
+        description: "A node cannot be moved under one of its descendants.",
+      });
+      return;
+    }
+
+    moveParentNodeIdInputRef.value = parentNodeId ?? "";
+    props.onProjectUpdated?.(moveProjectNodeOptimistically(props.project, nodeId, parentNodeId));
+    moveFormRef.requestSubmit();
+  };
 
   return (
     <Box
@@ -206,10 +273,21 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                   project={props.project}
                   colorMode={props.nodeColorMode}
                   viewportScale={controller.viewportScale()}
-                  onClick={controller.sceneHandlers.onNodeClick}
+                  onClick={(nodeId) => {
+                    if (controller.reparentingNodeId()) {
+                      moveSelectedNode(nodeId);
+                      return;
+                    }
+                    controller.sceneHandlers.onNodeClick(nodeId);
+                  }}
                   onDoubleClick={controller.sceneHandlers.onNodeDoubleClick}
                   isIsolationTarget={controller.isolatedNodeId() === item.node.id}
-                  onPointerDown={controller.sceneHandlers.onNodePointerDown}
+                  onPointerDown={(nodeId) => {
+                    if (controller.reparentingNodeId()) {
+                      return;
+                    }
+                    controller.sceneHandlers.onNodePointerDown(nodeId);
+                  }}
                   onPointerEnter={controller.sceneHandlers.onNodePointerEnter}
                   onPointerLeave={controller.sceneHandlers.onNodePointerLeave}
                 />
@@ -228,8 +306,95 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
           />
         )}
       </Show>
+      <form
+        ref={moveFormRef}
+        action={normalizeActionUrl(moveProjectNode.url)}
+        method="post"
+        hidden
+      >
+        <input type="hidden" name="projectId" value={props.project.id} />
+        <input type="hidden" name="nodeId" value={controller.reparentingNodeId() ?? ""} />
+        <input ref={moveParentNodeIdInputRef} type="hidden" name="parentNodeId" />
+      </form>
+      <Show when={reparentingNode()}>
+        {(node) => (
+          <div class="spatial-map-reparent-message" onPointerDown={(event) => event.stopPropagation()}>
+            <div class="spatial-map-reparent-copy">
+              Click the new parent node for {node().label}.
+            </div>
+            <div class="spatial-map-reparent-actions">
+              <Button
+                colorPalette="green"
+                variant="plain"
+                size="xs"
+                class="spatial-map-button spatial-map-viewport-button"
+                loading={moveSubmission.pending}
+                onClick={() => moveSelectedNode(null)}
+              >
+                Move to root
+              </Button>
+              <Button
+                variant="plain"
+                size="xs"
+                class="spatial-map-button spatial-map-viewport-button"
+                disabled={moveSubmission.pending}
+                onClick={() => controller.clearReparentingNode()}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </Show>
     </Box>
   );
+}
+
+function moveProjectNodeOptimistically(
+  project: ProjectRecord,
+  nodeId: string,
+  parentNodeId: string | null,
+): ProjectRecord {
+  const linksWithoutCurrentParent = project.spatialMap.links.filter(
+    (link) => !(link.parentChild && link.target === nodeId),
+  );
+
+  return {
+    ...project,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...project.spatialMap,
+      links: parentNodeId
+        ? [
+            ...linksWithoutCurrentParent,
+            createParentChildLink({ source: parentNodeId, target: nodeId }),
+          ]
+        : linksWithoutCurrentParent,
+    },
+  };
+}
+
+function getDescendantNodeIds(data: ProjectRecord["spatialMap"], nodeId: string) {
+  const childrenByParent = new Map<string, string[]>();
+  for (const link of data.links) {
+    if (!link.parentChild) {
+      continue;
+    }
+    childrenByParent.set(link.source, [...(childrenByParent.get(link.source) ?? []), link.target]);
+  }
+
+  const descendants = new Set<string>();
+  const pending = [...(childrenByParent.get(nodeId) ?? [])];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (!current || descendants.has(current)) {
+      continue;
+    }
+    descendants.add(current);
+    pending.push(...(childrenByParent.get(current) ?? []));
+  }
+
+  return descendants;
 }
 
 function ChildNodePlaceholder(props: {

@@ -103,6 +103,12 @@ interface DeleteProjectNodeInput {
   nodeId: string;
 }
 
+interface MoveProjectNodeInput {
+  projectId: string;
+  nodeId: string;
+  parentNodeId: string | null;
+}
+
 interface AddProjectNodeImagesInput {
   projectId: string;
   nodeId: string;
@@ -937,6 +943,82 @@ export async function deleteProjectNodeOnDisk(
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
   return nextRecord;
+}
+
+export async function moveProjectNodeOnDisk(
+  input: MoveProjectNodeInput,
+): Promise<ProjectRecord> {
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const nodeExists = current.spatialMap.nodes.some((node) => node.id === input.nodeId);
+  const parentNodeExists = input.parentNodeId
+    ? current.spatialMap.nodes.some((node) => node.id === input.parentNodeId)
+    : true;
+
+  if (!nodeExists) {
+    throw new Error("Node not found.");
+  }
+  if (!parentNodeExists) {
+    throw new Error("Parent node not found.");
+  }
+  if (input.parentNodeId === input.nodeId) {
+    throw new Error("A node cannot be its own parent.");
+  }
+  if (input.parentNodeId && getDescendantNodeIds(current.spatialMap, input.nodeId).has(input.parentNodeId)) {
+    throw new Error("A node cannot be moved under one of its descendants.");
+  }
+
+  const linksWithoutCurrentParent = current.spatialMap.links.filter(
+    (link) => !(link.parentChild && link.target === input.nodeId),
+  );
+  const nextLinks = input.parentNodeId
+    ? [
+        ...linksWithoutCurrentParent,
+        createParentChildLink({ source: input.parentNodeId, target: input.nodeId }),
+      ]
+    : linksWithoutCurrentParent;
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      links: nextLinks,
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return nextRecord;
+}
+
+function getDescendantNodeIds(data: SpatialMapData, nodeId: string) {
+  const childrenByParent = new Map<string, string[]>();
+  for (const link of data.links) {
+    if (!link.parentChild) {
+      continue;
+    }
+    childrenByParent.set(link.source, [...(childrenByParent.get(link.source) ?? []), link.target]);
+  }
+
+  const descendants = new Set<string>();
+  const pending = [...(childrenByParent.get(nodeId) ?? [])];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (!current || descendants.has(current)) {
+      continue;
+    }
+    descendants.add(current);
+    pending.push(...(childrenByParent.get(current) ?? []));
+  }
+
+  return descendants;
 }
 
 export async function readProjectRecordsFromDisk(): Promise<ProjectRecord[]> {

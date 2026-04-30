@@ -1,5 +1,5 @@
-import { useSubmission } from "@solidjs/router";
-import { createEffect, createSignal } from "solid-js";
+import { useAction } from "@solidjs/router";
+import { createEffect, createSignal, untrack } from "solid-js";
 import { HStack, VStack } from "styled-system/jsx";
 import { Trash2 } from "lucide-solid";
 import { Button } from "~/components/ui/button";
@@ -9,7 +9,6 @@ import { Tooltip } from "~/components/ui/tooltip";
 import { toaster } from "~/components/ui/toast";
 import { deleteProjectNode } from "~/lib/projects/data";
 import type { ProjectRecord } from "~/lib/projects/types";
-import { normalizeActionUrl } from "~/lib/router/action-url";
 import type { MapNode } from "~/lib/spatial-map/types";
 import { useSpatialMap } from "./SpatialMapContext";
 
@@ -24,21 +23,63 @@ interface SpatialMapDeleteNodeControlProps {
 export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlProps) {
   const spatialMap = useSpatialMap();
   const [open, setOpen] = createSignal(false);
-  const formId = `delete-node-${props.hideTrigger ? "shortcut" : "button"}-${props.node.id}`;
-  const submission = useSubmission(deleteProjectNode, (input) => {
-    const formData = input[0];
-    return (
-      formData instanceof FormData &&
-      formData.get("projectId") === props.projectId &&
-      formData.get("nodeId") === props.node.id &&
-      formData.get("deleteFormId") === formId
-    );
-  });
+  const [pending, setPending] = createSignal(false);
+  let deleteButtonRef: HTMLButtonElement | undefined;
+  const submitDeleteNode = useAction(deleteProjectNode);
+
+  const deleteNode = async () => {
+    if (pending()) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("projectId", props.projectId);
+    formData.set("nodeId", props.node.id);
+
+    setPending(true);
+    try {
+      const result = await submitDeleteNode(formData);
+      props.onProjectUpdated?.(result);
+      setOpen(false);
+      if (spatialMap.deleteNodeConfirmId() === props.node.id) {
+        spatialMap.clearDeleteNodeConfirm();
+      }
+      queueMicrotask(() => {
+        spatialMap.setSelectedNodeId(result.spatialMap.nodes[0]?.id ?? null);
+        spatialMap.setInspectorOpen(true);
+      });
+      toaster.success({
+        title: "Node deleted",
+        description: `${props.node.label} was removed from the project map.`,
+      });
+    } catch (error) {
+      toaster.error({
+        title: "Delete failed",
+        description: error instanceof Error ? error.message : "The node could not be deleted.",
+      });
+    } finally {
+      setPending(false);
+    }
+  };
 
   createEffect(() => {
     if (props.hideTrigger && spatialMap.deleteNodeConfirmId() === props.node.id) {
       setOpen(true);
     }
+  });
+
+  createEffect(() => {
+    const request = spatialMap.unsafeDeleteNodeRequest();
+    if (!props.hideTrigger || request?.nodeId !== props.node.id) {
+      return;
+    }
+
+    if (untrack(pending)) {
+      return;
+    }
+
+    spatialMap.clearUnsafeDeleteNodeRequest();
+    void deleteNode();
   });
 
   const setDialogOpen = (nextOpen: boolean) => {
@@ -47,28 +88,6 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
       spatialMap.clearDeleteNodeConfirm();
     }
   };
-
-  createEffect(() => {
-    const result = submission.result;
-    if (!result || submission.pending) {
-      return;
-    }
-
-    props.onProjectUpdated?.(result);
-    setOpen(false);
-    if (spatialMap.deleteNodeConfirmId() === props.node.id) {
-      spatialMap.clearDeleteNodeConfirm();
-    }
-    queueMicrotask(() => {
-      spatialMap.setSelectedNodeId(result.spatialMap.nodes[0]?.id ?? null);
-      spatialMap.setInspectorOpen(true);
-    });
-    toaster.success({
-      title: "Node deleted",
-      description: `${props.node.label} was removed from the project map.`,
-    });
-    submission.clear();
-  });
 
   return (
     <>
@@ -92,36 +111,31 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
         title="Delete Node"
         description={`Delete ${props.node.label}? Any links attached to this node will also be removed.`}
         maxW="520px"
+        initialFocusEl={() => deleteButtonRef ?? null}
         footer={
           <HStack>
             <Button variant="outline" type="button" onClick={() => setDialogOpen(false)}>
               Keep
             </Button>
             <Button
-              type="submit"
-              form={formId}
-              loading={submission.pending}
+              ref={deleteButtonRef}
+              type="button"
+              loading={pending()}
               class="spatial-map-button spatial-map-button--danger"
+              onClick={() => {
+                void deleteNode();
+              }}
             >
               Delete
             </Button>
           </HStack>
         }
       >
-        <form
-          id={formId}
-          action={normalizeActionUrl(deleteProjectNode.url)}
-          method="post"
-        >
-          <VStack alignItems="stretch" gap="4">
-            <input type="hidden" name="projectId" value={props.projectId} />
-            <input type="hidden" name="nodeId" value={props.node.id} />
-            <input type="hidden" name="deleteFormId" value={formId} />
-            <Text textStyle="sm" color="fg.muted">
-              This removes the node and prunes any incoming or outgoing links that reference it.
-            </Text>
-          </VStack>
-        </form>
+        <VStack alignItems="stretch" gap="4">
+          <Text textStyle="sm" color="fg.muted">
+            This removes the node and prunes any incoming or outgoing links that reference it.
+          </Text>
+        </VStack>
       </SimpleDialog>
     </>
   );

@@ -97,7 +97,7 @@ export function SpatialMapCommandMenu() {
       open={open()}
       onOpenChange={setOpen}
       showClose={false}
-      maxW="min(920px, calc(100dvw - 48px))"
+      maxW="min(600px, calc(100dvw - 32px))"
       contentClass="spatial-map-command-menu"
       initialFocusEl={() => inputRef ?? null}
     >
@@ -151,7 +151,7 @@ export function SpatialMapCommandMenu() {
                     onMouseEnter={() => setActiveIndex(index())}
                     onClick={() => selectResult(result)}
                   >
-                    <HStack justifyContent="space-between" gap="3">
+                    <HStack justifyContent="space-between" gap="2" class="spatial-map-command-result-row">
                       <Box class="spatial-map-command-result-title">
                         <HighlightedText
                           text={result.node.label}
@@ -159,18 +159,22 @@ export function SpatialMapCommandMenu() {
                           fallbackStart={result.fieldLabel === "Title" ? result.matchStart : -1}
                         />
                       </Box>
+                      <Show when={result.fieldLabel !== "Title"}>
+                        <Box class="spatial-map-command-result-match">
+                          <span>{result.fieldLabel}</span>
+                          <Box as="span" class="spatial-map-command-result-match-text">
+                            <HighlightedText
+                              text={result.matchedText}
+                              query={query()}
+                              fallbackStart={result.matchStart}
+                            />
+                          </Box>
+                        </Box>
+                      </Show>
                       <Box as="span" class="spatial-map-command-result-type">
                         {result.node.type}
                       </Box>
                     </HStack>
-                    <Box class="spatial-map-command-result-match">
-                      <span>{result.fieldLabel}</span>
-                      <HighlightedText
-                        text={result.matchedText}
-                        query={query()}
-                        fallbackStart={result.matchStart}
-                      />
-                    </Box>
                   </button>
                 )}
               </For>

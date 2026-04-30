@@ -86,7 +86,12 @@ export function useSpatialMapCanvasController(
   const [contextNoteConversionOpen, setContextNoteConversionOpen] = createSignal(false);
   const [sourceDecompositionOpen, setSourceDecompositionOpen] = createSignal(false);
   const [deleteNodeConfirmId, setDeleteNodeConfirmId] = createSignal<string | null>(null);
+  const [unsafeDeleteNodeRequest, setUnsafeDeleteNodeRequest] = createSignal<{
+    nodeId: string;
+    requestId: number;
+  } | null>(null);
   const [childNodeDraft, setChildNodeDraft] = createSignal<ChildNodeDraft | null>(null);
+  const [reparentingNodeId, setReparentingNodeId] = createSignal<string | null>(null);
   const [viewMode, setViewMode] = createSignal<SpatialMapViewMode>("canvas");
   const [visibleDepthSelection, writeVisibleDepthSelection] =
     createSignal<SpatialMapDepthLevel>("max");
@@ -215,6 +220,9 @@ export function useSpatialMapCanvasController(
     );
     setSelectedNodeId((current) =>
       current && nextData.nodes.some((node) => node.id === current) ? current : null,
+    );
+    setReparentingNodeId((current) =>
+      current && sourceData.nodes.some((node) => node.id === current) ? current : null,
     );
   });
 
@@ -485,6 +493,18 @@ export function useSpatialMapCanvasController(
   };
 
   const handleWindowKeyDown = (event: KeyboardEvent) => {
+    if (isUnsafeDeleteNodeShortcut(event)) {
+      const nodeId = selectedNodeId();
+      if (nodeId && viewMode() === "canvas") {
+        event.preventDefault();
+        setUnsafeDeleteNodeRequest({
+          nodeId,
+          requestId: Date.now(),
+        });
+      }
+      return;
+    }
+
     if (isEditableTarget(event.target)) {
       return;
     }
@@ -504,6 +524,21 @@ export function useSpatialMapCanvasController(
         event.preventDefault();
         setDeleteNodeConfirmId(nodeId);
       }
+      return;
+    }
+
+    if (event.key.toLowerCase() === "p" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      const nodeId = selectedNodeId();
+      if (nodeId && viewMode() === "canvas") {
+        event.preventDefault();
+        setReparentingNodeId(nodeId);
+      }
+      return;
+    }
+
+    if (event.key === "Escape" && reparentingNodeId()) {
+      event.preventDefault();
+      setReparentingNodeId(null);
       return;
     }
 
@@ -685,6 +720,7 @@ export function useSpatialMapCanvasController(
 
     setHoveredNodeId(null);
     setSelectedNodeId(null);
+    setReparentingNodeId(null);
   };
 
   const handleBackgroundDoubleClick: SpatialMapCanvasController["sceneHandlers"]["onBackgroundDoubleClick"] = (event) => {
@@ -741,6 +777,7 @@ export function useSpatialMapCanvasController(
     addNodesOpen,
     contextNoteConversionOpen,
     deleteNodeConfirmId,
+    unsafeDeleteNodeRequest,
     sourceDecompositionOpen,
     childNodeDraft,
     edgeState,
@@ -749,6 +786,7 @@ export function useSpatialMapCanvasController(
     isolationModeActive,
     inspectorOpen,
     isPanning,
+    reparentingNodeId,
     orderedNodes,
     selectedNodeId,
     selectedNodeRelations,
@@ -769,7 +807,9 @@ export function useSpatialMapCanvasController(
     closeSourceDecompositionFlow: () => setSourceDecompositionOpen(false),
     clearIsolation: () => applyIsolation(null),
     clearDeleteNodeConfirm: () => setDeleteNodeConfirmId(null),
+    clearUnsafeDeleteNodeRequest: () => setUnsafeDeleteNodeRequest(null),
     clearChildNodeDraft: () => setChildNodeDraft(null),
+    clearReparentingNode: () => setReparentingNodeId(null),
     openChildNodeDraft,
     openAddNodesFlow: () => {
       setContextNoteConversionOpen(false);
@@ -878,6 +918,16 @@ function isDeleteNodeShortcut(event: KeyboardEvent) {
   return (
     (event.key === "Delete" || event.key === "Backspace") &&
     !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.shiftKey
+  );
+}
+
+function isUnsafeDeleteNodeShortcut(event: KeyboardEvent) {
+  return (
+    (event.key === "Delete" || event.key === "Backspace") &&
+    event.metaKey &&
     !event.ctrlKey &&
     !event.altKey &&
     !event.shiftKey

@@ -15,6 +15,7 @@ type ProjectDeleteControlProps = {
 
 export function ProjectDeleteControl(props: ProjectDeleteControlProps) {
   const [open, setOpen] = createSignal(false);
+  let deleteButtonRef: HTMLButtonElement | undefined;
   const deleteSubmission = useSubmission(
     deleteProject,
     (input) => input[0] instanceof FormData && input[0].get("projectId") === props.projectId,
@@ -46,12 +47,14 @@ export function ProjectDeleteControl(props: ProjectDeleteControlProps) {
         title="Delete project"
         description={`Delete ${props.projectName}? This removes the project from the registry immediately.`}
         maxW="480px"
+        initialFocusEl={() => deleteButtonRef ?? null}
         footer={
           <HStack justify="flex-end" gap="2" w="full">
             <Button variant="outline" type="button" onClick={() => setOpen(false)}>
               Keep
             </Button>
             <Button
+              ref={deleteButtonRef}
               type="submit"
               form={formId}
               variant="solid"

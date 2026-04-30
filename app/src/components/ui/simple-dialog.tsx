@@ -44,7 +44,7 @@ export function SimpleDialog(props: SimpleDialogProps) {
         maxW,
         "--dialog-base-margin": "24px",
         maxH: "calc(100vh - (var(--dialog-base-margin) * 2))",
-        overflow: "hidden",
+        overflow: "visible",
         display: "flex",
         flexDirection: "column",
       }),

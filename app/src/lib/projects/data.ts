@@ -371,3 +371,30 @@ export const deleteProjectNode = action(
   },
   "delete-project-node",
 );
+
+export const moveProjectNode = action(
+  async (formData: FormData) => {
+    "use server";
+    const { moveProjectNodeOnDisk } = await import("./data.server");
+
+    const projectId = formData.get("projectId");
+    const nodeId = formData.get("nodeId");
+    const parentNodeId = formData.get("parentNodeId");
+
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+    if (typeof nodeId !== "string" || nodeId.trim().length === 0) {
+      throw new Error("A node id is required.");
+    }
+
+    return moveProjectNodeOnDisk({
+      projectId,
+      nodeId,
+      parentNodeId: typeof parentNodeId === "string" && parentNodeId.trim().length > 0
+        ? parentNodeId
+        : null,
+    });
+  },
+  "move-project-node",
+);
