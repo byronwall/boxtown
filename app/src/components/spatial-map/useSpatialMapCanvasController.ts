@@ -63,6 +63,10 @@ interface ViewportSize {
   height: number;
 }
 
+const CHILD_NODE_PLACEHOLDER_WIDTH = 260;
+const CHILD_NODE_PLACEHOLDER_HEIGHT = 174;
+const CHILD_NODE_PLACEHOLDER_EDGE_GAP = 12;
+
 export function useSpatialMapCanvasController(
   data: Accessor<SpatialMapData>,
 ): SpatialMapCanvasController {
@@ -488,8 +492,35 @@ export function useSpatialMapCanvasController(
       ? getWorldPoint(lastViewportClientPoint.x, lastViewportClientPoint.y)
       : getViewportCenterWorldPoint();
 
+  const clampChildNodeDraftPoint = (point: { x: number; y: number }) => {
+    const currentCamera = cameraSnapshot;
+    const horizontalMargin =
+      ((CHILD_NODE_PLACEHOLDER_WIDTH / 2 + CHILD_NODE_PLACEHOLDER_EDGE_GAP) /
+        Math.max(viewportSize.width, 1)) *
+      currentCamera.width;
+    const verticalMargin =
+      ((CHILD_NODE_PLACEHOLDER_HEIGHT / 2 + CHILD_NODE_PLACEHOLDER_EDGE_GAP) /
+        Math.max(viewportSize.height, 1)) *
+      currentCamera.height;
+    const halfWidth = Math.min(horizontalMargin, currentCamera.width / 2);
+    const halfHeight = Math.min(verticalMargin, currentCamera.height / 2);
+
+    return {
+      x: clampValue(
+        point.x,
+        currentCamera.x + halfWidth,
+        currentCamera.x + currentCamera.width - halfWidth,
+      ),
+      y: clampValue(
+        point.y,
+        currentCamera.y + halfHeight,
+        currentCamera.y + currentCamera.height - halfHeight,
+      ),
+    };
+  };
+
   const openChildNodeDraft = (parentNodeId: string | null = selectedNodeId()) => {
-    setChildNodeDraft({ parentNodeId, ...getDraftWorldPoint() });
+    setChildNodeDraft({ parentNodeId, ...clampChildNodeDraftPoint(getDraftWorldPoint()) });
   };
 
   const handleWindowKeyDown = (event: KeyboardEvent) => {

@@ -1,6 +1,6 @@
 import { useSubmission } from "@solidjs/router";
 import { ArrowDownIcon, ArrowUpIcon, Trash2 } from "lucide-solid";
-import { For, createEffect, createSignal, type JSX } from "solid-js";
+import { Index, createEffect, createSignal, type JSX } from "solid-js";
 import { Box, HStack, VStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import * as Field from "~/components/ui/field";
@@ -147,18 +147,22 @@ export function ProjectMetadataSettingsDialog(
             </Box>
 
             <Box class="spatial-map-metadata-grid spatial-map-metadata-grid--body">
-              <For each={rows()}>
+              <Index each={rows()}>
                 {(row, index) => (
                   <>
                     <Field.Root>
-                      <input type="hidden" name="originalKey" value={row.originalKey} />
+                      <input
+                        type="hidden"
+                        name="originalKey"
+                        value={row().originalKey}
+                      />
                       <Textarea
-                        aria-label={`Key for metadata field ${index() + 1}`}
+                        aria-label={`Key for metadata field ${index + 1}`}
                         class="spatial-map-metadata-input"
                         name="key"
-                        value={row.key}
+                        value={row().key}
                         onInput={(event) =>
-                          updateRow(index(), { key: event.currentTarget.value }, setRows)
+                          updateRow(index, { key: event.currentTarget.value }, setRows)
                         }
                         placeholder="purpose"
                         rows={1}
@@ -166,12 +170,12 @@ export function ProjectMetadataSettingsDialog(
                     </Field.Root>
                     <Field.Root>
                       <Textarea
-                        aria-label={`Label for metadata field ${index() + 1}`}
+                        aria-label={`Label for metadata field ${index + 1}`}
                         class="spatial-map-metadata-input"
                         name="label"
-                        value={row.label}
+                        value={row().label}
                         onInput={(event) =>
-                          updateRow(index(), { label: event.currentTarget.value }, setRows)
+                          updateRow(index, { label: event.currentTarget.value }, setRows)
                         }
                         placeholder="Purpose"
                         rows={1}
@@ -179,12 +183,12 @@ export function ProjectMetadataSettingsDialog(
                     </Field.Root>
                     <Field.Root>
                       <Textarea
-                        aria-label={`Default value for metadata field ${index() + 1}`}
+                        aria-label={`Default value for metadata field ${index + 1}`}
                         class="spatial-map-metadata-input"
                         name="defaultValue"
-                        value={row.defaultValue}
+                        value={row().defaultValue}
                         onInput={(event) =>
-                          updateRow(index(), { defaultValue: event.currentTarget.value }, setRows)
+                          updateRow(index, { defaultValue: event.currentTarget.value }, setRows)
                         }
                         placeholder="Optional default text"
                         rows={1}
@@ -192,44 +196,44 @@ export function ProjectMetadataSettingsDialog(
                     </Field.Root>
                     <HStack gap="1" class="spatial-map-metadata-row-actions">
                       <IconButton
-                        aria-label={`Move ${row.label || row.key || "field"} up`}
+                        aria-label={`Move ${row().label || row().key || "field"} up`}
                         title="Move up"
                         type="button"
                         size="xs"
                         variant="outline"
                         class="spatial-map-button spatial-map-icon-button"
-                        disabled={index() === 0}
-                        onClick={() => moveRow(index(), -1, setRows)}
+                        disabled={index === 0}
+                        onClick={() => moveRow(index, -1, setRows)}
                       >
                         <ArrowUpIcon size={15} />
                       </IconButton>
                       <IconButton
-                        aria-label={`Move ${row.label || row.key || "field"} down`}
+                        aria-label={`Move ${row().label || row().key || "field"} down`}
                         title="Move down"
                         type="button"
                         size="xs"
                         variant="outline"
                         class="spatial-map-button spatial-map-icon-button"
-                        disabled={index() === rows().length - 1}
-                        onClick={() => moveRow(index(), 1, setRows)}
+                        disabled={index === rows().length - 1}
+                        onClick={() => moveRow(index, 1, setRows)}
                       >
                         <ArrowDownIcon size={15} />
                       </IconButton>
                       <IconButton
-                        aria-label={`Remove ${row.label || row.key || "field"}`}
+                        aria-label={`Remove ${row().label || row().key || "field"}`}
                         title="Remove"
                         type="button"
                         size="xs"
                         variant="outline"
                         class="spatial-map-button spatial-map-icon-button spatial-map-button--danger"
-                        onClick={() => removeRow(index(), setRows)}
+                        onClick={() => removeRow(index, setRows)}
                       >
                         <Trash2 size={15} />
                       </IconButton>
                     </HStack>
                   </>
                 )}
-              </For>
+              </Index>
             </Box>
 
             <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap">
@@ -262,17 +266,17 @@ export function ProjectMetadataSettingsDialog(
               <Text as="span">Order</Text>
             </Box>
             <Box class="spatial-map-type-grid spatial-map-type-grid--body">
-              <For each={typeRows()}>
+              <Index each={typeRows()}>
                 {(row, index) => (
                   <>
                     <Field.Root>
                       <Textarea
-                        aria-label={`Name for node type ${index() + 1}`}
+                        aria-label={`Name for node type ${index + 1}`}
                         class="spatial-map-metadata-input"
                         name="nodeTypeName"
-                        value={row.name}
+                        value={row().name}
                         onInput={(event) =>
-                          updateTypeRow(index(), { name: event.currentTarget.value }, setTypeRows)
+                          updateTypeRow(index, { name: event.currentTarget.value }, setTypeRows)
                         }
                         placeholder="component"
                         rows={1}
@@ -280,59 +284,59 @@ export function ProjectMetadataSettingsDialog(
                     </Field.Root>
                     <Field.Root class="spatial-map-type-color-field">
                       <input
-                        aria-label={`Color for node type ${row.name || index() + 1}`}
+                        aria-label={`Color for node type ${row().name || index + 1}`}
                         class="spatial-map-type-color-input"
                         type="color"
                         name="nodeTypeColor"
-                        value={row.color}
+                        value={row().color}
                         onInput={(event) =>
-                          updateTypeRow(index(), { color: event.currentTarget.value }, setTypeRows)
+                          updateTypeRow(index, { color: event.currentTarget.value }, setTypeRows)
                         }
                       />
                       <Text as="span" class="spatial-map-type-color-value">
-                        {row.color}
+                        {row().color}
                       </Text>
                     </Field.Root>
                     <HStack gap="1" class="spatial-map-metadata-row-actions">
                       <IconButton
-                        aria-label={`Move ${row.name || "type"} up`}
+                        aria-label={`Move ${row().name || "type"} up`}
                         title="Move up"
                         type="button"
                         size="xs"
                         variant="outline"
                         class="spatial-map-button spatial-map-icon-button"
-                        disabled={index() === 0}
-                        onClick={() => moveRow(index(), -1, setTypeRows)}
+                        disabled={index === 0}
+                        onClick={() => moveRow(index, -1, setTypeRows)}
                       >
                         <ArrowUpIcon size={15} />
                       </IconButton>
                       <IconButton
-                        aria-label={`Move ${row.name || "type"} down`}
+                        aria-label={`Move ${row().name || "type"} down`}
                         title="Move down"
                         type="button"
                         size="xs"
                         variant="outline"
                         class="spatial-map-button spatial-map-icon-button"
-                        disabled={index() === typeRows().length - 1}
-                        onClick={() => moveRow(index(), 1, setTypeRows)}
+                        disabled={index === typeRows().length - 1}
+                        onClick={() => moveRow(index, 1, setTypeRows)}
                       >
                         <ArrowDownIcon size={15} />
                       </IconButton>
                       <IconButton
-                        aria-label={`Remove ${row.name || "type"}`}
+                        aria-label={`Remove ${row().name || "type"}`}
                         title="Remove"
                         type="button"
                         size="xs"
                         variant="outline"
                         class="spatial-map-button spatial-map-icon-button spatial-map-button--danger"
-                        onClick={() => removeRow(index(), setTypeRows)}
+                        onClick={() => removeRow(index, setTypeRows)}
                       >
                         <Trash2 size={15} />
                       </IconButton>
                     </HStack>
                   </>
                 )}
-              </For>
+              </Index>
             </Box>
 
             <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap">
