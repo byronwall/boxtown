@@ -372,6 +372,36 @@ export const deleteProjectNode = action(
   "delete-project-node",
 );
 
+export const deleteProjectLink = action(
+  async (formData: FormData) => {
+    "use server";
+    const { deleteProjectLinkOnDisk } = await import("./data.server");
+
+    const projectId = formData.get("projectId");
+    const source = formData.get("source");
+    const target = formData.get("target");
+    const relationship = formData.get("relationship");
+
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+    if (typeof source !== "string" || source.trim().length === 0) {
+      throw new Error("A source node id is required.");
+    }
+    if (typeof target !== "string" || target.trim().length === 0) {
+      throw new Error("A target node id is required.");
+    }
+
+    return deleteProjectLinkOnDisk({
+      projectId,
+      source,
+      target,
+      relationship: typeof relationship === "string" ? relationship : "related",
+    });
+  },
+  "delete-project-link",
+);
+
 export const moveProjectNode = action(
   async (formData: FormData) => {
     "use server";

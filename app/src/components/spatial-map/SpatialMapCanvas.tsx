@@ -16,6 +16,7 @@ import { SpatialMapInspector } from "./SpatialMapInspector";
 import { SpatialMapImageProvider } from "./SpatialMapImages";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { SpatialMapCommandMenu } from "./SpatialMapCommandMenu";
+import { SpatialMapGridView } from "./SpatialMapGridView";
 import { SpatialMapScene } from "./SpatialMapScene";
 import { SpatialMapToolbar } from "./SpatialMapToolbar";
 import { SpatialMapTreeView } from "./SpatialMapTreeView";
@@ -103,6 +104,12 @@ function SpatialMapCanvasLayout(props: {
             </Show>
             <Show when={controller.viewMode() === "tree"}>
               <SpatialMapTreeView
+                project={props.project}
+                onProjectUpdated={props.onProjectUpdated}
+              />
+            </Show>
+            <Show when={controller.viewMode() === "grid"}>
+              <SpatialMapGridView
                 project={props.project}
                 onProjectUpdated={props.onProjectUpdated}
               />
@@ -307,7 +314,9 @@ function parseViewMode(value: string | undefined): SpatialMapViewMode | null {
     return "tree";
   }
 
-  return value === "canvas" || value === "tree" ? value : null;
+  return value === "canvas" || value === "tree" || value === "grid"
+    ? value
+    : null;
 }
 
 function parseDepthLevel(value: string | undefined): SpatialMapDepthLevel | null {

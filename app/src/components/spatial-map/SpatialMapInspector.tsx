@@ -125,6 +125,22 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   });
 
   createEffect(() => {
+    const request = spatialMap.contextPreviewRequest();
+    if (!request) {
+      return;
+    }
+
+    if (spatialMap.selectedNodeId() !== request.nodeId) {
+      spatialMap.setSelectedNodeId(request.nodeId);
+      return;
+    }
+
+    spatialMap.setInspectorOpen(true);
+    setContextDialogOpen(true);
+    spatialMap.clearContextPreviewRequest();
+  });
+
+  createEffect(() => {
     const result = saveContextSubmission.result;
     if (!result || saveContextSubmission.pending) {
       return;

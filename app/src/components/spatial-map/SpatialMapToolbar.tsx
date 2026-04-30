@@ -1,5 +1,7 @@
 import { A } from "@solidjs/router";
 import {
+  ClipboardIcon,
+  MoreHorizontalIcon,
   PlusIcon,
   SettingsIcon,
   SlidersHorizontalIcon,
@@ -12,8 +14,10 @@ import { IconButton } from "~/components/ui/icon-button";
 import * as Menu from "~/components/ui/menu";
 import { Text } from "~/components/ui/text";
 import { Tooltip } from "~/components/ui/tooltip";
+import { toaster } from "~/components/ui/toast";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { ProjectMetadataSettingsDialog } from "./ProjectMetadataSettingsDialog";
+import { buildVisibleNodesMarkdown } from "./spatial-map-markdown-export";
 import type { SpatialMapNodeColorMode } from "./spatial-map-canvas.types";
 import { SpatialMapCreateContextNodeDialog } from "./SpatialMapCreateContextNodeDialog";
 import { useSpatialMap } from "./SpatialMapContext";
@@ -34,6 +38,29 @@ interface SpatialMapToolbarProps {
 export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
   const spatialMap = useSpatialMap();
   const [contextNodeDialogOpen, setContextNodeDialogOpen] = createSignal(false);
+  const copyVisibleNodesAsMarkdown = async () => {
+    try {
+      const markdown = buildVisibleNodesMarkdown({
+        project: props.project,
+        visibleData: spatialMap.visibleData(),
+        origin: typeof window === "undefined" ? undefined : window.location.origin,
+      });
+
+      await navigator.clipboard.writeText(markdown);
+      toaster.success({
+        title: "Markdown copied",
+        description: `${spatialMap.visibleData().nodes.length} visible nodes are now in your clipboard.`,
+      });
+    } catch (error) {
+      toaster.error({
+        title: "Copy failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "The visible node markdown could not be copied.",
+      });
+    }
+  };
 
   return (
     <Box class="spatial-map-topbar">
@@ -160,6 +187,36 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             </Menu.Content>
           </Menu.Positioner>
         </Menu.Root>
+        <Menu.Root
+          positioning={{ placement: "bottom-start", gutter: 4 }}
+          size="sm"
+        >
+          <Menu.Trigger
+            asChild={(triggerProps) => (
+              <Button
+                {...triggerProps()}
+                colorPalette="green"
+                variant="outline"
+                size="xs"
+                class="spatial-map-button spatial-map-icon-button"
+                aria-label="More map actions"
+              >
+                <MoreHorizontalIcon size={16} aria-hidden="true" />
+              </Button>
+            )}
+          />
+          <Menu.Positioner>
+            <Menu.Content class="spatial-map-create-menu">
+              <Menu.Item
+                value="copy-visible-nodes-markdown"
+                onClick={copyVisibleNodesAsMarkdown}
+              >
+                <ClipboardIcon size={14} aria-hidden="true" />
+                <Menu.ItemText>Copy as Markdown</Menu.ItemText>
+              </Menu.Item>
+            </Menu.Content>
+          </Menu.Positioner>
+        </Menu.Root>
         <SpatialMapCreateContextNodeDialog
           project={props.project}
           onProjectUpdated={props.onProjectUpdated}
@@ -239,6 +296,16 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             onClick={() => spatialMap.setViewMode("tree")}
           >
             Tree
+          </Button>
+          <Button
+            colorPalette="green"
+            variant={spatialMap.viewMode() === "grid" ? "surface" : "outline"}
+            size="xs"
+            class={`spatial-map-button spatial-map-toggle-button${spatialMap.viewMode() === "grid" ? " is-active" : ""}`}
+            aria-pressed={spatialMap.viewMode() === "grid"}
+            onClick={() => spatialMap.setViewMode("grid")}
+          >
+            Grid
           </Button>
         </HStack>
         <HStack

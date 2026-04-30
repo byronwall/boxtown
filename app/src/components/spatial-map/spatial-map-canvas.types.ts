@@ -5,7 +5,7 @@ import type {
   SpatialMapData,
 } from "~/lib/spatial-map/types";
 
-export type SpatialMapViewMode = "canvas" | "tree";
+export type SpatialMapViewMode = "canvas" | "tree" | "grid";
 export type SpatialMapDepthLevel = number | "max";
 export type SpatialMapNodeColorMode = "type" | "status";
 
@@ -70,6 +70,7 @@ export interface SpatialMapCanvasController {
   camera: Accessor<CameraState>;
   sceneTransform: Accessor<string>;
   contextNoteConversionOpen: Accessor<boolean>;
+  contextPreviewRequest: Accessor<{ nodeId: string; requestId: number } | null>;
   deleteNodeConfirmId: Accessor<string | null>;
   unsafeDeleteNodeRequest: Accessor<{ nodeId: string; requestId: number } | null>;
   edgeState: Accessor<EdgeVisualState[]>;
@@ -106,6 +107,7 @@ export interface SpatialMapCanvasController {
   clearDeleteNodeConfirm: () => void;
   clearUnsafeDeleteNodeRequest: () => void;
   clearChildNodeDraft: () => void;
+  clearContextPreviewRequest: () => void;
   clearReparentingNode: () => void;
   isolateNode: (nodeId: string) => void;
   setInspectorOpen: (value: boolean | ((current: boolean) => boolean)) => void;
@@ -125,6 +127,7 @@ export interface SpatialMapCanvasController {
   openChildNodeDraft: (parentNodeId?: string | null) => void;
   openAddNodesFlow: () => void;
   openContextNoteConversionFlow: () => void;
+  openContextPreview: (nodeId: string) => void;
   openSourceDecompositionFlow: () => void;
   setViewportRef: (element: HTMLDivElement) => void;
   setSvgRef: (element: SVGSVGElement) => void;

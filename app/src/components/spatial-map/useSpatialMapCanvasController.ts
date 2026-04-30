@@ -88,6 +88,10 @@ export function useSpatialMapCanvasController(
   const [inspectorOpen, setInspectorOpen] = createSignal(true);
   const [addNodesOpen, setAddNodesOpen] = createSignal(false);
   const [contextNoteConversionOpen, setContextNoteConversionOpen] = createSignal(false);
+  const [contextPreviewRequest, setContextPreviewRequest] = createSignal<{
+    nodeId: string;
+    requestId: number;
+  } | null>(null);
   const [sourceDecompositionOpen, setSourceDecompositionOpen] = createSignal(false);
   const [deleteNodeConfirmId, setDeleteNodeConfirmId] = createSignal<string | null>(null);
   const [unsafeDeleteNodeRequest, setUnsafeDeleteNodeRequest] = createSignal<{
@@ -807,6 +811,7 @@ export function useSpatialMapCanvasController(
     sceneTransform,
     addNodesOpen,
     contextNoteConversionOpen,
+    contextPreviewRequest,
     deleteNodeConfirmId,
     unsafeDeleteNodeRequest,
     sourceDecompositionOpen,
@@ -840,6 +845,7 @@ export function useSpatialMapCanvasController(
     clearDeleteNodeConfirm: () => setDeleteNodeConfirmId(null),
     clearUnsafeDeleteNodeRequest: () => setUnsafeDeleteNodeRequest(null),
     clearChildNodeDraft: () => setChildNodeDraft(null),
+    clearContextPreviewRequest: () => setContextPreviewRequest(null),
     clearReparentingNode: () => setReparentingNodeId(null),
     openChildNodeDraft,
     openAddNodesFlow: () => {
@@ -851,6 +857,14 @@ export function useSpatialMapCanvasController(
       setAddNodesOpen(false);
       setSourceDecompositionOpen(false);
       setContextNoteConversionOpen(true);
+    },
+    openContextPreview: (nodeId) => {
+      setSelectedNodeId(nodeId);
+      setInspectorOpen(true);
+      setContextPreviewRequest((current) => ({
+        nodeId,
+        requestId: (current?.requestId ?? 0) + 1,
+      }));
     },
     openSourceDecompositionFlow: () => {
       setAddNodesOpen(false);

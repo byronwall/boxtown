@@ -103,6 +103,13 @@ interface DeleteProjectNodeInput {
   nodeId: string;
 }
 
+interface DeleteProjectLinkInput {
+  projectId: string;
+  source: string;
+  target: string;
+  relationship: string;
+}
+
 interface MoveProjectNodeInput {
   projectId: string;
   nodeId: string;
@@ -937,6 +944,44 @@ export async function deleteProjectNodeOnDisk(
       links: current.spatialMap.links.filter(
         (link) => link.source !== input.nodeId && link.target !== input.nodeId,
       ),
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return nextRecord;
+}
+
+export async function deleteProjectLinkOnDisk(
+  input: DeleteProjectLinkInput,
+): Promise<ProjectRecord> {
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const relationship = input.relationship.trim() || "related";
+  const nextLinks = current.spatialMap.links.filter(
+    (link) =>
+      link.parentChild ||
+      link.source !== input.source ||
+      link.target !== input.target ||
+      (link.relationship ?? "related") !== relationship,
+  );
+
+  if (nextLinks.length === current.spatialMap.links.length) {
+    throw new Error("Link not found.");
+  }
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      links: nextLinks,
     },
   };
 
