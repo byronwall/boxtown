@@ -40,6 +40,7 @@ import type {
   MapNodeImage,
   SpatialMapData,
 } from "~/lib/spatial-map/types";
+import { calculateNodeDepths } from "~/lib/spatial-map/depth";
 
 import {
   copyImageTargetToClipboard,
@@ -1122,6 +1123,7 @@ function getDependencyFilenameParts(spatialMap: SpatialMapData, node: MapNode) {
 
 function getDependencyChainLabels(spatialMap: SpatialMapData, node: MapNode) {
   const nodesById = new Map(spatialMap.nodes.map((item) => [item.id, item]));
+  const depthsByNodeId = calculateNodeDepths(spatialMap);
   const path: MapNode[] = [];
   let current = node;
   const seen = new Set([node.id]);
@@ -1137,7 +1139,8 @@ function getDependencyChainLabels(spatialMap: SpatialMapData, node: MapNode) {
       )
       .sort(
         (left, right) =>
-          getNodeSortWeight(left.source) - getNodeSortWeight(right.source),
+          getNodeSortWeight(left.source, depthsByNodeId) -
+          getNodeSortWeight(right.source, depthsByNodeId),
       )[0];
 
     if (!dependencyLink || seen.has(dependencyLink.source.id)) {
@@ -1161,8 +1164,8 @@ function getIncomingDependencyLinks(links: MapLink[], nodeId: string) {
   );
 }
 
-function getNodeSortWeight(node: MapNode) {
-  return node.depth;
+function getNodeSortWeight(node: MapNode, depthsByNodeId: Map<string, number>) {
+  return depthsByNodeId.get(node.id) ?? 0;
 }
 
 function dedupeSequentialParts(parts: string[]) {

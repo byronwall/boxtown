@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDefaultProjectNodeMetadataSchema } from "~/lib/projects/node-metadata";
+import { createDefaultProjectNodeTypeSchema } from "~/lib/projects/node-types";
 import type { ProjectRecord } from "~/lib/projects/types";
 
 const {
@@ -67,6 +68,7 @@ function buildProject(): ProjectRecord {
     createdAt: "2026-04-20T00:00:00.000Z",
     updatedAt: "2026-04-20T00:00:00.000Z",
     nodeMetadataSchema: createDefaultProjectNodeMetadataSchema(),
+    nodeTypeSchema: createDefaultProjectNodeTypeSchema(),
     spatialMap: {
       nodes: [
         {
@@ -74,7 +76,6 @@ function buildProject(): ProjectRecord {
           label: "Existing Page",
           type: "page",
           status: "planned",
-          depth: 0,
           metadata: {
             purpose: "Existing purpose",
             implementation: "Existing implementation",
@@ -116,7 +117,6 @@ describe("source decomposition service", () => {
             label: "Purchases",
             type: "page",
             status: "planned",
-            depth: 0,
             metadata: {
               purpose: "Root purpose",
               implementation: "Root implementation",
@@ -131,7 +131,6 @@ describe("source decomposition service", () => {
             label: "Filter Bar",
             type: "region",
             status: "planned",
-            depth: 1,
             metadata: {
               purpose: "Child purpose",
               implementation: "Child implementation",
@@ -230,7 +229,6 @@ describe("source decomposition service", () => {
             label: "Purchases",
             type: "page",
             status: "planned",
-            depth: 0,
             metadata: {
               purpose: "Root purpose",
               implementation: "Root implementation",
@@ -245,7 +243,6 @@ describe("source decomposition service", () => {
             label: "Filter Bar",
             type: "region",
             status: "planned",
-            depth: 1,
             metadata: {
               purpose: "Child purpose",
               implementation: "Child implementation",

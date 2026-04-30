@@ -78,7 +78,6 @@ function createSourceDecompositionBatchSchema(
         label: z.string().min(1),
         type: z.string().min(1),
         status: z.enum(mapNodeStatuses).default(DEFAULT_MAP_NODE_STATUS),
-        depth: z.number().int().min(0),
         metadata: createNodeMetadataObjectSchema(nodeMetadataSchema),
         context: z.string().default(""),
         rawContext: z.string().default(""),

@@ -42,7 +42,6 @@ function parseMapNode(
     label,
     type,
     status,
-    depth,
     metadata,
     purpose,
     implementation,
@@ -58,9 +57,6 @@ function parseMapNode(
     throw new Error(
       'Node status must be one of "planned", "implemented", "working", "blocked", "needs-review", or "deprecated".',
     );
-  }
-  if (typeof depth !== "number" || !Number.isInteger(depth) || depth < 0) {
-    throw new Error("Node depth must be a non-negative integer.");
   }
   if (metadata !== undefined && !isRecord(metadata)) {
     throw new Error("Node metadata must be an object when provided.");
@@ -103,7 +99,6 @@ function parseMapNode(
     label,
     type,
     status: isMapNodeStatus(status) ? status : DEFAULT_MAP_NODE_STATUS,
-    depth,
     metadata: metadataRecord,
     context: resolvedContext,
     rawContext: typeof rawContext === "string" ? rawContext : resolvedContext,

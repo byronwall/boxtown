@@ -6,6 +6,11 @@ export interface ProjectNodeMetadataField {
   defaultValue: string;
 }
 
+export interface ProjectNodeTypeDefinition {
+  name: string;
+  color: string;
+}
+
 export interface ProjectRecord {
   id: string;
   name: string;
@@ -13,6 +18,7 @@ export interface ProjectRecord {
   createdAt: string;
   updatedAt: string;
   nodeMetadataSchema: ProjectNodeMetadataField[];
+  nodeTypeSchema: ProjectNodeTypeDefinition[];
   spatialMap: SpatialMapData;
 }
 

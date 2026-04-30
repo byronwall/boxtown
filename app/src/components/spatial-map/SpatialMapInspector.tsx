@@ -22,6 +22,7 @@ import { type MapNode, type MapNodeStatus } from "~/lib/spatial-map/types";
 import { SpatialMapGenerateImageControl } from "./SpatialMapGenerateImageControl";
 import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
 import { SpatialMapNodeStatusMenu } from "./SpatialMapNodeStatusMenu";
+import { SpatialMapNodeTypePicker } from "./SpatialMapNodeTypePicker";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { SpatialMapInspectorHeader } from "./SpatialMapInspectorHeader";
@@ -57,6 +58,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const [isHydrated, setIsHydrated] = createSignal(false);
   const [titlePending, setTitlePending] = createSignal(false);
   const [statusPending, setStatusPending] = createSignal(false);
+  const [typePending, setTypePending] = createSignal(false);
   const [optimisticTitle, setOptimisticTitle] = createSignal<{
     nodeId: string;
     previousTitle: string;
@@ -66,6 +68,11 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     nodeId: string;
     previousStatus: MapNodeStatus;
     status: MapNodeStatus;
+  } | null>(null);
+  const [optimisticType, setOptimisticType] = createSignal<{
+    nodeId: string;
+    previousType: string;
+    type: string;
   } | null>(null);
   const contextFormId = "spatial-map-context-form";
   const metadataFormId = "spatial-map-metadata-form";
@@ -84,6 +91,15 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     const optimistic = optimisticStatus();
     return optimistic?.nodeId === node.id
       ? { ...node, status: optimistic.status }
+      : node;
+  });
+  const selectedNodeWithOptimisticType = createMemo(() => {
+    const node = selectedNode();
+    if (!node) return null;
+
+    const optimistic = optimisticType();
+    return optimistic?.nodeId === node.id
+      ? { ...node, type: optimistic.type }
       : node;
   });
   const metadataIsDirty = createMemo(() => {
@@ -183,6 +199,28 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     });
   };
 
+  const rollBackType = (error: unknown) => {
+    const optimistic = optimisticType();
+    if (!optimistic) {
+      return;
+    }
+
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, optimistic.nodeId, (projectNode) => ({
+        ...projectNode,
+        type: optimistic.previousType,
+      })),
+    );
+    setOptimisticType(null);
+    toaster.error({
+      title: "Type update failed",
+      description:
+        error instanceof Error
+          ? error.message
+          : "The selected node type could not be updated.",
+    });
+  };
+
   const submitTitle = async (value: string) => {
     const node = selectedNode();
     if (!node || titlePending()) return;
@@ -248,6 +286,38 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     }
   };
 
+  const submitType = async (type: string) => {
+    const node = selectedNode();
+    if (!node || typePending() || type === node.type) return;
+
+    setTypePending(true);
+    setOptimisticType({
+      nodeId: node.id,
+      previousType: node.type,
+      type,
+    });
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, node.id, (projectNode) => ({
+        ...projectNode,
+        type,
+      })),
+    );
+
+    try {
+      const result = await patchProjectNode(props.project.id, node.id, { type });
+      props.onProjectUpdated?.(result);
+      toaster.success({
+        title: "Type updated",
+        description: `${node.label} is now a ${type} node.`,
+      });
+      setOptimisticType(null);
+    } catch (error) {
+      rollBackType(error);
+    } finally {
+      setTypePending(false);
+    }
+  };
+
   return (
     <Box class="spatial-map-inspector-rail">
       <aside
@@ -288,9 +358,21 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                 )}
               </Show>
               <InspectorChip label="ID" value={spatialMap.selectedNode()?.id ?? "None"} />
-              <InspectorChip label="Type" value={spatialMap.selectedNode()?.type ?? "Unknown"} />
+              <Show when={selectedNodeWithOptimisticType()}>
+                {(node) => (
+                  <SpatialMapNodeTypePicker
+                    project={props.project}
+                    type={node().type}
+                    pending={typePending()}
+                    showLabel
+                    variant="inspector"
+                    onChange={(type) => {
+                      void submitType(type);
+                    }}
+                  />
+                )}
+              </Show>
               <InspectorChip label="Mode" value={selectedNode()?.contextMode ?? "Unknown"} />
-              <InspectorChip label="Depth" value={String(spatialMap.selectedNode()?.depth ?? 0)} />
             </HStack>
             <Show when={selectedNode()}>
               {(node) => (
@@ -770,7 +852,7 @@ function InspectorRelationList(props: {
                 {node.label}
               </Text>
               <Text as="div" margin="2px 0 0" fontSize="xs" class="spatial-map-relation-meta">
-                {item.kind} · {node.type} · depth {node.depth}
+                {item.kind} · {node.type}
               </Text>
             </button>
           );

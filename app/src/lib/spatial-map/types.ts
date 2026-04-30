@@ -14,7 +14,6 @@ export interface MapNode {
   label: string;
   type: string;
   status: MapNodeStatus;
-  depth: number;
   metadata: Record<string, string>;
   context: string;
   rawContext: string;
@@ -54,6 +53,7 @@ export interface NodeSize {
 }
 
 export interface PositionedMapNode extends MapNode, NodeSize {
+  depth: number;
   x: number;
   y: number;
   vx: number;

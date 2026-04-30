@@ -4,6 +4,7 @@ import type { ProjectRecord } from "./types";
 type ProjectNodePatch = {
   title?: string;
   status?: MapNodeStatus;
+  type?: string;
 };
 
 export async function patchProjectNode(

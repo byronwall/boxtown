@@ -7,6 +7,7 @@ import type {
 
 export type SpatialMapViewMode = "canvas" | "tree";
 export type SpatialMapDepthLevel = number | "max";
+export type SpatialMapNodeColorMode = "type" | "status";
 
 export interface CameraState {
   x: number;
@@ -41,6 +42,8 @@ export interface EdgeVisualState {
 
 export interface ChildNodeDraft {
   parentNodeId: string | null;
+  x: number;
+  y: number;
 }
 
 export interface ViewportPointerHandlers {
@@ -67,6 +70,7 @@ export interface SpatialMapCanvasController {
   camera: Accessor<CameraState>;
   sceneTransform: Accessor<string>;
   contextNoteConversionOpen: Accessor<boolean>;
+  deleteNodeConfirmId: Accessor<string | null>;
   edgeState: Accessor<EdgeVisualState[]>;
   isolatedNodeId: Accessor<string | null>;
   isolationLabel: Accessor<string | null>;
@@ -90,11 +94,14 @@ export interface SpatialMapCanvasController {
   visibleDepthSelection: Accessor<SpatialMapDepthLevel>;
   visibleDepthLevel: Accessor<number>;
   viewMode: Accessor<SpatialMapViewMode>;
+  viewportScale: Accessor<number>;
   zoomPercent: Accessor<string>;
+  zoomScale: Accessor<number>;
   closeAddNodesFlow: () => void;
   closeContextNoteConversionFlow: () => void;
   closeSourceDecompositionFlow: () => void;
   clearIsolation: () => void;
+  clearDeleteNodeConfirm: () => void;
   clearChildNodeDraft: () => void;
   isolateNode: (nodeId: string) => void;
   setInspectorOpen: (value: boolean | ((current: boolean) => boolean)) => void;

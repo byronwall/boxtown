@@ -1,18 +1,26 @@
 import type { MapLink, MapNode } from "~/lib/spatial-map/types";
+import { calculateNodeDepths } from "~/lib/spatial-map/depth";
 import type { ConversionCandidateTree } from "./types";
 
-function sortNodeIds(nodeIds: string[], nodeById: Map<string, MapNode>) {
+function sortNodeIds(
+  nodeIds: string[],
+  nodeById: Map<string, MapNode>,
+  depthsByNodeId: Map<string, number>,
+) {
   return [...nodeIds].sort((left, right) => {
     const leftNode = nodeById.get(left);
     const rightNode = nodeById.get(right);
     if (!leftNode || !rightNode) return left.localeCompare(right);
-    if (leftNode.depth !== rightNode.depth) return leftNode.depth - rightNode.depth;
+    const depthDiff =
+      (depthsByNodeId.get(leftNode.id) ?? 0) - (depthsByNodeId.get(rightNode.id) ?? 0);
+    if (depthDiff !== 0) return depthDiff;
     return leftNode.label.localeCompare(rightNode.label);
   });
 }
 
 export function buildCandidateTree(nodes: MapNode[], links: MapLink[]): ConversionCandidateTree {
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const depthsByNodeId = calculateNodeDepths({ nodes, links });
   const childSetByParent = new Map<string, Set<string>>();
   const parentSetByChild = new Map<string, Set<string>>();
 
@@ -34,6 +42,7 @@ export function buildCandidateTree(nodes: MapNode[], links: MapLink[]): Conversi
       .filter((node) => (parentSetByChild.get(node.id)?.size ?? 0) === 0)
       .map((node) => node.id),
     nodeById,
+    depthsByNodeId,
   );
 
   const items = Object.fromEntries(
@@ -43,9 +52,13 @@ export function buildCandidateTree(nodes: MapNode[], links: MapLink[]): Conversi
         nodeId: node.id,
         label: node.label,
         type: node.type,
-        depth: node.depth,
+        depth: depthsByNodeId.get(node.id) ?? 0,
         metadata: node.metadata,
-        childNodeIds: sortNodeIds([...childSetByParent.get(node.id) ?? []], nodeById),
+        childNodeIds: sortNodeIds(
+          [...childSetByParent.get(node.id) ?? []],
+          nodeById,
+          depthsByNodeId,
+        ),
       },
     ]),
   );

@@ -5,7 +5,7 @@ import type { MapNode } from "~/lib/spatial-map/types";
 import type { SourceAssetSummary } from "./types";
 
 function summarizeNode(node: MapNode, project: ProjectRecord) {
-  return `${node.id} | ${node.label} | ${node.type} | depth ${node.depth} | metadata: ${summarizeNodeMetadata(node, project.nodeMetadataSchema)}`;
+  return `${node.id} | ${node.label} | ${node.type} | metadata: ${summarizeNodeMetadata(node, project.nodeMetadataSchema)}`;
 }
 
 function summarizeGraph(project: ProjectRecord) {
@@ -52,7 +52,7 @@ export function buildSourceDecompositionPrompt(input: {
     "Do not ask questions. Infer a practical rebuild plan from the sources.",
     "Return 5 to 12 nodes unless the source clearly implies fewer.",
     "Use compact concrete labels. Prefer node types such as app, layout, page, region, block, component, interaction, style-system, data-state, or asset.",
-    "Depth must represent the hierarchy: broad app/layout nodes at low depth, nested blocks/components at higher depth.",
+    "ParentChild links must represent the hierarchy: broad app/layout nodes near the root, nested blocks/components below them.",
     "Use only the project metadata keys listed below when populating metadata.",
     "Metadata should describe what the node represents and how it should be rebuilt when relevant.",
     "Context should include concise rebuild notes and any relevant source evidence.",

@@ -47,6 +47,7 @@ Use the project index page as the baseline visual language for the app. The styl
 
 - Hover states should be restrained: slight background lift plus a thin green inset marker when appropriate.
 - Focus states must remain visible and use the green accent.
+- Selected menu and list items should use a restrained background fill and text weight/color only. Do not add decorative left/right accent bars, inset side borders, or stripe markers for ordinary current-state indication.
 - Buttons and inputs use small radii (`l1`/`l2`) rather than square-zero edges or pill shapes.
 - Metadata chips should use light olive fills, thin borders, and compact spacing.
 

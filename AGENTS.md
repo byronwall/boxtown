@@ -56,6 +56,13 @@ Run inside `app/`:
 - Use `ClearButton` and `CloseButton` for icon-only clear/close actions.
 - Keep SSR + hydration output stable for overlay controls.
 - Use Panda tokens and recipes; avoid hard-coded spacing/colors unless a token is missing.
+- For selected/current items in menus, dropdowns, lists, and inspectors, prefer a subtle background fill plus text treatment. Do not add decorative left/right accent bars, inset side borders, or stripe markers unless the component is explicitly a navigation rail or timeline.
+
+## Spatial Map Canvas Safety
+
+- The spatial map canvas renders a scaled SVG scene. Do not add CSS/SVG filters, `drop-shadow()`, `blur()`, or `filter` transitions to `.spatial-map-scene-layer`, `.spatial-map-node`, or child elements inside the scaled canvas.
+- Avoid `will-change: transform`, `transform: translateZ(0)`, and similar forced-compositing hints on the scaled SVG scene or nodes. At high zoom these have repeatedly caused flicker, oversized raster surfaces, and visual smearing.
+- If emphasis is needed on canvas nodes, prefer SVG-safe strokes, fills, opacity, or small unfiltered geometry changes instead of filter/shadow effects.
 
 ## Available Feature Modules
 

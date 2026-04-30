@@ -15,6 +15,7 @@ import { Text } from "~/components/ui/text";
 import { Tooltip } from "~/components/ui/tooltip";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { ProjectMetadataSettingsDialog } from "./ProjectMetadataSettingsDialog";
+import type { SpatialMapNodeColorMode } from "./spatial-map-canvas.types";
 import { SpatialMapCreateContextNodeDialog } from "./SpatialMapCreateContextNodeDialog";
 import { useSpatialMap } from "./SpatialMapContext";
 import { InspectorToggle } from "./SpatialMapInspectorHeader";
@@ -26,6 +27,8 @@ interface SpatialMapToolbarProps {
   subtitle?: string;
   backHref?: string;
   backLabel?: string;
+  nodeColorMode: SpatialMapNodeColorMode;
+  onNodeColorModeChange: (mode: SpatialMapNodeColorMode) => void;
   onProjectUpdated?: (project: ProjectRecord) => void;
 }
 
@@ -75,6 +78,32 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
           />
         </Box>
       </HStack>
+
+      <Box
+        class="spatial-map-color-controls spatial-map-color-controls--header"
+        role="group"
+        aria-label="Node color mode"
+      >
+        <Box as="span" class="spatial-map-color-controls-label">
+          Color
+        </Box>
+        <button
+          type="button"
+          class={`spatial-map-color-toggle${props.nodeColorMode === "type" ? " is-active" : ""}`}
+          aria-pressed={props.nodeColorMode === "type"}
+          onClick={() => props.onNodeColorModeChange("type")}
+        >
+          Type
+        </button>
+        <button
+          type="button"
+          class={`spatial-map-color-toggle${props.nodeColorMode === "status" ? " is-active" : ""}`}
+          aria-pressed={props.nodeColorMode === "status"}
+          onClick={() => props.onNodeColorModeChange("status")}
+        >
+          Status
+        </button>
+      </Box>
 
       <HStack
         gap="1.5"
@@ -225,7 +254,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
         <HStack
           gap="0"
           class="spatial-map-toggle-group"
-          aria-label="Displayed hierarchy depth"
+          aria-label="Displayed hierarchy levels"
         >
           <For each={spatialMap.availableDepthLevels()}>
             {(level) => {

@@ -5,7 +5,7 @@ import { getLinkLabel } from "~/lib/spatial-map/links";
 import type { MapNode } from "~/lib/spatial-map/types";
 
 function summarizeNode(node: MapNode, project: ProjectRecord) {
-  return `${node.id} | ${node.label} | ${node.type} | depth ${node.depth} | metadata: ${summarizeNodeMetadata(node, project.nodeMetadataSchema)}`;
+  return `${node.id} | ${node.label} | ${node.type} | metadata: ${summarizeNodeMetadata(node, project.nodeMetadataSchema)}`;
 }
 
 function summarizeGraph(project: ProjectRecord) {
@@ -96,14 +96,14 @@ export function buildNodeGenerationPrompt(input: {
     "Use the existing graph as context and attach new nodes where they fit best.",
     "The selected node is a strong signal but you may attach elsewhere when the graph structure makes a better anchor obvious.",
     "Return only nodes that do not already exist in the graph.",
-    "Depth should be coherent with surrounding nodes.",
+    "ParentChild links should be coherent with surrounding nodes.",
     "Keep node labels compact and concrete.",
     "Use only the project metadata keys listed below when populating metadata.",
     "Each populated metadata value should stay concise and concrete.",
     "Links may target existing nodes or newly generated nodes.",
     "For parent/child structure, emit links with parentChild: true and no relationship.",
     'For non-parent/child adjacency, emit parentChild: false with relationship "related", "dependency", or "reuse".',
-    "Create parentChild links first to anchor true depth before adding cross-cutting relationship links.",
+    "Create parentChild links first to anchor the hierarchy before adding cross-cutting relationship links.",
     "",
     `User brief: ${input.brief}`,
     input.selectedNode

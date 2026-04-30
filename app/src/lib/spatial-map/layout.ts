@@ -1,5 +1,6 @@
 import type { PositionedMapNode, SpatialMapData, NodeSize } from "./types";
 import { alignLayoutBorders } from "./border-alignment";
+import { calculateNodeDepths } from "./depth";
 
 export const VIEWPORT_WIDTH = 1600;
 export const VIEWPORT_HEIGHT = 960;
@@ -53,10 +54,16 @@ export function buildAdjacencyMap(data: SpatialMapData): AdjacencyMap {
 export function createInitialLayout(data: SpatialMapData): PositionedMapNode[] {
   const adjacency = buildAdjacencyMap(data);
   const hierarchy = buildHierarchyIndex(data);
-  const visibleDepthRange = getVisibleDepthRange(data.nodes);
-  const positionedNodes = data.nodes.map((node) => ({
+  const depthsByNodeId = calculateNodeDepths(data);
+  const depthItems = data.nodes.map((node) => ({
+    node,
+    depth: depthsByNodeId.get(node.id) ?? 0,
+  }));
+  const visibleDepthRange = getVisibleDepthRange(depthItems);
+  const positionedNodes = depthItems.map(({ node, depth }) => ({
     ...node,
-    ...getVisibleDepthNodeSize(node.depth, node.label, visibleDepthRange),
+    depth,
+    ...getVisibleDepthNodeSize(depth, node.label, visibleDepthRange),
     x: VIEWPORT_CENTER_X,
     y: VIEWPORT_CENTER_Y,
     vx: 0,

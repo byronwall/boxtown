@@ -1,5 +1,6 @@
 import { getNodeMetadataEntries } from "~/lib/projects/node-metadata";
 import type { ProjectRecord } from "~/lib/projects/types";
+import { calculateNodeDepths } from "~/lib/spatial-map/depth";
 import type { MapNode, SpatialMapData } from "~/lib/spatial-map/types";
 
 export interface NodeImageGenerationContext {
@@ -53,14 +54,19 @@ export function buildNodeImageGenerationContext(input: {
     .map((nodeId) => input.project.spatialMap.nodes.find((node) => node.id === nodeId))
     .filter((node): node is MapNode => Boolean(node))
     .slice(0, MAX_RELATED_NODES);
+  const depthsByNodeId = calculateNodeDepths(input.project.spatialMap);
 
   return {
     projectName: input.project.name,
     projectDescription: input.project.description,
     projectMetadataSchema: input.project.nodeMetadataSchema,
-    targetNode: summarizeNodeForImageContext(targetNode, input.project),
-    descendantNodes: descendantNodes.map((node) => summarizeNodeForImageContext(node, input.project)),
-    relatedNodes: relatedNodes.map((node) => summarizeNodeForImageContext(node, input.project)),
+    targetNode: summarizeNodeForImageContext(targetNode, input.project, depthsByNodeId),
+    descendantNodes: descendantNodes.map((node) =>
+      summarizeNodeForImageContext(node, input.project, depthsByNodeId),
+    ),
+    relatedNodes: relatedNodes.map((node) =>
+      summarizeNodeForImageContext(node, input.project, depthsByNodeId),
+    ),
   };
 }
 
@@ -120,12 +126,13 @@ function getDescendantNodeIds(data: SpatialMapData, rootNodeId: string) {
 function summarizeNodeForImageContext(
   node: MapNode,
   project: ProjectRecord,
+  depthsByNodeId: Map<string, number>,
 ): NodeImageContextNode {
   return {
     id: node.id,
     label: node.label,
     type: node.type,
-    depth: node.depth,
+    depth: depthsByNodeId.get(node.id) ?? 0,
     metadata: getNodeMetadataEntries(node, project.nodeMetadataSchema),
     contextExcerpt: truncateText(node.context || node.rawContext || "", MAX_CONTEXT_EXCERPT_LENGTH),
   };

@@ -10,7 +10,12 @@ import { Text } from "~/components/ui/text";
 import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
 import { updateProjectMetadataSchema } from "~/lib/projects/data";
-import type { ProjectNodeMetadataField, ProjectRecord } from "~/lib/projects/types";
+import { createNodeTypeColor } from "~/lib/projects/node-types";
+import type {
+  ProjectNodeMetadataField,
+  ProjectNodeTypeDefinition,
+  ProjectRecord,
+} from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
 
 interface ProjectMetadataSettingsDialogProps {
@@ -23,6 +28,8 @@ interface MetadataSchemaRowDraft extends ProjectNodeMetadataField {
   originalKey: string;
 }
 
+interface NodeTypeRowDraft extends ProjectNodeTypeDefinition {}
+
 export function ProjectMetadataSettingsDialog(
   props: ProjectMetadataSettingsDialogProps,
 ) {
@@ -31,6 +38,7 @@ export function ProjectMetadataSettingsDialog(
   const [name, setName] = createSignal("");
   const [description, setDescription] = createSignal("");
   const [rows, setRows] = createSignal<MetadataSchemaRowDraft[]>([]);
+  const [typeRows, setTypeRows] = createSignal<NodeTypeRowDraft[]>([]);
   const formId = "project-metadata-settings-form";
 
   createEffect(() => {
@@ -38,6 +46,7 @@ export function ProjectMetadataSettingsDialog(
       setName(props.project.name);
       setDescription(props.project.description);
       setRows(createRows(props.project.nodeMetadataSchema));
+      setTypeRows(createTypeRows(props.project.nodeTypeSchema));
     }
   });
 
@@ -77,7 +86,8 @@ export function ProjectMetadataSettingsDialog(
         onOpenChange={setOpen}
         title="Project Settings"
         description="Edit the project title, subtitle, and node metadata fields."
-        maxW="900px"
+        maxW="min(800px, 96vw)"
+        contentClass="spatial-map-project-settings-dialog"
         footer={
           <HStack>
             <Button variant="outline" onClick={() => setOpen(false)}>
@@ -94,6 +104,7 @@ export function ProjectMetadataSettingsDialog(
         }
       >
         <form
+          class="spatial-map-project-settings-form"
           id={formId}
           action={normalizeActionUrl(updateProjectMetadataSchema.url)}
           method="post"
@@ -241,6 +252,109 @@ export function ProjectMetadataSettingsDialog(
                 Add Field
               </Button>
             </HStack>
+
+            <Text as="h3" class="spatial-map-settings-section-title">
+              Node Types
+            </Text>
+            <Box class="spatial-map-type-grid spatial-map-type-grid--header">
+              <Text as="span">Type Name</Text>
+              <Text as="span">Expected Color</Text>
+              <Text as="span">Order</Text>
+            </Box>
+            <Box class="spatial-map-type-grid spatial-map-type-grid--body">
+              <For each={typeRows()}>
+                {(row, index) => (
+                  <>
+                    <Field.Root>
+                      <Textarea
+                        aria-label={`Name for node type ${index() + 1}`}
+                        class="spatial-map-metadata-input"
+                        name="nodeTypeName"
+                        value={row.name}
+                        onInput={(event) =>
+                          updateTypeRow(index(), { name: event.currentTarget.value }, setTypeRows)
+                        }
+                        placeholder="component"
+                        rows={1}
+                      />
+                    </Field.Root>
+                    <Field.Root class="spatial-map-type-color-field">
+                      <input
+                        aria-label={`Color for node type ${row.name || index() + 1}`}
+                        class="spatial-map-type-color-input"
+                        type="color"
+                        name="nodeTypeColor"
+                        value={row.color}
+                        onInput={(event) =>
+                          updateTypeRow(index(), { color: event.currentTarget.value }, setTypeRows)
+                        }
+                      />
+                      <Text as="span" class="spatial-map-type-color-value">
+                        {row.color}
+                      </Text>
+                    </Field.Root>
+                    <HStack gap="1" class="spatial-map-metadata-row-actions">
+                      <IconButton
+                        aria-label={`Move ${row.name || "type"} up`}
+                        title="Move up"
+                        type="button"
+                        size="xs"
+                        variant="outline"
+                        class="spatial-map-button spatial-map-icon-button"
+                        disabled={index() === 0}
+                        onClick={() => moveRow(index(), -1, setTypeRows)}
+                      >
+                        <ArrowUpIcon size={15} />
+                      </IconButton>
+                      <IconButton
+                        aria-label={`Move ${row.name || "type"} down`}
+                        title="Move down"
+                        type="button"
+                        size="xs"
+                        variant="outline"
+                        class="spatial-map-button spatial-map-icon-button"
+                        disabled={index() === typeRows().length - 1}
+                        onClick={() => moveRow(index(), 1, setTypeRows)}
+                      >
+                        <ArrowDownIcon size={15} />
+                      </IconButton>
+                      <IconButton
+                        aria-label={`Remove ${row.name || "type"}`}
+                        title="Remove"
+                        type="button"
+                        size="xs"
+                        variant="outline"
+                        class="spatial-map-button spatial-map-icon-button spatial-map-button--danger"
+                        onClick={() => removeRow(index(), setTypeRows)}
+                      >
+                        <Trash2 size={15} />
+                      </IconButton>
+                    </HStack>
+                  </>
+                )}
+              </For>
+            </Box>
+
+            <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap">
+              <Text color="fg.muted" textStyle="sm">
+                Node type names are normalized on save and become the available type picker options.
+              </Text>
+              <Button
+                type="button"
+                size="xs"
+                variant="surface"
+                class="spatial-map-button spatial-map-button--strong"
+                colorPalette="green"
+                onClick={() =>
+                  setTypeRows((current) => [
+                    ...current,
+                    { name: "", color: createNodeTypeColor(current.length) },
+                  ])
+                }
+              >
+                Add Type
+              </Button>
+            </HStack>
           </VStack>
         </form>
       </SimpleDialog>
@@ -257,6 +371,13 @@ function createRows(schema: ProjectNodeMetadataField[]): MetadataSchemaRowDraft[
   }));
 }
 
+function createTypeRows(schema: ProjectNodeTypeDefinition[]): NodeTypeRowDraft[] {
+  return schema.map((field) => ({
+    name: field.name,
+    color: field.color,
+  }));
+}
+
 function updateRow(
   index: number,
   patch: Partial<MetadataSchemaRowDraft>,
@@ -267,10 +388,20 @@ function updateRow(
   );
 }
 
-function moveRow(
+function updateTypeRow(
+  index: number,
+  patch: Partial<NodeTypeRowDraft>,
+  setRows: (setter: (current: NodeTypeRowDraft[]) => NodeTypeRowDraft[]) => void,
+) {
+  setRows((current) =>
+    current.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)),
+  );
+}
+
+function moveRow<T>(
   index: number,
   delta: -1 | 1,
-  setRows: (setter: (current: MetadataSchemaRowDraft[]) => MetadataSchemaRowDraft[]) => void,
+  setRows: (setter: (current: T[]) => T[]) => void,
 ) {
   setRows((current) => {
     const nextIndex = index + delta;
@@ -284,9 +415,9 @@ function moveRow(
   });
 }
 
-function removeRow(
+function removeRow<T>(
   index: number,
-  setRows: (setter: (current: MetadataSchemaRowDraft[]) => MetadataSchemaRowDraft[]) => void,
+  setRows: (setter: (current: T[]) => T[]) => void,
 ) {
   setRows((current) => current.filter((_, rowIndex) => rowIndex !== index));
 }

@@ -18,20 +18,35 @@ interface SpatialMapDeleteNodeControlProps {
   node: MapNode;
   onProjectUpdated?: (project: ProjectRecord) => void;
   compact?: boolean;
+  hideTrigger?: boolean;
 }
 
 export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlProps) {
   const spatialMap = useSpatialMap();
   const [open, setOpen] = createSignal(false);
+  const formId = `delete-node-${props.hideTrigger ? "shortcut" : "button"}-${props.node.id}`;
   const submission = useSubmission(deleteProjectNode, (input) => {
     const formData = input[0];
     return (
       formData instanceof FormData &&
       formData.get("projectId") === props.projectId &&
-      formData.get("nodeId") === props.node.id
+      formData.get("nodeId") === props.node.id &&
+      formData.get("deleteFormId") === formId
     );
   });
-  const formId = `delete-node-${props.node.id}`;
+
+  createEffect(() => {
+    if (props.hideTrigger && spatialMap.deleteNodeConfirmId() === props.node.id) {
+      setOpen(true);
+    }
+  });
+
+  const setDialogOpen = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen && spatialMap.deleteNodeConfirmId() === props.node.id) {
+      spatialMap.clearDeleteNodeConfirm();
+    }
+  };
 
   createEffect(() => {
     const result = submission.result;
@@ -41,6 +56,9 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
 
     props.onProjectUpdated?.(result);
     setOpen(false);
+    if (spatialMap.deleteNodeConfirmId() === props.node.id) {
+      spatialMap.clearDeleteNodeConfirm();
+    }
     queueMicrotask(() => {
       spatialMap.setSelectedNodeId(result.spatialMap.nodes[0]?.id ?? null);
       spatialMap.setInspectorOpen(true);
@@ -54,27 +72,29 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
 
   return (
     <>
-      <Tooltip content="Delete node" disabled={!props.compact} openDelay={150} closeDelay={80}>
-        <Button
-          size="xs"
-          variant="outline"
-          class={`spatial-map-button spatial-map-button--danger${props.compact ? " spatial-map-icon-button" : ""}`}
-          onClick={() => setOpen(true)}
-          aria-label={props.compact ? "Delete node" : undefined}
-        >
-          {props.compact ? <Trash2 size={16} /> : "Delete Node"}
-        </Button>
-      </Tooltip>
+      {!props.hideTrigger && (
+        <Tooltip content="Delete node" disabled={!props.compact} openDelay={150} closeDelay={80}>
+          <Button
+            size="xs"
+            variant="outline"
+            class={`spatial-map-button spatial-map-button--danger${props.compact ? " spatial-map-icon-button" : ""}`}
+            onClick={() => setDialogOpen(true)}
+            aria-label={props.compact ? "Delete node" : undefined}
+          >
+            {props.compact ? <Trash2 size={16} /> : "Delete Node"}
+          </Button>
+        </Tooltip>
+      )}
 
       <SimpleDialog
         open={open()}
-        onOpenChange={setOpen}
+        onOpenChange={setDialogOpen}
         title="Delete Node"
         description={`Delete ${props.node.label}? Any links attached to this node will also be removed.`}
         maxW="520px"
         footer={
           <HStack>
-            <Button variant="outline" type="button" onClick={() => setOpen(false)}>
+            <Button variant="outline" type="button" onClick={() => setDialogOpen(false)}>
               Keep
             </Button>
             <Button
@@ -96,6 +116,7 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
           <VStack alignItems="stretch" gap="4">
             <input type="hidden" name="projectId" value={props.projectId} />
             <input type="hidden" name="nodeId" value={props.node.id} />
+            <input type="hidden" name="deleteFormId" value={formId} />
             <Text textStyle="sm" color="fg.muted">
               This removes the node and prunes any incoming or outgoing links that reference it.
             </Text>

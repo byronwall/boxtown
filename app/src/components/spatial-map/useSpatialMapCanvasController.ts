@@ -15,9 +15,11 @@ import {
   VIEWPORT_HEIGHT,
   VIEWPORT_WIDTH,
 } from "~/lib/spatial-map/layout";
+import { calculateNodeDepths } from "~/lib/spatial-map/depth";
 import type { PositionedMapNode, SpatialMapData } from "~/lib/spatial-map/types";
 
 import type {
+  ChildNodeDraft,
   CameraState,
   SpatialMapCanvasController,
   SpatialMapDepthLevel,
@@ -83,7 +85,8 @@ export function useSpatialMapCanvasController(
   const [addNodesOpen, setAddNodesOpen] = createSignal(false);
   const [contextNoteConversionOpen, setContextNoteConversionOpen] = createSignal(false);
   const [sourceDecompositionOpen, setSourceDecompositionOpen] = createSignal(false);
-  const [childNodeDraft, setChildNodeDraft] = createSignal<{ parentNodeId: string | null } | null>(null);
+  const [deleteNodeConfirmId, setDeleteNodeConfirmId] = createSignal<string | null>(null);
+  const [childNodeDraft, setChildNodeDraft] = createSignal<ChildNodeDraft | null>(null);
   const [viewMode, setViewMode] = createSignal<SpatialMapViewMode>("canvas");
   const [visibleDepthSelection, writeVisibleDepthSelection] =
     createSignal<SpatialMapDepthLevel>("max");
@@ -113,6 +116,7 @@ export function useSpatialMapCanvasController(
   );
 
   let viewportRef: HTMLDivElement | undefined;
+  let svgRef: SVGSVGElement | undefined;
   let cameraSnapshot = initialCamera;
   let cameraFrame: number | undefined;
   let cameraTweenFrame: number | undefined;
@@ -125,6 +129,7 @@ export function useSpatialMapCanvasController(
   let suppressNodeClick = false;
   let viewportFitFrame: number | undefined;
   let viewportSizedFitApplied = false;
+  let lastViewportClientPoint: { x: number; y: number } | undefined;
   const viewportSize: ViewportSize = {
     width: VIEWPORT_WIDTH,
     height: VIEWPORT_HEIGHT,
@@ -150,12 +155,18 @@ export function useSpatialMapCanvasController(
     const maxLevel = availableDepthLevels().at(-1) ?? 1;
     writeVisibleDepthSelection(clampInteger(value, 1, maxLevel));
   };
-  const zoomPercent = createMemo(() => {
+  const zoomScale = createMemo(() => {
     const currentCamera = camera();
     const scaleX = VIEWPORT_WIDTH / currentCamera.width;
     const scaleY = VIEWPORT_HEIGHT / currentCamera.height;
 
-    return `${Math.round(Math.min(scaleX, scaleY) * 100)}%`;
+    return Math.min(scaleX, scaleY);
+  });
+  const zoomPercent = createMemo(() => {
+    return `${Math.round(zoomScale() * 100)}%`;
+  });
+  const viewportScale = createMemo(() => {
+    return (viewportSize.height / VIEWPORT_HEIGHT) * zoomScale();
   });
   const sceneTransform = createMemo(() => {
     const currentCamera = camera();
@@ -208,18 +219,21 @@ export function useSpatialMapCanvasController(
   });
 
   const updateViewportSize = () => {
-    if (!viewportRef || !viewportRef.isConnected) {
+    const viewportElement = svgRef?.isConnected ? svgRef : viewportRef;
+
+    if (!viewportElement || !viewportElement.isConnected) {
       viewportSize.width = VIEWPORT_WIDTH;
       viewportSize.height = VIEWPORT_HEIGHT;
       return;
     }
 
-    viewportSize.width = Math.max(viewportRef.clientWidth, 1);
-    viewportSize.height = Math.max(viewportRef.clientHeight, 1);
+    const rect = viewportElement.getBoundingClientRect();
+    viewportSize.width = Math.max(rect.width, 1);
+    viewportSize.height = Math.max(rect.height, 1);
   };
 
   const getViewportAspectRatio = () => {
-    if (!viewportRef) {
+    if (!viewportRef && !svgRef) {
       return fallbackCamera.width / fallbackCamera.height;
     }
 
@@ -418,11 +432,13 @@ export function useSpatialMapCanvasController(
   };
 
   const getWorldPoint = (clientX: number, clientY: number) => {
-    if (!viewportRef) {
+    const viewportElement = svgRef?.isConnected ? svgRef : viewportRef;
+
+    if (!viewportElement) {
       return { x: 0, y: 0 };
     }
 
-    const rect = viewportRef.getBoundingClientRect();
+    const rect = viewportElement.getBoundingClientRect();
     const currentCamera = cameraSnapshot;
     const xRatio = (clientX - rect.left) / Math.max(rect.width, 1);
     const yRatio = (clientY - rect.top) / Math.max(rect.height, 1);
@@ -433,8 +449,39 @@ export function useSpatialMapCanvasController(
     };
   };
 
+  const getViewportCenterWorldPoint = () => {
+    const currentCamera = cameraSnapshot;
+    return {
+      x: currentCamera.x + currentCamera.width / 2,
+      y: currentCamera.y + currentCamera.height / 2,
+    };
+  };
+
+  const rememberViewportPointer = (clientX: number, clientY: number) => {
+    if (!viewportRef?.isConnected) {
+      return;
+    }
+
+    const rect = viewportRef.getBoundingClientRect();
+    if (
+      clientX < rect.left ||
+      clientX > rect.right ||
+      clientY < rect.top ||
+      clientY > rect.bottom
+    ) {
+      return;
+    }
+
+    lastViewportClientPoint = { x: clientX, y: clientY };
+  };
+
+  const getDraftWorldPoint = () =>
+    lastViewportClientPoint
+      ? getWorldPoint(lastViewportClientPoint.x, lastViewportClientPoint.y)
+      : getViewportCenterWorldPoint();
+
   const openChildNodeDraft = (parentNodeId: string | null = selectedNodeId()) => {
-    setChildNodeDraft({ parentNodeId });
+    setChildNodeDraft({ parentNodeId, ...getDraftWorldPoint() });
   };
 
   const handleWindowKeyDown = (event: KeyboardEvent) => {
@@ -447,6 +494,15 @@ export function useSpatialMapCanvasController(
       if (viewMode() === "canvas") {
         event.preventDefault();
         openChildNodeDraft(parentNodeId);
+      }
+      return;
+    }
+
+    if (isDeleteNodeShortcut(event)) {
+      const nodeId = selectedNodeId();
+      if (nodeId && viewMode() === "canvas") {
+        event.preventDefault();
+        setDeleteNodeConfirmId(nodeId);
       }
       return;
     }
@@ -499,6 +555,7 @@ export function useSpatialMapCanvasController(
   };
 
   const handleViewportPointerDown: SpatialMapCanvasController["viewportHandlers"]["onPointerDown"] = (event) => {
+    rememberViewportPointer(event.clientX, event.clientY);
     cancelLayoutTransition();
     cancelCameraTween();
     updateViewportSize();
@@ -512,6 +569,7 @@ export function useSpatialMapCanvasController(
   };
 
   const handleViewportPointerMove: SpatialMapCanvasController["viewportHandlers"]["onPointerMove"] = (event) => {
+    rememberViewportPointer(event.clientX, event.clientY);
     if (!panSession || panSession.pointerId !== event.pointerId) {
       return;
     }
@@ -561,6 +619,7 @@ export function useSpatialMapCanvasController(
   };
 
   const handleWheel: SpatialMapCanvasController["viewportHandlers"]["onWheel"] = (event) => {
+    rememberViewportPointer(event.clientX, event.clientY);
     event.preventDefault();
     cancelLayoutTransition();
     cancelCameraTween();
@@ -681,6 +740,7 @@ export function useSpatialMapCanvasController(
     sceneTransform,
     addNodesOpen,
     contextNoteConversionOpen,
+    deleteNodeConfirmId,
     sourceDecompositionOpen,
     childNodeDraft,
     edgeState,
@@ -701,11 +761,14 @@ export function useSpatialMapCanvasController(
     visibleDepthSelection,
     visibleDepthLevel,
     viewMode,
+    viewportScale,
     zoomPercent,
+    zoomScale,
     closeAddNodesFlow: () => setAddNodesOpen(false),
     closeContextNoteConversionFlow: () => setContextNoteConversionOpen(false),
     closeSourceDecompositionFlow: () => setSourceDecompositionOpen(false),
     clearIsolation: () => applyIsolation(null),
+    clearDeleteNodeConfirm: () => setDeleteNodeConfirmId(null),
     clearChildNodeDraft: () => setChildNodeDraft(null),
     openChildNodeDraft,
     openAddNodesFlow: () => {
@@ -744,7 +807,8 @@ export function useSpatialMapCanvasController(
     fitCameraToNodes,
     setViewportRef: setViewportElement,
     setSvgRef: (element) => {
-      void element;
+      svgRef = element;
+      updateViewportSize();
     },
     viewportHandlers: {
       onPointerDown: handleViewportPointerDown,
@@ -772,7 +836,8 @@ function getDepthLevelCount(data: SpatialMapData) {
     return 1;
   }
 
-  const depths = data.nodes.map((node) => node.depth);
+  const depthsByNodeId = calculateNodeDepths(data);
+  const depths = data.nodes.map((node) => depthsByNodeId.get(node.id) ?? 0);
   return Math.max(Math.max(...depths) - Math.min(...depths) + 1, 1);
 }
 
@@ -809,6 +874,16 @@ function getDepthShortcutSelection(
   return level;
 }
 
+function isDeleteNodeShortcut(event: KeyboardEvent) {
+  return (
+    (event.key === "Delete" || event.key === "Backspace") &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.shiftKey
+  );
+}
+
 function getKeyboardDigit(event: KeyboardEvent) {
   if (/^[0-9]$/.test(event.key)) {
     return Number(event.key);
@@ -826,11 +901,13 @@ function filterSpatialMapDataByDepthLevel(
     return data;
   }
 
-  const minDepth = Math.min(...data.nodes.map((node) => node.depth));
+  const depthsByNodeId = calculateNodeDepths(data);
+  const depths = data.nodes.map((node) => depthsByNodeId.get(node.id) ?? 0);
+  const minDepth = Math.min(...depths);
   const maxVisibleDepth = minDepth + Math.max(visibleDepthLevel, 1) - 1;
   const visibleNodeIds = new Set(
     data.nodes
-      .filter((node) => node.depth <= maxVisibleDepth)
+      .filter((node) => (depthsByNodeId.get(node.id) ?? 0) <= maxVisibleDepth)
       .map((node) => node.id),
   );
 

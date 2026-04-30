@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createDefaultProjectNodeMetadataSchema } from "~/lib/projects/node-metadata";
+import { createDefaultProjectNodeTypeSchema } from "~/lib/projects/node-types";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode } from "~/lib/spatial-map/types";
 
@@ -66,7 +67,6 @@ function buildSourceNode(overrides: Partial<MapNode> = {}): MapNode {
     id: "note-source",
     label: "Source Note",
     type: "note",
-    depth: 2,
     metadata: {
       purpose: "Loose context",
       implementation: "Stored on the node",
@@ -87,6 +87,7 @@ function buildProject(sourceNode: MapNode = buildSourceNode()): ProjectRecord {
     createdAt: "2026-04-20T00:00:00.000Z",
     updatedAt: "2026-04-20T00:00:00.000Z",
     nodeMetadataSchema: createDefaultProjectNodeMetadataSchema(),
+    nodeTypeSchema: createDefaultProjectNodeTypeSchema(),
     spatialMap: {
       nodes: [
         {
@@ -94,7 +95,6 @@ function buildProject(sourceNode: MapNode = buildSourceNode()): ProjectRecord {
           label: "Home",
           type: "page",
           status: "planned",
-          depth: 0,
           metadata: {
             purpose: "Purpose",
             implementation: "Implementation",
@@ -336,7 +336,6 @@ describe("context note conversion service", () => {
             label: "Candidate Root",
             type: "page",
             status: "planned",
-            depth: 0,
             metadata: {
               purpose: "Root purpose",
               implementation: "Root implementation",

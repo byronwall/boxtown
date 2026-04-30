@@ -211,8 +211,10 @@ export const markdownStyles = {
     maxW: { base: "100vw", md: "min(92vw, 88ch)" },
     h: "100dvh",
     borderLeftWidth: "1px",
-    borderLeftColor: "border.subtle",
-    bg: "bg.default",
+    borderLeftColor: "olive.8",
+    bg: "rgba(252, 253, 252, 0.94)",
+    boxShadow:
+      "0 28px 70px rgba(29, 33, 28, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88)",
   }),
   codeDrawerHeader: css({
     position: "sticky",
@@ -220,8 +222,8 @@ export const markdownStyles = {
     zIndex: 2,
     pb: 3,
     borderBottomWidth: "1px",
-    borderBottomColor: "border.subtle",
-    bg: "bg.default",
+    borderBottomColor: "olive.7",
+    bg: "rgba(248, 250, 248, 0.9)",
     backdropFilter: "blur(6px)",
   }),
   codeDrawerHeaderTop: css({
@@ -236,14 +238,13 @@ export const markdownStyles = {
     gap: 2,
   }),
   codeDrawerDescription: css({
-    textTransform: "uppercase",
-    letterSpacing: "0.04em",
     fontSize: "xs",
     color: "fg.muted",
+    fontFamily: "mono",
   }),
   codeDrawerBody: css({
     p: 0,
-    bg: "bg.default",
+    bg: "olive.1",
     overflow: "auto",
   }),
   codeDrawerScroll: css({
@@ -255,7 +256,9 @@ export const markdownStyles = {
     m: 0,
     px: { base: 4, md: 6 },
     py: { base: 4, md: 5 },
-    bg: "gray.2",
+    background:
+      "linear-gradient(90deg, rgba(31, 36, 33, 0.045) 1px, transparent 1px), linear-gradient(rgba(31, 36, 33, 0.045) 1px, transparent 1px), rgba(248, 250, 248, 0.92)",
+    backgroundSize: "24px 24px, 24px 24px, auto",
     minH: "100%",
     overflow: "visible",
   }),
@@ -265,8 +268,10 @@ export const markdownStyles = {
     h: "min(90dvh, 900px)",
     maxH: "90dvh",
     borderWidth: "1px",
-    borderColor: "border.subtle",
-    bg: "bg.default",
+    borderColor: "olive.8",
+    bg: "rgba(252, 253, 252, 0.94)",
+    boxShadow:
+      "0 28px 70px rgba(29, 33, 28, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88)",
   }),
   mermaidDialogHeader: css({
     position: "sticky",
@@ -274,8 +279,8 @@ export const markdownStyles = {
     zIndex: 2,
     pb: 3,
     borderBottomWidth: "1px",
-    borderBottomColor: "border.subtle",
-    bg: "bg.default",
+    borderBottomColor: "olive.7",
+    bg: "rgba(248, 250, 248, 0.9)",
     backdropFilter: "blur(6px)",
   }),
   mermaidDialogHeaderTop: css({
@@ -292,10 +297,9 @@ export const markdownStyles = {
     justifyContent: "flex-end",
   }),
   mermaidDialogDescription: css({
-    textTransform: "uppercase",
-    letterSpacing: "0.04em",
     fontSize: "xs",
     color: "fg.muted",
+    fontFamily: "mono",
   }),
   mermaidDialogBody: css({
     p: 0,
@@ -307,7 +311,14 @@ export const markdownStyles = {
     minH: "420px",
     w: "100%",
     overflow: "hidden",
-    bg: "bg.default",
+    borderWidth: "1px",
+    borderColor: "olive.7",
+    borderRadius: "l1",
+    background:
+      "linear-gradient(90deg, rgba(31, 36, 33, 0.055) 1px, transparent 1px), linear-gradient(rgba(31, 36, 33, 0.055) 1px, transparent 1px), radial-gradient(circle at 12% 8%, rgba(48, 164, 108, 0.1), transparent 24rem), rgba(248, 250, 248, 0.92)",
+    backgroundSize: "24px 24px, 24px 24px, auto, auto",
+    boxShadow:
+      "inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 14px 36px rgba(29, 33, 28, 0.12)",
     touchAction: "none",
     cursor: "grab",
   }),

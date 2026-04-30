@@ -318,12 +318,17 @@ export const updateProjectMetadataSchema = action(
     const keys = formData.getAll("key");
     const labels = formData.getAll("label");
     const defaultValues = formData.getAll("defaultValue");
+    const nodeTypeNames = formData.getAll("nodeTypeName");
+    const nodeTypeColors = formData.getAll("nodeTypeColor");
 
     if (typeof projectId !== "string" || projectId.trim().length === 0) {
       throw new Error("A project id is required.");
     }
     if (keys.length !== labels.length || keys.length !== defaultValues.length) {
       throw new Error("Project metadata rows are malformed.");
+    }
+    if (nodeTypeNames.length !== nodeTypeColors.length) {
+      throw new Error("Project node type rows are malformed.");
     }
 
     return updateProjectMetadataSchemaOnDisk({
@@ -337,6 +342,10 @@ export const updateProjectMetadataSchema = action(
         label: typeof labels[index] === "string" ? labels[index] : "",
         defaultValue:
           typeof defaultValues[index] === "string" ? defaultValues[index] : "",
+      })),
+      nodeTypes: nodeTypeNames.map((name, index) => ({
+        name: typeof name === "string" ? name : "",
+        color: typeof nodeTypeColors[index] === "string" ? nodeTypeColors[index] : "",
       })),
     });
   },

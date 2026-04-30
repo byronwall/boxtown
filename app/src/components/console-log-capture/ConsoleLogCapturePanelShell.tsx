@@ -55,9 +55,17 @@ export const ConsoleLogCapturePanelShell = (
           <Box
             position="absolute"
             inset="0"
-            bg="black.a3"
             onClick={props.onClose}
-            style={{ "backdrop-filter": "blur(6px)" }}
+            style={{
+              background: `
+                radial-gradient(circle at 15% 8%, rgba(48, 164, 108, 0.16), transparent 28rem),
+                radial-gradient(circle at 88% 20%, rgba(137, 142, 135, 0.14), transparent 30rem),
+                repeating-linear-gradient(0deg, rgba(31, 36, 33, 0.045) 0 1px, transparent 1px 40px),
+                repeating-linear-gradient(90deg, rgba(31, 36, 33, 0.035) 0 1px, transparent 1px 40px),
+                linear-gradient(180deg, rgba(248, 250, 248, 0.9), rgba(223, 226, 223, 0.94))
+              `,
+              "backdrop-filter": "blur(6px)",
+            }}
           />
           <Box
             position="absolute"
@@ -69,14 +77,13 @@ export const ConsoleLogCapturePanelShell = (
             maxH="full"
             overflowY="auto"
             overscrollBehavior="contain"
-            bg="bg.default"
             borderLeftWidth="1px"
-            borderColor="border"
-            boxShadow="2xl"
+            borderColor="olive.8"
+            bg="rgba(252, 253, 252, 0.94)"
+            boxShadow="0 28px 70px rgba(29, 33, 28, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88)"
             onClick={(e) => e.stopPropagation()}
             style={{
               width: props.width || "min(94vw, 560px)",
-              background: "rgba(255,255,255,0.98)",
               "backdrop-filter": "blur(10px)",
             }}
           >

@@ -55,11 +55,6 @@ export function sortNodeIds(
       return left < right ? -1 : left > right ? 1 : 0;
     }
 
-    const depthDiff = leftNode.depth - rightNode.depth;
-    if (depthDiff !== 0) {
-      return depthDiff;
-    }
-
     if (leftNode.label !== rightNode.label) {
       return leftNode.label < rightNode.label ? -1 : 1;
     }

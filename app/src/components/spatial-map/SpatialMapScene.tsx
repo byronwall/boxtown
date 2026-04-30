@@ -2,9 +2,10 @@ import { useSubmission } from "@solidjs/router";
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import { Box } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
+import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
 import { createProjectChildNode } from "~/lib/projects/data";
+import { getProjectNodeType } from "~/lib/projects/node-types";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
 import { createParentChildLink } from "~/lib/spatial-map/links";
@@ -14,8 +15,13 @@ import {
   getMapNodeStatusGlyph,
   getMapNodeStatusLabel,
 } from "~/lib/spatial-map/node-status";
+import type { MapNodeStatus } from "~/lib/spatial-map/types";
 
-import type { NodeVisualState } from "./spatial-map-canvas.types";
+import type {
+  ChildNodeDraft,
+  NodeVisualState,
+  SpatialMapNodeColorMode,
+} from "./spatial-map-canvas.types";
 import { getImageFilesFromDataTransfer, useSpatialMapImages } from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
 
@@ -70,6 +76,52 @@ const NODE_TYPE_FALLBACK_TONES = [
   },
 ] as const;
 
+const NODE_STATUS_TONES = {
+  planned: {
+    fill: "#e8ece7",
+    fillHover: "#dce3da",
+    stroke: "#717a70",
+    strokeHover: "#5c665b",
+  },
+  implemented: {
+    fill: "#d7e8dc",
+    fillHover: "#c7ddcf",
+    stroke: "#4e7a56",
+    strokeHover: "#3c6544",
+  },
+  working: {
+    fill: "#d8e7ef",
+    fillHover: "#c7dce8",
+    stroke: "#4d7892",
+    strokeHover: "#3b627a",
+  },
+  blocked: {
+    fill: "#f0ddd8",
+    fillHover: "#e8cbc4",
+    stroke: "#9a5b4a",
+    strokeHover: "#824534",
+  },
+  "needs-review": {
+    fill: "#efe4ca",
+    fillHover: "#e5d5b3",
+    stroke: "#917444",
+    strokeHover: "#785f33",
+  },
+  deprecated: {
+    fill: "#dfdfdc",
+    fillHover: "#d1d2ce",
+    stroke: "#656762",
+    strokeHover: "#50534d",
+  },
+} satisfies Record<MapNodeStatus, NodeTone>;
+
+type NodeTone = {
+  fill: string;
+  fillHover: string;
+  stroke: string;
+  strokeHover: string;
+};
+
 const NODE_LABEL_HORIZONTAL_PADDING = 8;
 const NODE_LABEL_TOP_PADDING = 7;
 const NODE_LABEL_IMAGE_GAP = 10;
@@ -85,12 +137,12 @@ const NODE_STATUS_LABEL_WIDTH_FACTOR = 6.2;
 
 interface SpatialMapSceneProps {
   project: ProjectRecord;
+  nodeColorMode: SpatialMapNodeColorMode;
   onProjectUpdated?: (project: ProjectRecord) => void;
 }
 
 export function SpatialMapScene(props: SpatialMapSceneProps) {
   const controller = useSpatialMap();
-  const hasRootNodeDraft = createMemo(() => controller.childNodeDraft()?.parentNodeId === null);
   const draftParentNode = createMemo(() => {
     const parentNodeId = controller.childNodeDraft()?.parentNodeId;
     if (!parentNodeId) {
@@ -127,7 +179,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       </Box>
       <svg
         ref={controller.setSvgRef}
-        class="spatial-map-scene"
+        class={`spatial-map-scene spatial-map-scene--color-${props.nodeColorMode}`}
         viewBox={`0 0 ${VIEWPORT_WIDTH} ${VIEWPORT_HEIGHT}`}
         preserveAspectRatio="none"
         onClick={controller.sceneHandlers.onBackgroundClick}
@@ -151,6 +203,9 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
               {(item) => (
                 <SpatialMapNode
                   item={item}
+                  project={props.project}
+                  colorMode={props.nodeColorMode}
+                  viewportScale={controller.viewportScale()}
                   onClick={controller.sceneHandlers.onNodeClick}
                   onDoubleClick={controller.sceneHandlers.onNodeDoubleClick}
                   isIsolationTarget={controller.isolatedNodeId() === item.node.id}
@@ -161,28 +216,24 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
               )}
             </For>
           </g>
-          <Show when={draftParentNode()}>
-            {(parentNode) => (
-              <ChildNodePlaceholder
-                parentNode={parentNode()}
-                project={props.project}
-                onProjectUpdated={props.onProjectUpdated}
-              />
-            )}
-          </Show>
-          <Show when={hasRootNodeDraft()}>
-            <ChildNodePlaceholder
-              project={props.project}
-              onProjectUpdated={props.onProjectUpdated}
-            />
-          </Show>
         </g>
       </svg>
+      <Show when={controller.childNodeDraft()}>
+        {(draft) => (
+          <ChildNodePlaceholder
+            draft={draft()}
+            parentNode={draftParentNode() ?? undefined}
+            project={props.project}
+            onProjectUpdated={props.onProjectUpdated}
+          />
+        )}
+      </Show>
     </Box>
   );
 }
 
 function ChildNodePlaceholder(props: {
+  draft: ChildNodeDraft;
   parentNode?: NodeVisualState["node"];
   project: ProjectRecord;
   onProjectUpdated?: (project: ProjectRecord) => void;
@@ -199,18 +250,19 @@ function ChildNodePlaceholder(props: {
     );
   });
   const [title, setTitle] = createSignal("");
-  let inputRef: HTMLInputElement | undefined;
+  let formRef: HTMLFormElement | undefined;
+  let textareaRef: HTMLTextAreaElement | undefined;
 
-  const width = () => Math.max(164, Math.min(220, (props.parentNode?.width ?? 220) * 0.96));
-  const height = () => 86;
-  const x = () => (props.parentNode?.x ?? VIEWPORT_WIDTH / 2) - width() / 2;
-  const y = () =>
-    props.parentNode
-      ? props.parentNode.y + props.parentNode.height / 2 + 34
-      : VIEWPORT_HEIGHT / 2 - height() / 2;
+  const overlayStyle = createMemo(() => {
+    const camera = controller.camera();
+    return {
+      left: `${((props.draft.x - camera.x) / camera.width) * 100}%`,
+      top: `${((props.draft.y - camera.y) / camera.height) * 100}%`,
+    };
+  });
 
   createEffect(() => {
-    inputRef?.focus();
+    textareaRef?.focus();
   });
 
   createEffect(() => {
@@ -260,7 +312,6 @@ function ChildNodePlaceholder(props: {
             label: nextTitle,
             type: nodeType,
             status: DEFAULT_MAP_NODE_STATUS,
-            depth: props.parentNode ? props.parentNode.depth + 1 : 0,
             metadata: {},
             context: "",
             rawContext: "",
@@ -280,73 +331,83 @@ function ChildNodePlaceholder(props: {
   };
 
   return (
-    <g
+    <form
+      ref={formRef}
       class="spatial-map-node-placeholder"
-      transform={`translate(${x()}, ${y()})`}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
-    >
-      <rect class="spatial-map-node-placeholder-body" width={width()} height={height()} />
-      <foreignObject x="8" y="8" width={width() - 16} height={height() - 16}>
-        <form
-          class="spatial-map-node-placeholder-form"
-          action={normalizeActionUrl(createProjectChildNode.url)}
-          method="post"
-          onSubmit={(event) => {
-            const nextTitle = title().trim();
-            if (!nextTitle) {
-              event.preventDefault();
-              return;
-            }
+      style={overlayStyle()}
+      action={normalizeActionUrl(createProjectChildNode.url)}
+      method="post"
+      onSubmit={(event) => {
+        const nextTitle = title().trim();
+        if (!nextTitle) {
+          event.preventDefault();
+          return;
+        }
 
-            applyOptimisticChild(nextTitle);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Escape") {
-              event.preventDefault();
-              controller.clearChildNodeDraft();
-            }
-          }}
+        applyOptimisticChild(nextTitle);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          controller.clearChildNodeDraft();
+          return;
+        }
+
+        if (
+          event.key === "Enter" &&
+          !event.shiftKey &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.altKey
+        ) {
+          event.preventDefault();
+          formRef?.requestSubmit();
+        }
+      }}
+    >
+      <div class="spatial-map-node-placeholder-header">
+        {props.parentNode ? "New child node" : "New node"}
+      </div>
+      <input type="hidden" name="projectId" value={props.project.id} />
+      <Show when={props.parentNode}>
+        {(parentNode) => (
+          <input type="hidden" name="parentNodeId" value={parentNode().id} />
+        )}
+      </Show>
+      <Textarea
+        ref={textareaRef}
+        aria-label="New node title"
+        name="title"
+        required
+        value={title()}
+        disabled={submission.pending}
+        placeholder="Node title"
+        rows={3}
+        onInput={(event) => setTitle(event.currentTarget.value)}
+      />
+      <div class="spatial-map-node-placeholder-actions">
+        <Button
+          size="xs"
+          variant="plain"
+          type="button"
+          disabled={submission.pending}
+          onClick={() => controller.clearChildNodeDraft()}
         >
-          <input type="hidden" name="projectId" value={props.project.id} />
-          <Show when={props.parentNode}>
-            {(parentNode) => (
-              <input type="hidden" name="parentNodeId" value={parentNode().id} />
-            )}
-          </Show>
-          <Input
-            ref={inputRef}
-            aria-label="New child node title"
-            name="title"
-            required
-            value={title()}
-            disabled={submission.pending}
-            placeholder="Node title"
-            size="xs"
-            onInput={(event) => setTitle(event.currentTarget.value)}
-          />
-          <div class="spatial-map-node-placeholder-actions">
-            <Button
-              size="xs"
-              variant="plain"
-              disabled={submission.pending}
-              onClick={() => controller.clearChildNodeDraft()}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="xs"
-              colorPalette="green"
-              disabled={!title().trim()}
-              loading={submission.pending}
-              type="submit"
-            >
-              Accept
-            </Button>
-          </div>
-        </form>
-      </foreignObject>
-    </g>
+          Cancel
+        </Button>
+        <Button
+          size="xs"
+          colorPalette="green"
+          disabled={!title().trim()}
+          loading={submission.pending}
+          type="submit"
+        >
+          Accept
+        </Button>
+      </div>
+    </form>
   );
 }
 
@@ -375,6 +436,9 @@ function slugifyProjectName(name: string) {
 
 function SpatialMapNode(props: {
   item: NodeVisualState;
+  project: ProjectRecord;
+  colorMode: SpatialMapNodeColorMode;
+  viewportScale: number;
   onClick: (nodeId: string) => void;
   onDoubleClick: (nodeId: string) => void;
   isIsolationTarget: boolean;
@@ -389,8 +453,14 @@ function SpatialMapNode(props: {
   const firstImage = () => nodeImages()[0];
   const hasImages = () => nodeImages().length > 0;
   const imageHeight = () => (hasImages() ? Math.min(54, props.item.node.height * 0.38) : 0);
-  const fallbackTone = () => getNodeTypeFallbackTone(props.item.node.type);
-  const metaFontSize = () => props.item.node.metaSize;
+  const fallbackTone = () =>
+    getNodeTypeTone(props.project.nodeTypeSchema, props.item.node.type);
+  const nodeTone = () =>
+    props.colorMode === "status"
+      ? getNodeStatusTone(props.item.node.status)
+      : fallbackTone();
+  const textScale = () => Math.min(1, 1 / Math.max(props.viewportScale, 0.1));
+  const metaFontSize = () => props.item.node.metaSize * textScale();
   const metaBaselineY = () =>
     props.item.node.height -
     Math.max(NODE_LABEL_MIN_BOTTOM_PADDING, props.item.node.height * NODE_LABEL_BOTTOM_PADDING_RATIO);
@@ -399,11 +469,14 @@ function SpatialMapNode(props: {
   const labelAreaBottom = () => Math.max(labelAreaTop() + 1, metaBaselineY() - metaFontSize() - NODE_LABEL_META_GAP);
   const availableLabelHeight = () =>
     Math.max(1, labelAreaBottom() - labelAreaTop());
-  const labelFontSize = () =>
-    Math.min(
-      props.item.node.fontSize,
+  const labelFontSize = () => {
+    const zoomAdjustedFontSize = props.item.node.fontSize * textScale();
+
+    return Math.min(
+      zoomAdjustedFontSize,
       availableLabelHeight() / NODE_LABEL_LINE_HEIGHT,
     );
+  };
   const labelLineHeight = () => Math.ceil(labelFontSize() * NODE_LABEL_LINE_HEIGHT);
   const labelLines = () =>
     wrapSvgText({
@@ -438,10 +511,10 @@ function SpatialMapNode(props: {
         "transform-box": "fill-box",
         "transform-origin": "center",
         cursor: "pointer",
-        "--spatial-map-node-fill": fallbackTone().fill,
-        "--spatial-map-node-fill-hover": fallbackTone().fillHover,
-        "--spatial-map-node-stroke": fallbackTone().stroke,
-        "--spatial-map-node-stroke-hover": fallbackTone().strokeHover,
+        "--spatial-map-node-fill": nodeTone().fill,
+        "--spatial-map-node-fill-hover": nodeTone().fillHover,
+        "--spatial-map-node-stroke": nodeTone().stroke,
+        "--spatial-map-node-stroke-hover": nodeTone().strokeHover,
         "--spatial-map-node-depth-fill-lightness": props.item.depthFillLightness,
         "--spatial-map-node-depth-fill-hover-lightness": props.item.depthFillHoverLightness,
         "--spatial-map-node-depth-stroke-lightness": props.item.depthStrokeLightness,
@@ -602,6 +675,25 @@ function getNodeTypeFallbackTone(type: string) {
   }
 
   return NODE_TYPE_FALLBACK_TONES[hash % NODE_TYPE_FALLBACK_TONES.length];
+}
+
+function getNodeStatusTone(status: MapNodeStatus) {
+  return NODE_STATUS_TONES[status];
+}
+
+function getNodeTypeTone(
+  schema: ProjectRecord["nodeTypeSchema"],
+  type: string,
+) {
+  const configured = getProjectNodeType(schema, type);
+  if (!configured) return getNodeTypeFallbackTone(type);
+
+  return {
+    fill: configured.color,
+    fillHover: `color-mix(in srgb, ${configured.color} 86%, white)`,
+    stroke: `color-mix(in srgb, ${configured.color} 68%, #202820)`,
+    strokeHover: `color-mix(in srgb, ${configured.color} 50%, #121812)`,
+  };
 }
 
 function wrapSvgText(options: {

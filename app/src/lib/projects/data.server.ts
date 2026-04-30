@@ -15,7 +15,13 @@ import {
   sanitizeNodeMetadata,
 } from "./node-metadata";
 import {
+  createDefaultProjectNodeTypeSchema,
+  normalizeProjectNodeTypeName,
+  normalizeProjectNodeTypeSchema,
+} from "./node-types";
+import {
   parseStoredProjectRecord,
+  serializeProjectRecord,
 } from "./project-record-format";
 import type {
   ProjectNodeMetadataField,
@@ -45,6 +51,12 @@ interface UpdateProjectNodeStatusInput {
   status: MapNodeStatus;
 }
 
+interface UpdateProjectNodeTypeInput {
+  projectId: string;
+  nodeId: string;
+  type: string;
+}
+
 interface CreateContextNodeInput {
   projectId: string;
   label: string;
@@ -71,6 +83,7 @@ interface UpdateProjectMetadataSchemaInput {
   name?: string;
   description?: string;
   fields: ProjectMetadataSchemaRowInput[];
+  nodeTypes: ProjectNodeTypeRowInput[];
 }
 
 interface ProjectMetadataSchemaRowInput {
@@ -78,6 +91,11 @@ interface ProjectMetadataSchemaRowInput {
   key: string;
   label: string;
   defaultValue: string;
+}
+
+interface ProjectNodeTypeRowInput {
+  name: string;
+  color: string;
 }
 
 interface DeleteProjectNodeInput {
@@ -155,6 +173,7 @@ export async function createProjectOnDisk(
     createdAt: now,
     updatedAt: now,
     nodeMetadataSchema: createDefaultProjectNodeMetadataSchema(),
+    nodeTypeSchema: createDefaultProjectNodeTypeSchema(),
     spatialMap: createBlankSpatialMapData(),
   };
 
@@ -186,11 +205,14 @@ export function mergeGeneratedSpatialMapData(
   const existingLinkKeys = new Set(current.links.map(getLinkKey));
 
   for (const node of generated.nodes) {
+    const { depth: _legacyDepth, ...nodeWithoutDepth } = node as typeof node & {
+      depth?: unknown;
+    };
     const stableId = createUniqueNodeId(node.label, node.type, existingIds);
     existingIds.add(stableId);
     nodeIdMap.set(node.id, stableId);
     nextNodes.push({
-      ...node,
+      ...nodeWithoutDepth,
       id: stableId,
       status: node.status ?? DEFAULT_MAP_NODE_STATUS,
       metadata: sanitizeNodeMetadata(node.metadata, nodeMetadataSchema, {
@@ -371,6 +393,50 @@ export async function updateProjectNodeStatusOnDisk(
   return nextRecord;
 }
 
+export async function updateProjectNodeTypeOnDisk(
+  input: UpdateProjectNodeTypeInput,
+): Promise<ProjectRecord> {
+  const nextType = normalizeProjectNodeTypeName(input.type);
+  if (!nextType) {
+    throw new Error("A valid node type is required.");
+  }
+
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  if (!current.nodeTypeSchema.some((item) => item.name === nextType)) {
+    throw new Error("Node type is not defined in project settings.");
+  }
+
+  const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
+
+  if (nodeIndex === -1) {
+    throw new Error("Node not found.");
+  }
+
+  const nextNodes = current.spatialMap.nodes.map((node, index) =>
+    index === nodeIndex ? { ...node, type: nextType } : node,
+  );
+
+  const nextRecord: ProjectRecord = {
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: nextNodes,
+    },
+  };
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsToDisk(records);
+  return nextRecord;
+}
+
 export async function updateProjectNodeMetadataOnDisk(
   input: UpdateProjectNodeMetadataInput,
 ): Promise<ProjectRecord> {
@@ -425,6 +491,7 @@ export async function updateProjectMetadataSchemaOnDisk(
 
   const current = records[recordIndex];
   const nextSchema = normalizeProjectMetadataSchemaRows(input.fields);
+  const nextNodeTypeSchema = normalizeProjectNodeTypeSchema(input.nodeTypes);
   const nextNodes = current.spatialMap.nodes.map((node) => ({
     ...node,
     metadata: remapNodeMetadataForSchema(node.metadata, current.nodeMetadataSchema, nextSchema, input.fields),
@@ -436,6 +503,7 @@ export async function updateProjectMetadataSchemaOnDisk(
     description: sanitizeProjectDescription(input.description ?? current.description),
     updatedAt: new Date().toISOString(),
     nodeMetadataSchema: nextSchema,
+    nodeTypeSchema: nextNodeTypeSchema,
     spatialMap: {
       ...current.spatialMap,
       nodes: nextNodes,
@@ -715,7 +783,6 @@ export async function createChildNodeOnDisk(
     label,
     type: nodeType,
     status: DEFAULT_MAP_NODE_STATUS,
-    depth: parentNode ? parentNode.depth + 1 : 0,
     metadata: {},
     context: "",
     rawContext: "",
@@ -756,7 +823,6 @@ function createSingleContextNode(input: {
       createContextNoteNode({
         id: nodeId,
         label: input.label,
-        depth: 2,
         metadata: input.metadata,
         context: input.context,
       }),
@@ -789,30 +855,23 @@ function createContextNodeTree(input: {
     createContextNoteNode({
       id: rootNodeId,
       label: input.label,
-      depth: 2,
       metadata: input.metadata,
       context: preamble,
     }),
   ];
   const sectionNodeIds: string[] = [];
-  const sectionDepths: number[] = [];
   const links: SpatialMapData["links"] = [];
 
   for (const section of sections) {
     const nodeId = reserveUniqueNodeId(section.label, "note", input.existingIds);
     const parentNodeId =
       section.parentIndex === null ? rootNodeId : sectionNodeIds[section.parentIndex] ?? rootNodeId;
-    const parentDepth =
-      section.parentIndex === null ? 2 : sectionDepths[section.parentIndex] ?? 2;
-    const nodeDepth = parentDepth + 1;
 
     sectionNodeIds.push(nodeId);
-    sectionDepths.push(nodeDepth);
     nodes.push(
       createContextNoteNode({
         id: nodeId,
         label: section.label,
-        depth: nodeDepth,
         metadata: {},
         context: section.context,
       }),
@@ -832,7 +891,6 @@ function createContextNodeTree(input: {
 function createContextNoteNode(input: {
   id: string;
   label: string;
-  depth: number;
   metadata: Record<string, string>;
   context: string;
 }) {
@@ -841,7 +899,6 @@ function createContextNoteNode(input: {
     label: input.label,
     type: "note",
     status: DEFAULT_MAP_NODE_STATUS,
-    depth: input.depth,
     metadata: input.metadata,
     context: input.context,
     rawContext: input.context,
@@ -925,7 +982,7 @@ export async function writeProjectRecordsToDisk(records: ProjectRecord[]) {
     await mkdir(projectDir, { recursive: true });
     await writeFile(
       getProjectJsonFilePath(record.id),
-      `${JSON.stringify(record, null, 2)}\n`,
+      `${JSON.stringify(serializeProjectRecord(record), null, 2)}\n`,
       "utf8",
     );
   }

@@ -2,12 +2,14 @@ import type { APIEvent } from "@solidjs/start/server";
 import {
   updateProjectNodeStatusOnDisk,
   updateProjectNodeTitleOnDisk,
+  updateProjectNodeTypeOnDisk,
 } from "~/lib/projects/data.server";
 import { isMapNodeStatus } from "~/lib/spatial-map/node-status";
 
 type PatchProjectNodeRequest = {
   title?: unknown;
   status?: unknown;
+  type?: unknown;
 };
 
 export async function PATCH(event: APIEvent) {
@@ -35,8 +37,16 @@ export async function PATCH(event: APIEvent) {
       });
     }
 
+    if (typeof input.type === "string") {
+      project = await updateProjectNodeTypeOnDisk({
+        projectId: event.params.projectId,
+        nodeId: event.params.nodeId,
+        type: input.type,
+      });
+    }
+
     if (!project) {
-      throw new Error("A node title or status is required.");
+      throw new Error("A node title, status, or type is required.");
     }
 
     return new Response(JSON.stringify(project), {

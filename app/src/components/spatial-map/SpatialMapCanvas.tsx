@@ -1,5 +1,5 @@
 import { useSearchParams } from "@solidjs/router";
-import { createEffect, lazy, Show, untrack } from "solid-js";
+import { createEffect, createSignal, lazy, Show, untrack } from "solid-js";
 import { Box } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import type { ProjectRecord } from "~/lib/projects/types";
@@ -8,11 +8,14 @@ import "./spatial-map.css";
 import { AddNodesFlowRail } from "./add-nodes-flow/AddNodesFlowRail";
 import type {
   SpatialMapDepthLevel,
+  SpatialMapNodeColorMode,
   SpatialMapViewMode,
 } from "./spatial-map-canvas.types";
 import { SpatialMapProvider, useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapInspector } from "./SpatialMapInspector";
 import { SpatialMapImageProvider } from "./SpatialMapImages";
+import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
+import { SpatialMapCommandMenu } from "./SpatialMapCommandMenu";
 import { SpatialMapScene } from "./SpatialMapScene";
 import { SpatialMapToolbar } from "./SpatialMapToolbar";
 import { SpatialMapTreeView } from "./SpatialMapTreeView";
@@ -67,6 +70,8 @@ function SpatialMapCanvasLayout(props: {
   onProjectUpdated?: (project: ProjectRecord) => void;
 }) {
   const controller = useSpatialMap();
+  const [nodeColorMode, setNodeColorMode] =
+    createSignal<SpatialMapNodeColorMode>("type");
 
   return (
     <SpatialMapImageProvider
@@ -84,11 +89,15 @@ function SpatialMapCanvasLayout(props: {
             <SpatialMapToolbar
               {...props.header}
               project={props.project}
+              nodeColorMode={nodeColorMode()}
+              onNodeColorModeChange={setNodeColorMode}
               onProjectUpdated={props.onProjectUpdated}
             />
+            <SpatialMapCommandMenu />
             <Show when={controller.viewMode() === "canvas"}>
               <SpatialMapScene
                 project={props.project}
+                nodeColorMode={nodeColorMode()}
                 onProjectUpdated={props.onProjectUpdated}
               />
             </Show>
@@ -97,6 +106,16 @@ function SpatialMapCanvasLayout(props: {
                 project={props.project}
                 onProjectUpdated={props.onProjectUpdated}
               />
+            </Show>
+            <Show when={controller.selectedNode()}>
+              {(node) => (
+                <SpatialMapDeleteNodeControl
+                  projectId={props.project.id}
+                  node={node()}
+                  onProjectUpdated={props.onProjectUpdated}
+                  hideTrigger
+                />
+              )}
             </Show>
             <Show
               when={

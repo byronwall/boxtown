@@ -5,7 +5,7 @@ import type { MapNode } from "~/lib/spatial-map/types";
 import type { ClarifyingQuestion } from "./types";
 
 function summarizeNode(node: MapNode, project: ProjectRecord) {
-  return `${node.id} | ${node.label} | ${node.type} | ${node.contextMode} | depth ${node.depth} | metadata: ${summarizeNodeMetadata(node, project.nodeMetadataSchema)}`;
+  return `${node.id} | ${node.label} | ${node.type} | ${node.contextMode} | metadata: ${summarizeNodeMetadata(node, project.nodeMetadataSchema)}`;
 }
 
 function summarizeGraph(project: ProjectRecord) {
@@ -58,7 +58,7 @@ export function buildQuestionPrompt(input: {
     "You are preparing a context-note conversion workflow for a technical graph.",
     "Generate exactly 3 or 4 clarifying questions for turning one loose context note into structured graph nodes.",
     "Each question must have 3 or 4 concise options.",
-    "Prefer questions about decomposition strategy, structural depth, relationship style, and evidence preservation.",
+    "Prefer questions about decomposition strategy, hierarchy, relationship style, and evidence preservation.",
     "Do not ask for confirmation or approval.",
     "",
     `Source note: ${summarizeNode(input.sourceNode, input.project)}`,
@@ -85,7 +85,7 @@ export function buildSuggestionPrompt(input: {
     "Each populated metadata value should stay concise and concrete.",
     "For parent/child structure, emit links with parentChild: true and no relationship.",
     'For non-parent/child adjacency, emit parentChild: false with relationship "related", "dependency", or "reuse".',
-    "Create parentChild links first to anchor true depth before adding cross-cutting relationship links.",
+    "Create parentChild links first to anchor the hierarchy before adding cross-cutting relationship links.",
     "Generated links may connect to existing nodes when helpful, but only generated nodes should appear in the review tree.",
     "",
     `Source note: ${summarizeNode(input.sourceNode, input.project)}`,

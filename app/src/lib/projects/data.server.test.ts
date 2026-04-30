@@ -20,9 +20,11 @@ import {
   DEFAULT_NOTE_PURPOSE,
   createDefaultProjectNodeMetadataSchema,
 } from "./node-metadata";
+import { createDefaultProjectNodeTypeSchema } from "./node-types";
 import type { MapNodeImage } from "~/lib/spatial-map/types";
 
 const defaultSchema = createDefaultProjectNodeMetadataSchema();
+const defaultTypeSchema = createDefaultProjectNodeTypeSchema();
 
 describe("mergeGeneratedSpatialMapData", () => {
   it("appends generated nodes, remaps ids, and dedupes links", () => {
@@ -549,6 +551,7 @@ describe("context node persistence", () => {
 
       const project = await updateProjectMetadataSchemaOnDisk({
         projectId: "schema-project",
+        nodeTypes: defaultTypeSchema,
         fields: [
           {
             originalKey: "purpose",

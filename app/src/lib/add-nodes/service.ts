@@ -296,7 +296,6 @@ function createGeneratedNodeBatchSchema(
           label: z.string().min(1),
           type: z.string().min(1),
           status: z.enum(mapNodeStatuses).default(DEFAULT_MAP_NODE_STATUS),
-          depth: z.number().int().min(0),
           metadata: createNodeMetadataObjectSchema(nodeMetadataSchema),
           context: z.string().default(""),
         }),
@@ -314,11 +313,14 @@ function sanitizeGeneratedBatch(
   return {
     ...batch,
     nodes: batch.nodes.map((node) => ({
-      ...node,
+      id: node.id,
+      label: node.label,
+      type: node.type,
       status: isMapNodeStatus(node.status) ? node.status : DEFAULT_MAP_NODE_STATUS,
       metadata: sanitizeNodeMetadata(node.metadata, nodeMetadataSchema, {
         omitDefaultValues: true,
       }),
+      context: node.context,
       rawContext: "",
       contextMode: "structured" as const,
     })),

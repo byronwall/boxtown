@@ -15,6 +15,7 @@ import {
 } from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapNodeStatusMenu } from "./SpatialMapNodeStatusMenu";
+import { SpatialMapNodeTypePicker } from "./SpatialMapNodeTypePicker";
 import { SpatialMapTreeNavigation } from "./SpatialMapTreeNavigation";
 import {
   buildSpatialMapTree,
@@ -30,10 +31,16 @@ export function SpatialMapTreeView(props: {
   const tree = createMemo(() => buildSpatialMapTree(spatialMap.visibleData()));
   let viewportRef: HTMLDivElement | undefined;
   const [statusPending, setStatusPending] = createSignal(false);
+  const [typePending, setTypePending] = createSignal(false);
   const [optimisticStatus, setOptimisticStatus] = createSignal<{
     nodeId: string;
     previousStatus: MapNodeStatus;
     status: MapNodeStatus;
+  } | null>(null);
+  const [optimisticType, setOptimisticType] = createSignal<{
+    nodeId: string;
+    previousType: string;
+    type: string;
   } | null>(null);
 
   const rollBackStatus = (error: unknown) => {
@@ -55,6 +62,28 @@ export function SpatialMapTreeView(props: {
         error instanceof Error
           ? error.message
           : "The selected node status could not be updated.",
+    });
+  };
+
+  const rollBackType = (error: unknown) => {
+    const optimistic = optimisticType();
+    if (!optimistic) {
+      return;
+    }
+
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, optimistic.nodeId, (projectNode) => ({
+        ...projectNode,
+        type: optimistic.previousType,
+      })),
+    );
+    setOptimisticType(null);
+    toaster.error({
+      title: "Type update failed",
+      description:
+        error instanceof Error
+          ? error.message
+          : "The selected node type could not be updated.",
     });
   };
 
@@ -98,13 +127,41 @@ export function SpatialMapTreeView(props: {
     }
   };
 
+  const submitType = async (nodeId: string, type: string) => {
+    const node = spatialMap.sourceNodesById().get(nodeId);
+    if (!node || typePending() || node.type === type) return;
+
+    setTypePending(true);
+    setOptimisticType({
+      nodeId,
+      previousType: node.type,
+      type,
+    });
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, nodeId, (projectNode) => ({
+        ...projectNode,
+        type,
+      })),
+    );
+
+    try {
+      const result = await patchProjectNode(props.project.id, nodeId, { type });
+      props.onProjectUpdated?.(result);
+      setOptimisticType(null);
+    } catch (error) {
+      rollBackType(error);
+    } finally {
+      setTypePending(false);
+    }
+  };
+
   return (
     <Box ref={viewportRef} class="spatial-map-tree-viewport">
       <Show
         when={tree().roots.length > 0}
         fallback={
           <Box class="spatial-map-tree-empty">
-            No hierarchy nodes are visible at this depth.
+            No hierarchy nodes are visible at this level.
           </Box>
         }
       >
@@ -129,13 +186,17 @@ export function SpatialMapTreeView(props: {
                       item={treeItem()}
                       tree={tree()}
                       nodeMetadataSchema={props.project.nodeMetadataSchema}
+                      project={props.project}
                       depth={0}
                       ancestry={new Set([nodeId])}
                       path={nodeId}
                       hasSameDepthSiblingBelow={index() < tree().roots.length - 1}
                       statusPending={statusPending()}
+                      typePending={typePending()}
                       optimisticStatus={optimisticStatus()}
+                      optimisticType={optimisticType()}
                       onStatusChange={submitStatus}
+                      onTypeChange={submitType}
                     />
                   )}
                 </Show>
@@ -152,16 +213,23 @@ function SpatialMapTreeNode(props: {
   item: SpatialMapTreeItem;
   tree: SpatialMapTree;
   nodeMetadataSchema: ProjectRecord["nodeMetadataSchema"];
+  project: ProjectRecord;
   depth: number;
   ancestry: Set<string>;
   path: string;
   hasSameDepthSiblingBelow: boolean;
   statusPending: boolean;
+  typePending: boolean;
   optimisticStatus: {
     nodeId: string;
     status: MapNodeStatus;
   } | null;
+  optimisticType: {
+    nodeId: string;
+    type: string;
+  } | null;
   onStatusChange: (nodeId: string, status: MapNodeStatus) => void;
+  onTypeChange: (nodeId: string, type: string) => void;
 }) {
   const spatialMap = useSpatialMap();
   const children = createMemo(() =>
@@ -183,6 +251,11 @@ function SpatialMapTreeNode(props: {
       ? { ...props.item.node, status: props.optimisticStatus.status }
       : props.item.node,
   );
+  const nodeWithOptimisticType = createMemo(() =>
+    props.optimisticType?.nodeId === props.item.node.id
+      ? { ...props.item.node, type: props.optimisticType.type }
+      : props.item.node,
+  );
 
   return (
     <Box class="spatial-map-tree-node">
@@ -198,7 +271,7 @@ function SpatialMapTreeNode(props: {
           aria-selected={isSelected()}
           data-spatial-map-tree-node-id={props.item.node.id}
           data-spatial-map-tree-path={props.path}
-          class={`spatial-map-tree-row spatial-map-tree-row--${props.item.node.type}${railLevels().length === 0 ? " spatial-map-tree-row--root" : ""}${isSelected() ? " is-selected" : ""}`}
+          class={`spatial-map-tree-row spatial-map-tree-row--${nodeWithOptimisticType().type}${railLevels().length === 0 ? " spatial-map-tree-row--root" : ""}${isSelected() ? " is-selected" : ""}`}
           style={{
             "--spatial-map-tree-depth": String(props.depth),
           }}
@@ -232,8 +305,15 @@ function SpatialMapTreeNode(props: {
                   void props.onStatusChange(props.item.node.id, status);
                 }}
               />
-              <span>{props.item.node.type}</span>
-              <span>D{props.item.node.depth}</span>
+              <SpatialMapNodeTypePicker
+                project={props.project}
+                type={nodeWithOptimisticType().type}
+                pending={props.typePending}
+                variant="tree"
+                onChange={(type) => {
+                  void props.onTypeChange(props.item.node.id, type);
+                }}
+              />
               <span>
                 {children().length}{" "}
                 {children().length === 1 ? "child" : "children"}
@@ -286,13 +366,17 @@ function SpatialMapTreeNode(props: {
                   item={child}
                   tree={props.tree}
                   nodeMetadataSchema={props.nodeMetadataSchema}
+                  project={props.project}
                   depth={props.depth + 1}
                   ancestry={new Set([...props.ancestry, child.node.id])}
                   path={`${props.path}/${child.node.id}`}
                   hasSameDepthSiblingBelow={hasSameDepthSiblingBelow()}
                   statusPending={props.statusPending}
+                  typePending={props.typePending}
                   optimisticStatus={props.optimisticStatus}
+                  optimisticType={props.optimisticType}
                   onStatusChange={props.onStatusChange}
+                  onTypeChange={props.onTypeChange}
                 />
               );
             }}

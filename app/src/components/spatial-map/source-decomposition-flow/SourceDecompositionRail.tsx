@@ -374,7 +374,7 @@ function CandidateTreeNode(props: {
                 {props.item.label}
               </Checkbox.Label>
               <Text as="span" class="spatial-map-relation-meta">
-                {props.item.type} · depth {props.item.depth}
+                {props.item.type}
               </Text>
             </HStack>
             <Text as="div" class="spatial-map-relation-meta">

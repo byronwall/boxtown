@@ -6,7 +6,13 @@ export const drawer = defineSlotRecipe({
   slots: dialogAnatomy.extendWith("header", "body", "footer").keys(),
   base: {
     backdrop: {
-      background: "black.a7",
+      background: `
+        radial-gradient(circle at 15% 8%, rgba(48, 164, 108, 0.16), transparent 28rem),
+        radial-gradient(circle at 88% 20%, rgba(137, 142, 135, 0.14), transparent 30rem),
+        repeating-linear-gradient(0deg, rgba(31, 36, 33, 0.045) 0 1px, transparent 1px 40px),
+        repeating-linear-gradient(90deg, rgba(31, 36, 33, 0.035) 0 1px, transparent 1px 40px),
+        linear-gradient(180deg, rgba(248, 250, 248, 0.9), rgba(223, 226, 223, 0.94))
+      `,
       position: "fixed",
       insetInlineStart: "0",
       top: "0",
@@ -44,8 +50,10 @@ export const drawer = defineSlotRecipe({
       zIndex: "modal",
       maxH: "100dvh",
       color: "inherit",
-      bg: "gray.surface.bg",
-      boxShadow: "lg",
+      bg: "rgba(252, 253, 252, 0.94)",
+      borderColor: "olive.8",
+      boxShadow:
+        "0 28px 70px rgba(29, 33, 28, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88)",
       _open: {
         animationDuration: "slowest",
         animationTimingFunction: "cubic-bezier(0.05, 0.7, 0.1, 1.0)",
@@ -63,6 +71,9 @@ export const drawer = defineSlotRecipe({
       pb: "4",
       px: { base: "4", md: "6" },
       flex: "0",
+      borderBottomWidth: "1px",
+      borderColor: "olive.7",
+      bg: "rgba(248, 250, 248, 0.9)",
     },
     body: {
       display: "flex",
@@ -80,11 +91,15 @@ export const drawer = defineSlotRecipe({
       gap: "3",
       py: "4",
       px: { base: "4", md: "6" },
+      borderTopWidth: "1px",
+      borderColor: "olive.7",
+      bg: "rgba(248, 250, 248, 0.82)",
     },
     title: {
       color: "fg.default",
-      fontWeight: "semibold",
+      fontWeight: "bold",
       textStyle: "xl",
+      lineHeight: "1.1",
     },
     description: {
       color: "fg.muted",
@@ -94,6 +109,20 @@ export const drawer = defineSlotRecipe({
       pos: "absolute",
       top: "3",
       insetEnd: "3",
+      borderWidth: "1px",
+      borderColor: "olive.7",
+      borderRadius: "l1",
+      bg: "olive.1",
+      boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.78)",
+      _hover: {
+        bg: "olive.2",
+        borderColor: "olive.8",
+      },
+      _focusVisible: {
+        outline: "2px solid",
+        outlineColor: "green.8",
+        outlineOffset: "2px",
+      },
     },
   },
   defaultVariants: {
@@ -147,6 +176,7 @@ export const drawer = defineSlotRecipe({
           alignItems: "stretch",
         },
         content: {
+          borderRightWidth: "1px",
           _open: {
             animationName: {
               base: "slide-from-left-full, fade-in",
@@ -167,6 +197,7 @@ export const drawer = defineSlotRecipe({
           alignItems: "stretch",
         },
         content: {
+          borderLeftWidth: "1px",
           _open: {
             animationName: {
               base: "slide-from-right-full, fade-in",
@@ -187,6 +218,7 @@ export const drawer = defineSlotRecipe({
           alignItems: "flex-start",
         },
         content: {
+          borderBottomWidth: "1px",
           width: "100vw",
           maxW: "100vw",
           h: "var(--drawer-block-size)",
@@ -201,6 +233,7 @@ export const drawer = defineSlotRecipe({
           alignItems: "flex-end",
         },
         content: {
+          borderTopWidth: "1px",
           width: "100vw",
           maxW: "100vw",
           h: "var(--drawer-block-size)",
