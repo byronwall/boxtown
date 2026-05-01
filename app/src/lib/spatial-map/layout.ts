@@ -734,22 +734,28 @@ function getAxisOverlap(
 function resolveOverlaps(nodes: PositionedMapNode[]) {
   const nextNodes = nodes.map((node) => ({ ...node }));
 
-  for (let pass = 0; pass < 8; pass += 1) {
+  for (let pass = 0; pass < 24; pass += 1) {
     let movedOnPass = false;
 
-    for (const node of nextNodes) {
-      if (!wouldOverlapAtPosition(nextNodes, node, node.x, node.y)) {
-        continue;
-      }
+    for (let i = 0; i < nextNodes.length; i += 1) {
+      for (let j = i + 1; j < nextNodes.length; j += 1) {
+        const a = nextNodes[i];
+        const b = nextNodes[j];
+        const overlapX = getAxisOverlap(a.x, a.width, b.x, b.width);
+        const overlapY = getAxisOverlap(a.y, a.height, b.y, b.height);
 
-      const openPosition = findNearestOpenPosition(nextNodes, node, 4);
-      if (!openPosition) {
-        continue;
-      }
+        if (overlapX <= 0 || overlapY <= 0) {
+          continue;
+        }
 
-      node.x = openPosition.x;
-      node.y = openPosition.y;
-      movedOnPass = true;
+        movedOnPass = true;
+
+        if (overlapX <= overlapY) {
+          separateOverlappingNodes(a, b, "x", overlapX);
+        } else {
+          separateOverlappingNodes(a, b, "y", overlapY);
+        }
+      }
     }
 
     if (!movedOnPass) {
@@ -758,6 +764,26 @@ function resolveOverlaps(nodes: PositionedMapNode[]) {
   }
 
   return nextNodes;
+}
+
+function separateOverlappingNodes(
+  a: PositionedMapNode,
+  b: PositionedMapNode,
+  axis: "x" | "y",
+  overlap: number,
+) {
+  const centerDelta = axis === "x" ? b.x - a.x : b.y - a.y;
+  const direction = Math.sign(centerDelta || (a.id < b.id ? 1 : -1));
+  const push = overlap / 2 + 0.5;
+
+  if (axis === "x") {
+    a.x = clamp(a.x - direction * push, a.width / 2, VIEWPORT_WIDTH - a.width / 2);
+    b.x = clamp(b.x + direction * push, b.width / 2, VIEWPORT_WIDTH - b.width / 2);
+    return;
+  }
+
+  a.y = clamp(a.y - direction * push, a.height / 2, VIEWPORT_HEIGHT - a.height / 2);
+  b.y = clamp(b.y + direction * push, b.height / 2, VIEWPORT_HEIGHT - b.height / 2);
 }
 
 function packLayout(
@@ -1263,53 +1289,6 @@ function getLayoutBounds(nodes: PositionedMapNode[]) {
     width: maxX - minX,
     height: maxY - minY,
   };
-}
-
-function findNearestOpenPosition(
-  nodes: PositionedMapNode[],
-  node: PositionedMapNode,
-  step: number,
-) {
-  const originX = node.x;
-  const originY = node.y;
-  const maxRadius = Math.ceil(Math.max(VIEWPORT_WIDTH, VIEWPORT_HEIGHT) / step);
-
-  for (let radius = 1; radius <= maxRadius; radius += 1) {
-    let bestCandidate: { x: number; y: number; score: number } | null = null;
-
-    for (let xOffset = -radius; xOffset <= radius; xOffset += 1) {
-      const yMagnitude = radius - Math.abs(xOffset);
-      const yOffsets = yMagnitude === 0 ? [0] : [-yMagnitude, yMagnitude];
-
-      for (const yOffset of yOffsets) {
-        const candidateX = clamp(
-          originX + xOffset * step,
-          node.width / 2,
-          VIEWPORT_WIDTH - node.width / 2,
-        );
-        const candidateY = clamp(
-          originY + yOffset * step,
-          node.height / 2,
-          VIEWPORT_HEIGHT - node.height / 2,
-        );
-
-        if (wouldOverlapAtPosition(nodes, node, candidateX, candidateY)) {
-          continue;
-        }
-
-        const score = Math.hypot(candidateX - originX, candidateY - originY);
-        if (!bestCandidate || score < bestCandidate.score) {
-          bestCandidate = { x: candidateX, y: candidateY, score };
-        }
-      }
-    }
-
-    if (bestCandidate) {
-      return bestCandidate;
-    }
-  }
-
-  return null;
 }
 
 function snapLayoutToGrid(nodes: PositionedMapNode[], step: number) {

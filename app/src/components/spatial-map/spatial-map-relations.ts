@@ -53,7 +53,7 @@ export function createOrderedNodeState(options: {
   selectedNodeId: string | null;
   transitionVisualState?: Map<string, TransitionVisualState>;
 }): NodeVisualState[] {
-const {
+  const {
     activeNodeId,
     hoveredNodeId,
     positionedNodes,
@@ -61,13 +61,15 @@ const {
     selectedNodeId,
     transitionVisualState,
   } = options;
+  const depthRange = getDepthRange(positionedNodes);
+
   return positionedNodes.map((node) => {
     const isDimmed = Boolean(activeNodeId && !relatedSet.has(node.id));
     const isHovered = hoveredNodeId === node.id;
     const isSelected = selectedNodeId === node.id;
     const transitionState = transitionVisualState?.get(node.id);
     const baseOpacity = isDimmed ? 0.22 : 1;
-    const relativeDepth = getRelativeDepth(node.depth, positionedNodes);
+    const relativeDepth = getRelativeDepth(node.depth, depthRange);
     const baseFillLightness = 46;
     const hoverFillLightness = 36;
     const baseStrokeLightness = 28;
@@ -103,10 +105,7 @@ const {
   });
 }
 
-function getRelativeDepth(
-  depth: number,
-  nodes: PositionedMapNode[],
-) {
+function getDepthRange(nodes: PositionedMapNode[]) {
   if (nodes.length === 0) {
     return null;
   }
@@ -119,6 +118,18 @@ function getRelativeDepth(
     maxDepth = Math.max(maxDepth, node.depth);
   }
 
+  return { minDepth, maxDepth };
+}
+
+function getRelativeDepth(
+  depth: number,
+  range: { minDepth: number; maxDepth: number } | null,
+) {
+  if (!range) {
+    return null;
+  }
+
+  const { minDepth, maxDepth } = range;
   const span = maxDepth - minDepth;
   if (span <= 0) {
     return null;
