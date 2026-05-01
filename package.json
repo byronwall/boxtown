@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "app:dev": "pnpm --dir app dev",
+    "app:test": "pnpm --dir app test",
+    "app:type-check": "pnpm --dir app type-check",
+    "cli:test": "node --test packages/cli/test/*.test.mjs",
+    "cli:pack-check": "cd packages/cli && npm_config_cache=/private/tmp/product-grid-npm-cache npm pack --dry-run"
+  }
+}

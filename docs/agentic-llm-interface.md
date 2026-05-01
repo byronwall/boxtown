@@ -120,18 +120,23 @@ Do not make long-lived admin cookies the CLI auth mechanism. Cookies are too eas
 
 ```bash
 pgm project list
+pgm project create "Product Site"
+pgm project create "Product Site" --link --json
 pgm project view <project-id>
 pgm project link <project-id>
 pgm project unlink
 pgm project current
+pgm project export-markdown --output project-context.md
 pgm project export <project-id> --output project.zip
 ```
 
 Expected behavior:
 
 - `project list` maps to the existing project summaries concept.
+- `project create` creates a blank project and returns the created project ID/name for immediate agent use.
 - `project view` returns the full project record or a public API projection.
 - `project link` writes a local config file, similar to Railway linking a local folder to a project.
+- `project export-markdown` returns an LLM-ready markdown projection of the project graph.
 - `project export` maps to the existing archive export route.
 
 Example agent call:
@@ -146,6 +151,7 @@ pgm project list --json
 pgm node list
 pgm node view <node-id>
 pgm node search "checkout flow"
+pgm node create --title "Checkout review" --type page --parent <parent-node-id>
 pgm node update <node-id> --title "Checkout review" --status needs-review
 pgm node update <node-id> --type feature
 pgm node context get <node-id>
@@ -156,7 +162,7 @@ pgm node move <node-id> --parent <parent-node-id>
 pgm node delete <node-id> --confirm
 ```
 
-The current backend already supports title, status, and type updates through the node PATCH route. The CLI plan should extend the production API to cover context, metadata, move, create, and delete operations through the same server-side project services that the UI uses.
+The current CLI/API supports create, title/status/type update, context set/get, metadata set/unset, and move/reparent operations through server-side project services. Delete remains a future safety-gated command.
 
 Suggested read filters:
 
@@ -221,7 +227,7 @@ pgm image generate <node-id> --size 1536x1024 --watch
 pgm image open <node-id> <image-id>
 ```
 
-The app already has image storage and a node image generation route. The CLI should add normal multipart upload and delete endpoints if they are not currently public API routes.
+The app already has image storage and a node image generation route. The CLI supports multipart upload, list, and remove for node images; generation remains a future run-backed command.
 
 For agent workflows, `image add` is more important than `image open`. Agents can generate or receive image files locally, then attach them to the relevant node with an explicit command.
 

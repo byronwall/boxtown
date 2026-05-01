@@ -70,6 +70,10 @@ interface CreateChildNodeInput {
   projectId: string;
   parentNodeId: string | null;
   title: string;
+  type?: string;
+  status?: MapNodeStatus;
+  context?: string;
+  metadata?: Record<string, unknown>;
 }
 
 interface UpdateProjectNodeMetadataInput {
@@ -720,7 +724,13 @@ export async function addProjectNodeImageSourcesOnDisk(
 
 export async function createContextNodeOnDisk(
   input: CreateContextNodeInput,
-): Promise<{ nodeId: string; project: ProjectRecord; createdNodeCount: number }> {
+): Promise<{
+  nodeId: string;
+  createdNodeIds: string[];
+  project: ProjectRecord;
+  createdNodeCount: number;
+  createdLinks: SpatialMapData["links"];
+}> {
   const records = await readProjectRecordsFromDisk();
   const recordIndex = records.findIndex((record) => record.id === input.projectId);
 
@@ -763,8 +773,10 @@ export async function createContextNodeOnDisk(
   await writeProjectRecordsToDisk(records);
   return {
     nodeId: createdNodes.rootNodeId,
+    createdNodeIds: createdNodes.nodes.map((node) => node.id),
     project: nextRecord,
     createdNodeCount: createdNodes.nodes.length,
+    createdLinks: createdNodes.links,
   };
 }
 
@@ -789,16 +801,27 @@ export async function createChildNodeOnDisk(
 
   const label = input.title.trim() || "Untitled node";
   const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));
-  const nodeType = parentNode?.type ?? "page";
+  const nodeType = input.type
+    ? normalizeProjectNodeTypeName(input.type)
+    : parentNode?.type ?? "page";
+  if (!nodeType) {
+    throw new Error("A valid node type is required.");
+  }
+  if (!current.nodeTypeSchema.some((item) => item.name === nodeType)) {
+    throw new Error("Node type is not defined in project settings.");
+  }
   const nodeId = reserveUniqueNodeId(label, nodeType, existingIds);
+  const context = input.context ?? "";
   const node = {
     id: nodeId,
     label,
     type: nodeType,
-    status: DEFAULT_MAP_NODE_STATUS,
-    metadata: {},
-    context: "",
-    rawContext: "",
+    status: input.status ?? DEFAULT_MAP_NODE_STATUS,
+    metadata: sanitizeNodeMetadata(input.metadata, current.nodeMetadataSchema, {
+      omitDefaultValues: true,
+    }),
+    context,
+    rawContext: context,
     contextMode: parentNode?.contextMode ?? "structured",
   } satisfies SpatialMapData["nodes"][number];
 

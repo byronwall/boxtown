@@ -1,4 +1,3 @@
-import { A } from "@solidjs/router";
 import {
   ClipboardIcon,
   MoreHorizontalIcon,
@@ -66,19 +65,11 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
     <Box class="spatial-map-topbar">
       <HStack gap="3" alignItems="center" class="spatial-map-topbar-copy">
         <Box class="spatial-map-title-row">
-          {props.backHref ? (
-            <A
-              href={props.backHref}
-              class="spatial-map-backlink"
-              aria-label={props.backLabel ?? "Back"}
-            >
-              &lt; Back
-            </A>
-          ) : (
+          {!props.backHref ? (
             <Text as="span" class="spatial-map-eyebrow">
               {props.eyebrow ?? "System map / operator view"}
             </Text>
-          )}
+          ) : null}
           <Box as="h1" class="spatial-map-title">
             {props.title ?? "Recipe Architecture Grid"}
           </Box>

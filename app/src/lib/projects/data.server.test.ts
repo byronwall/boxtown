@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   createContextNodeOnDisk,
+  createChildNodeOnDisk,
   createProjectOnDisk,
   deleteProjectNodeOnDisk,
   deleteProjectNodeImageOnDisk,
@@ -210,6 +211,46 @@ describe("context node persistence", () => {
     }
   });
 
+  it("creates a typed child node with context and metadata", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-child-create-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
+
+    try {
+      process.chdir(tempRoot);
+
+      const project = await createProjectOnDisk({ name: "Child Nodes" });
+      const result = await createChildNodeOnDisk({
+        projectId: project.id,
+        parentNodeId: null,
+        title: "Checkout Page",
+        type: "page",
+        status: "working",
+        context: "# Checkout\n\nContext",
+        metadata: {
+          purpose: "Checkout entry",
+          implementation: DEFAULT_NOTE_IMPLEMENTATION,
+        },
+      });
+
+      const created = result.project.spatialMap.nodes.find((node) => node.id === result.nodeId);
+      expect(created).toMatchObject({
+        id: "page-checkout-page",
+        label: "Checkout Page",
+        type: "page",
+        status: "working",
+        context: "# Checkout\n\nContext",
+        rawContext: "# Checkout\n\nContext",
+        metadata: { purpose: "Checkout entry" },
+        contextMode: "structured",
+      });
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
   it("creates a standalone note node with context and metadata", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-create-"));
@@ -232,11 +273,11 @@ describe("context node persistence", () => {
       });
 
       expect(result.nodeId).toBe("note-loose-notes");
+      expect(result.createdNodeIds).toEqual(["note-loose-notes"]);
       expect(result.project.spatialMap.nodes.at(-1)).toMatchObject({
         id: "note-loose-notes",
         label: "Loose Notes",
         type: "note",
-        depth: 2,
         metadata: { purpose: "Captured research notes" },
         context: "## Inbox\n\n- Keep this here",
         rawContext: "## Inbox\n\n- Keep this here",
@@ -283,39 +324,47 @@ describe("context node persistence", () => {
 
       expect(result.nodeId).toBe("note-imported-notes");
       expect(result.createdNodeCount).toBe(5);
+      expect(result.createdNodeIds).toEqual([
+        "note-imported-notes",
+        "note-overview",
+        "note-metrics",
+        "note-risks",
+        "note-appendix",
+      ]);
+      expect(result.createdLinks).toEqual([
+        { source: "note-imported-notes", target: "note-overview", parentChild: true },
+        { source: "note-overview", target: "note-metrics", parentChild: true },
+        { source: "note-overview", target: "note-risks", parentChild: true },
+        { source: "note-imported-notes", target: "note-appendix", parentChild: true },
+      ]);
       expect(result.project.spatialMap.nodes.slice(-5)).toEqual([
         expect.objectContaining({
           id: "note-imported-notes",
           label: "Imported Notes",
-          depth: 2,
           metadata: { purpose: "Imported markdown" },
           context: "Shared intro",
         }),
         expect.objectContaining({
           id: "note-overview",
           label: "Overview",
-          depth: 3,
           metadata: {},
           context: "Overview details",
         }),
         expect.objectContaining({
           id: "note-metrics",
           label: "Metrics",
-          depth: 4,
           metadata: {},
           context: "- Conversion",
         }),
         expect.objectContaining({
           id: "note-risks",
           label: "Risks",
-          depth: 4,
           metadata: {},
           context: "Risk details",
         }),
         expect.objectContaining({
           id: "note-appendix",
           label: "Appendix",
-          depth: 3,
           metadata: {},
           context: "Appendix notes",
         }),
@@ -370,21 +419,18 @@ describe("context node persistence", () => {
         expect.objectContaining({
           id: "note-imported-notes",
           label: "Imported Notes",
-          depth: 2,
           metadata: {},
           context: "",
         }),
         expect.objectContaining({
           id: "note-overview",
           label: "Overview",
-          depth: 3,
           metadata: {},
           context: "Overview details",
         }),
         expect.objectContaining({
           id: "note-metrics",
           label: "Metrics",
-          depth: 4,
           metadata: {},
           context: [
             "Metric summary",
@@ -399,7 +445,6 @@ describe("context node persistence", () => {
         expect.objectContaining({
           id: "note-risks",
           label: "Risks",
-          depth: 4,
           metadata: {},
           context: "Risk details",
         }),

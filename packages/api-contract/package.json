@@ -1,0 +1,13 @@
+{
+  "name": "@byronwallrus/product-grid-api-contract",
+  "version": "0.1.0",
+  "description": "Shared API contract types for Product Grid Management.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "private": true
+}

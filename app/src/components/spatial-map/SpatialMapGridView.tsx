@@ -1,9 +1,19 @@
 import { useAction } from "@solidjs/router";
-import { Trash2 } from "lucide-solid";
-import { createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
+import { ChevronDown, ChevronRight, FileText, Trash2 } from "lucide-solid";
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  onCleanup,
+  onMount,
+  Show,
+} from "solid-js";
+import { Portal } from "solid-js/web";
 import { Box, HStack } from "styled-system/jsx";
 
 import { Button } from "~/components/ui/button";
+import * as HoverCard from "~/components/ui/hover-card";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
 import { Tooltip } from "~/components/ui/tooltip";
@@ -19,6 +29,16 @@ import { useSpatialMapImages } from "./SpatialMapImages";
 
 type SpatialMapGridMode = "nodes" | "links";
 
+interface NodeGridRow {
+  node: MapNode;
+  depth: number;
+  ancestorHasNextSibling: boolean[];
+  hasChildren: boolean;
+  isLastSibling: boolean;
+  parentNodeId: string | null;
+  pathKey: string;
+}
+
 export function SpatialMapGridView(props: {
   project: ProjectRecord;
   onProjectUpdated?: (project: ProjectRecord) => void;
@@ -30,11 +50,9 @@ export function SpatialMapGridView(props: {
   );
   const [nodeSearchQuery, setNodeSearchQuery] = createSignal("");
   let searchInputRef: HTMLInputElement | undefined;
-  const nodes = createMemo(() =>
-    spatialMap
-      .visibleData()
-      .nodes.slice()
-      .sort((left, right) => left.label.localeCompare(right.label)),
+  const nodes = createMemo(() => spatialMap.visibleData().nodes.slice());
+  const hierarchyLinks = createMemo(() =>
+    spatialMap.visibleData().links.filter((link) => link.parentChild),
   );
   const filteredNodes = createMemo(() => {
     const query = normalizeSearchQuery(nodeSearchQuery());
@@ -107,63 +125,59 @@ export function SpatialMapGridView(props: {
                   : `${links().length} visible non-hierarchy links`}
               </Box>
             </Box>
-            <Show when={mode() === "nodes"}>
-              <label class="spatial-map-grid-search">
-                <span class="spatial-map-grid-search-field">
-                  <input
-                    ref={searchInputRef}
-                    type="search"
-                    aria-label="Filter node names"
-                    value={nodeSearchQuery()}
-                    placeholder="Filter node names"
-                    onInput={(event) => setNodeSearchQuery(event.currentTarget.value)}
-                  />
-                  <kbd>/</kbd>
-                </span>
-              </label>
-            </Show>
-            <HStack
-              gap="0"
-              class="spatial-map-toggle-group spatial-map-grid-mode-toggle"
-              aria-label="Grid mode"
-            >
-              <button
-                type="button"
-                class={`spatial-map-grid-mode-button${mode() === "nodes" ? " is-active" : ""}`}
-                aria-pressed={mode() === "nodes"}
-                onClick={() => setMode("nodes")}
+            <HStack gap="12px" class="spatial-map-grid-header-controls">
+              <Show when={mode() === "nodes"}>
+                <MetadataKeyPicker
+                  fields={props.project.nodeMetadataSchema}
+                  selectedKeys={selectedMetadataKeys()}
+                  onToggle={(key) => {
+                    setSelectedMetadataKeys((current) =>
+                      current.includes(key)
+                        ? current.filter((item) => item !== key)
+                        : [...current, key],
+                    );
+                  }}
+                />
+              </Show>
+              <Show when={mode() === "nodes"}>
+                <label class="spatial-map-grid-search">
+                  <span class="spatial-map-grid-search-field">
+                    <input
+                      ref={searchInputRef}
+                      type="search"
+                      aria-label="Filter node names"
+                      value={nodeSearchQuery()}
+                      placeholder="Filter node names"
+                      onInput={(event) => setNodeSearchQuery(event.currentTarget.value)}
+                    />
+                    <kbd>/</kbd>
+                  </span>
+                </label>
+              </Show>
+              <HStack
+                gap="0"
+                class="spatial-map-toggle-group spatial-map-grid-mode-toggle"
+                aria-label="Grid mode"
               >
-                Nodes
-              </button>
-              <button
-                type="button"
-                class={`spatial-map-grid-mode-button${mode() === "links" ? " is-active" : ""}`}
-                aria-pressed={mode() === "links"}
-                onClick={() => setMode("links")}
-              >
-                Links
-              </button>
+                <button
+                  type="button"
+                  class={`spatial-map-grid-mode-button${mode() === "nodes" ? " is-active" : ""}`}
+                  aria-pressed={mode() === "nodes"}
+                  onClick={() => setMode("nodes")}
+                >
+                  Nodes
+                </button>
+                <button
+                  type="button"
+                  class={`spatial-map-grid-mode-button${mode() === "links" ? " is-active" : ""}`}
+                  aria-pressed={mode() === "links"}
+                  onClick={() => setMode("links")}
+                >
+                  Links
+                </button>
+              </HStack>
             </HStack>
           </HStack>
-          <Show when={mode() === "nodes"}>
-            <MetadataKeyPicker
-              fields={props.project.nodeMetadataSchema}
-              selectedKeys={selectedMetadataKeys()}
-              onToggle={(key) => {
-                setSelectedMetadataKeys((current) =>
-                  current.includes(key)
-                    ? current.filter((item) => item !== key)
-                    : [...current, key],
-                );
-              }}
-            />
-          </Show>
-          <GridColumnHeader
-            mode={mode()}
-            metadataFields={props.project.nodeMetadataSchema.filter((field) =>
-              selectedMetadataKeys().includes(field.key),
-            )}
-          />
         </Box>
 
         <Show
@@ -177,7 +191,7 @@ export function SpatialMapGridView(props: {
           }
         >
           <NodesGrid
-            nodes={filteredNodes()}
+            rows={buildNodeGridRows(filteredNodes(), hierarchyLinks())}
             searchQuery={nodeSearchQuery()}
             project={props.project}
             metadataFields={props.project.nodeMetadataSchema.filter((field) =>
@@ -194,7 +208,7 @@ export function SpatialMapGridView(props: {
 }
 
 function NodesGrid(props: {
-  nodes: MapNode[];
+  rows: NodeGridRow[];
   searchQuery: string;
   project: ProjectRecord;
   metadataFields: ProjectNodeMetadataField[];
@@ -202,67 +216,256 @@ function NodesGrid(props: {
   onSelectNode: (nodeId: string) => void;
   onProjectUpdated?: (project: ProjectRecord) => void;
 }) {
+  let gridWrapRef: HTMLDivElement | undefined;
+  const rowElements = new Map<string, HTMLTableRowElement>();
+  const [treeGridActive, setTreeGridActive] = createSignal(false);
+  const [collapsedNodeIds, setCollapsedNodeIds] = createSignal<Set<string>>(new Set());
+  const rowByNodeId = createMemo(() => new Map(props.rows.map((row) => [row.node.id, row])));
+  const visibleRows = createMemo(() => {
+    const collapsed = collapsedNodeIds();
+    const hiddenDepths = new Set<number>();
+
+    return props.rows.filter((row) => {
+      for (const depth of Array.from(hiddenDepths)) {
+        if (row.depth <= depth) {
+          hiddenDepths.delete(depth);
+        }
+      }
+
+      if (hiddenDepths.size > 0) {
+        if (collapsed.has(row.node.id)) {
+          hiddenDepths.add(row.depth);
+        }
+        return false;
+      }
+
+      if (collapsed.has(row.node.id)) {
+        hiddenDepths.add(row.depth);
+      }
+
+      return true;
+    });
+  });
+  const isExpanded = (row: NodeGridRow) =>
+    row.hasChildren && !collapsedNodeIds().has(row.node.id);
+  const toggleRowExpanded = (row: NodeGridRow) => {
+    if (!row.hasChildren) return;
+
+    setCollapsedNodeIds((current) => {
+      const next = new Set(current);
+      if (next.has(row.node.id)) {
+        next.delete(row.node.id);
+      } else {
+        next.add(row.node.id);
+      }
+      return next;
+    });
+  };
+  const selectRelativeRow = (offset: number) => {
+    const rows = visibleRows();
+    const currentIndex = rows.findIndex((row) => row.node.id === props.selectedNodeId);
+    const baseIndex = currentIndex === -1 ? 0 : currentIndex;
+    const next = rows[Math.max(0, Math.min(rows.length - 1, baseIndex + offset))];
+    if (next) {
+      props.onSelectNode(next.node.id);
+    }
+  };
+  const handleTreeGridKeyDown = (event: KeyboardEvent) => {
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    if (isTextEntryTarget(event.target)) {
+      return;
+    }
+
+    const currentRow = props.selectedNodeId
+      ? rowByNodeId().get(props.selectedNodeId)
+      : visibleRows()[0];
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      event.stopPropagation();
+      selectRelativeRow(1);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      event.stopPropagation();
+      selectRelativeRow(-1);
+      return;
+    }
+
+    if (!currentRow) {
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      event.stopPropagation();
+      if (currentRow.hasChildren && !isExpanded(currentRow)) {
+        toggleRowExpanded(currentRow);
+        return;
+      }
+
+      const child = visibleRows().find((row) => row.parentNodeId === currentRow.node.id);
+      if (child) {
+        props.onSelectNode(child.node.id);
+      }
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      event.stopPropagation();
+      if (currentRow.hasChildren && isExpanded(currentRow)) {
+        toggleRowExpanded(currentRow);
+        return;
+      }
+
+      if (currentRow.parentNodeId) {
+        props.onSelectNode(currentRow.parentNodeId);
+      }
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.stopPropagation();
+      props.onSelectNode(currentRow.node.id);
+    }
+  };
+
+  createEffect(() => {
+    const selectedNodeId = props.selectedNodeId;
+    if (!selectedNodeId) {
+      return;
+    }
+
+    if (!visibleRows().some((row) => row.node.id === selectedNodeId)) {
+      return;
+    }
+
+    const scrollFrame = window.requestAnimationFrame(() => {
+      rowElements
+        .get(selectedNodeId)
+        ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    });
+
+    onCleanup(() => window.cancelAnimationFrame(scrollFrame));
+  });
+
+  onMount(() => {
+    const handleWindowKeyDown = (event: KeyboardEvent) => {
+      if (!treeGridActive()) {
+        return;
+      }
+
+      handleTreeGridKeyDown(event);
+    };
+    const handleWindowPointerDown = (event: PointerEvent) => {
+      setTreeGridActive(
+        Boolean(event.target instanceof Node && gridWrapRef?.contains(event.target)),
+      );
+    };
+
+    window.addEventListener("keydown", handleWindowKeyDown);
+    window.addEventListener("pointerdown", handleWindowPointerDown);
+
+    onCleanup(() => {
+      window.removeEventListener("keydown", handleWindowKeyDown);
+      window.removeEventListener("pointerdown", handleWindowPointerDown);
+    });
+  });
+
   return (
-    <Box class="spatial-map-grid-table-wrap">
+    <Box
+      ref={gridWrapRef}
+      class="spatial-map-grid-table-wrap"
+      tabIndex={0}
+      onKeyDown={handleTreeGridKeyDown}
+      onFocusIn={() => setTreeGridActive(true)}
+    >
       <Show
-        when={props.nodes.length > 0}
+        when={visibleRows().length > 0}
         fallback={<Box class="spatial-map-grid-empty">No visible nodes.</Box>}
       >
-        <table
-          class="spatial-map-grid-table spatial-map-grid-table--nodes"
-          style={getNodeGridStyle(props.metadataFields)}
-        >
-          <GridColGroup mode="nodes" metadataFields={props.metadataFields} />
-          <thead class="spatial-map-grid-native-head">
-            <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Type</th>
-              <th scope="col">Status</th>
-              <th scope="col">Context</th>
-              <For each={props.metadataFields}>
-                {(field) => <th scope="col">{field.label}</th>}
-              </For>
-              <th scope="col">Image</th>
-              <th scope="col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <For each={props.nodes}>
-              {(node) => (
-                <tr
-                  class={props.selectedNodeId === node.id ? "is-selected" : ""}
-                  onClick={() => props.onSelectNode(node.id)}
-                >
-                  <td>
-                    <NodeNameCell node={node} searchQuery={props.searchQuery} />
-                  </td>
-                  <td>
-                    <span class="spatial-map-grid-data-chip">{node.type}</span>
-                  </td>
-                  <td>
-                    <span class="spatial-map-grid-data-chip">{node.status}</span>
-                  </td>
-                  <td>
-                    <ContextIndicatorCell node={node} />
-                  </td>
-                  <For each={props.metadataFields}>
-                    {(field) => <MetadataValueCell node={node} field={field} />}
-                  </For>
-                  <td>
-                    <ImagePreviewCell node={node} />
-                  </td>
-                  <td>
-                    <NodeActionsCell
-                      project={props.project}
-                      node={node}
-                      onProjectUpdated={props.onProjectUpdated}
-                    />
-                  </td>
-                </tr>
-              )}
-            </For>
-          </tbody>
-        </table>
+        <Box class="spatial-map-grid-table-x" style={getNodeGridStyle(props.metadataFields)}>
+          <table class="spatial-map-grid-table spatial-map-grid-table--nodes" role="treegrid">
+            <GridColGroup mode="nodes" metadataFields={props.metadataFields} />
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Type</th>
+                <th scope="col">Status</th>
+                <For each={props.metadataFields}>
+                  {(field) => <th scope="col">{field.label}</th>}
+                </For>
+                <th scope="col">Image</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+          </table>
+          <Box class="spatial-map-grid-table-body-scroll">
+            <table
+              class="spatial-map-grid-table spatial-map-grid-table--nodes"
+              role="treegrid"
+              tabIndex={0}
+            >
+              <GridColGroup mode="nodes" metadataFields={props.metadataFields} />
+              <tbody>
+                <For each={visibleRows()}>
+                  {(row) => (
+                    <tr
+                      ref={(element) => {
+                        rowElements.set(row.node.id, element);
+                      }}
+                      class={props.selectedNodeId === row.node.id ? "is-selected" : ""}
+                      role="row"
+                      aria-level={row.depth + 1}
+                      aria-expanded={row.hasChildren ? isExpanded(row) : undefined}
+                      aria-selected={props.selectedNodeId === row.node.id}
+                      tabIndex={props.selectedNodeId === row.node.id ? 0 : -1}
+                      onClick={() => props.onSelectNode(row.node.id)}
+                      onKeyDown={handleTreeGridKeyDown}
+                    >
+                      <td>
+                        <NodeNameCell
+                          row={row}
+                          node={row.node}
+                          expanded={isExpanded(row)}
+                          onToggleExpanded={() => toggleRowExpanded(row)}
+                          onTreeKeyDown={handleTreeGridKeyDown}
+                          searchQuery={props.searchQuery}
+                        />
+                      </td>
+                      <td>
+                        <span class="spatial-map-grid-data-chip">{row.node.type}</span>
+                      </td>
+                      <td>
+                        <span class="spatial-map-grid-data-chip">{row.node.status}</span>
+                      </td>
+                      <For each={props.metadataFields}>
+                        {(field) => <MetadataValueCell node={row.node} field={field} />}
+                      </For>
+                      <td>
+                        <ImagePreviewCell node={row.node} />
+                      </td>
+                      <td>
+                        <NodeActionsCell
+                          project={props.project}
+                          node={row.node}
+                          onProjectUpdated={props.onProjectUpdated}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </For>
+              </tbody>
+            </table>
+          </Box>
+        </Box>
       </Show>
     </Box>
   );
@@ -285,49 +488,56 @@ function LinksGrid(props: {
           </Box>
         }
       >
-        <table class="spatial-map-grid-table spatial-map-grid-table--links">
-          <GridColGroup mode="links" />
-          <thead class="spatial-map-grid-native-head">
-            <tr>
-              <th scope="col">Node</th>
-              <th scope="col">Link metadata</th>
-              <th scope="col">Connected node</th>
-              <th scope="col">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <For each={props.links}>
-              {(entry) => (
-                <tr>
-                  <td onClick={() => spatialMap.setSelectedNodeId(entry.source.id)}>
-                    <NodeCell node={entry.source} />
-                  </td>
-                  <td>
-                    <span class="spatial-map-grid-link-chip">
-                      {formatLinkRelationship(entry.link)}
-                    </span>
-                  </td>
-                  <td onClick={() => spatialMap.setSelectedNodeId(entry.target.id)}>
-                    <NodeCell node={entry.target} />
-                  </td>
-                  <td>
-                    <Show when={props.project}>
-                      {(project) => (
-                        <LinkActionsCell
-                          project={project()}
-                          link={entry.link}
-                          source={entry.source}
-                          target={entry.target}
-                          onProjectUpdated={props.onProjectUpdated}
-                        />
-                      )}
-                    </Show>
-                  </td>
-                </tr>
-              )}
-            </For>
-          </tbody>
-        </table>
+        <Box class="spatial-map-grid-table-x spatial-map-grid-table-x--links">
+          <table class="spatial-map-grid-table spatial-map-grid-table--links">
+            <GridColGroup mode="links" />
+            <thead>
+              <tr>
+                <th scope="col">Node</th>
+                <th scope="col">Link metadata</th>
+                <th scope="col">Connected node</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+          </table>
+          <Box class="spatial-map-grid-table-body-scroll">
+            <table class="spatial-map-grid-table spatial-map-grid-table--links">
+              <GridColGroup mode="links" />
+              <tbody>
+                <For each={props.links}>
+                  {(entry) => (
+                    <tr>
+                      <td onClick={() => spatialMap.setSelectedNodeId(entry.source.id)}>
+                        <NodeCell node={entry.source} />
+                      </td>
+                      <td>
+                        <span class="spatial-map-grid-link-chip">
+                          {formatLinkRelationship(entry.link)}
+                        </span>
+                      </td>
+                      <td onClick={() => spatialMap.setSelectedNodeId(entry.target.id)}>
+                        <NodeCell node={entry.target} />
+                      </td>
+                      <td>
+                        <Show when={props.project}>
+                          {(project) => (
+                            <LinkActionsCell
+                              project={project()}
+                              link={entry.link}
+                              source={entry.source}
+                              target={entry.target}
+                              onProjectUpdated={props.onProjectUpdated}
+                            />
+                          )}
+                        </Show>
+                      </td>
+                    </tr>
+                  )}
+                </For>
+              </tbody>
+            </table>
+          </Box>
+        </Box>
       </Show>
     </Box>
   );
@@ -344,10 +554,8 @@ function GridColGroup(props: {
       <Show when={props.mode === "nodes"}>
         <col style={{ width: nodeColumnWidths()[0] }} />
         <col style={{ width: nodeColumnWidths()[1] }} />
-        <col style={{ width: nodeColumnWidths()[2] }} />
-        <col style={{ width: nodeColumnWidths()[3] }} />
         <For each={props.metadataFields ?? []}>
-          {(_, index) => <col style={{ width: nodeColumnWidths()[4 + index()] }} />}
+          {(_, index) => <col style={{ width: nodeColumnWidths()[2 + index()] }} />}
         </For>
         <col
           style={{
@@ -367,43 +575,6 @@ function GridColGroup(props: {
         <col class="spatial-map-grid-col-actions" />
       </Show>
     </colgroup>
-  );
-}
-
-function GridColumnHeader(props: {
-  mode: SpatialMapGridMode;
-  metadataFields: ProjectNodeMetadataField[];
-}) {
-  return (
-    <Box
-      class={`spatial-map-grid-column-header${props.mode === "links" ? " spatial-map-grid-column-header--links" : ""}`}
-      style={
-        props.mode === "nodes" ? getNodeGridStyle(props.metadataFields) : undefined
-      }
-      aria-hidden="true"
-    >
-      <Show
-        when={props.mode === "nodes"}
-        fallback={
-          <>
-            <span>Node</span>
-            <span>Link metadata</span>
-            <span>Connected node</span>
-            <span>Actions</span>
-          </>
-        }
-      >
-        <span>Name</span>
-        <span>Type</span>
-        <span>Status</span>
-        <span>Context</span>
-        <For each={props.metadataFields}>
-          {(field) => <span>{field.label}</span>}
-        </For>
-        <span>Image</span>
-        <span>Actions</span>
-      </Show>
-    </Box>
   );
 }
 
@@ -561,14 +732,102 @@ function NodeCell(props: { node: MapNode }) {
   );
 }
 
-function NodeNameCell(props: { node: MapNode; searchQuery?: string }) {
+function NodeNameCell(props: {
+  row: NodeGridRow;
+  node: MapNode;
+  expanded: boolean;
+  onToggleExpanded: () => void;
+  onTreeKeyDown: (event: KeyboardEvent) => void;
+  searchQuery?: string;
+}) {
+  const spatialMap = useSpatialMap();
+  const context = createMemo(() => getNodeContext(props.node));
+  const hasContext = createMemo(() => context().length > 0);
+
   return (
-    <Box class="spatial-map-grid-node-cell">
-      <Box class="spatial-map-grid-node-title">
+    <Box class="spatial-map-grid-node-cell spatial-map-grid-node-cell--hierarchy">
+      <Box class="spatial-map-grid-tree-gutter" aria-hidden="true">
+        <For each={props.row.ancestorHasNextSibling}>
+          {(hasNextSibling) => (
+            <span
+              class={`spatial-map-grid-tree-ancestor${hasNextSibling ? " has-continuation" : ""}`}
+            />
+          )}
+        </For>
+        <Show when={props.row.depth > 0}>
+          <span
+            class={`spatial-map-grid-tree-branch${props.row.isLastSibling ? " is-last" : ""}${props.row.hasChildren ? "" : " is-leaf"}`}
+          />
+        </Show>
+      </Box>
+      <Show
+        when={props.row.hasChildren}
+      >
+        <button
+          type="button"
+          class="spatial-map-grid-tree-chevron"
+          aria-label={`${props.expanded ? "Collapse" : "Expand"} ${props.node.label}`}
+          aria-expanded={props.expanded}
+          onClick={(event) => {
+            event.stopPropagation();
+            props.onToggleExpanded();
+          }}
+          onKeyDown={props.onTreeKeyDown}
+        >
+          <Show
+            when={props.expanded}
+            fallback={<ChevronRight size={14} aria-hidden="true" />}
+          >
+            <ChevronDown size={14} aria-hidden="true" />
+          </Show>
+        </button>
+      </Show>
+      <Box
+        class={`spatial-map-grid-node-title${props.row.hasChildren ? " has-children" : " is-leaf"}`}
+      >
         <HighlightedText
           text={props.node.label}
           query={props.searchQuery ?? ""}
         />
+        <Show when={hasContext()}>
+          <HoverCard.Root
+            openDelay={180}
+            closeDelay={90}
+            positioning={{ placement: "right-start", offset: { mainAxis: 8 } }}
+          >
+            <HoverCard.Trigger
+              asChild={(triggerProps) => (
+                <button
+                  {...triggerProps()}
+                  type="button"
+                  class="spatial-map-grid-context-icon-button"
+                  aria-label={`Preview context for ${props.node.label}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    spatialMap.openContextPreview(props.node.id);
+                  }}
+                >
+                  <FileText size={14} aria-hidden="true" />
+                </button>
+              )}
+            />
+            <Portal>
+              <HoverCard.Positioner>
+                <HoverCard.Content class="spatial-map-grid-context-preview-card">
+                  <HoverCard.Arrow>
+                    <HoverCard.ArrowTip />
+                  </HoverCard.Arrow>
+                  <Box class="spatial-map-grid-context-preview-title">
+                    {props.node.label}
+                  </Box>
+                  <Box class="spatial-map-grid-context-preview-body">
+                    {context()}
+                  </Box>
+                </HoverCard.Content>
+              </HoverCard.Positioner>
+            </Portal>
+          </HoverCard.Root>
+        </Show>
       </Box>
     </Box>
   );
@@ -580,7 +839,7 @@ function HighlightedText(props: { text: string; query: string }) {
   );
 
   return (
-    <>
+    <span class="spatial-map-grid-node-title-text">
       <For each={segments()}>
         {(segment) => (
           <Show when={segment.match} fallback={segment.text}>
@@ -588,27 +847,7 @@ function HighlightedText(props: { text: string; query: string }) {
           </Show>
         )}
       </For>
-    </>
-  );
-}
-
-function ContextIndicatorCell(props: { node: MapNode }) {
-  const spatialMap = useSpatialMap();
-  const hasContext = createMemo(() => getNodeContext(props.node).length > 0);
-
-  return (
-    <button
-      type="button"
-      class={`spatial-map-grid-context-button${hasContext() ? " has-context" : ""}`}
-      aria-label={`${hasContext() ? "Open" : "Open empty"} context for ${props.node.label}`}
-      title={`${hasContext() ? "Has context" : "No context"}: open viewer`}
-      onClick={(event) => {
-        event.stopPropagation();
-        spatialMap.openContextPreview(props.node.id);
-      }}
-    >
-      {hasContext() ? "Yes" : "No"}
-    </button>
+    </span>
   );
 }
 
@@ -638,7 +877,7 @@ function ImagePreviewCell(props: { node: MapNode }) {
   return (
     <Show
       when={image()}
-      fallback={<span class="spatial-map-grid-muted">No image</span>}
+      fallback={null}
     >
       {(previewImage) => (
         <button
@@ -714,6 +953,88 @@ function getHighlightedSegments(text: string, query: string) {
   return segments.length > 0 ? segments : [{ text, match: false }];
 }
 
+function buildNodeGridRows(nodes: MapNode[], links: MapLink[]): NodeGridRow[] {
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const childIdsByParentId = new Map<string, string[]>();
+  const parentIdByChildId = new Map<string, string>();
+
+  for (const link of links) {
+    if (!nodesById.has(link.source) || !nodesById.has(link.target)) {
+      continue;
+    }
+    if (parentIdByChildId.has(link.target)) {
+      continue;
+    }
+
+    const childIds = childIdsByParentId.get(link.source) ?? [];
+    childIds.push(link.target);
+    childIdsByParentId.set(link.source, childIds);
+    parentIdByChildId.set(link.target, link.source);
+  }
+
+  const roots = nodes.filter(
+    (node) => !parentIdByChildId.has(node.id),
+  );
+  const rows: NodeGridRow[] = [];
+  const visited = new Set<string>();
+
+  const visit = (
+    node: MapNode,
+    depth: number,
+    isLastSibling: boolean,
+    ancestorHasNextSibling: boolean[],
+    pathNodeIds: string[],
+  ) => {
+    if (visited.has(node.id) || pathNodeIds.includes(node.id)) {
+      return;
+    }
+
+    visited.add(node.id);
+    const nextPathNodeIds = [...pathNodeIds, node.id];
+    const childIds = childIdsByParentId.get(node.id) ?? [];
+
+    rows.push({
+      node,
+      depth,
+      ancestorHasNextSibling,
+      hasChildren: childIds.length > 0,
+      isLastSibling,
+      parentNodeId: pathNodeIds.at(-1) ?? null,
+      pathKey: nextPathNodeIds.join("/"),
+    });
+
+    const childAncestorHasNextSibling =
+      depth === 0
+        ? []
+        : [...ancestorHasNextSibling, !isLastSibling];
+
+    childIds.forEach((childId, index) => {
+      const child = nodesById.get(childId);
+      if (child) {
+        visit(
+          child,
+          depth + 1,
+          index === childIds.length - 1,
+          childAncestorHasNextSibling,
+          nextPathNodeIds,
+        );
+      }
+    });
+  };
+
+  roots.forEach((node, index) => {
+    visit(node, 0, index === roots.length - 1, [], []);
+  });
+
+  nodes
+    .filter((node) => !visited.has(node.id))
+    .forEach((node, index, remainingNodes) => {
+      visit(node, 0, index === remainingNodes.length - 1, [], []);
+    });
+
+  return rows;
+}
+
 function isTextEntryTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -733,7 +1054,6 @@ function getNodeGridStyle(metadataFields: ProjectNodeMetadataField[]) {
   const tableWidth = `${columns.reduce((sum, column) => sum + Number.parseInt(column, 10), 0)}px`;
 
   return {
-    "grid-template-columns": columns.join(" "),
     "min-width": tableWidth,
     width: `max(100%, ${tableWidth})`,
   };
@@ -741,10 +1061,9 @@ function getNodeGridStyle(metadataFields: ProjectNodeMetadataField[]) {
 
 function getNodeGridColumnWidths(metadataFields: ProjectNodeMetadataField[]) {
   return [
-    "220px",
+    "270px",
     "104px",
     "116px",
-    "96px",
     ...metadataFields.map(() => "220px"),
     "160px",
     "92px",

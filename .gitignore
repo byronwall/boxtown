@@ -1,2 +1,3 @@
 .DS_Store
 llm_logs/
+tmp/

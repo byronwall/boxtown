@@ -1,0 +1,27 @@
+{
+  "name": "@byronwallrus/product-grid-cli",
+  "version": "0.1.0",
+  "description": "CLI for Product Grid Management.",
+  "type": "module",
+  "bin": {
+    "pgm": "./bin/pgm.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "skills",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node ./bin/pgm.mjs",
+    "test": "node --test test/*.test.mjs",
+    "pack:check": "npm pack --dry-run"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}

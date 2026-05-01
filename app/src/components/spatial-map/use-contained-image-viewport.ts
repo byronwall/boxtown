@@ -33,7 +33,7 @@ export function createContainedImageViewport(options: ContainedImageViewportOpti
       return undefined;
     }
 
-    const fitScale = Math.min(stage.width / image.width, stage.height / image.height, options.maxScale);
+    const fitScale = Math.min(stage.width / image.width, stage.height / image.height, 1, options.maxScale);
     return {
       scale: fitScale,
       offset: {

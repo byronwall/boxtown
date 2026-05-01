@@ -1,4 +1,4 @@
-import { useSearchParams } from "@solidjs/router";
+import { A, useSearchParams } from "@solidjs/router";
 import { createEffect, createSignal, lazy, Show, untrack } from "solid-js";
 import { Box } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
@@ -85,6 +85,19 @@ function SpatialMapCanvasLayout(props: {
       <Box
         class={`spatial-map-shell${controller.inspectorOpen() ? "" : " spatial-map-shell--collapsed"}`}
       >
+        <Show when={props.header?.backHref}>
+          {(backHref) => (
+            <Box class="spatial-map-shell-nav">
+              <A
+                href={backHref()}
+                class="spatial-map-backlink spatial-map-backlink--shell"
+                aria-label={props.header?.backLabel ?? "Back"}
+              >
+                &lt; Back
+              </A>
+            </Box>
+          )}
+        </Show>
         <Box class="spatial-map-main">
           <Box class="spatial-map-stage">
             <SpatialMapToolbar
