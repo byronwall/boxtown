@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { ProductGridClient } from "./client.mjs";
 import {
+  getConfigPath,
   readConfig,
   resolveProjectId,
   resolveServer,
@@ -16,11 +17,20 @@ import {
   writeJson,
   writeTable,
 } from "./output.mjs";
+import { packageVersion } from "./version.mjs";
 
 export async function main(argv = process.argv, io = defaultIo()) {
   const parsed = parseArgs(argv.slice(2));
   if (parsed.help || parsed.command.length === 0) {
     io.stdout.write(helpText());
+    return;
+  }
+  if (isVersionCommand(parsed.command)) {
+    io.stdout.write(`${packageVersion}\n`);
+    return;
+  }
+  if (isConfigPathCommand(parsed.command)) {
+    io.stdout.write(`${getConfigPath(io.env)}\n`);
     return;
   }
 
@@ -62,17 +72,6 @@ async function dispatch(context) {
 
   if (scope === "help") {
     context.io.stdout.write(helpText());
-    return;
-  }
-
-  if (scope === "version" || scope === "--version" || scope === "-v") {
-    context.io.stdout.write("0.1.0\n");
-    return;
-  }
-
-  if (scope === "config" && action === "path") {
-    const { getConfigPath } = await import("./config.mjs");
-    context.io.stdout.write(`${getConfigPath(context.io.env)}\n`);
     return;
   }
 
@@ -563,9 +562,8 @@ export function parseArgs(args) {
 
     if (arg.startsWith("--")) {
       const [rawKey, inlineValue] = arg.slice(2).split("=", 2);
-      const nextValue = args[index + 1];
-      const value = inlineValue ?? (nextValue && !nextValue.startsWith("--") ? nextValue : true);
-      if (inlineValue === undefined && value !== true) {
+      const value = parseOptionValue(rawKey, inlineValue, args[index + 1]);
+      if (!booleanOptionNames.has(rawKey) && inlineValue === undefined && value !== true) {
         index += 1;
       }
       options[toCamelCase(rawKey)] = value;
@@ -583,11 +581,42 @@ export function parseArgs(args) {
   return { command, positionals, options, help };
 }
 
+const booleanOptionNames = new Set([
+  "force",
+  "global",
+  "json",
+  "link",
+  "root",
+  "split-by-heading-level",
+  "split-headings",
+]);
+
+function parseOptionValue(rawKey, inlineValue, nextValue) {
+  if (booleanOptionNames.has(rawKey)) {
+    return inlineValue === undefined ? true : parseBooleanValue(inlineValue);
+  }
+
+  return inlineValue ?? (nextValue && !nextValue.startsWith("--") ? nextValue : true);
+}
+
+function parseBooleanValue(value) {
+  const normalized = String(value).trim().toLowerCase();
+  return !(normalized === "false" || normalized === "0" || normalized === "no");
+}
+
 function getCommandPartLimit(command) {
   if (command[0] === "node" && (command[1] === "context" || command[1] === "metadata")) {
     return 3;
   }
   return 2;
+}
+
+function isVersionCommand(command) {
+  return command.length === 1 && command[0] === "version";
+}
+
+function isConfigPathCommand(command) {
+  return command.length === 2 && command[0] === "config" && command[1] === "path";
 }
 
 function requireProject(context) {

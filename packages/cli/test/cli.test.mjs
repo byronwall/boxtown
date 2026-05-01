@@ -5,8 +5,9 @@ import os from "node:os";
 import path from "node:path";
 import { ProductGridClient } from "../src/client.mjs";
 import { defaultServer, resolveProjectId, resolveServer, resolveToken } from "../src/config.mjs";
-import { parseArgs } from "../src/main.mjs";
+import { main, parseArgs } from "../src/main.mjs";
 import { getBundledSkillPath, resolveSkillInstallTarget } from "../src/skill.mjs";
+import { packageVersion } from "../src/version.mjs";
 
 test("parseArgs handles command positionals and global flags", () => {
   const parsed = parseArgs([
@@ -40,6 +41,51 @@ test("parseArgs handles project create name and link flag", () => {
   assert.deepEqual(parsed.positionals, ["New", "Product", "Site"]);
   assert.equal(parsed.options.link, true);
   assert.equal(parsed.options.json, true);
+});
+
+test("parseArgs does not let boolean flags consume following positionals", () => {
+  const linkedCreate = parseArgs(["project", "create", "--link", "New", "Product", "Site"]);
+  assert.deepEqual(linkedCreate.command, ["project", "create"]);
+  assert.deepEqual(linkedCreate.positionals, ["New", "Product", "Site"]);
+  assert.equal(linkedCreate.options.link, true);
+
+  const importMarkdown = parseArgs(["node", "import-markdown", "--split-headings", "brief.md"]);
+  assert.deepEqual(importMarkdown.positionals, ["brief.md"]);
+  assert.equal(importMarkdown.options.splitHeadings, true);
+
+  const jsonFalse = parseArgs(["project", "list", "--json=false"]);
+  assert.equal(jsonFalse.options.json, false);
+});
+
+test("main prints package version without reading config", async () => {
+  const stdout = createWritableBuffer();
+
+  await main(["node", "pgm", "--version"], {
+    stdout,
+    stderr: createWritableBuffer(),
+    env: {
+      PRODUCT_GRID_CONFIG: path.join("/missing", "parent", "cli.json"),
+    },
+    cwd: "/tmp",
+  });
+
+  assert.equal(stdout.value, `${packageVersion}\n`);
+});
+
+test("main prints config path without reading config", async () => {
+  const stdout = createWritableBuffer();
+  const configPath = path.join("/missing", "parent", "cli.json");
+
+  await main(["node", "pgm", "config", "path"], {
+    stdout,
+    stderr: createWritableBuffer(),
+    env: {
+      PRODUCT_GRID_CONFIG: configPath,
+    },
+    cwd: "/tmp",
+  });
+
+  assert.equal(stdout.value, `${configPath}\n`);
 });
 
 test("parseArgs handles markdown import and image add positionals", () => {
@@ -131,6 +177,7 @@ test("client sends authorization and parses project list", async () => {
     assert.equal(projects[0].id, "demo");
     assert.equal(calls[0].url, "http://localhost:3000/api/v1/projects");
     assert.equal(calls[0].init.headers.get("authorization"), "Bearer secret-token");
+    assert.equal(calls[0].init.headers.get("user-agent"), `@byronwallrus/product-grid-cli/${packageVersion}`);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -372,3 +419,12 @@ test("skill helpers resolve bundled and project install paths", () => {
     path.join("/tmp/demo", ".agents", "skills", "product-grid-context"),
   );
 });
+
+function createWritableBuffer() {
+  return {
+    value: "",
+    write(chunk) {
+      this.value += chunk;
+    },
+  };
+}

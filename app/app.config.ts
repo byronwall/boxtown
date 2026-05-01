@@ -8,6 +8,15 @@ const normalizedBasePath =
     ? ""
     : `/${basePath.replace(/^\/+|\/+$/g, "")}`;
 
+const isPandaPureAnnotationWarning = (warning: {
+  code?: string;
+  id?: string;
+  message?: string;
+}) =>
+  warning.code === "INVALID_ANNOTATION" &&
+  warning.message?.includes("@__PURE__") &&
+  warning.id?.includes("styled-system/jsx/") === true;
+
 export default defineConfig({
   server: {
     baseURL: normalizedBasePath,
@@ -17,6 +26,17 @@ export default defineConfig({
     optimizeDeps: {
       // these are required for solid-markdown to work
       include: ["solid-markdown > micromark", "solid-markdown > unified"],
+    },
+    build: {
+      rollupOptions: {
+        onwarn(warning, defaultHandler) {
+          if (isPandaPureAnnotationWarning(warning)) {
+            return;
+          }
+
+          defaultHandler(warning);
+        },
+      },
     },
   },
 });

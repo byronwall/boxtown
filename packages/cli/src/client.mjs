@@ -1,9 +1,10 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { CliError, apiErrorToExitCode } from "./errors.mjs";
+import { cliUserAgent } from "./version.mjs";
 
 export class ProductGridClient {
-  constructor({ server, token = null, userAgent = "product-grid-cli/0.1.0" }) {
+  constructor({ server, token = null, userAgent = cliUserAgent }) {
     this.server = server;
     this.token = token;
     this.userAgent = userAgent;
