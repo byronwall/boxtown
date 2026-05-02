@@ -17,7 +17,7 @@ const isPandaPureAnnotationWarning = (warning: {
   warning.message?.includes("@__PURE__") &&
   warning.id?.includes("styled-system/jsx/") === true;
 
-export default defineConfig({
+const app = defineConfig({
   server: {
     baseURL: normalizedBasePath,
   },
@@ -40,3 +40,13 @@ export default defineConfig({
     },
   },
 });
+
+app.addRouter({
+  name: "ws",
+  type: "http",
+  base: "/ws/jobs",
+  handler: "src/ws/jobs.ts",
+  target: "server",
+});
+
+export default app;

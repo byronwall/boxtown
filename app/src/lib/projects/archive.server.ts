@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { MapNodeImage } from "~/lib/spatial-map/types";
+import { publishProjectRecordChanged } from "~/ws/project-events";
 import {
   getProjectNodeImageDir,
   getProjectNodeImageFilePath,
@@ -90,6 +91,7 @@ export async function importProjectArchiveOnDisk(file: File) {
   assertArchivedImagesExist(project, entries);
   await writeProjectRecordsToDisk([...records, project]);
   await writeImportedImages(project, entries);
+  publishProjectRecordChanged(project);
 
   return project;
 }

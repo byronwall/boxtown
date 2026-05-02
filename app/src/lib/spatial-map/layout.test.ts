@@ -35,6 +35,41 @@ describe("spatial map layout", () => {
     expect(layout.every((node) => node.width > 0 && node.height > 0)).toBe(true);
   });
 
+  it("gives image nodes more room without shrinking their text sizes", () => {
+    const label = "Image backed feature";
+    const dataWithoutImage: SpatialMapData = {
+      nodes: [createMapNode("node-without-image", label, 0)],
+      links: [],
+    };
+    const dataWithImage: SpatialMapData = {
+      nodes: [
+        {
+          ...createMapNode("node-with-image", label, 0),
+          images: [
+            {
+              id: "image-1",
+              src: "/image.png",
+              filename: "image.png",
+              originalName: "image.png",
+              mimeType: "image/png",
+              size: 100,
+              createdAt: "2026-01-01T00:00:00.000Z",
+            },
+          ],
+        },
+      ],
+      links: [],
+    };
+
+    const [nodeWithoutImage] = createInitialLayout(dataWithoutImage);
+    const [nodeWithImage] = createInitialLayout(dataWithImage);
+
+    expect(nodeWithImage.height).toBeGreaterThan(nodeWithoutImage.height);
+    expect(nodeWithImage.width).toBeGreaterThan(nodeWithoutImage.width);
+    expect(nodeWithImage.fontSize).toBe(nodeWithoutImage.fontSize);
+    expect(nodeWithImage.metaSize).toBe(nodeWithoutImage.metaSize);
+  });
+
   it("produces identical coordinates for repeated runs", () => {
     const first = createInitialLayout(parsedData).map((node) => [
       node.id,

@@ -1,11 +1,11 @@
 import { useSubmission } from "@solidjs/router";
-import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, For, onCleanup, Show } from "solid-js";
 import { Box } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
 import { createProjectChildNode, moveProjectNode } from "~/lib/projects/data";
-import { getProjectNodeType } from "~/lib/projects/node-types";
+import { ensureProjectNodeTypeOptions, getProjectNodeType } from "~/lib/projects/node-types";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
 import { createParentChildLink } from "~/lib/spatial-map/links";
@@ -136,6 +136,10 @@ const NODE_STATUS_BADGE_SIZE = 17;
 const NODE_STATUS_BADGE_MARGIN = 6;
 const NODE_STATUS_LABEL_GAP = 5;
 const NODE_STATUS_LABEL_WIDTH_FACTOR = 6.2;
+const NODE_CONTEXT_PREVIEW_MAX_LENGTH = 160;
+const NODE_CONTEXT_HOVER_DELAY_MS = 200;
+const NODE_CONTEXT_CLOSE_DELAY_MS = 120;
+const NODE_CONTEXT_CARD_GAP = 12;
 
 interface SpatialMapSceneProps {
   project: ProjectRecord;
@@ -154,6 +158,15 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
 
     return controller.orderedNodes().find((item) => item.node.id === parentNodeId)?.node ?? null;
   });
+  const draftConnectorPath = createMemo(() => {
+    const draft = controller.childNodeDraft();
+    const parentNode = draftParentNode();
+    if (!draft || !parentNode) {
+      return null;
+    }
+
+    return createDraftConnectorPath(parentNode, draft);
+  });
   const moveSubmission = useSubmission(moveProjectNode, (input) => {
     const formData = input[0];
     return (
@@ -170,9 +183,61 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
     const nodeId = controller.reparentingNodeId();
     return nodeId ? getDescendantNodeIds(props.project.spatialMap, nodeId) : new Set<string>();
   });
+  const [contextHoverNodeId, setContextHoverNodeId] = createSignal<string | null>(null);
+  const contextHoverItem = createMemo(() => {
+    const nodeId = contextHoverNodeId();
+    if (!nodeId) {
+      return null;
+    }
+
+    return controller.orderedNodes().find((entry) => entry.node.id === nodeId) ?? null;
+  });
   let moveFormRef: HTMLFormElement | undefined;
   let moveNodeIdInputRef: HTMLInputElement | undefined;
   let moveParentNodeIdInputRef: HTMLInputElement | undefined;
+  let contextHoverOpenTimeout: ReturnType<typeof setTimeout> | undefined;
+  let contextHoverCloseTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  const clearContextHoverOpenTimeout = () => {
+    if (contextHoverOpenTimeout === undefined) {
+      return;
+    }
+
+    clearTimeout(contextHoverOpenTimeout);
+    contextHoverOpenTimeout = undefined;
+  };
+
+  const clearContextHoverCloseTimeout = () => {
+    if (contextHoverCloseTimeout === undefined) {
+      return;
+    }
+
+    clearTimeout(contextHoverCloseTimeout);
+    contextHoverCloseTimeout = undefined;
+  };
+
+  const openContextHoverCard = (nodeId: string) => {
+    clearContextHoverCloseTimeout();
+    clearContextHoverOpenTimeout();
+    contextHoverOpenTimeout = setTimeout(() => {
+      contextHoverOpenTimeout = undefined;
+      setContextHoverNodeId(nodeId);
+    }, NODE_CONTEXT_HOVER_DELAY_MS);
+  };
+
+  const closeContextHoverCard = () => {
+    clearContextHoverOpenTimeout();
+    clearContextHoverCloseTimeout();
+    contextHoverCloseTimeout = setTimeout(() => {
+      contextHoverCloseTimeout = undefined;
+      setContextHoverNodeId(null);
+    }, NODE_CONTEXT_CLOSE_DELAY_MS);
+  };
+
+  onCleanup(() => {
+    clearContextHoverOpenTimeout();
+    clearContextHoverCloseTimeout();
+  });
 
   createEffect(() => {
     const result = moveSubmission.result;
@@ -315,6 +380,14 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                 />
               )}
             </For>
+            <Show when={draftConnectorPath()}>
+              {(path) => (
+                <path
+                  class="spatial-map-draft-parent-edge"
+                  d={path()}
+                />
+              )}
+            </Show>
           </g>
 
           <g>
@@ -340,14 +413,32 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                     }
                     controller.sceneHandlers.onNodePointerDown(nodeId);
                   }}
-                  onPointerEnter={controller.sceneHandlers.onNodePointerEnter}
-                  onPointerLeave={controller.sceneHandlers.onNodePointerLeave}
+                  onPointerEnter={(nodeId) => {
+                    controller.sceneHandlers.onNodePointerEnter(nodeId);
+                    openContextHoverCard(nodeId);
+                  }}
+                  onPointerLeave={(nodeId) => {
+                    controller.sceneHandlers.onNodePointerLeave(nodeId);
+                    closeContextHoverCard();
+                  }}
                 />
               )}
             </For>
           </g>
         </g>
       </svg>
+      <Show when={contextHoverItem()}>
+        {(item) => (
+          <SpatialMapNodeContextCard
+            item={item()}
+            project={props.project}
+            onPointerEnter={() => {
+              clearContextHoverCloseTimeout();
+            }}
+            onPointerLeave={closeContextHoverCard}
+          />
+        )}
+      </Show>
       <Show when={controller.childNodeDraft()}>
         {(draft) => (
           <ChildNodePlaceholder
@@ -426,6 +517,45 @@ function moveProjectNodeOptimistically(
   };
 }
 
+function createDraftConnectorPath(
+  parentNode: NodeVisualState["node"],
+  draft: ChildNodeDraft,
+) {
+  const start = getNodeEdgePoint(parentNode, draft);
+  const end = { x: draft.x, y: draft.y };
+  const direction = end.x >= start.x ? 1 : -1;
+  const controlOffset = Math.min(180, Math.max(48, Math.abs(end.x - start.x) * 0.42));
+
+  return [
+    `M ${start.x} ${start.y}`,
+    `C ${start.x + controlOffset * direction} ${start.y}`,
+    `${end.x - controlOffset * direction} ${end.y}`,
+    `${end.x} ${end.y}`,
+  ].join(" ");
+}
+
+function getNodeEdgePoint(
+  node: NodeVisualState["node"],
+  target: { x: number; y: number },
+) {
+  const dx = target.x - node.x;
+  const dy = target.y - node.y;
+  if (dx === 0 && dy === 0) {
+    return { x: node.x, y: node.y };
+  }
+
+  const halfWidth = node.width / 2;
+  const halfHeight = node.height / 2;
+  const xScale = dx === 0 ? Number.POSITIVE_INFINITY : halfWidth / Math.abs(dx);
+  const yScale = dy === 0 ? Number.POSITIVE_INFINITY : halfHeight / Math.abs(dy);
+  const scale = Math.min(xScale, yScale);
+
+  return {
+    x: node.x + dx * scale,
+    y: node.y + dy * scale,
+  };
+}
+
 function getDescendantNodeIds(data: ProjectRecord["spatialMap"], nodeId: string) {
   const childrenByParent = new Map<string, string[]>();
   for (const link of data.links) {
@@ -467,8 +597,16 @@ function ChildNodePlaceholder(props: {
     );
   });
   const [title, setTitle] = createSignal("");
+  const nodeTypeOptions = createMemo(() =>
+    ensureProjectNodeTypeOptions(props.project.nodeTypeSchema, props.parentNode?.type),
+  );
+  const [nodeType, setNodeType] = createSignal(
+    props.parentNode?.type ?? nodeTypeOptions()[0]?.name ?? "page",
+  );
+  const [context, setContext] = createSignal("");
   let formRef: HTMLFormElement | undefined;
   let textareaRef: HTMLTextAreaElement | undefined;
+  let closeOnBlurTimer: number | undefined;
 
   const overlayStyle = createMemo(() => {
     const camera = controller.camera();
@@ -481,6 +619,30 @@ function ChildNodePlaceholder(props: {
   createEffect(() => {
     textareaRef?.focus();
   });
+
+  onCleanup(() => {
+    if (closeOnBlurTimer !== undefined) {
+      window.clearTimeout(closeOnBlurTimer);
+    }
+  });
+
+  const scheduleCloseOnBlur = () => {
+    if (closeOnBlurTimer !== undefined) {
+      window.clearTimeout(closeOnBlurTimer);
+    }
+
+    closeOnBlurTimer = window.setTimeout(() => {
+      closeOnBlurTimer = undefined;
+      if (!formRef || submission.pending) {
+        return;
+      }
+      const activeElement = document.activeElement;
+      if (activeElement instanceof Node && formRef.contains(activeElement)) {
+        return;
+      }
+      controller.clearChildNodeDraft();
+    }, 0);
+  };
 
   createEffect(() => {
     const result = submission.result;
@@ -509,13 +671,12 @@ function ChildNodePlaceholder(props: {
     submission.clear();
   });
 
-  const applyOptimisticChild = (nextTitle: string) => {
+  const applyOptimisticChild = (nextTitle: string, nextType: string, nextContext: string) => {
     const nodeId = createUniqueNodeId(
       nextTitle,
-      props.parentNode?.type ?? "page",
+      nextType,
       new Set(props.project.spatialMap.nodes.map((node) => node.id)),
     );
-    const nodeType = props.parentNode?.type ?? "page";
 
     props.onProjectUpdated?.({
       ...props.project,
@@ -527,11 +688,11 @@ function ChildNodePlaceholder(props: {
           {
             id: nodeId,
             label: nextTitle,
-            type: nodeType,
+            type: nextType,
             status: DEFAULT_MAP_NODE_STATUS,
             metadata: {},
-            context: "",
-            rawContext: "",
+            context: nextContext,
+            rawContext: nextContext,
           },
         ],
         links: props.parentNode
@@ -555,6 +716,7 @@ function ChildNodePlaceholder(props: {
       style={overlayStyle()}
       action={normalizeActionUrl(createProjectChildNode.url)}
       method="post"
+      onFocusOut={scheduleCloseOnBlur}
       onSubmit={(event) => {
         const nextTitle = title().trim();
         if (!nextTitle) {
@@ -562,7 +724,7 @@ function ChildNodePlaceholder(props: {
           return;
         }
 
-        applyOptimisticChild(nextTitle);
+        applyOptimisticChild(nextTitle, nodeType(), context().trim());
       }}
       onKeyDown={(event) => {
         if (event.key === "Escape") {
@@ -586,12 +748,20 @@ function ChildNodePlaceholder(props: {
       <div class="spatial-map-node-placeholder-header">
         {props.parentNode ? "New child node" : "New node"}
       </div>
+      <Show when={props.parentNode}>
+        {(parentNode) => (
+          <div class="spatial-map-node-placeholder-parent">
+            Parent: {parentNode().label}
+          </div>
+        )}
+      </Show>
       <input type="hidden" name="projectId" value={props.project.id} />
       <Show when={props.parentNode}>
         {(parentNode) => (
           <input type="hidden" name="parentNodeId" value={parentNode().id} />
         )}
       </Show>
+      <input type="hidden" name="type" value={nodeType()} />
       <Textarea
         ref={textareaRef}
         aria-label="New node title"
@@ -603,6 +773,34 @@ function ChildNodePlaceholder(props: {
         rows={3}
         onInput={(event) => setTitle(event.currentTarget.value)}
       />
+      <label class="spatial-map-node-placeholder-field">
+        <span>Type</span>
+        <select
+          value={nodeType()}
+          disabled={submission.pending}
+          onChange={(event) => setNodeType(event.currentTarget.value)}
+        >
+          <For each={nodeTypeOptions()}>
+            {(option) => (
+              <option value={option.name}>
+                {option.name}
+              </option>
+            )}
+          </For>
+        </select>
+      </label>
+      <label class="spatial-map-node-placeholder-field">
+        <span>Context</span>
+        <Textarea
+          aria-label="New node context"
+          name="context"
+          value={context()}
+          disabled={submission.pending}
+          placeholder="Optional context"
+          rows={4}
+          onInput={(event) => setContext(event.currentTarget.value)}
+        />
+      </label>
       <div class="spatial-map-node-placeholder-actions">
         <Button
           size="xs"
@@ -668,7 +866,7 @@ function SpatialMapNode(props: {
   const nodeImages = () => props.item.node.images ?? [];
   const firstImage = () => nodeImages()[0];
   const hasImages = () => nodeImages().length > 0;
-  const imageHeight = () => (hasImages() ? Math.min(54, props.item.node.height * 0.38) : 0);
+  const imageHeight = () => (hasImages() ? Math.min(86, props.item.node.height * 0.45) : 0);
   const fallbackTone = () =>
     getNodeTypeTone(props.project.nodeTypeSchema, props.item.node.type);
   const nodeTone = () =>
@@ -764,6 +962,7 @@ function SpatialMapNode(props: {
       onPointerDown={() => props.onPointerDown(props.item.node.id)}
       onClick={() => props.onClick(props.item.node.id)}
       onDblClick={(event) => {
+        event.preventDefault();
         event.stopPropagation();
         props.onDoubleClick(props.item.node.id);
       }}
@@ -907,6 +1106,176 @@ function SpatialMapNode(props: {
   );
 }
 
+function SpatialMapNodeContextCard(props: {
+  item: NodeVisualState;
+  project: ProjectRecord;
+  onPointerEnter: () => void;
+  onPointerLeave: () => void;
+}) {
+  const controller = useSpatialMap();
+  const imageUi = useSpatialMapImages();
+  const context = createMemo(() => getNodeContext(props.item.node));
+  const contextPreview = createMemo(() => getNodeContextPreview(props.item.node));
+  const statusLabel = () => getMapNodeStatusLabel(props.item.node.status);
+  const images = () => props.item.node.images ?? [];
+  const metadataEntries = createMemo(() =>
+    Object.entries(props.item.node.metadata)
+      .map(([key, value]) => [key, value.trim()] as const)
+      .filter(([, value]) => value.length > 0),
+  );
+  const activityEntries = createMemo(() =>
+    props.project.operationLog
+      .filter((entry) => entry.nodeIds.includes(props.item.node.id))
+      .slice(0, 2),
+  );
+  const hierarchyPreview = createMemo(() =>
+    getNodeHierarchyPreview(props.project, props.item.node.id),
+  );
+  const positionStyle = createMemo(() => {
+    const camera = controller.camera();
+    const node = props.item.node;
+    const cameraCenterX = camera.x + camera.width / 2;
+    const placeLeft = node.x > cameraCenterX;
+    const anchorX = placeLeft
+      ? node.x - node.width / 2 - NODE_CONTEXT_CARD_GAP
+      : node.x + node.width / 2 + NODE_CONTEXT_CARD_GAP;
+
+    return {
+      left: `${((anchorX - camera.x) / camera.width) * 100}%`,
+      top: `${((node.y - node.height / 2 - camera.y) / camera.height) * 100}%`,
+      transform: placeLeft ? "translateX(-100%)" : "none",
+    };
+  });
+
+  return (
+    <Box
+      class="spatial-map-node-context-card"
+      style={positionStyle()}
+      onPointerDown={(event) => event.stopPropagation()}
+      onPointerEnter={props.onPointerEnter}
+      onPointerLeave={props.onPointerLeave}
+    >
+      <Box class="spatial-map-node-context-card-title">
+        {props.item.node.label}
+      </Box>
+      <Box class="spatial-map-node-context-card-meta">
+        <span>{props.item.node.type}</span>
+        <span>{statusLabel()}</span>
+        <Show when={images().length > 0}>
+          <span>{images().length} image{images().length === 1 ? "" : "s"}</span>
+        </Show>
+      </Box>
+      <Show when={images().length > 0}>
+        <Box class="spatial-map-node-context-card-images">
+          <For each={images().slice(0, 4)}>
+            {(image) => (
+              <button
+                type="button"
+                class="spatial-map-node-context-card-image"
+                aria-label={`Open ${image.originalName}`}
+                title={image.originalName}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  imageUi.openImage(image, props.item.node, images());
+                }}
+              >
+                <img src={image.src} alt={image.originalName} loading="lazy" />
+              </button>
+            )}
+          </For>
+          <Show when={images().length > 4}>
+            <span class="spatial-map-node-context-card-image-count">
+              +{images().length - 4}
+            </span>
+          </Show>
+          </Box>
+        </Show>
+      <Box class="spatial-map-node-context-card-tree" aria-label="Node hierarchy">
+        <Show when={hierarchyPreview().parent}>
+          {(parent) => (
+            <Box class="spatial-map-node-context-card-tree-row is-parent">
+              <span class="spatial-map-node-context-card-tree-rail" aria-hidden="true" />
+              <span class="spatial-map-node-context-card-tree-label" title={parent().label}>
+                {parent().label}
+              </span>
+              <span class="spatial-map-node-context-card-tree-type">{parent().type}</span>
+            </Box>
+          )}
+        </Show>
+        <Box class={`spatial-map-node-context-card-tree-row is-current${hierarchyPreview().parent ? " has-parent" : ""}`}>
+          <span class="spatial-map-node-context-card-tree-rail" aria-hidden="true" />
+          <span class="spatial-map-node-context-card-tree-label" title={props.item.node.label}>
+            {props.item.node.label}
+          </span>
+          <span class="spatial-map-node-context-card-tree-type">{props.item.node.type}</span>
+        </Box>
+        <For each={hierarchyPreview().children.slice(0, 3)}>
+          {(child, index) => (
+            <Box
+              class={`spatial-map-node-context-card-tree-row is-child${index() === Math.min(hierarchyPreview().children.length, 3) - 1 ? " is-last" : ""}`}
+            >
+              <span class="spatial-map-node-context-card-tree-rail" aria-hidden="true" />
+              <span class="spatial-map-node-context-card-tree-label" title={child.label}>
+                {child.label}
+              </span>
+              <span class="spatial-map-node-context-card-tree-type">{child.type}</span>
+            </Box>
+          )}
+        </For>
+        <Show when={hierarchyPreview().children.length > 3}>
+          <Box class="spatial-map-node-context-card-tree-row is-child is-last">
+            <span class="spatial-map-node-context-card-tree-rail" aria-hidden="true" />
+            <span class="spatial-map-node-context-card-tree-label">
+              +{hierarchyPreview().children.length - 3} more
+            </span>
+          </Box>
+        </Show>
+      </Box>
+      <Show when={metadataEntries().length > 0}>
+        <Box class="spatial-map-node-context-card-metadata">
+          <For each={metadataEntries()}>
+            {([key, value]) => (
+              <Box class="spatial-map-node-context-card-metadata-row">
+                <span class="spatial-map-node-context-card-metadata-key">{key}</span>
+                <span class="spatial-map-node-context-card-metadata-value">{value}</span>
+              </Box>
+            )}
+          </For>
+        </Box>
+      </Show>
+      <Show when={activityEntries().length > 0}>
+        <Box class="spatial-map-node-context-card-activity">
+          <For each={activityEntries()}>
+            {(entry) => (
+              <Box class="spatial-map-node-context-card-activity-row" title={entry.summary}>
+                <span>{entry.summary}</span>
+                <time>{formatShortActivityDate(entry.createdAt)}</time>
+              </Box>
+            )}
+          </For>
+        </Box>
+      </Show>
+      <Show when={context().length > 0}>
+        <Box class="spatial-map-node-context-card-body">
+          {contextPreview()}
+        </Box>
+      </Show>
+      <Show when={context().length > 0}>
+        <button
+          type="button"
+          class="spatial-map-node-context-card-action"
+          onClick={(event) => {
+            event.stopPropagation();
+            controller.openContextPreview(props.item.node.id);
+          }}
+        >
+          Open context
+        </button>
+      </Show>
+    </Box>
+  );
+}
+
 function getNodeTypeFallbackTone(type: string) {
   let hash = 0;
 
@@ -945,6 +1314,46 @@ function wrapSvgText(options: {
   const lines = getSvgTextLines(options.text, maxCharacters);
 
   return clampSvgTextLines(lines, options.maxLines, maxCharacters);
+}
+
+function getNodeContextPreview(node: NodeVisualState["node"]) {
+  const context = getNodeContext(node).replace(/\s+/g, " ").trim();
+  if (context.length <= NODE_CONTEXT_PREVIEW_MAX_LENGTH) {
+    return context;
+  }
+
+  return `${context.slice(0, NODE_CONTEXT_PREVIEW_MAX_LENGTH - 3).trimEnd()}...`;
+}
+
+function getNodeContext(node: NodeVisualState["node"]) {
+  return (node.context || node.rawContext).trim();
+}
+
+function getNodeHierarchyPreview(project: ProjectRecord, nodeId: string) {
+  const nodesById = new Map(project.spatialMap.nodes.map((node) => [node.id, node]));
+  const parentId =
+    project.spatialMap.links.find((link) => link.parentChild && link.target === nodeId)?.source ??
+    null;
+  const childIds = project.spatialMap.links
+    .filter((link) => link.parentChild && link.source === nodeId)
+    .map((link) => link.target);
+
+  return {
+    parent: parentId ? nodesById.get(parentId) ?? null : null,
+    children: childIds.flatMap((childId) => {
+      const child = nodesById.get(childId);
+      return child ? [child] : [];
+    }),
+  };
+}
+
+function formatShortActivityDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toISOString().slice(0, 10);
 }
 
 function isSvgTextFullyVisible(options: {

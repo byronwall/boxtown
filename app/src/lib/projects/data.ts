@@ -267,6 +267,8 @@ export const createProjectChildNode = action(
     const projectId = formData.get("projectId");
     const parentNodeId = formData.get("parentNodeId");
     const title = formData.get("title");
+    const type = formData.get("type");
+    const context = formData.get("context");
 
     if (typeof projectId !== "string" || projectId.trim().length === 0) {
       throw new Error("A project id is required.");
@@ -281,6 +283,10 @@ export const createProjectChildNode = action(
         ? parentNodeId
         : null,
       title,
+      type: typeof type === "string" && type.trim().length > 0
+        ? type
+        : undefined,
+      context: typeof context === "string" ? context : "",
     });
   },
   "create-project-child-node",

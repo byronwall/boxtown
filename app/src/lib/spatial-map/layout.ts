@@ -19,6 +19,8 @@ const sizeByDepth: Record<
 const CANVAS_NODE_TEXT_SCALE = 1.15;
 const SHALLOW_VISIBLE_DEPTH_SCALE = 1.32;
 const DEEP_VISIBLE_DEPTH_SCALE = 1;
+const IMAGE_NODE_EXTRA_HEIGHT = 68;
+const IMAGE_NODE_WIDTH_SCALE = 1.12;
 
 export type AdjacencyMap = Map<string, Set<string>>;
 
@@ -64,7 +66,12 @@ export function createInitialLayout(data: SpatialMapData): PositionedMapNode[] {
   const positionedNodes = depthItems.map(({ node, depth }) => ({
     ...node,
     depth,
-    ...getVisibleDepthNodeSize(depth, node.label, visibleDepthRange),
+    ...getVisibleDepthNodeSize(
+      depth,
+      node.label,
+      visibleDepthRange,
+      (node.images?.length ?? 0) > 0,
+    ),
     x: VIEWPORT_CENTER_X,
     y: VIEWPORT_CENTER_Y,
     vx: 0,
@@ -78,11 +85,12 @@ function getVisibleDepthNodeSize(
   depth: number,
   label: string,
   visibleDepthRange: { minDepth: number; maxDepth: number },
+  hasImages = false,
 ): NodeSize {
   const baseSize = getNodeSize(depth, label);
   const relativeDepth = getRelativeDepth(depth, visibleDepthRange);
   if (relativeDepth === null) {
-    return baseSize;
+    return getImageAdjustedNodeSize(baseSize, hasImages);
   }
 
   const scale = interpolateNumber(
@@ -91,11 +99,23 @@ function getVisibleDepthNodeSize(
     relativeDepth,
   );
 
-  return {
+  return getImageAdjustedNodeSize({
     width: roundEven(Math.max(48, baseSize.width * scale)),
     height: roundEven(Math.max(48, baseSize.height * scale)),
     fontSize: Math.max(10, roundToTenth(baseSize.fontSize * scale)),
     metaSize: Math.max(9, roundToTenth(baseSize.metaSize * scale)),
+  }, hasImages);
+}
+
+function getImageAdjustedNodeSize(size: NodeSize, hasImages: boolean): NodeSize {
+  if (!hasImages) {
+    return size;
+  }
+
+  return {
+    ...size,
+    width: roundEven(size.width * IMAGE_NODE_WIDTH_SCALE),
+    height: roundEven(size.height + IMAGE_NODE_EXTRA_HEIGHT),
   };
 }
 

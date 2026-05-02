@@ -63,8 +63,8 @@ interface ViewportSize {
   height: number;
 }
 
-const CHILD_NODE_PLACEHOLDER_WIDTH = 260;
-const CHILD_NODE_PLACEHOLDER_HEIGHT = 174;
+const CHILD_NODE_PLACEHOLDER_WIDTH = 300;
+const CHILD_NODE_PLACEHOLDER_HEIGHT = 430;
 const CHILD_NODE_PLACEHOLDER_EDGE_GAP = 12;
 
 export function useSpatialMapCanvasController(
@@ -523,7 +523,9 @@ export function useSpatialMapCanvasController(
     };
   };
 
-  const openChildNodeDraft = (parentNodeId: string | null = selectedNodeId()) => {
+  const openChildNodeDraft = (
+    parentNodeId: string | null = selectedNodeId() ?? isolatedNodeId(),
+  ) => {
     setChildNodeDraft({ parentNodeId, ...clampChildNodeDraftPoint(getDraftWorldPoint()) });
   };
 
@@ -545,10 +547,9 @@ export function useSpatialMapCanvasController(
     }
 
     if (event.key.toLowerCase() === "c" && !event.metaKey && !event.ctrlKey && !event.altKey) {
-      const parentNodeId = selectedNodeId();
       if (viewMode() === "canvas") {
         event.preventDefault();
-        openChildNodeDraft(parentNodeId);
+        openChildNodeDraft();
       }
       return;
     }
@@ -894,6 +895,7 @@ export function useSpatialMapCanvasController(
     setSvgRef: (element) => {
       svgRef = element;
       updateViewportSize();
+      scheduleViewportFit();
     },
     viewportHandlers: {
       onPointerDown: handleViewportPointerDown,
@@ -908,7 +910,7 @@ export function useSpatialMapCanvasController(
       onBackgroundDoubleClick: handleBackgroundDoubleClick,
       onNodeClick: handleNodeSelection,
       onNodeDoubleClick: toggleNodeIsolation,
-      onNodePointerDown: handleNodeSelection,
+      onNodePointerDown: () => undefined,
       onNodePointerEnter: setHoveredNodeId,
       onNodePointerLeave: (nodeId) =>
         setHoveredNodeId((current) => (current === nodeId ? null : current)),

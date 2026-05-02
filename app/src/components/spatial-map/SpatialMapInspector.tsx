@@ -843,11 +843,18 @@ function ActivityEntryContent(props: {
     <Box class="spatial-map-activity-content">
       <Box class="spatial-map-activity-body">
         <HStack justifyContent="space-between" alignItems="start" gap="2" class="spatial-map-activity-head">
-          <Text as="div" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-activity-summary">
+          <Text
+            as="div"
+            margin="0"
+            fontSize="sm"
+            fontWeight="semibold"
+            class="spatial-map-activity-summary"
+            title={props.entry.summary}
+          >
             {props.entry.summary}
           </Text>
         </HStack>
-        <HStack gap="1.5" flexWrap="wrap" mt="1.5">
+        <HStack gap="1.5" flexWrap="wrap" mt="1.5" class="spatial-map-activity-meta">
           <Badge
             as="span"
             variant="spatial"
@@ -861,7 +868,7 @@ function ActivityEntryContent(props: {
             minW="0"
           >
             <Icon size={11} strokeWidth={2.3} />
-            {props.config.label}
+            <span class="spatial-map-activity-badge-text">{props.config.label}</span>
           </Badge>
           <Show when={props.node}>
             {(node) => (
@@ -874,8 +881,9 @@ function ActivityEntryContent(props: {
                 minW="0"
                 overflow="hidden"
                 textOverflow="ellipsis"
+                title={node().label}
               >
-                {node().label}
+                <span class="spatial-map-activity-badge-text">{node().label}</span>
               </Badge>
             )}
           </Show>
@@ -888,7 +896,7 @@ function ActivityEntryContent(props: {
             minW="0"
           >
             <ActorIcon size={11} strokeWidth={2.25} />
-            {formatActivityActor(props.entry)}
+            <span class="spatial-map-activity-badge-text">{formatActivityActor(props.entry)}</span>
           </Badge>
           <Badge
             as="time"

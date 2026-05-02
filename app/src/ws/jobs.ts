@@ -1,4 +1,8 @@
 import { eventHandler } from "vinxi/http";
+import {
+  type ProjectSocketEvent,
+  subscribeProjectSocketEvents,
+} from "./project-events";
 
 type JobSocketServerMessage =
   | {
@@ -10,7 +14,8 @@ type JobSocketServerMessage =
       type: "jobs:pong";
       connectedPeers: number;
       serverTime: string;
-    };
+    }
+  | ProjectSocketEvent;
 
 type JobSocketClientMessage = {
   type: "jobs:ping";
@@ -28,6 +33,12 @@ const sendMessage = (peer: Peer, message: JobSocketServerMessage) => {
   peer.send(JSON.stringify(message));
 };
 
+const broadcastMessage = (message: JobSocketServerMessage) => {
+  for (const peer of peers) {
+    sendMessage(peer, message);
+  }
+};
+
 const parseMessage = (payload: unknown): JobSocketClientMessage | null => {
   if (typeof payload !== "string") return null;
 
@@ -40,11 +51,15 @@ const parseMessage = (payload: unknown): JobSocketClientMessage | null => {
 };
 
 const createStatusMessage = (
-  type: JobSocketServerMessage["type"],
-): JobSocketServerMessage => ({
+  type: "jobs:init" | "jobs:pong",
+) => ({
   type,
   connectedPeers: peers.size,
   serverTime: new Date().toISOString(),
+}) as Extract<JobSocketServerMessage, { type: "jobs:init" | "jobs:pong" }>;
+
+subscribeProjectSocketEvents((event) => {
+  broadcastMessage(event);
 });
 
 export default eventHandler({

@@ -1,5 +1,7 @@
-import { createEffect, createSignal, untrack } from "solid-js";
+import { createEffect, createSignal, onCleanup, onMount, untrack } from "solid-js";
 import { SpatialMapCanvas } from "~/components/spatial-map/SpatialMapCanvas";
+import type { ProjectEventsConnection } from "~/lib/projects/project-events.client";
+import { connectProjectEvents } from "~/lib/projects/project-events.client";
 import type { ProjectRecord } from "~/lib/projects/types";
 
 interface ProjectDetailPageProps {
@@ -8,10 +10,34 @@ interface ProjectDetailPageProps {
 
 export function ProjectDetailPage(props: ProjectDetailPageProps) {
   const [project, setProject] = createSignal(untrack(() => props.project));
+  let eventsConnection: ProjectEventsConnection | null = null;
 
   createEffect(() => {
-    setProject(props.project);
+    const routeProject = props.project;
+    setProject((currentProject) =>
+      routeProject.updatedAt > currentProject.updatedAt ? routeProject : currentProject,
+    );
   });
+
+  onMount(() => {
+    eventsConnection = connectProjectEvents({
+      projectId: props.project.id,
+      onProjectChanged: setProject,
+      onProjectDeleted: () => {
+        window.location.href = "/";
+      },
+    });
+
+    onCleanup(() => {
+      eventsConnection?.disconnect();
+      eventsConnection = null;
+    });
+  });
+
+  const handleProjectUpdated = (nextProject: ProjectRecord) => {
+    setProject(nextProject);
+    eventsConnection?.publishLocalProjectChange(nextProject);
+  };
 
   return (
     <SpatialMapCanvas
@@ -23,7 +49,7 @@ export function ProjectDetailPage(props: ProjectDetailPageProps) {
         backHref: "/",
         backLabel: "All projects",
       }}
-      onProjectUpdated={setProject}
+      onProjectUpdated={handleProjectUpdated}
     />
   );
 }

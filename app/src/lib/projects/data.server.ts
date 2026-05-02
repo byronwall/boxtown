@@ -7,6 +7,10 @@ import { resolveAppDataDir } from "~/lib/server/data-dir";
 import { createParentChildLink, getLinkKey } from "~/lib/spatial-map/links";
 import { DEFAULT_MAP_NODE_STATUS, isMapNodeStatus } from "~/lib/spatial-map/node-status";
 import type { MapNodeImage, MapNodeStatus, SpatialMapData } from "~/lib/spatial-map/types";
+import {
+  publishProjectDeleted,
+  publishProjectRecordChanged,
+} from "~/ws/project-events";
 import { splitMarkdownIntoHeadingSections } from "./context-node-markdown";
 import {
   createDefaultProjectNodeMetadataSchema,
@@ -223,6 +227,22 @@ function appendProjectOperation(
   };
 }
 
+async function writeProjectRecordsAndPublishProject(
+  records: ProjectRecord[],
+  project: ProjectRecord,
+) {
+  await writeProjectRecordsToDisk(records);
+  publishProjectRecordChanged(project);
+}
+
+async function writeProjectRecordsAndPublishDeletion(
+  records: ProjectRecord[],
+  projectId: string,
+) {
+  await writeProjectRecordsToDisk(records);
+  publishProjectDeleted(projectId);
+}
+
 export async function readProjectSummariesFromDisk(): Promise<ProjectSummary[]> {
   const records = await readProjectRecordsFromDisk();
 
@@ -281,7 +301,7 @@ export async function createProjectOnDisk(
   };
 
   records.push(nextRecord);
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
 
   return nextRecord;
 }
@@ -294,7 +314,7 @@ export async function deleteProjectOnDisk(projectId: string): Promise<void> {
     throw new Error("Project not found.");
   }
 
-  await writeProjectRecordsToDisk(nextRecords);
+  await writeProjectRecordsAndPublishDeletion(nextRecords, projectId);
 }
 
 export function mergeGeneratedSpatialMapData(
@@ -391,7 +411,7 @@ export async function appendGeneratedNodesToProjectOnDisk(input: {
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 
@@ -431,7 +451,7 @@ export async function updateProjectNodeContextOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 
@@ -472,7 +492,7 @@ export async function updateProjectNodeTitleOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 
@@ -516,7 +536,7 @@ export async function updateProjectNodeStatusOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 
@@ -565,7 +585,7 @@ export async function updateProjectNodeTypeOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 
@@ -612,7 +632,7 @@ export async function updateProjectNodeMetadataOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 
@@ -652,7 +672,7 @@ export async function updateProjectMetadataSchemaOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 
@@ -721,7 +741,7 @@ export async function addProjectNodeImagesOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 
@@ -771,7 +791,7 @@ export async function deleteProjectNodeImageOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
 
   await rm(
     getProjectNodeImageFilePath({
@@ -860,7 +880,7 @@ export async function addProjectNodeImageSourcesOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 
@@ -920,7 +940,7 @@ export async function createContextNodeOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return {
     nodeId: createdNodes.rootNodeId,
     createdNodeIds: createdNodes.nodes.map((node) => node.id),
@@ -995,7 +1015,7 @@ export async function createChildNodeOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return { nodeId, project: nextRecord };
 }
 
@@ -1134,7 +1154,7 @@ export async function deleteProjectNodeOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 
@@ -1177,7 +1197,7 @@ export async function deleteProjectLinkOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 
@@ -1241,7 +1261,7 @@ export async function moveProjectNodeOnDisk(
   });
 
   records[recordIndex] = nextRecord;
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 
