@@ -48,7 +48,7 @@ export function pickTaskColumns() {
     { header: "ID", value: (row) => row.id },
     { header: "STATUS", value: (row) => row.status },
     { header: "TYPE", value: (row) => row.type },
-    { header: "TITLE", value: (row) => row.title },
+    { header: "TITLE", value: (row) => row.titlePath ?? row.title },
   ];
 }
 

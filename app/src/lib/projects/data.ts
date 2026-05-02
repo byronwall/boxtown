@@ -233,6 +233,8 @@ export const createProjectContextNode = action(
     const label = formData.get("label");
     const context = formData.get("context");
     const splitByHeadingLevel = formData.get("splitByHeadingLevel");
+    const splitByListItems = formData.get("splitByListItems");
+    const splitNestedListItems = formData.get("splitNestedListItems");
     const maxHeadingDepth = formData.get("maxHeadingDepth");
 
     if (typeof projectId !== "string" || projectId.trim().length === 0) {
@@ -248,6 +250,8 @@ export const createProjectContextNode = action(
       context: typeof context === "string" ? context : "",
       metadata: getMetadataFromFormData(formData),
       splitByHeadingLevel: splitByHeadingLevel === "true",
+      splitByListItems: splitByListItems === "true",
+      splitNestedListItems: splitNestedListItems === "true",
       maxHeadingDepth:
         typeof maxHeadingDepth === "string" ? Number.parseInt(maxHeadingDepth, 10) : undefined,
     });

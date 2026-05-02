@@ -17,6 +17,7 @@ import {
 } from "lucide-solid";
 import { Box, HStack, VStack } from "styled-system/jsx";
 import { MarkdownRenderer } from "~/components/markdown-renderer";
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { EditInPlace } from "~/components/ui/edit-in-place";
 import * as Field from "~/components/ui/field";
@@ -846,25 +847,61 @@ function ActivityEntryContent(props: {
             {props.entry.summary}
           </Text>
         </HStack>
-        <HStack gap="1.5" flexWrap="wrap" class="spatial-map-activity-meta">
-          <span class="spatial-map-activity-chip is-kind">
+        <HStack gap="1.5" flexWrap="wrap" mt="1.5">
+          <Badge
+            as="span"
+            variant="spatial"
+            size="2xs"
+            borderColor="var(--activity-accent-border)"
+            bg="var(--activity-accent-soft)"
+            color="var(--activity-accent)"
+            fontFamily="mono"
+            fontWeight="bold"
+            maxW="100%"
+            minW="0"
+          >
             <Icon size={11} strokeWidth={2.3} />
             {props.config.label}
-          </span>
+          </Badge>
           <Show when={props.node}>
             {(node) => (
-              <span class="spatial-map-activity-chip is-node">
+              <Badge
+                as="span"
+                variant="spatial"
+                size="2xs"
+                fontFamily="mono"
+                maxW="100%"
+                minW="0"
+                overflow="hidden"
+                textOverflow="ellipsis"
+              >
                 {node().label}
-              </span>
+              </Badge>
             )}
           </Show>
-          <span class="spatial-map-activity-chip is-actor">
+          <Badge
+            as="span"
+            variant="spatial"
+            size="2xs"
+            fontFamily="mono"
+            maxW="100%"
+            minW="0"
+          >
             <ActorIcon size={11} strokeWidth={2.25} />
             {formatActivityActor(props.entry)}
-          </span>
-          <time class="spatial-map-activity-chip is-time" title={formatActivityDate(props.entry.createdAt)}>
+          </Badge>
+          <Badge
+            as="time"
+            variant="spatial"
+            size="2xs"
+            title={formatActivityDate(props.entry.createdAt)}
+            bg="transparent"
+            borderColor="rgba(75, 84, 72, 0.12)"
+            color="fg.muted"
+            fontFamily="mono"
+          >
             {formatRelativeActivityDate(props.entry.createdAt)}
-          </time>
+          </Badge>
         </HStack>
       </Box>
     </Box>
@@ -984,14 +1021,20 @@ function ContextPreviewDialog(props: {
 
 function InspectorChip(props: { label: string; value: string }) {
   return (
-    <HStack gap="1.5" class="spatial-map-inspector-chip">
+    <Badge
+      gap="1.5"
+      variant="spatial"
+      size="sm"
+      maxW="100%"
+      minW="0"
+    >
       <Text as="span" textStyle="xs" class="spatial-map-inspector-row-label">
         {props.label}
       </Text>
       <Text as="span" textStyle="xs" class="spatial-map-inspector-row-value is-mono">
         {props.value}
       </Text>
-    </HStack>
+    </Badge>
   );
 }
 

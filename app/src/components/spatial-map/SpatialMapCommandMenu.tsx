@@ -11,6 +11,7 @@ import {
   Switch,
 } from "solid-js";
 import { Box, HStack, VStack } from "styled-system/jsx";
+import { Badge } from "~/components/ui/badge";
 import { Input } from "~/components/ui/input";
 import { Kbd } from "~/components/ui/kbd";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
@@ -177,9 +178,14 @@ export function SpatialMapCommandMenu() {
                           </Box>
                         </Box>
                       </Show>
-                      <Box as="span" class="spatial-map-command-result-type">
+                      <Badge
+                        as="span"
+                        variant="spatial"
+                        size="sm"
+                        flex="0 0 auto"
+                      >
                         {result.node.type}
-                      </Box>
+                      </Badge>
                     </HStack>
                   </button>
                 )}

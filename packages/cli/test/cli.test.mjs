@@ -138,6 +138,26 @@ test("parseArgs handles node mutation and export commands", () => {
   assert.equal(exportMarkdown.options.output, "project.md");
 });
 
+test("parseArgs handles targeted context flags", () => {
+  const taskList = parseArgs([
+    "task",
+    "list",
+    "--search",
+    "layout",
+    "--with-ancestors",
+    "--json",
+  ]);
+  assert.deepEqual(taskList.command, ["task", "list"]);
+  assert.equal(taskList.options.search, "layout");
+  assert.equal(taskList.options.withAncestors, true);
+  assert.equal(taskList.options.json, true);
+
+  const nodeView = parseArgs(["node", "view", "node-1", "--with-context"]);
+  assert.deepEqual(nodeView.command, ["node", "view"]);
+  assert.deepEqual(nodeView.positionals, ["node-1"]);
+  assert.equal(nodeView.options.withContext, true);
+});
+
 test("config resolution prefers flags then environment then config", () => {
   const config = {
     defaultServer: "http://config.example",
@@ -317,6 +337,54 @@ test("client sends node mutation requests", async () => {
     assert.equal(calls[2].init.method, "POST");
     assert.equal(calls[4].init.method, "PUT");
     assert.deepEqual(JSON.parse(calls[6].init.body), { set: { purpose: "Purpose" } });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("client requests compact hierarchy context projections", async () => {
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    calls.push({ url, init });
+    return new Response(JSON.stringify({
+      tasks: [],
+      task: { id: "node-1", title: "Node 1" },
+      node: { id: "node-1", title: "Node 1" },
+      path: [],
+      inheritedContext: { titlePath: "Node 1" },
+    }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+
+  try {
+    const client = new ProductGridClient({
+      server: "http://localhost:3000",
+      token: "secret-token",
+    });
+
+    await client.listTasks("demo", {
+      status: "planned",
+      search: "layout",
+      include: "ancestors",
+    });
+    await client.getTask("demo", "node-1", { include: "context" });
+    await client.getNodeContextTree("demo", "node-1");
+
+    assert.equal(
+      calls[0].url,
+      "http://localhost:3000/api/v1/projects/demo/tasks?status=planned&search=layout&include=ancestors",
+    );
+    assert.equal(
+      calls[1].url,
+      "http://localhost:3000/api/v1/projects/demo/tasks/node-1?include=context",
+    );
+    assert.equal(
+      calls[2].url,
+      "http://localhost:3000/api/v1/projects/demo/nodes/node-1/context-tree",
+    );
   } finally {
     globalThis.fetch = originalFetch;
   }

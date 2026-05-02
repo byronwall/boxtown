@@ -72,6 +72,53 @@ export interface AgentTaskSummary {
   childCount: number;
   imageCount: number;
   updatedAt: string;
+  titlePath?: string;
+  path?: AgentPathNode[];
+}
+
+export interface AgentPathNode extends AgentMapNode {
+  title: string;
+}
+
+export interface AgentContextMetadataBlock {
+  sourceNodeId: string;
+  sourceTitle: string;
+  key: string;
+  value: string;
+}
+
+export interface AgentContextTextBlock {
+  sourceNodeId: string;
+  sourceTitle: string;
+  value: string;
+}
+
+export type AgentContextImage = NonNullable<MapNode["images"]>[number] & {
+  sourceNodeId: string;
+  sourceTitle: string;
+};
+
+export interface AgentInheritedContext {
+  titlePath: string;
+  metadata: AgentContextMetadataBlock[];
+  contextBlocks: AgentContextTextBlock[];
+  rawContextBlocks: AgentContextTextBlock[];
+  images: AgentContextImage[];
+  hasDirectContext: boolean;
+  hasInheritedContext: boolean;
+  missingContext: boolean;
+}
+
+export interface AgentNodeContextTree {
+  node: AgentPathNode;
+  path: AgentPathNode[];
+  inheritedContext: AgentInheritedContext;
+}
+
+export interface AgentTaskContext {
+  task: AgentTaskSummary;
+  path: AgentPathNode[];
+  inheritedContext: AgentInheritedContext;
 }
 
 export interface AgentMarkdownImportResponse {

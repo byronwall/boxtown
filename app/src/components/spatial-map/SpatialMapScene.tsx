@@ -130,6 +130,8 @@ const NODE_LABEL_MIN_BOTTOM_PADDING = 7;
 const NODE_LABEL_BOTTOM_PADDING_RATIO = 0.11;
 const NODE_LABEL_LINE_HEIGHT = 1.08;
 const SVG_TEXT_WIDTH_FACTOR = 0.58;
+const NODE_TEXT_SCALE_ZOOM_START = 0.72;
+const NODE_TEXT_SCALE_STEP = 0.06;
 const NODE_STATUS_BADGE_SIZE = 17;
 const NODE_STATUS_BADGE_MARGIN = 6;
 const NODE_STATUS_LABEL_GAP = 5;
@@ -673,38 +675,62 @@ function SpatialMapNode(props: {
     props.colorMode === "status"
       ? getNodeStatusTone(props.item.node.status)
       : fallbackTone();
-  const textScale = () => Math.min(1, 1 / Math.max(props.viewportScale, 0.1));
-  const metaFontSize = () => props.item.node.metaSize * textScale();
+  const zoomTextScale = createMemo(() =>
+    quantizeTextScale(
+      Math.min(1, NODE_TEXT_SCALE_ZOOM_START / Math.max(props.viewportScale, 0.1)),
+    ),
+  );
   const metaBaselineY = () =>
     props.item.node.height -
     Math.max(NODE_LABEL_MIN_BOTTOM_PADDING, props.item.node.height * NODE_LABEL_BOTTOM_PADDING_RATIO);
   const labelAreaTop = () =>
     hasImages() ? NODE_LABEL_TOP_PADDING + imageHeight() + NODE_LABEL_IMAGE_GAP : NODE_LABEL_TOP_PADDING;
+  const labelMaxWidth = createMemo(() =>
+    Math.max(24, props.item.node.width - NODE_LABEL_HORIZONTAL_PADDING * 2),
+  );
+  const maxReadableTextScale = createMemo(() =>
+    getMaxReadableTextScale({
+      baseFontSize: props.item.node.fontSize,
+      baseMetaSize: props.item.node.metaSize,
+      labelAreaTop: labelAreaTop(),
+      labelMaxWidth: labelMaxWidth(),
+      metaBaselineY: metaBaselineY(),
+      text: props.item.node.label,
+    }),
+  );
+  const textScale = createMemo(() => Math.max(zoomTextScale(), maxReadableTextScale()));
+  const metaFontSize = createMemo(() => props.item.node.metaSize * textScale());
   const labelAreaBottom = () => Math.max(labelAreaTop() + 1, metaBaselineY() - metaFontSize() - NODE_LABEL_META_GAP);
   const availableLabelHeight = () =>
     Math.max(1, labelAreaBottom() - labelAreaTop());
-  const labelFontSize = () => {
+  const labelFontSize = createMemo(() => {
     const zoomAdjustedFontSize = props.item.node.fontSize * textScale();
 
     return Math.min(
       zoomAdjustedFontSize,
       availableLabelHeight() / NODE_LABEL_LINE_HEIGHT,
     );
-  };
+  });
   const labelLineHeight = () => Math.ceil(labelFontSize() * NODE_LABEL_LINE_HEIGHT);
-  const labelLines = () =>
-    wrapSvgText({
-      maxLines: Math.max(
-        2,
-        Math.min(
-          5,
-          Math.floor(availableLabelHeight() / labelLineHeight()),
-        ),
+  const labelMaxLines = createMemo(() =>
+    Math.max(
+      2,
+      Math.min(
+        5,
+        Math.floor(availableLabelHeight() / labelLineHeight()),
       ),
-      maxWidth: Math.max(24, props.item.node.width - NODE_LABEL_HORIZONTAL_PADDING * 2),
+    ),
+  );
+  const labelMaxCharacters = createMemo(() =>
+    Math.max(1, Math.floor(labelMaxWidth() / (labelFontSize() * SVG_TEXT_WIDTH_FACTOR))),
+  );
+  const labelLines = createMemo(() =>
+    wrapSvgText({
+      maxCharacters: labelMaxCharacters(),
+      maxLines: labelMaxLines(),
       text: props.item.node.label,
-      textWidth: labelFontSize() * SVG_TEXT_WIDTH_FACTOR,
-    });
+    }),
+  );
   const labelLineAt = (index: number) => labelLines()[index] ?? "";
   const labelBlockHeight = () => labelLines().length * labelLineHeight();
   const labelStartY = () =>
@@ -911,13 +937,86 @@ function getNodeTypeTone(
 }
 
 function wrapSvgText(options: {
+  maxCharacters: number;
   maxLines: number;
-  maxWidth: number;
   text: string;
-  textWidth: number;
 }) {
-  const maxCharacters = Math.max(1, Math.floor(options.maxWidth / options.textWidth));
-  const words = options.text.trim().replace(/\s+/g, " ").split(" ");
+  const maxCharacters = Math.max(1, options.maxCharacters);
+  const lines = getSvgTextLines(options.text, maxCharacters);
+
+  return clampSvgTextLines(lines, options.maxLines, maxCharacters);
+}
+
+function isSvgTextFullyVisible(options: {
+  maxCharacters: number;
+  maxLines: number;
+  text: string;
+}) {
+  const maxCharacters = Math.max(1, options.maxCharacters);
+  return getSvgTextLines(options.text, maxCharacters).length <= options.maxLines;
+}
+
+function getMaxReadableTextScale(options: {
+  baseFontSize: number;
+  baseMetaSize: number;
+  labelAreaTop: number;
+  labelMaxWidth: number;
+  metaBaselineY: number;
+  text: string;
+}) {
+  for (
+    let scale = 1;
+    scale >= NODE_TEXT_SCALE_STEP;
+    scale = Number((scale - NODE_TEXT_SCALE_STEP).toFixed(2))
+  ) {
+    if (doesTextFitAtScale(options, scale)) {
+      return scale;
+    }
+  }
+
+  return NODE_TEXT_SCALE_STEP;
+}
+
+function doesTextFitAtScale(
+  options: {
+    baseFontSize: number;
+    baseMetaSize: number;
+    labelAreaTop: number;
+    labelMaxWidth: number;
+    metaBaselineY: number;
+    text: string;
+  },
+  scale: number,
+) {
+  const metaFontSize = options.baseMetaSize * scale;
+  const labelAreaBottom = Math.max(
+    options.labelAreaTop + 1,
+    options.metaBaselineY - metaFontSize - NODE_LABEL_META_GAP,
+  );
+  const availableLabelHeight = Math.max(1, labelAreaBottom - options.labelAreaTop);
+  const labelFontSize = Math.min(
+    options.baseFontSize * scale,
+    availableLabelHeight / NODE_LABEL_LINE_HEIGHT,
+  );
+  const labelLineHeight = Math.ceil(labelFontSize * NODE_LABEL_LINE_HEIGHT);
+  const maxLines = Math.max(
+    2,
+    Math.min(5, Math.floor(availableLabelHeight / labelLineHeight)),
+  );
+  const maxCharacters = Math.max(
+    1,
+    Math.floor(options.labelMaxWidth / (labelFontSize * SVG_TEXT_WIDTH_FACTOR)),
+  );
+
+  return isSvgTextFullyVisible({
+    maxCharacters,
+    maxLines,
+    text: options.text,
+  });
+}
+
+function getSvgTextLines(text: string, maxCharacters: number) {
+  const words = text.trim().replace(/\s+/g, " ").split(" ");
   const lines: string[] = [];
   let currentLine = "";
 
@@ -944,7 +1043,7 @@ function wrapSvgText(options: {
     lines.push(currentLine);
   }
 
-  return clampSvgTextLines(lines, options.maxLines, maxCharacters);
+  return lines;
 }
 
 function splitOversizedWord(word: string, maxCharacters: number) {
@@ -985,4 +1084,15 @@ function ellipsizeSvgText(text: string, maxCharacters: number) {
   }
 
   return `${text.slice(0, Math.max(1, maxCharacters - 3))}...`;
+}
+
+function quantizeTextScale(scale: number) {
+  if (scale >= 1) {
+    return 1;
+  }
+
+  return Math.max(
+    NODE_TEXT_SCALE_STEP,
+    Math.floor(scale / NODE_TEXT_SCALE_STEP) * NODE_TEXT_SCALE_STEP,
+  );
 }

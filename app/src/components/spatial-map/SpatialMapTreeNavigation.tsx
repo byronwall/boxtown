@@ -10,6 +10,7 @@ import {
 } from "solid-js";
 
 import { Button } from "~/components/ui/button";
+import { Badge } from "~/components/ui/badge";
 import { PanelPopover } from "~/components/ui/panel-popover";
 import type { SpatialMapTree, SpatialMapTreeItem } from "./spatial-map-tree";
 
@@ -215,7 +216,9 @@ function TocEntry(props: {
         style={{ "--spatial-map-tree-toc-depth": String(props.entry.depth) }}
         onClick={() => props.onNavigate(props.entry.path)}
       >
-        <span class="spatial-map-tree-toc-type">{props.entry.item.node.type}</span>
+        <Badge as="span" variant="spatial" size="2xs">
+          {props.entry.item.node.type}
+        </Badge>
         <span class="spatial-map-tree-toc-label">
           {props.entry.item.node.label}
         </span>

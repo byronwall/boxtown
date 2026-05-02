@@ -484,6 +484,155 @@ describe("context node persistence", () => {
     }
   });
 
+  it("splits markdown list items into linked context nodes", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-list-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
+
+    try {
+      process.chdir(tempRoot);
+
+      const project = await createProjectOnDisk({ name: "List Import" });
+      const result = await createContextNodeOnDisk({
+        projectId: project.id,
+        label: "Logo Dodo",
+        context: [
+          "- Allow control over logo only, logo + word mark, etc.",
+          "- Remove the disabled generate button when status is showing",
+          "- Pricing should probably just be buy $10 worth of credits",
+          "  - Price things so that the margin is like 80% if possible.",
+          "- Clicking again on a liked image needs to mark it not liked",
+        ].join("\n"),
+        splitByListItems: true,
+        splitNestedListItems: true,
+      });
+
+      expect(result.createdNodeCount).toBe(6);
+      expect(result.createdNodeIds).toEqual([
+        "note-logo-dodo",
+        "note-allow-control-over-logo-only-logo-word-mark-etc",
+        "note-remove-the-disabled-generate-button-when-status-is-showing",
+        "note-pricing-should-probably-just-be-buy-10-worth-of-credits",
+        "note-price-things-so-that-the-margin-is-like-80-if-possible",
+        "note-clicking-again-on-a-liked-image-needs-to-mark-it-not-liked",
+      ]);
+      expect(result.createdLinks).toEqual([
+        {
+          source: "note-logo-dodo",
+          target: "note-allow-control-over-logo-only-logo-word-mark-etc",
+          parentChild: true,
+        },
+        {
+          source: "note-logo-dodo",
+          target: "note-remove-the-disabled-generate-button-when-status-is-showing",
+          parentChild: true,
+        },
+        {
+          source: "note-logo-dodo",
+          target: "note-pricing-should-probably-just-be-buy-10-worth-of-credits",
+          parentChild: true,
+        },
+        {
+          source: "note-pricing-should-probably-just-be-buy-10-worth-of-credits",
+          target: "note-price-things-so-that-the-margin-is-like-80-if-possible",
+          parentChild: true,
+        },
+        {
+          source: "note-logo-dodo",
+          target: "note-clicking-again-on-a-liked-image-needs-to-mark-it-not-liked",
+          parentChild: true,
+        },
+      ]);
+      expect(result.project.spatialMap.nodes.slice(-6)).toEqual([
+        expect.objectContaining({
+          id: "note-logo-dodo",
+          label: "Logo Dodo",
+          context: "",
+        }),
+        expect.objectContaining({
+          label: "Allow control over logo only, logo + word mark, etc.",
+          context: "",
+        }),
+        expect.objectContaining({
+          label: "Remove the disabled generate button when status is showing",
+          context: "",
+        }),
+        expect.objectContaining({
+          label: "Pricing should probably just be buy $10 worth of credits",
+          context: "",
+        }),
+        expect.objectContaining({
+          label: "Price things so that the margin is like 80% if possible.",
+          context: "",
+        }),
+        expect.objectContaining({
+          label: "Clicking again on a liked image needs to mark it not liked",
+          context: "",
+        }),
+      ]);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("keeps nested list items as parent context when recursive list splitting is off", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-list-flat-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
+
+    try {
+      process.chdir(tempRoot);
+
+      const project = await createProjectOnDisk({ name: "Flat List Import" });
+      const result = await createContextNodeOnDisk({
+        projectId: project.id,
+        label: "Logo Dodo",
+        context: [
+          "- Pricing should probably just be buy $10 worth of credits",
+          "  - Price things so that the margin is like 80% if possible.",
+          "- Provide an existing image as context",
+        ].join("\n"),
+        splitByListItems: true,
+        splitNestedListItems: false,
+      });
+
+      expect(result.createdNodeCount).toBe(3);
+      expect(result.createdLinks).toEqual([
+        {
+          source: "note-logo-dodo",
+          target: "note-pricing-should-probably-just-be-buy-10-worth-of-credits",
+          parentChild: true,
+        },
+        {
+          source: "note-logo-dodo",
+          target: "note-provide-an-existing-image-as-context",
+          parentChild: true,
+        },
+      ]);
+      expect(result.project.spatialMap.nodes.slice(-3)).toEqual([
+        expect.objectContaining({
+          id: "note-logo-dodo",
+          label: "Logo Dodo",
+          context: "",
+        }),
+        expect.objectContaining({
+          label: "Pricing should probably just be buy $10 worth of credits",
+          context: "- Price things so that the margin is like 80% if possible.",
+        }),
+        expect.objectContaining({
+          label: "Provide an existing image as context",
+          context: "",
+        }),
+      ]);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
   it("treats legacy note nodes as context-only and preserves current context as raw context", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-legacy-"));

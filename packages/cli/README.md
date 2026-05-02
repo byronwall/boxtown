@@ -54,10 +54,11 @@ AGENT_API_TOKENS='local-token:project:read|project:write|node:read|task:read|nod
 pgm project list
 pgm project create "New Product Site" --link --json
 pgm project link <project-id>
-pgm project view
-pgm node list
-pgm node list --status blocked --json
-pgm node view <node-id>
+pgm task list --search "checkout" --with-ancestors --json
+pgm task view <node-id> --json
+pgm task export-context <node-id> --output ./task-context.md
+pgm node list --search "checkout" --json
+pgm node view <node-id> --with-context --json
 pgm node create --title "Checkout" --type page --json
 pgm node update <node-id> --status working --json
 pgm node move <node-id> --parent <parent-node-id> --json
@@ -65,8 +66,9 @@ pgm node import-markdown --file ./brief.md --title "Product Brief" --split-headi
 pgm image add <node-id> ./screenshot.png --json
 pgm image list <node-id> --json
 pgm project export-markdown --output ./project-context.md
-pgm task list
 ```
+
+Avoid starting with `pgm project view --json` for agent work; it returns the full graph and can be much larger than the task/node context needed for a scoped change.
 
 ## Agent Write Commands
 
@@ -110,7 +112,13 @@ pgm image list <node-id> --json
 pgm image remove <node-id> <image-id> --json
 ```
 
-Export project context as LLM-ready markdown:
+Export scoped task context as LLM-ready markdown:
+
+```bash
+pgm task export-context <node-id> --output ./task-context.md
+```
+
+Export full project context only for broad handoffs:
 
 ```bash
 pgm project export-markdown --output ./project-context.md

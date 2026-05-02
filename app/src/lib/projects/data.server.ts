@@ -73,6 +73,8 @@ interface CreateContextNodeInput {
   context: string;
   metadata?: Record<string, unknown>;
   splitByHeadingLevel?: boolean;
+  splitByListItems?: boolean;
+  splitNestedListItems?: boolean;
   maxHeadingDepth?: number;
   actor?: ProjectOperationActor;
 }
@@ -884,13 +886,15 @@ export async function createContextNodeOnDisk(
   const metadata = sanitizeNodeMetadata(input.metadata, current.nodeMetadataSchema, {
     omitDefaultValues: true,
   });
-  const createdNodes = input.splitByHeadingLevel
+  const createdNodes = input.splitByHeadingLevel || input.splitByListItems
     ? createContextNodeTree({
         label: baseLabel,
         markdown: input.context,
         metadata,
         existingIds,
         maxHeadingDepth: input.maxHeadingDepth,
+        splitListItems: input.splitByListItems,
+        splitNestedListItems: input.splitNestedListItems,
       })
     : createSingleContextNode({
         label: baseLabel,
@@ -1023,9 +1027,13 @@ function createContextNodeTree(input: {
   metadata: Record<string, string>;
   existingIds: Set<string>;
   maxHeadingDepth?: number;
+  splitListItems?: boolean;
+  splitNestedListItems?: boolean;
 }) {
   const { preamble, sections } = splitMarkdownIntoHeadingSections(input.markdown, {
     maxHeadingDepth: input.maxHeadingDepth,
+    splitListItems: input.splitListItems,
+    splitNestedListItems: input.splitNestedListItems,
   });
   if (sections.length === 0) {
     return createSingleContextNode({

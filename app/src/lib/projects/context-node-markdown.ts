@@ -7,6 +7,8 @@ export interface MarkdownHeadingSection {
 
 interface SplitMarkdownIntoHeadingSectionsOptions {
   maxHeadingDepth?: number;
+  splitListItems?: boolean;
+  splitNestedListItems?: boolean;
 }
 
 interface MutableMarkdownHeadingSection {
@@ -18,6 +20,7 @@ interface MutableMarkdownHeadingSection {
 
 const ATX_HEADING_PATTERN = /^( {0,3})(#{1,6})[ \t]+(.+?)(?:[ \t]+#+[ \t]*)?$/;
 const FENCE_PATTERN = /^( {0,3})(`{3,}|~{3,})/;
+const LIST_ITEM_PATTERN = /^([ \t]*)(?:[-+*]|\d+[.)])[ \t]+(.+)$/;
 
 export function detectMarkdownMaxHeadingDepth(markdown: string) {
   return parseMarkdownHeadingSections(markdown).maxHeadingDepth;
@@ -51,6 +54,8 @@ function parseMarkdownHeadingSections(
     typeof options.maxHeadingDepth === "number" && Number.isFinite(options.maxHeadingDepth)
       ? Math.max(1, Math.floor(options.maxHeadingDepth))
       : null;
+  const splitListItems = options.splitListItems === true;
+  const splitNestedListItems = options.splitNestedListItems !== false;
   let detectedMaxHeadingDepth = 0;
   let activeSectionIndex: number | null = null;
   let activeFenceMarker: string | null = null;
@@ -70,6 +75,8 @@ function parseMarkdownHeadingSections(
 
     const headingMatch =
       activeFenceMarker === null ? line.match(ATX_HEADING_PATTERN) : null;
+    const listItemMatch =
+      splitListItems && activeFenceMarker === null ? line.match(LIST_ITEM_PATTERN) : null;
 
     if (headingMatch) {
       const level = headingMatch[2].length;
@@ -126,6 +133,46 @@ function parseMarkdownHeadingSections(
       continue;
     }
 
+    if (listItemMatch) {
+      const indent = getListIndentWidth(listItemMatch[1] ?? "");
+      const label = (listItemMatch[2] ?? "").trim();
+
+      if (label.length === 0) {
+        continue;
+      }
+
+      const parentSectionIndex = getListItemParentIndex({
+        sections,
+        activeSectionIndex,
+        indent,
+        splitNestedListItems,
+      });
+
+      if (!splitNestedListItems && shouldRollNestedListItemIntoContext({
+        sections,
+        activeSectionIndex,
+        indent,
+      })) {
+        appendLineToSectionOrPreamble({
+          sections,
+          preambleLines,
+          activeSectionIndex,
+          line,
+        });
+        continue;
+      }
+
+      const nextSectionIndex = sections.length;
+      sections.push({
+        level: 7 + indent,
+        label,
+        parentIndex: parentSectionIndex,
+        bodyLines: [],
+      });
+      activeSectionIndex = nextSectionIndex;
+      continue;
+    }
+
     if (activeSectionIndex === null) {
       preambleLines.push(line);
       continue;
@@ -144,6 +191,88 @@ function parseMarkdownHeadingSections(
       context: trimMarkdownBlock(section.bodyLines.join("\n")),
     })),
   };
+}
+
+function getListIndentWidth(indent: string) {
+  return [...indent].reduce((width, char) => width + (char === "\t" ? 4 : 1), 0);
+}
+
+function getListItemParentIndex(input: {
+  sections: MutableMarkdownHeadingSection[];
+  activeSectionIndex: number | null;
+  indent: number;
+  splitNestedListItems: boolean;
+}) {
+  if (input.activeSectionIndex === null) {
+    return null;
+  }
+
+  const activeSection = input.sections[input.activeSectionIndex];
+  if (!activeSection) {
+    return null;
+  }
+
+  if (!input.splitNestedListItems && activeSection.level >= 7) {
+    return activeSection.parentIndex;
+  }
+
+  if (activeSection.level >= 7) {
+    if (input.indent > activeSection.level - 7) {
+      return input.activeSectionIndex;
+    }
+
+    for (let index = input.activeSectionIndex - 1; index >= 0; index -= 1) {
+      const section = input.sections[index];
+      if (!section) {
+        continue;
+      }
+      if (section.level < 7) {
+        return index;
+      }
+      const sectionIndent = section.level - 7;
+      if (sectionIndent < input.indent) {
+        return index;
+      }
+      if (sectionIndent === input.indent) {
+        return section.parentIndex;
+      }
+    }
+
+    return activeSection.parentIndex;
+  }
+
+  return input.activeSectionIndex;
+}
+
+function shouldRollNestedListItemIntoContext(input: {
+  sections: MutableMarkdownHeadingSection[];
+  activeSectionIndex: number | null;
+  indent: number;
+}) {
+  if (input.activeSectionIndex === null) {
+    return false;
+  }
+
+  const activeSection = input.sections[input.activeSectionIndex];
+  return (
+    activeSection !== undefined &&
+    activeSection.level >= 7 &&
+    input.indent > activeSection.level - 7
+  );
+}
+
+function appendLineToSectionOrPreamble(input: {
+  sections: MutableMarkdownHeadingSection[];
+  preambleLines: string[];
+  activeSectionIndex: number | null;
+  line: string;
+}) {
+  if (input.activeSectionIndex === null) {
+    input.preambleLines.push(input.line);
+    return;
+  }
+
+  input.sections[input.activeSectionIndex]?.bodyLines.push(input.line);
 }
 
 function trimMarkdownBlock(value: string) {

@@ -37,8 +37,22 @@ export const badge = defineRecipe({
         borderColor: "colorPalette.outline.border",
         color: "colorPalette.outline.fg",
       },
+      spatial: {
+        bg: "rgba(246, 248, 244, 0.94)",
+        borderWidth: "1px",
+        borderColor: "rgba(44, 52, 46, 0.24)",
+        boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.28)",
+        color: "fg.muted",
+      },
     },
     size: {
+      "2xs": {
+        fontSize: "10px",
+        px: "1.5",
+        h: "4.5",
+        gap: "0.5",
+        _icon: { boxSize: "2.5" },
+      },
       sm: {
         fontSize: "xs",
         px: "1.5",

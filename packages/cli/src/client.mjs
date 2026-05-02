@@ -50,6 +50,12 @@ export class ProductGridClient {
     ).then((body) => body.node);
   }
 
+  getNodeContextTree(projectId, nodeId) {
+    return this.request(
+      `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}/context-tree`,
+    );
+  }
+
   createNode(projectId, input) {
     return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/nodes`, {
       method: "POST",
@@ -182,13 +188,29 @@ export class ProductGridClient {
 
   listTasks(projectId, filters = {}) {
     const searchParams = new URLSearchParams();
-    if (filters.status) {
-      searchParams.set("status", filters.status);
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== "") {
+        searchParams.set(key, value);
+      }
     }
 
     const suffix = searchParams.size > 0 ? `?${searchParams}` : "";
     return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/tasks${suffix}`).then(
       (body) => body.tasks ?? [],
+    );
+  }
+
+  getTask(projectId, nodeId, options = {}) {
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(options)) {
+      if (value !== undefined && value !== null && value !== "") {
+        searchParams.set(key, value);
+      }
+    }
+
+    const suffix = searchParams.size > 0 ? `?${searchParams}` : "";
+    return this.request(
+      `/api/v1/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(nodeId)}${suffix}`,
     );
   }
 

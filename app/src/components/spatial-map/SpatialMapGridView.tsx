@@ -12,6 +12,7 @@ import {
 import { Portal } from "solid-js/web";
 import { Box, HStack } from "styled-system/jsx";
 
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import * as HoverCard from "~/components/ui/hover-card";
 import { Input } from "~/components/ui/input";
@@ -449,10 +450,10 @@ function NodesGrid(props: {
                         />
                       </td>
                       <td>
-                        <span class="spatial-map-grid-data-chip">{row.node.type}</span>
+                        <Badge variant="spatial" size="sm">{row.node.type}</Badge>
                       </td>
                       <td>
-                        <span class="spatial-map-grid-data-chip">{row.node.status}</span>
+                        <Badge variant="spatial" size="sm">{row.node.status}</Badge>
                       </td>
                       <For each={props.metadataFields}>
                         {(field) => <MetadataValueCell node={row.node} field={field} />}
@@ -519,9 +520,14 @@ function LinksGrid(props: {
                         <NodeCell node={entry.source} />
                       </td>
                       <td>
-                        <span class="spatial-map-grid-link-chip">
+                        <Badge
+                          variant="spatial"
+                          size="sm"
+                          color="var(--spatial-map-accent-strong)"
+                          fontWeight="760"
+                        >
                           {formatLinkRelationship(entry.link)}
-                        </span>
+                        </Badge>
                       </td>
                       <td onClick={() => spatialMap.setSelectedNodeId(entry.target.id)}>
                         <NodeCell node={entry.target} />
@@ -593,24 +599,49 @@ function MetadataKeyPicker(props: {
 }) {
   return (
     <Show when={props.fields.length > 0}>
-      <Box class="spatial-map-grid-metadata-picker" aria-label="Metadata columns">
-        <span>Columns</span>
+      <HStack
+        aria-label="Metadata columns"
+        flex="0 1 auto"
+        gap="1.5"
+        minH="7.5"
+        minW="30"
+        overflowX="auto"
+      >
+        <Box
+          as="span"
+          flexShrink="0"
+          color="fg.subtle"
+          fontSize="10px"
+          fontWeight="bold"
+          letterSpacing="0.08em"
+          lineHeight="1"
+        >
+          Columns
+        </Box>
         <For each={props.fields}>
           {(field) => {
             const selected = () => props.selectedKeys.includes(field.key);
             return (
-              <button
+              <Button
                 type="button"
-                class={`spatial-map-grid-metadata-toggle${selected() ? " is-active" : ""}`}
+                variant={selected() ? "subtle" : "outline"}
+                size="2xs"
                 aria-pressed={selected()}
+                color={selected() ? "var(--spatial-map-accent-strong)" : "fg.muted"}
+                borderColor={selected() ? "rgba(23, 62, 39, 0.38)" : "rgba(44, 52, 46, 0.22)"}
+                bg={selected() ? "rgba(37, 95, 58, 0.14)" : "rgba(252, 253, 252, 0.72)"}
+                fontSize="10px"
+                fontWeight="bold"
+                minH="6"
+                px="2"
                 onClick={() => props.onToggle(field.key)}
               >
                 {field.label}
-              </button>
+              </Button>
             );
           }}
         </For>
-      </Box>
+      </HStack>
     </Show>
   );
 }
@@ -732,9 +763,11 @@ function NodeCell(props: { node: MapNode }) {
     <Box class="spatial-map-grid-node-cell">
       <Box class="spatial-map-grid-node-title">{props.node.label}</Box>
       <HStack gap="1" flexWrap="wrap" class="spatial-map-grid-node-meta">
-        <span>{props.node.type}</span>
-        <span>{props.node.status}</span>
-        <span>{props.node.id}</span>
+        <Badge variant="spatial" size="2xs">{props.node.type}</Badge>
+        <Badge variant="spatial" size="2xs">{props.node.status}</Badge>
+        <Badge variant="spatial" size="2xs" fontFamily="mono" color="fg.subtle">
+          {props.node.id}
+        </Badge>
       </HStack>
     </Box>
   );
@@ -871,7 +904,17 @@ function MetadataValueCell(props: {
       fallback={<td><span class="spatial-map-grid-muted">None</span></td>}
     >
       <td>
-        <span class="spatial-map-grid-metadata-value">{value()}</span>
+        <Badge
+          variant="spatial"
+          size="sm"
+          maxW="100%"
+          minW="0"
+          overflow="hidden"
+        >
+          <Box as="span" minW="0" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+            {value()}
+          </Box>
+        </Badge>
       </td>
     </Show>
   );

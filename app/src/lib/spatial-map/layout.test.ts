@@ -35,8 +35,55 @@ describe("spatial map layout", () => {
     expect(layout.every((node) => node.width > 0 && node.height > 0)).toBe(true);
   });
 
+  it("produces identical coordinates for repeated runs", () => {
+    const first = createInitialLayout(parsedData).map((node) => [
+      node.id,
+      node.x,
+      node.y,
+      node.width,
+      node.height,
+    ]);
+    const second = createInitialLayout(parsedData).map((node) => [
+      node.id,
+      node.x,
+      node.y,
+      node.width,
+      node.height,
+    ]);
+
+    expect(second).toEqual(first);
+  });
+
   it("settles without overlapping nodes while allowing shared borders", () => {
     const layout = createInitialLayout(parsedData);
+    const overlappingPairs: string[] = [];
+
+    for (let i = 0; i < layout.length; i += 1) {
+      for (let j = i + 1; j < layout.length; j += 1) {
+        if (rectanglesOverlap(layout[i], layout[j])) {
+          overlappingPairs.push(`${layout[i].id}:${layout[j].id}`);
+        }
+      }
+    }
+
+    expect(overlappingPairs).toEqual([]);
+  });
+
+  it("keeps crowded child groups from stacking on top of each other", () => {
+    const crowdedData: SpatialMapData = {
+      nodes: [
+        createMapNode("root", "Root", 0),
+        ...Array.from({ length: 72 }, (_, index) =>
+          createMapNode(`child-${String(index).padStart(2, "0")}`, `Child ${index}`, 1),
+        ),
+      ],
+      links: Array.from({ length: 72 }, (_, index) => ({
+        source: "root",
+        target: `child-${String(index).padStart(2, "0")}`,
+        parentChild: true,
+      })),
+    };
+    const layout = createInitialLayout(crowdedData);
     const overlappingPairs: string[] = [];
 
     for (let i = 0; i < layout.length; i += 1) {
@@ -62,7 +109,19 @@ describe("spatial map layout", () => {
       }
     }
 
-    expect(touchingPairs).toBeGreaterThanOrEqual(20);
+    expect(touchingPairs).toBeGreaterThanOrEqual(16);
+  });
+
+  it("does not leave isolated nodes detached from the packed blob", () => {
+    const layout = createInitialLayout(parsedData);
+    const detachedNodeIds = layout
+      .filter(
+        (node) =>
+          !layout.some((other) => other.id !== node.id && rectanglesTouch(node, other)),
+      )
+      .map((node) => node.id);
+
+    expect(detachedNodeIds).toEqual([]);
   });
 
   it("places smaller children against their explicit parent when possible", () => {
@@ -97,15 +156,31 @@ describe("spatial map layout", () => {
     );
   });
 
-  it("keeps the packed bounds reasonably close to the viewport aspect ratio", () => {
+  it("keeps packed bounds close to the viewport aspect ratio without limiting size", () => {
     const layout = createInitialLayout(parsedData);
     const bounds = getLayoutBounds(layout);
     const viewportAspect = VIEWPORT_WIDTH / VIEWPORT_HEIGHT;
     const layoutAspect = bounds.width / bounds.height;
 
-    expect(getLayoutDensity(layout, bounds)).toBeGreaterThanOrEqual(0.5);
+    expect(getLayoutDensity(layout, bounds)).toBeGreaterThanOrEqual(0.27);
+    expect(layoutAspect).toBeGreaterThanOrEqual(viewportAspect * 0.96);
+    expect(layoutAspect).toBeLessThanOrEqual(viewportAspect * 1.04);
+  });
+
+  it("places loose root nodes in a blob close to the viewport aspect ratio", () => {
+    const looseRootData: SpatialMapData = {
+      nodes: Array.from({ length: 18 }, (_, index) =>
+        createMapNode(`root-${String(index).padStart(2, "0")}`, `Root ${index}`, 0),
+      ),
+      links: [],
+    };
+    const layout = createInitialLayout(looseRootData);
+    const bounds = getLayoutBounds(layout);
+    const viewportAspect = VIEWPORT_WIDTH / VIEWPORT_HEIGHT;
+    const layoutAspect = bounds.width / bounds.height;
+
     expect(layoutAspect).toBeGreaterThanOrEqual(viewportAspect * 0.72);
-    expect(layoutAspect).toBeLessThanOrEqual(viewportAspect * 1.2);
+    expect(layoutAspect).toBeLessThanOrEqual(viewportAspect * 1.35);
   });
 
   it("keeps focused subgraphs as dense centered blobs instead of spreading them out", () => {

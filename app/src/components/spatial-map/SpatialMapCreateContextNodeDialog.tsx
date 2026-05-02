@@ -1,6 +1,6 @@
 import { useSubmission } from "@solidjs/router";
 import { For, Show, createEffect, createMemo, createSignal, type JSX } from "solid-js";
-import { HStack, VStack } from "styled-system/jsx";
+import { Box, HStack, VStack } from "styled-system/jsx";
 import { createProjectContextNode } from "~/lib/projects/data";
 import { detectMarkdownMaxHeadingDepth } from "~/lib/projects/context-node-markdown";
 import type { ProjectRecord } from "~/lib/projects/types";
@@ -32,6 +32,8 @@ export function SpatialMapCreateContextNodeDialog(
   const [context, setContext] = createSignal("");
   const [metadataDraft, setMetadataDraft] = createSignal<Record<string, string>>({});
   const [splitByHeadingLevel, setSplitByHeadingLevel] = createSignal(false);
+  const [splitByListItems, setSplitByListItems] = createSignal(false);
+  const [splitNestedListItems, setSplitNestedListItems] = createSignal(true);
   const [selectedMaxHeadingDepth, setSelectedMaxHeadingDepth] = createSignal(1);
   const [hasManualHeadingDepth, setHasManualHeadingDepth] = createSignal(false);
   let nameInput: HTMLInputElement | undefined;
@@ -47,6 +49,8 @@ export function SpatialMapCreateContextNodeDialog(
     setContext("");
     setMetadataDraft({});
     setSplitByHeadingLevel(false);
+    setSplitByListItems(false);
+    setSplitNestedListItems(true);
     setSelectedMaxHeadingDepth(1);
     setHasManualHeadingDepth(false);
     createContextNodeSubmission.clear();
@@ -63,6 +67,13 @@ export function SpatialMapCreateContextNodeDialog(
   const handleSelectMaxHeadingDepth = (depth: number) => {
     setSelectedMaxHeadingDepth(depth);
     setHasManualHeadingDepth(true);
+  };
+
+  const handleSplitByListItemsChange = (checked: boolean) => {
+    setSplitByListItems(checked);
+    if (checked) {
+      setSplitNestedListItems(true);
+    }
   };
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -221,8 +232,10 @@ export function SpatialMapCreateContextNodeDialog(
               )}
             </For>
 
-            <Field.Root>
-              <Field.Label>Import Options</Field.Label>
+            <VStack alignItems="stretch" gap="3">
+              <Box as="span" fontSize="sm" fontWeight="medium">
+                Import Options
+              </Box>
               <Checkbox.Root
                 checked={splitByHeadingLevel()}
                 onCheckedChange={(details) =>
@@ -238,16 +251,16 @@ export function SpatialMapCreateContextNodeDialog(
                     <Checkbox.Label fontSize="sm" fontWeight="medium">
                       Split based on heading level
                     </Checkbox.Label>
-                    <Field.HelperText>
+                    <Box as="span" color="fg.muted" fontSize="sm">
                       Create a root note from the name above, then turn markdown headings into linked child nodes with each section body stored as that node&apos;s context.
-                    </Field.HelperText>
+                    </Box>
                     <Show
                       when={splitByHeadingLevel() && headingDepthOptions().length > 0}
                     >
                       <VStack alignItems="stretch" gap="1" mt="2">
-                        <Field.HelperText>
+                        <Box as="span" color="fg.muted" fontSize="sm">
                           Convert headings through depth {selectedMaxHeadingDepth()}. Deeper headings stay in the parent node&apos;s context.
-                        </Field.HelperText>
+                        </Box>
                         <HStack gap="1" flexWrap="wrap">
                           <For each={headingDepthOptions()}>
                             {(depth) => (
@@ -271,7 +284,57 @@ export function SpatialMapCreateContextNodeDialog(
                   </VStack>
                 </HStack>
               </Checkbox.Root>
-            </Field.Root>
+              <Checkbox.Root
+                checked={splitByListItems()}
+                onCheckedChange={(details) =>
+                  handleSplitByListItemsChange(details.checked === true)
+                }
+                mt="3"
+              >
+                <Checkbox.HiddenInput name="splitByListItems" value="true" />
+                <HStack gap="2" alignItems="flex-start">
+                  <Checkbox.Control mt="0.5">
+                    <Checkbox.Indicator />
+                  </Checkbox.Control>
+                  <VStack alignItems="stretch" gap="1">
+                    <Checkbox.Label fontSize="sm" fontWeight="medium">
+                      Split on list items
+                    </Checkbox.Label>
+                    <Box as="span" color="fg.muted" fontSize="sm">
+                      Turn markdown bullets or numbered items into linked child nodes under the current root or heading.
+                    </Box>
+                  </VStack>
+                </HStack>
+              </Checkbox.Root>
+              <Show when={splitByListItems()}>
+                <Checkbox.Root
+                  checked={splitNestedListItems()}
+                  onCheckedChange={(details) =>
+                    setSplitNestedListItems(details.checked === true)
+                  }
+                  mt="3"
+                  ml="6"
+                >
+                  <Checkbox.HiddenInput
+                    name="splitNestedListItems"
+                    value="true"
+                  />
+                  <HStack gap="2" alignItems="flex-start">
+                    <Checkbox.Control mt="0.5">
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <VStack alignItems="stretch" gap="1">
+                      <Checkbox.Label fontSize="sm" fontWeight="medium">
+                        Split nested list items recursively
+                      </Checkbox.Label>
+                      <Box as="span" color="fg.muted" fontSize="sm">
+                        When off, nested bullets stay in the parent list item&apos;s context.
+                      </Box>
+                    </VStack>
+                  </HStack>
+                </Checkbox.Root>
+              </Show>
+            </VStack>
           </VStack>
         </form>
       </SimpleDialog>

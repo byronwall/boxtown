@@ -23,6 +23,7 @@ import {
   type JSX,
 } from "solid-js";
 import { Box, HStack, VStack } from "styled-system/jsx";
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { CloseButton } from "~/components/ui/close-button";
 import * as Dialog from "~/components/ui/dialog";
@@ -775,13 +776,13 @@ function SpatialMapImageViewer(props: {
             justifyContent="flex-end"
           >
             <HStack class="spatial-map-image-viewer-meta" gap="1">
-              <span>
+              <Badge as="span" variant="spatial" size="2xs">
                 {(props.state?.index ?? 0) + 1} /{" "}
                 {props.state?.items.length || 1}
-              </span>
-              <span>{currentImage()?.mimeType ?? "image"}</span>
-              <span>{formatBytes(currentImage()?.size ?? 0)}</span>
-              <span>{Math.round(imageViewport.scale() * 100)}%</span>
+              </Badge>
+              <Badge as="span" variant="spatial" size="2xs">{currentImage()?.mimeType ?? "image"}</Badge>
+              <Badge as="span" variant="spatial" size="2xs">{formatBytes(currentImage()?.size ?? 0)}</Badge>
+              <Badge as="span" variant="spatial" size="2xs">{Math.round(imageViewport.scale() * 100)}%</Badge>
             </HStack>
             <HStack
               class="spatial-map-image-viewer-actions"

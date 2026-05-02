@@ -1,6 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-solid";
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import { Box, HStack, VStack } from "styled-system/jsx";
+import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
@@ -306,12 +307,12 @@ export function SourceImagePreviewDialog(props: SourceImagePreviewDialogProps) {
                 </Show>
               </Box>
               <HStack class="spatial-map-image-viewer-meta" gap="2" flexWrap="wrap">
-                <span>
+                <Badge as="span" variant="spatial" size="2xs">
                   {(props.index ?? 0) + 1} / {props.files.length || 1}
-                </span>
-                <span>{activeFile()?.type || "image"}</span>
-                <span>{formatBytes(activeFile()?.size ?? 0)}</span>
-                <span>{Math.round(imageViewport.scale() * 100)}%</span>
+                </Badge>
+                <Badge as="span" variant="spatial" size="2xs">{activeFile()?.type || "image"}</Badge>
+                <Badge as="span" variant="spatial" size="2xs">{formatBytes(activeFile()?.size ?? 0)}</Badge>
+                <Badge as="span" variant="spatial" size="2xs">{Math.round(imageViewport.scale() * 100)}%</Badge>
               </HStack>
             </VStack>
         </Box>
