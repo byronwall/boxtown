@@ -22,7 +22,8 @@ import {
   useContext,
   type JSX,
 } from "solid-js";
-import { Box, HStack, VStack } from "styled-system/jsx";
+import { css } from "styled-system/css";
+import { Box, HStack, VStack, styled } from "styled-system/jsx";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { CloseButton } from "~/components/ui/close-button";
@@ -86,6 +87,37 @@ interface ViewerPanSession {
 
 const SpatialMapImageContext = createContext<SpatialMapImageContextValue>();
 const IMAGE_DEBUG_PREFIX = "[spatial-map-images]";
+const ImageButton = styled("button");
+const ViewerImage = styled("img");
+
+// The image viewer is rendered through SimpleDialog, which exposes the content
+// node as a class hook instead of slot props. Keep that selector local here.
+export const spatialMapImageViewerDialogClass = css({
+  w: "min(1340px, 96vw) !important",
+  maxW: "min(1340px, 96vw) !important",
+  h: "min(860px, calc(100dvh - 28px))",
+  maxH: "calc(100dvh - 28px) !important",
+  border: "1px solid rgba(96, 101, 95, 0.72) !important",
+  borderRadius: "10px !important",
+  background: "rgba(252, 253, 252, 0.96) !important",
+  boxShadow: "0 28px 70px rgba(29, 33, 28, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88) !important",
+  "& .dialog__body": {
+    minH: "0",
+    overflow: "hidden",
+    p: "0",
+  },
+  "& .dialog__header": {
+    minW: "0",
+    p: "10px 12px",
+    borderBottom: "1px solid rgba(96, 101, 95, 0.28)",
+    background: "rgba(248, 250, 248, 0.9)",
+  },
+  "& .dialog__footer": {
+    p: "8px 12px",
+    borderTop: "1px solid rgba(96, 101, 95, 0.22)",
+    background: "rgba(248, 250, 248, 0.9)",
+  },
+});
 const IMAGE_VIEWER_MIN_SCALE = 0.2;
 const IMAGE_VIEWER_MAX_SCALE = 8;
 
@@ -356,7 +388,7 @@ export function SpatialMapImageProvider(props: {
         action={normalizeActionUrl(addProjectNodeImages.url)}
         method="post"
         enctype="multipart/form-data"
-        class="spatial-map-image-upload-form"
+        style={{ display: "none" }}
       >
         <input type="hidden" name="projectId" value={props.projectId} />
         <input ref={uploadNodeIdInputRef} type="hidden" name="nodeId" />
@@ -372,7 +404,7 @@ export function SpatialMapImageProvider(props: {
         ref={deleteFormRef}
         action={normalizeActionUrl(deleteProjectNodeImage.url)}
         method="post"
-        class="spatial-map-image-delete-form"
+        style={{ display: "none" }}
       >
         <input type="hidden" name="projectId" value={props.projectId} />
         <input ref={deleteNodeIdInputRef} type="hidden" name="nodeId" />
@@ -419,13 +451,31 @@ export function SpatialMapImageStrip(props: {
   return (
     <Show when={images().length > 0}>
       <Box
-        class={`spatial-map-image-strip spatial-map-image-strip--${props.variant}`}
+        display="grid"
+        gridTemplateColumns={
+          props.variant === "inspector"
+            ? "repeat(auto-fill, minmax(62px, 1fr))"
+            : "repeat(auto-fit, minmax(160px, max-content))"
+        }
+        gap={props.variant === "inspector" ? "6px" : "10px"}
+        w="100%"
+        minW="0"
       >
         <For each={images()}>
           {(image) => (
-            <button
+            <ImageButton
               type="button"
-              class="spatial-map-image-thumb"
+              aspectRatio={props.variant === "inspector" ? "4 / 3" : "16 / 10"}
+              w={props.variant === "inspector" ? undefined : "min(100%, 320px)"}
+              minW={props.variant === "inspector" ? "0" : "160px"}
+              p="0"
+              border="1px solid rgba(34, 41, 36, 0.22)"
+              borderRadius={props.variant === "inspector" ? "6px" : "0"}
+              background={props.variant === "inspector" ? "rgba(214, 220, 212, 0.92)" : "rgba(249, 250, 247, 0.92)"}
+              cursor="zoom-in"
+              overflow="hidden"
+              _hover={{ borderColor: "rgba(23, 62, 39, 0.62)", boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.42)", outline: "none" }}
+              _focusVisible={{ borderColor: "rgba(23, 62, 39, 0.62)", boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.42)", outline: "none" }}
               aria-label={`Open ${image.originalName}`}
               title={image.originalName}
               onClick={(event) => {
@@ -433,8 +483,8 @@ export function SpatialMapImageStrip(props: {
                 imageUi.openImage(image, props.node, images());
               }}
             >
-              <img src={image.src} alt={image.originalName} loading="lazy" />
-            </button>
+              <ViewerImage src={image.src} alt={image.originalName} loading="lazy" display="block" w="100%" h="100%" objectFit="cover" />
+            </ImageButton>
           )}
         </For>
       </Box>
@@ -445,6 +495,7 @@ export function SpatialMapImageStrip(props: {
 export function SpatialMapImageDropTarget(props: {
   nodeId: string;
   class?: string;
+  variant?: "panel" | "tree";
   children: JSX.Element;
 }) {
   const imageUi = useSpatialMapImages();
@@ -453,6 +504,16 @@ export function SpatialMapImageDropTarget(props: {
   return (
     <Box
       class={`${props.class ?? ""}${isDraggingImage() ? " is-dragging-image" : ""}`}
+      w="100%"
+      display="grid"
+      gap={props.variant === "tree" ? "0" : "9px"}
+      mt={props.variant === "tree" ? "0" : "8px"}
+      p={props.variant === "tree" ? "0" : "13px 0 0"}
+      border="0"
+      borderTop={props.variant === "tree" ? "0" : "1px dashed"}
+      borderColor={isDraggingImage() ? "rgba(23, 62, 39, 0.62)" : "rgba(96, 101, 95, 0.16)"}
+      background={isDraggingImage() ? "rgba(218, 229, 216, 0.96)" : "transparent"}
+      boxShadow={isDraggingImage() ? "inset 3px 0 0 rgba(23, 62, 39, 0.88)" : "none"}
       onDragEnter={(event) => {
         if (getImageFilesFromDataTransfer(event.dataTransfer).length === 0) {
           console.info(
@@ -762,20 +823,22 @@ function SpatialMapImageViewer(props: {
       }}
       header={
         <HStack
-          class="spatial-map-image-viewer-header"
           alignItems="center"
           justifyContent="space-between"
           gap="2"
+          minW="0"
+          w="100%"
         >
-          <Dialog.Title class="spatial-map-image-viewer-title">
+          <Dialog.Title>
             {currentImage()?.originalName ?? "Image"}
           </Dialog.Title>
           <HStack
-            class="spatial-map-image-viewer-header-tools"
             gap="1"
             justifyContent="flex-end"
+            minW="0"
+            flexWrap="wrap"
           >
-            <HStack class="spatial-map-image-viewer-meta" gap="1">
+            <HStack gap="1" flexWrap="wrap" minW="0">
               <Badge as="span" variant="spatial" size="2xs">
                 {(props.state?.index ?? 0) + 1} /{" "}
                 {props.state?.items.length || 1}
@@ -785,14 +848,13 @@ function SpatialMapImageViewer(props: {
               <Badge as="span" variant="spatial" size="2xs">{Math.round(imageViewport.scale() * 100)}%</Badge>
             </HStack>
             <HStack
-              class="spatial-map-image-viewer-actions"
               gap="1"
               justifyContent="flex-end"
+              flexWrap="wrap"
             >
               <Button
                 size="xs"
                 variant="outline"
-                class="spatial-map-image-viewer-action"
                 onClick={copyImage}
               >
                 <ClipboardIcon size={14} />
@@ -801,7 +863,6 @@ function SpatialMapImageViewer(props: {
               <Button
                 size="xs"
                 variant="outline"
-                class="spatial-map-image-viewer-action"
                 onClick={downloadImage}
               >
                 <DownloadIcon size={14} />
@@ -810,7 +871,6 @@ function SpatialMapImageViewer(props: {
               <Button
                 size="xs"
                 variant="outline"
-                class="spatial-map-image-viewer-action"
                 onClick={() => zoomBy(0.8)}
               >
                 <ZoomOutIcon size={14} />
@@ -819,7 +879,6 @@ function SpatialMapImageViewer(props: {
               <Button
                 size="xs"
                 variant="outline"
-                class="spatial-map-image-viewer-action"
                 onClick={resetView}
               >
                 <RotateCcwIcon size={14} />
@@ -828,7 +887,6 @@ function SpatialMapImageViewer(props: {
               <Button
                 size="xs"
                 variant="outline"
-                class="spatial-map-image-viewer-action"
                 onClick={() => zoomBy(1.25)}
               >
                 <ZoomInIcon size={14} />
@@ -839,7 +897,6 @@ function SpatialMapImageViewer(props: {
                   <Button
                     size="xs"
                     variant="outline"
-                    class="spatial-map-image-viewer-action spatial-map-image-viewer-action--danger"
                     disabled={props.pendingDeleteImageId === image().id}
                     onClick={deleteImage}
                   >
@@ -853,7 +910,6 @@ function SpatialMapImageViewer(props: {
                 )}
               </Show>
               <CloseButton
-                class="spatial-map-image-viewer-close"
                 aria-label="Close image viewer"
                 onClick={closeViewer}
               />
@@ -862,7 +918,7 @@ function SpatialMapImageViewer(props: {
         </HStack>
       }
       maxW="min(1340px, 96vw)"
-      contentClass="spatial-map-image-viewer-dialog"
+      contentClass={spatialMapImageViewerDialogClass}
       showClose={false}
     >
       <Show when={props.state && currentImage()}>
@@ -909,32 +965,56 @@ function ImageViewerContent(props: {
 }) {
   return (
     <Box
-      class="spatial-map-image-viewer-layout"
       data-has-thumbnails={props.hasMultipleImages ? "true" : "false"}
+      display="grid"
+      gridTemplateColumns={{ base: "minmax(0, 1fr)", md: props.hasMultipleImages ? "180px minmax(0, 1fr)" : "minmax(0, 1fr)" }}
+      flex="1"
+      alignSelf="stretch"
+      h="100%"
+      minH="0"
+      overflow="hidden"
     >
       <Show when={props.hasMultipleImages}>
         <VStack
           as="nav"
           alignItems="stretch"
           gap="2"
-          class="spatial-map-image-viewer-thumbs"
+          maxH={{ base: "none", md: "100%" }}
+          overflowX={{ base: "auto", md: "hidden" }}
+          overflowY={{ base: "hidden", md: "auto" }}
+          p={{ base: "0 0 6px", md: "10px" }}
+          borderRight={{ base: "0", md: "1px solid rgba(96, 101, 95, 0.34)" }}
+          borderBottom={{ base: "1px solid rgba(96, 101, 95, 0.34)", md: "0" }}
+          display={{ base: "grid", md: "flex" }}
+          gridAutoFlow={{ base: "column", md: undefined }}
+          gridAutoColumns={{ base: "minmax(150px, 200px)", md: undefined }}
           aria-label="Image thumbnails"
         >
           <For each={props.images}>
             {(image, index) => (
-              <button
+              <ImageButton
                 type="button"
-                class="spatial-map-image-viewer-thumb"
-                classList={{ "is-active": index() === props.activeIndex }}
+                h={{ base: "150px", md: "112px" }}
+                p="0"
+                border="1px solid"
+                borderColor={index() === props.activeIndex ? "rgba(23, 62, 39, 0.62)" : "rgba(34, 41, 36, 0.18)"}
+                borderRadius="6px"
+                background="rgba(232, 236, 230, 0.78)"
+                cursor="pointer"
+                overflow="hidden"
+                position="relative"
+                boxShadow={index() === props.activeIndex ? "inset 0 0 0 1px rgba(23, 62, 39, 0.42)" : undefined}
                 aria-label={`Show ${image.originalName}`}
                 aria-current={
                   index() === props.activeIndex ? "true" : undefined
                 }
                 onClick={() => props.onSelectImage(index())}
               >
-                <img src={image.src} alt={image.originalName} loading="lazy" />
-                <span>{index() + 1}</span>
-              </button>
+                <ViewerImage src={image.src} alt={image.originalName} loading="lazy" display="block" w="100%" h="100%" objectFit="cover" />
+                <Box as="span" position="absolute" left="6px" bottom="6px" p="2px 5px" borderRadius="4px" background="rgba(17, 22, 19, 0.72)" color="white" fontSize="10px" fontWeight="700">
+                  {index() + 1}
+                </Box>
+              </ImageButton>
             )}
           </For>
         </VStack>
@@ -943,22 +1023,44 @@ function ImageViewerContent(props: {
         alignItems="stretch"
         gap="2"
         minW="0"
-        class="spatial-map-image-viewer-main"
+        h="100%"
+        minH="0"
+        overflow="hidden"
       >
-        <Box class="spatial-map-image-viewer-frame">
+        <Box position="relative" display="grid" minH="0" h="100%" background="rgba(221, 226, 219, 0.72)">
           <Show when={props.hasMultipleImages}>
-            <button
+            <ImageButton
               type="button"
-              class="spatial-map-image-viewer-arrow is-previous"
+              position="absolute"
+              left="10px"
+              top="50%"
+              zIndex="2"
+              transform="translateY(-50%)"
+              display="inline-flex"
+              alignItems="center"
+              justifyContent="center"
+              w="36px"
+              h="36px"
+              border="1px solid rgba(34, 41, 36, 0.22)"
+              borderRadius="999px"
+              background="rgba(252, 253, 252, 0.9)"
+              color="var(--spatial-map-copy)"
+              cursor="pointer"
               aria-label="Show previous image"
               onClick={() => props.onPrevious()}
             >
               <ChevronLeftIcon size={22} />
-            </button>
+            </ImageButton>
           </Show>
           <Box
             ref={props.imageViewport.setStageRef}
-            class="spatial-map-image-viewer-stage"
+            minH="0"
+            h="100%"
+            overflow="hidden"
+            cursor="grab"
+            touchAction="none"
+            userSelect="none"
+            position="relative"
             onWheel={(event) => {
               event.preventDefault();
               const rawDelta =
@@ -1006,10 +1108,15 @@ function ImageViewerContent(props: {
               props.setPanSession(undefined);
             }}
           >
-            <img
+            <ViewerImage
               src={props.image.src}
               alt={props.image.originalName}
               draggable={false}
+              display="block"
+              maxW="none"
+              transformOrigin="top left"
+              userSelect="none"
+              pointerEvents="none"
               onLoad={(event) => props.imageViewport.handleImageLoad(event)}
               style={{
                 transform: `translate(${props.imageViewport.offset().x}px, ${props.imageViewport.offset().y}px) scale(${props.imageViewport.scale()})`,
@@ -1017,14 +1124,28 @@ function ImageViewerContent(props: {
             />
           </Box>
           <Show when={props.hasMultipleImages}>
-            <button
+            <ImageButton
               type="button"
-              class="spatial-map-image-viewer-arrow is-next"
+              position="absolute"
+              right="10px"
+              top="50%"
+              zIndex="2"
+              transform="translateY(-50%)"
+              display="inline-flex"
+              alignItems="center"
+              justifyContent="center"
+              w="36px"
+              h="36px"
+              border="1px solid rgba(34, 41, 36, 0.22)"
+              borderRadius="999px"
+              background="rgba(252, 253, 252, 0.9)"
+              color="var(--spatial-map-copy)"
+              cursor="pointer"
               aria-label="Show next image"
               onClick={() => props.onNext()}
             >
               <ChevronRightIcon size={22} />
-            </button>
+            </ImageButton>
           </Show>
         </Box>
       </VStack>

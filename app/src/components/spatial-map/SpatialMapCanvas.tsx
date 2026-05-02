@@ -1,10 +1,10 @@
 import { A, useSearchParams } from "@solidjs/router";
 import { createEffect, createSignal, lazy, Show, untrack } from "solid-js";
+import { css } from "styled-system/css";
 import { Box } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import type { ProjectRecord } from "~/lib/projects/types";
 
-import "./spatial-map.css";
 import { AddNodesFlowRail } from "./add-nodes-flow/AddNodesFlowRail";
 import type {
   SpatialMapDepthLevel,
@@ -36,6 +36,32 @@ const SourceDecompositionRail = lazy(() =>
     }),
   ),
 );
+
+// Router A is not a Panda styled component, so backlink hover styling remains
+// as a local class instead of the removed global stylesheet.
+const shellBacklinkClass = css({
+  display: "inline-flex",
+  alignItems: "center",
+  flexShrink: "0",
+  w: "fit-content",
+  minH: "14px",
+  p: "0",
+  border: "0",
+  background: "transparent",
+  color: "var(--spatial-map-accent-strong)",
+  fontSize: "11px",
+  fontWeight: "700",
+  letterSpacing: "0.08em",
+  lineHeight: "1",
+  pointerEvents: "auto",
+  textDecoration: "none",
+  textTransform: "none",
+  _hover: {
+    color: "var(--spatial-map-accent)",
+    textDecoration: "underline",
+    textUnderlineOffset: "3px",
+  },
+});
 
 interface SpatialMapHeaderProps {
   eyebrow?: string;
@@ -84,13 +110,69 @@ function SpatialMapCanvasLayout(props: {
       <SpatialMapUrlSync />
       <Box
         class={`spatial-map-shell${controller.inspectorOpen() ? "" : " spatial-map-shell--collapsed"}`}
+        position="relative"
+        boxSizing="border-box"
+        h="100dvh"
+        w="100%"
+        overflow="hidden"
+        padding={{ base: "8px", md: "clamp(12px, 2vw, 24px)" }}
+        color="var(--spatial-map-copy)"
+        fontFamily={`"IBM Plex Mono", "SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", "Liberation Mono", monospace`}
+        background={`
+          radial-gradient(circle at 15% 8%, rgba(48, 164, 108, 0.16), transparent 28rem),
+          radial-gradient(circle at 88% 20%, rgba(137, 142, 135, 0.14), transparent 30rem),
+          repeating-linear-gradient(0deg, rgba(31, 36, 33, 0.045) 0 1px, transparent 1px 40px),
+          repeating-linear-gradient(90deg, rgba(31, 36, 33, 0.035) 0 1px, transparent 1px 40px),
+          linear-gradient(180deg, rgba(248, 250, 248, 0.96), rgba(223, 226, 223, 1))
+        `}
+        style={{
+          "--spatial-map-bg": "#dfe3dc",
+          "--spatial-map-panel": "rgba(252, 253, 252, 0.94)",
+          "--spatial-map-panel-strong": "rgba(248, 250, 248, 0.92)",
+          "--spatial-map-panel-border": "rgba(95, 101, 94, 0.34)",
+          "--spatial-map-panel-border-strong": "rgba(96, 101, 95, 0.72)",
+          "--spatial-map-copy": "#171c19",
+          "--spatial-map-copy-muted": "#323b35",
+          "--spatial-map-copy-dim": "#475249",
+          "--spatial-map-blue-fill": "#d6e0e8",
+          "--spatial-map-blue-fill-hover": "#c8d6e1",
+          "--spatial-map-blue-stroke": "#63798c",
+          "--spatial-map-blue-stroke-hover": "#4f677c",
+          "--spatial-map-green-fill": "#cdd9cd",
+          "--spatial-map-green-fill-hover": "#c0cfbf",
+          "--spatial-map-green-stroke": "#607861",
+          "--spatial-map-green-stroke-hover": "#4f684f",
+          "--spatial-map-neutral-fill": "#eef1eb",
+          "--spatial-map-neutral-fill-hover": "#e3e7df",
+          "--spatial-map-neutral-stroke": "#747b72",
+          "--spatial-map-neutral-stroke-hover": "#5f685f",
+          "--spatial-map-steel-fill": "#d8dddd",
+          "--spatial-map-steel-fill-hover": "#cbd2d2",
+          "--spatial-map-steel-stroke": "#677477",
+          "--spatial-map-steel-stroke-hover": "#556367",
+          "--spatial-map-amber-fill": "#e4d9bf",
+          "--spatial-map-amber-fill-hover": "#d8caa8",
+          "--spatial-map-amber-stroke": "#806c47",
+          "--spatial-map-amber-stroke-hover": "#6b5937",
+          "--spatial-map-accent": "#2d6f48",
+          "--spatial-map-accent-strong": "#173e27",
+        }}
       >
         <Show when={props.header?.backHref}>
           {(backHref) => (
-            <Box class="spatial-map-shell-nav">
+            <Box
+              class="spatial-map-shell-nav"
+              position="absolute"
+              top="6px"
+              left="30px"
+              zIndex="3"
+              display="flex"
+              alignItems="center"
+              pointerEvents="none"
+            >
               <A
                 href={backHref()}
-                class="spatial-map-backlink spatial-map-backlink--shell"
+                class={shellBacklinkClass}
                 aria-label={props.header?.backLabel ?? "Back"}
               >
                 &lt; Back
@@ -98,8 +180,38 @@ function SpatialMapCanvasLayout(props: {
             </Box>
           )}
         </Show>
-        <Box class="spatial-map-main">
-          <Box class="spatial-map-stage">
+        <Box
+          class="spatial-map-main"
+          position="relative"
+          zIndex="1"
+          display="grid"
+          gridTemplateColumns={{ base: "minmax(0, 1fr)", md: "minmax(0, 1fr) auto" }}
+          w="100%"
+          h="100%"
+          minH="0"
+          m="0"
+          overflow="hidden"
+          border="1px solid var(--spatial-map-panel-border-strong)"
+          borderRadius="12px"
+          background="var(--spatial-map-panel)"
+          boxShadow={`
+            0 28px 70px rgba(29, 33, 28, 0.2),
+            0 0 0 1px rgba(255, 255, 255, 0.64),
+            inset 0 1px 0 rgba(255, 255, 255, 0.88)
+          `}
+        >
+          <Box
+            class="spatial-map-stage"
+            position="relative"
+            display="grid"
+            gridTemplateRows="auto minmax(0, 1fr)"
+            minW="0"
+            minH="0"
+            p={{ base: "8px", md: "10px" }}
+            gap="8px"
+            overflow="hidden"
+            background="rgba(229, 234, 226, 0.72)"
+          >
             <SpatialMapToolbar
               {...props.header}
               project={props.project}
@@ -143,11 +255,21 @@ function SpatialMapCanvasLayout(props: {
                 !controller.childNodeDraft()
               }
             >
-              <Box class="spatial-map-empty">
-                <Box as="h2" class="spatial-map-empty-title">
+              <Box
+                position="absolute"
+                top="calc(50% + 27px)"
+                left="50%"
+                w="min(360px, calc(100% - 32px))"
+                p="16px 18px"
+                border="1px solid var(--spatial-map-panel-border)"
+                background="rgba(246, 248, 244, 0.9)"
+                boxShadow="0 16px 40px rgba(23, 27, 24, 0.14)"
+                transform="translate(-50%, -50%)"
+              >
+                <Box as="h2" margin="0 0 8px" fontSize="16px" fontWeight="700" letterSpacing="-0.03em">
                   Blank project grid
                 </Box>
-                <Box as="p" class="spatial-map-empty-copy">
+                <Box as="p" margin="0" color="var(--spatial-map-copy-muted)" fontSize="12px" lineHeight="1.6">
                   This project doesn’t have nodes yet. The route and canvas are
                   ready for the next layer of project details and AI-assisted
                   editing.
@@ -155,7 +277,7 @@ function SpatialMapCanvasLayout(props: {
                 <Button
                   colorPalette="green"
                   size="xs"
-                  class="spatial-map-empty-action"
+                  mt="12px"
                   onClick={() => controller.openChildNodeDraft(null)}
                 >
                   Create node

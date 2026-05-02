@@ -1,12 +1,26 @@
 import { For, Show, createMemo, untrack } from "solid-js";
-import { Box, Grid, HStack, VStack } from "styled-system/jsx";
+import { Box, HStack, VStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
-import { Text } from "~/components/ui/text";
 import { Textarea } from "~/components/ui/textarea";
 import { Tooltip } from "~/components/ui/tooltip";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { SpatialMapInspectorHeader } from "~/components/spatial-map/SpatialMapInspectorHeader";
 import { useSpatialMap } from "~/components/spatial-map/SpatialMapContext";
+import {
+  SpatialMapAnswerGrid,
+  SpatialMapBlockTitle,
+  SpatialMapCopy,
+  SpatialMapEmptyState,
+  SpatialMapFlowRail,
+  SpatialMapInspectorRow,
+  SpatialMapInspectorSection,
+  SpatialMapOptionButton,
+  SpatialMapQuestionHelper,
+  SpatialMapQuestionTitle,
+  SpatialMapRelationMeta,
+  SpatialMapRelationName,
+  SpatialMapRunStep,
+} from "~/components/spatial-map/SpatialMapPanelPrimitives";
 import { useAddNodesFlow } from "./useAddNodesFlow";
 
 interface AddNodesFlowRailProps {
@@ -36,8 +50,7 @@ export function AddNodesFlowRail(props: AddNodesFlowRailProps) {
   };
 
   return (
-    <Box class="spatial-map-inspector-rail">
-      <aside id="spatial-map-add-nodes" class="spatial-map-inspector spatial-map-add-nodes-rail">
+    <SpatialMapFlowRail id="spatial-map-add-nodes">
         <VStack alignItems="stretch" gap="3" h="full">
           <SpatialMapInspectorHeader
             kicker="Add Nodes"
@@ -48,20 +61,18 @@ export function AddNodesFlowRail(props: AddNodesFlowRailProps) {
             onClose={closeRail}
           />
 
-          <Box class="spatial-map-inspector-section">
-            <InspectorRow label="Project" value={props.project.name} />
-            <InspectorRow label="Selection" value={selectedNode()?.label ?? "No node selected"} />
-            <InspectorRow
+          <SpatialMapInspectorSection>
+            <SpatialMapInspectorRow label="Project" value={props.project.name} />
+            <SpatialMapInspectorRow label="Selection" value={selectedNode()?.label ?? "No node selected"} />
+            <SpatialMapInspectorRow
               label="Status"
               value={flow.snapshot()?.status ?? "idle"}
               mono
             />
-          </Box>
+          </SpatialMapInspectorSection>
 
-          <Box class="spatial-map-inspector-section">
-            <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-              Brief
-            </Text>
+          <SpatialMapInspectorSection>
+            <SpatialMapBlockTitle>Brief</SpatialMapBlockTitle>
             <Textarea
               rows={4}
               variant="spatial"
@@ -74,9 +85,9 @@ export function AddNodesFlowRail(props: AddNodesFlowRailProps) {
               placeholder="Add a billing setup flow with plan selection, invoice history, and admin handoff nodes."
             />
             <HStack gap="2" justifyContent="space-between" flexWrap="wrap">
-              <Text as="span" class="spatial-map-empty-state">
+              <SpatialMapEmptyState as="span">
                 Tailored questions use the brief, graph content, and current selection.
-              </Text>
+              </SpatialMapEmptyState>
               <Button
                 size="xs"
                 colorPalette="green"
@@ -93,57 +104,35 @@ export function AddNodesFlowRail(props: AddNodesFlowRailProps) {
                 Generate Questions
               </Button>
             </HStack>
-          </Box>
+          </SpatialMapInspectorSection>
 
           <Show when={flow.snapshot()}>
             {(snapshot) => (
               <>
-                <Box class="spatial-map-inspector-section">
-                  <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-                    Run progress
-                  </Text>
-                  <Text as="p" class="spatial-map-inspector-copy">
-                    {snapshot().latestMessage}
-                  </Text>
+                <SpatialMapInspectorSection>
+                  <SpatialMapBlockTitle>Run progress</SpatialMapBlockTitle>
+                  <SpatialMapCopy>{snapshot().latestMessage}</SpatialMapCopy>
                   <VStack alignItems="stretch" gap="1.5">
                     <For each={snapshot().steps}>
                       {(step) => (
-                        <Box class={`spatial-map-run-step is-${step.status}`}>
-                          <HStack justifyContent="space-between" alignItems="start" gap="3">
-                            <Text as="span" class="spatial-map-run-step-label">
-                              {step.label}
-                            </Text>
-                            <Text as="span" class="spatial-map-run-step-status">
-                              {step.status}
-                            </Text>
-                          </HStack>
-                          <Text as="p" class="spatial-map-run-step-detail">
-                            {step.detail}
-                          </Text>
-                        </Box>
+                        <SpatialMapRunStep status={step.status} label={step.label} detail={step.detail} />
                       )}
                     </For>
                   </VStack>
-                </Box>
+                </SpatialMapInspectorSection>
 
                 <Show when={snapshot().status === "awaiting-input" && snapshot().questions.length > 0}>
-                  <Box class="spatial-map-inspector-section">
-                    <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-                      Clarifying questions
-                    </Text>
+                  <SpatialMapInspectorSection>
+                    <SpatialMapBlockTitle>Clarifying questions</SpatialMapBlockTitle>
                     <VStack alignItems="stretch" gap="3">
                       <For each={snapshot().questions}>
                         {(question) => (
                           <VStack alignItems="stretch" gap="2">
                             <Box>
-                              <Text as="div" class="spatial-map-question-title">
-                                {question.prompt}
-                              </Text>
-                              <Text as="div" class="spatial-map-question-helper">
-                                {question.helperText}
-                              </Text>
+                              <SpatialMapQuestionTitle>{question.prompt}</SpatialMapQuestionTitle>
+                              <SpatialMapQuestionHelper>{question.helperText}</SpatialMapQuestionHelper>
                             </Box>
-                            <Grid class="spatial-map-answer-grid">
+                            <SpatialMapAnswerGrid>
                               <For each={question.options}>
                                 {(option) => (
                                   <Tooltip
@@ -152,28 +141,24 @@ export function AddNodesFlowRail(props: AddNodesFlowRailProps) {
                                     closeDelay={80}
                                     portalled={false}
                                   >
-                                    <button
-                                      type="button"
-                                      class={`spatial-map-answer-option${
-                                        flow.answerDraft()[question.id] === option.id ? " is-selected" : ""
-                                      }`}
+                                    <SpatialMapOptionButton
+                                      selected={flow.answerDraft()[question.id] === option.id}
                                       onClick={() => flow.chooseAnswer(question.id, option.id)}
-                                      aria-pressed={flow.answerDraft()[question.id] === option.id}
                                     >
                                       {option.label}
-                                    </button>
+                                    </SpatialMapOptionButton>
                                   </Tooltip>
                                 )}
                               </For>
-                            </Grid>
+                            </SpatialMapAnswerGrid>
                           </VStack>
                         )}
                       </For>
                     </VStack>
                     <HStack justifyContent="space-between" gap="3" flexWrap="wrap">
-                      <Text as="span" class="spatial-map-empty-state">
+                      <SpatialMapEmptyState as="span">
                         Hover any answer for guidance before you choose it.
-                      </Text>
+                      </SpatialMapEmptyState>
                       <Button
                         size="xs"
                         colorPalette="green"
@@ -186,29 +171,23 @@ export function AddNodesFlowRail(props: AddNodesFlowRailProps) {
                         Add Nodes
                       </Button>
                     </HStack>
-                  </Box>
+                  </SpatialMapInspectorSection>
                 </Show>
 
                 <Show when={snapshot().result}>
                   {(result) => (
-                    <Box class="spatial-map-inspector-section">
-                      <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-                        Suggested follow-up items
-                      </Text>
-                      <Text as="p" class="spatial-map-inspector-copy">
-                        {result().summary}
-                      </Text>
+                    <SpatialMapInspectorSection>
+                      <SpatialMapBlockTitle>Suggested follow-up items</SpatialMapBlockTitle>
+                      <SpatialMapCopy>{result().summary}</SpatialMapCopy>
                       <HStack gap="2" flexWrap="wrap">
-                        <Text as="span" class="spatial-map-empty-state">
+                        <SpatialMapEmptyState as="span">
                           {result().nodeCount} nodes / {result().linkCount} links added
-                        </Text>
+                        </SpatialMapEmptyState>
                       </HStack>
                       <VStack alignItems="stretch" gap="2">
                         <For each={result().suggestions}>
                           {(suggestion) => (
-                            <button
-                              type="button"
-                              class="spatial-map-follow-up-card"
+                            <SpatialMapOptionButton
                               onClick={() => {
                                 flow.setBrief(suggestion.brief);
                                 void flow.startRun({
@@ -217,17 +196,13 @@ export function AddNodesFlowRail(props: AddNodesFlowRailProps) {
                                 });
                               }}
                             >
-                              <Text as="div" class="spatial-map-relation-name">
-                                {suggestion.label}
-                              </Text>
-                              <Text as="div" class="spatial-map-relation-meta">
-                                {suggestion.guidance}
-                              </Text>
-                            </button>
+                              <SpatialMapRelationName>{suggestion.label}</SpatialMapRelationName>
+                              <SpatialMapRelationMeta>{suggestion.guidance}</SpatialMapRelationMeta>
+                            </SpatialMapOptionButton>
                           )}
                         </For>
                       </VStack>
-                    </Box>
+                    </SpatialMapInspectorSection>
                   )}
                 </Show>
               </>
@@ -236,33 +211,12 @@ export function AddNodesFlowRail(props: AddNodesFlowRailProps) {
 
           <Show when={flow.error()}>
             {(error) => (
-              <Box class="spatial-map-inspector-section spatial-map-add-nodes-error">
-                <Text as="p" class="spatial-map-inspector-copy">
-                  {error()}
-                </Text>
-              </Box>
+              <SpatialMapInspectorSection error>
+                <SpatialMapCopy>{error()}</SpatialMapCopy>
+              </SpatialMapInspectorSection>
             )}
           </Show>
         </VStack>
-      </aside>
-    </Box>
-  );
-}
-
-function InspectorRow(props: { label: string; value: string; mono?: boolean }) {
-  return (
-    <HStack justifyContent="space-between" alignItems="start" gap="3" class="spatial-map-inspector-row">
-      <Text as="span" textStyle="xs" class="spatial-map-inspector-row-label">
-        {props.label}
-      </Text>
-      <Text
-        as="span"
-        textStyle="sm"
-        class={props.mono ? "spatial-map-inspector-row-value is-mono" : "spatial-map-inspector-row-value"}
-        textAlign="right"
-      >
-        {props.value}
-      </Text>
-    </HStack>
+      </SpatialMapFlowRail>
   );
 }

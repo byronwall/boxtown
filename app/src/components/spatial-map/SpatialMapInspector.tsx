@@ -15,7 +15,8 @@ import {
   Trash2Icon,
   UserIcon,
 } from "lucide-solid";
-import { Box, HStack, VStack } from "styled-system/jsx";
+import { css } from "styled-system/css";
+import { Box, HStack, VStack, styled } from "styled-system/jsx";
 import { MarkdownRenderer } from "~/components/markdown-renderer";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -39,6 +40,40 @@ import { SpatialMapGenerateImageControl } from "./SpatialMapGenerateImageControl
 import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
 import { SpatialMapNodeStatusMenu } from "./SpatialMapNodeStatusMenu";
 import { SpatialMapNodeTypePicker } from "./SpatialMapNodeTypePicker";
+import {
+  SpatialMapBlockTitle,
+  SpatialMapEmptyState,
+  SpatialMapInspectorSection,
+  SpatialMapRelationMeta,
+  SpatialMapRelationName,
+} from "./SpatialMapPanelPrimitives";
+
+const InspectorToggleButton = styled("button");
+
+// MarkdownRenderer owns its descendant tags, so markdown spacing remains a
+// component-local selector escape hatch rather than a global stylesheet rule.
+const contextMarkdownClass = css({
+  p: "9px 10px",
+  border: "1px solid rgba(34, 41, 36, 0.1)",
+  background: "rgba(246, 248, 244, 0.72)",
+  color: "var(--spatial-map-copy-muted)",
+  fontSize: "12px",
+  lineHeight: "1.55",
+  "& :where(p, ul, ol, blockquote, pre, table)": {
+    mb: "10px",
+  },
+  "& :where(p, ul, ol, blockquote, pre, table):last-child": {
+    mb: "0",
+  },
+});
+
+// SimpleDialog only accepts a content class for its surface.
+const contextDialogClass = css({
+  maxW: "min(800px, 90vw)",
+  "& .dialog__body": {
+    alignItems: "stretch",
+  },
+});
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { SpatialMapInspectorHeader } from "./SpatialMapInspectorHeader";
@@ -361,35 +396,102 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   };
 
   return (
-    <Box class="spatial-map-inspector-rail">
+    <Box position="relative" display="flex" alignItems="stretch" h="100%" minH="0">
       <HStack
         class="spatial-map-toggle-group spatial-map-inspector-view-toggle"
+        position="absolute"
+        top="-28px"
+        left="12px"
+        right="9px"
+        zIndex="5"
+        minH="24px"
+        display="grid"
+        gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+        flexShrink="0"
+        overflow="hidden"
+        border="1px solid var(--spatial-map-panel-border-strong)"
+        borderColor="rgba(96, 101, 95, 0.44)"
+        borderRadius="6px"
+        background="rgba(246, 248, 244, 0.94)"
+        boxShadow="0 1px 0 rgba(34, 41, 36, 0.08)"
         role="tablist"
         aria-label="Inspector view"
       >
-        <button
+        <InspectorToggleButton
           type="button"
           class={`spatial-map-toggle-button${inspectorView() === "details" ? " is-active" : ""}`}
+          minW="0"
+          h="24px"
+          borderWidth="0 1px 0 0"
+          borderColor="rgba(24, 29, 26, 0.24)"
+          background={inspectorView() === "details" ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+          color={inspectorView() === "details" ? "var(--spatial-map-accent-strong)" : undefined}
+          boxShadow={
+            inspectorView() === "details"
+              ? "inset 0 0 0 1px rgba(45, 111, 72, 0.42), inset 0 -2px 0 rgba(45, 111, 72, 0.86)"
+              : undefined
+          }
+          fontSize="10px"
+          fontWeight="700"
+          letterSpacing="0.04em"
+          textTransform="uppercase"
           role="tab"
           aria-selected={inspectorView() === "details"}
           onClick={() => setInspectorView("details")}
         >
           Details
-        </button>
-        <button
+        </InspectorToggleButton>
+        <InspectorToggleButton
           type="button"
           class={`spatial-map-toggle-button${inspectorView() === "activity" ? " is-active" : ""}`}
+          minW="0"
+          h="24px"
+          borderWidth="0"
+          borderColor="rgba(24, 29, 26, 0.24)"
+          background={inspectorView() === "activity" ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+          color={inspectorView() === "activity" ? "var(--spatial-map-accent-strong)" : undefined}
+          boxShadow={
+            inspectorView() === "activity"
+              ? "inset 0 0 0 1px rgba(45, 111, 72, 0.42), inset 0 -2px 0 rgba(45, 111, 72, 0.86)"
+              : undefined
+          }
+          fontSize="10px"
+          fontWeight="700"
+          letterSpacing="0.04em"
+          textTransform="uppercase"
           role="tab"
           aria-selected={inspectorView() === "activity"}
           onClick={() => setInspectorView("activity")}
         >
           Activity
-        </button>
+        </InspectorToggleButton>
       </HStack>
 
-      <aside
+      <Box
+        as="aside"
         id="spatial-map-inspector"
         class={`spatial-map-inspector${spatialMap.inspectorOpen() ? "" : " is-collapsed"}`}
+        position={{ base: "absolute", md: "static" }}
+        right={{ base: "0", md: undefined }}
+        top={{ base: "0", md: undefined }}
+        bottom={{ base: "0", md: undefined }}
+        zIndex={{ base: "2", md: undefined }}
+        w={spatialMap.inspectorOpen() ? { base: "min(90vw, 360px)", md: "348px" } : "0"}
+        h="100%"
+        minH="0"
+        overflow={spatialMap.inspectorOpen() ? "auto" : "hidden"}
+        overflowX="hidden"
+        p={spatialMap.inspectorOpen() ? "12px" : "0"}
+        opacity={spatialMap.inspectorOpen() ? "1" : "0"}
+        borderLeft="1px solid"
+        borderLeftColor={spatialMap.inspectorOpen() ? "rgba(96, 101, 95, 0.38)" : "transparent"}
+        background="linear-gradient(180deg, rgba(248, 250, 248, 0.92), rgba(235, 239, 233, 0.96))"
+        boxShadow={{
+          base: "-12px 0 0 rgba(17, 22, 19, 0.08)",
+          md: "inset 1px 0 0 rgba(255, 255, 255, 0.64), -12px 0 30px rgba(29, 33, 28, 0.04)",
+        }}
+        transition="width 160ms ease, padding 160ms ease, opacity 120ms ease"
+        overscrollBehavior="contain"
       >
         <VStack alignItems="start" gap="2" h="full">
           <SpatialMapInspectorHeader
@@ -410,10 +512,8 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
           />
 
           <Show when={inspectorView() === "activity"}>
-            <Box class="spatial-map-inspector-section spatial-map-inspector-global-activity">
-              <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-section-title is-heading">
-                Global Activity
-              </Text>
+            <SpatialMapInspectorSection minH="0" overflow="auto">
+              <SpatialMapBlockTitle>Global Activity</SpatialMapBlockTitle>
               <ActivityList
                 entries={globalProjectActivity()}
                 emptyLabel="No activity yet"
@@ -421,11 +521,11 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                 selectedNodeId={spatialMap.selectedNodeId()}
                 onSelect={selectActivityNode}
               />
-            </Box>
+            </SpatialMapInspectorSection>
           </Show>
 
           <Show when={inspectorView() === "details"}>
-          <Box class="spatial-map-inspector-section spatial-map-inspector-summary">
+          <SpatialMapInspectorSection>
             <HStack gap="1.5" flexWrap="wrap">
               <Show when={selectedNodeWithOptimisticStatus()}>
                 {(node) => (
@@ -458,7 +558,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
             </HStack>
             <Show when={selectedNode()}>
               {(node) => (
-                <HStack class="spatial-map-inspector-action-row" gap="0" flexWrap="wrap">
+                <HStack gap="0" flexWrap="wrap" justifyContent="flex-start" w="fit-content" pt="1px" border="1px solid rgba(96, 101, 95, 0.26)" borderRadius="6px" background="rgba(246, 248, 244, 0.78)">
                   <Button
                     size="xs"
                     colorPalette="green"
@@ -482,43 +582,45 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                 </HStack>
               )}
             </Show>
-          </Box>
+          </SpatialMapInspectorSection>
 
-          <Show when={selectedNode()}>
-            {(node) => (
-              <SpatialMapImageDropTarget
-                nodeId={node().id}
-                class="spatial-map-inspector-section spatial-map-image-drop-panel"
-              >
-                <HStack justifyContent="space-between" alignItems="center" gap="3">
-                  <Text
-                    as="h3"
-                    margin="0"
-                    fontSize="sm"
-                    fontWeight="semibold"
-                    class="spatial-map-inspector-section-title is-heading"
-                  >
-                    Images
-                  </Text>
-                </HStack>
-                <Show
-                  when={(node().images ?? []).length > 0}
-                  fallback={<Box class="spatial-map-image-empty" aria-label="No images" />}
-                >
+	          <Show when={selectedNode()}>
+	            {(node) => (
+	              <SpatialMapImageDropTarget
+	                nodeId={node().id}
+	                class="spatial-map-image-drop-panel"
+	              >
+	                <HStack justifyContent="space-between" alignItems="center" gap="3">
+	                  <SpatialMapBlockTitle>Images</SpatialMapBlockTitle>
+	                </HStack>
+	                <Show
+	                  when={(node().images ?? []).length > 0}
+	                  fallback={
+	                    <Box
+	                      h="34px"
+	                      border="1px solid rgba(96, 101, 95, 0.28)"
+	                      borderRadius="6px"
+	                      background="linear-gradient(90deg, rgba(31, 36, 33, 0.055) 1px, transparent 1px), linear-gradient(rgba(31, 36, 33, 0.055) 1px, transparent 1px), rgba(248, 250, 248, 0.86)"
+	                      backgroundSize="14px 14px"
+	                      aria-label="No images"
+	                    />
+	                  }
+	                >
                   <SpatialMapImageStrip node={node()} variant="inspector" />
                 </Show>
               </SpatialMapImageDropTarget>
             )}
           </Show>
 
-          <Box class="spatial-map-inspector-section">
+          <SpatialMapInspectorSection>
             <HStack justifyContent="space-between" alignItems="center" gap="3">
               <Text
                 as="h3"
                 margin="0"
                 fontSize="sm"
                 fontWeight="semibold"
-                class="spatial-map-inspector-section-title is-heading"
+                color="var(--spatial-map-copy)"
+                letterSpacing="0.02em"
               >
                 Metadata
               </Text>
@@ -553,9 +655,9 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
             <Show
               when={selectedNode()}
               fallback={
-                <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+                <SpatialMapEmptyState>
                   No selection
-                </Text>
+                </SpatialMapEmptyState>
               }
             >
               {(node) => (
@@ -587,24 +689,25 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                       )}
                     </For>
                     <Show when={props.project.nodeMetadataSchema.length === 0}>
-                      <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+                      <SpatialMapEmptyState>
                         This project does not define any metadata keys yet.
-                      </Text>
+                      </SpatialMapEmptyState>
                     </Show>
                   </VStack>
                 </form>
               )}
             </Show>
-          </Box>
+          </SpatialMapInspectorSection>
 
-          <Box class="spatial-map-inspector-section">
+          <SpatialMapInspectorSection>
             <HStack justifyContent="space-between" alignItems="center" gap="3">
               <Text
                 as="h3"
                 margin="0"
                 fontSize="sm"
                 fontWeight="semibold"
-                class="spatial-map-inspector-section-title is-heading"
+                color="var(--spatial-map-copy)"
+                letterSpacing="0.02em"
               >
                 Context
               </Text>
@@ -639,9 +742,9 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
             <Show
               when={selectedNode()}
               fallback={
-                <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+                <SpatialMapEmptyState>
                   No selection
-                </Text>
+                </SpatialMapEmptyState>
               }
             >
               {(node) => (
@@ -708,10 +811,10 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                 </Show>
               )}
             </Show>
-          </Box>
+          </SpatialMapInspectorSection>
 
-          <Box class="spatial-map-inspector-section">
-            <Text as="h3" margin="0 0 6px" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-section-title">
+          <SpatialMapInspectorSection>
+            <Text as="h3" margin="0 0 6px" fontSize="sm" fontWeight="semibold" color="var(--spatial-map-copy-dim)" letterSpacing="0.02em">
               Connections
             </Text>
             <InspectorRelationList
@@ -730,10 +833,10 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
               title="Incoming"
               onSelect={(nodeId) => spatialMap.setSelectedNodeId(nodeId)}
             />
-          </Box>
+          </SpatialMapInspectorSection>
 
-          <Box class="spatial-map-inspector-section">
-            <Text as="h3" margin="0 0 6px" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-section-title">
+          <SpatialMapInspectorSection>
+            <Text as="h3" margin="0 0 6px" fontSize="sm" fontWeight="semibold" color="var(--spatial-map-copy-dim)" letterSpacing="0.02em">
               Activity
             </Text>
             <Show
@@ -750,10 +853,10 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                 />
               )}
             </Show>
-          </Box>
+          </SpatialMapInspectorSection>
           </Show>
         </VStack>
-      </aside>
+      </Box>
     </Box>
   );
 }
@@ -765,14 +868,14 @@ function ContextPreview(props: { context: string; class?: string }) {
     <Show
       when={hasContent()}
       fallback={
-        <Box class="spatial-map-context-empty">
-          <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+        <Box border="1px solid rgba(34, 41, 36, 0.1)" background="rgba(246, 248, 244, 0.72)" p="9px 10px">
+          <SpatialMapEmptyState>
             No context yet. Switch to edit mode to drop in markdown notes, pasted material, or AI working context.
-          </Text>
+          </SpatialMapEmptyState>
         </Box>
       }
     >
-      <Box class={`spatial-map-context-markdown${props.class ? ` ${props.class}` : ""}`}>
+      <Box class={props.class ? `${contextMarkdownClass} ${props.class}` : contextMarkdownClass}>
         <MarkdownRenderer>{props.context}</MarkdownRenderer>
       </Box>
     </Show>
@@ -792,7 +895,7 @@ function ActivityList(props: {
   };
 
   return (
-    <VStack alignItems="stretch" gap="0" class="spatial-map-activity-timeline">
+    <VStack alignItems="stretch" gap="7px" position="relative" w="100%" minW="0" overflowX="hidden">
       <For each={props.entries}>
         {(entry) => {
           const targetNode = getTargetNode(entry);
@@ -803,29 +906,40 @@ function ActivityList(props: {
             <Show
               when={targetNode}
               fallback={
-                <Box class={`spatial-map-activity-entry is-${config.tone}`}>
+                <Box w="100%" minW="0" maxW="100%" p="0" border="1px solid transparent" background="transparent" color="inherit" style={getActivityToneStyle(config.tone)}>
                   <ActivityEntryContent entry={entry} config={config} />
                 </Box>
               }
             >
               {(node) => (
-                <button
+                <InspectorToggleButton
                   type="button"
-                  class={`spatial-map-activity-entry spatial-map-activity-button is-${config.tone}${isSelected() ? " is-selected" : ""}`}
+                  w="100%"
+                  maxW="100%"
+                  minW="0"
+                  p="0"
+                  border="1px solid transparent"
+                  background="transparent"
+                  color="inherit"
+                  cursor="pointer"
+                  textAlign="left"
+                  style={getActivityToneStyle(config.tone)}
+                  _hover={{ "& .activity-body": { borderColor: "var(--activity-accent-border)", background: "rgba(250, 251, 248, 0.94)" } }}
+                  _focusVisible={{ outline: "none", "& .activity-body": { borderColor: "rgba(37, 95, 58, 0.56)", boxShadow: "inset 0 0 0 1px rgba(37, 95, 58, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.56)" } }}
                   onClick={() => props.onSelect(node().id)}
                   aria-pressed={isSelected()}
                 >
                   <ActivityEntryContent entry={entry} node={node()} config={config} />
-                </button>
+                </InspectorToggleButton>
               )}
             </Show>
           );
         }}
       </For>
       <Show when={props.entries.length === 0}>
-        <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+        <SpatialMapEmptyState>
           {props.emptyLabel}
-        </Text>
+        </SpatialMapEmptyState>
       </Show>
     </VStack>
   );
@@ -840,21 +954,28 @@ function ActivityEntryContent(props: {
   const ActorIcon = props.entry.actor.kind === "agent" ? BotIcon : UserIcon;
 
   return (
-    <Box class="spatial-map-activity-content">
-      <Box class="spatial-map-activity-body">
-        <HStack justifyContent="space-between" alignItems="start" gap="2" class="spatial-map-activity-head">
+    <Box w="100%" minW="0" maxW="100%">
+      <Box class="activity-body" minW="0" maxW="100%" overflow="hidden" flex="1" p="7px 8px" border="1px solid rgba(34, 41, 36, 0.13)" background="rgba(245, 246, 242, 0.82)" boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.56)">
+        <HStack justifyContent="space-between" alignItems="start" gap="2" minW="0" maxW="100%">
           <Text
             as="div"
             margin="0"
             fontSize="sm"
             fontWeight="semibold"
-            class="spatial-map-activity-summary"
+            minW="0"
+            maxW="100%"
+            color="var(--spatial-map-copy)"
+            lineHeight="1.28"
+            overflowWrap="anywhere"
+            overflow="hidden"
+            display="-webkit-box"
+            style={{ "-webkit-box-orient": "vertical", "-webkit-line-clamp": "3" }}
             title={props.entry.summary}
           >
             {props.entry.summary}
           </Text>
         </HStack>
-        <HStack gap="1.5" flexWrap="wrap" mt="1.5" class="spatial-map-activity-meta">
+        <HStack gap="1.5" flexWrap="wrap" mt="1.5" minW="0" maxW="100%">
           <Badge
             as="span"
             variant="spatial"
@@ -868,7 +989,7 @@ function ActivityEntryContent(props: {
             minW="0"
           >
             <Icon size={11} strokeWidth={2.3} />
-            <span class="spatial-map-activity-badge-text">{props.config.label}</span>
+            <Box as="span" display="block" flex="1 1 auto" minW="0" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">{props.config.label}</Box>
           </Badge>
           <Show when={props.node}>
             {(node) => (
@@ -883,7 +1004,7 @@ function ActivityEntryContent(props: {
                 textOverflow="ellipsis"
                 title={node().label}
               >
-                <span class="spatial-map-activity-badge-text">{node().label}</span>
+                <Box as="span" display="block" flex="1 1 auto" minW="0" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">{node().label}</Box>
               </Badge>
             )}
           </Show>
@@ -896,7 +1017,7 @@ function ActivityEntryContent(props: {
             minW="0"
           >
             <ActorIcon size={11} strokeWidth={2.25} />
-            <span class="spatial-map-activity-badge-text">{formatActivityActor(props.entry)}</span>
+            <Box as="span" display="block" flex="1 1 auto" minW="0" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">{formatActivityActor(props.entry)}</Box>
           </Badge>
           <Badge
             as="time"
@@ -955,6 +1076,43 @@ function getActivityKindConfig(kind: ProjectOperationLogEntry["kind"]): Activity
   }
 }
 
+function getActivityToneStyle(tone: ActivityTone) {
+  const tones: Record<ActivityTone, Record<string, string>> = {
+    create: {
+      "--activity-accent": "rgba(42, 104, 67, 0.94)",
+      "--activity-accent-soft": "rgba(42, 104, 67, 0.11)",
+      "--activity-accent-border": "rgba(42, 104, 67, 0.28)",
+    },
+    edit: {
+      "--activity-accent": "rgba(82, 93, 61, 0.94)",
+      "--activity-accent-soft": "rgba(133, 150, 91, 0.16)",
+      "--activity-accent-border": "rgba(82, 93, 61, 0.26)",
+    },
+    image: {
+      "--activity-accent": "rgba(43, 101, 116, 0.94)",
+      "--activity-accent-soft": "rgba(43, 101, 116, 0.12)",
+      "--activity-accent-border": "rgba(43, 101, 116, 0.26)",
+    },
+    delete: {
+      "--activity-accent": "rgba(143, 68, 62, 0.96)",
+      "--activity-accent-soft": "rgba(143, 68, 62, 0.11)",
+      "--activity-accent-border": "rgba(143, 68, 62, 0.26)",
+    },
+    system: {
+      "--activity-accent": "rgba(92, 85, 117, 0.94)",
+      "--activity-accent-soft": "rgba(92, 85, 117, 0.1)",
+      "--activity-accent-border": "rgba(92, 85, 117, 0.24)",
+    },
+    link: {
+      "--activity-accent": "rgba(125, 91, 44, 0.94)",
+      "--activity-accent-soft": "rgba(125, 91, 44, 0.12)",
+      "--activity-accent-border": "rgba(125, 91, 44, 0.26)",
+    },
+  };
+
+  return tones[tone];
+}
+
 function formatActivityActor(entry: ProjectOperationLogEntry) {
   return entry.actor.label ?? (entry.actor.kind === "agent" ? "Agent" : "Human");
 }
@@ -1009,7 +1167,7 @@ function ContextPreviewDialog(props: {
       title={`${props.nodeLabel} Context`}
       description="Large markdown view for longer context notes and working material."
       maxW="min(800px, 90vw)"
-      contentClass="spatial-map-context-dialog"
+      contentClass={contextDialogClass}
       footer={
         <HStack justifyContent="flex-end">
           <Button
@@ -1036,10 +1194,10 @@ function InspectorChip(props: { label: string; value: string }) {
       maxW="100%"
       minW="0"
     >
-      <Text as="span" textStyle="xs" class="spatial-map-inspector-row-label">
+      <Text as="span" flexShrink="0" color="var(--spatial-map-copy-dim)" fontSize="11px" fontWeight="700" letterSpacing="0.09em" lineHeight="1">
         {props.label}
       </Text>
-      <Text as="span" textStyle="xs" class="spatial-map-inspector-row-value is-mono">
+      <Text as="span" minW="0" maxW="178px" overflow="hidden" color="var(--spatial-map-copy)" fontFamily={`"SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace`} fontSize="10px" fontWeight="600" textOverflow="ellipsis" whiteSpace="nowrap">
         {props.value}
       </Text>
     </Badge>
@@ -1061,7 +1219,7 @@ function InspectorRelationList(props: {
         margin="0"
         fontSize="xs"
         fontWeight="semibold"
-        class="spatial-map-relation-title"
+        color="var(--spatial-map-copy-dim)"
       >
         {props.title}
       </Text>
@@ -1073,26 +1231,36 @@ function InspectorRelationList(props: {
           }
 
           return (
-            <button
+            <InspectorToggleButton
               type="button"
-              class={`spatial-map-relation-card${props.selectedNodeId === node.id ? " is-selected" : ""}`}
+              w="100%"
+              p="7px 8px"
+              border="1px solid"
+              borderColor={props.selectedNodeId === node.id ? "rgba(45, 111, 72, 0.74)" : "rgba(44, 52, 46, 0.24)"}
+              borderRadius="6px"
+              background={props.selectedNodeId === node.id ? "rgba(229, 239, 229, 0.96)" : "rgba(239, 242, 237, 0.84)"}
+              color="inherit"
+              textAlign="left"
+              cursor="pointer"
+              boxShadow={props.selectedNodeId === node.id ? "inset 4px 0 0 var(--spatial-map-accent), inset 0 0 0 1px rgba(45, 111, 72, 0.12)" : undefined}
+              transition="background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease"
+              _hover={{ borderColor: "rgba(45, 111, 72, 0.58)", boxShadow: "inset 4px 0 0 rgba(45, 111, 72, 0.24)" }}
+              _focusVisible={{ outline: "none", borderColor: "rgba(45, 111, 72, 0.74)", boxShadow: "inset 4px 0 0 var(--spatial-map-accent)" }}
               onClick={() => props.onSelect(node.id)}
               aria-pressed={props.selectedNodeId === node.id}
             >
-              <Text as="div" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-relation-name">
-                {node.label}
-              </Text>
-              <Text as="div" margin="2px 0 0" fontSize="xs" class="spatial-map-relation-meta">
+              <SpatialMapRelationName>{node.label}</SpatialMapRelationName>
+              <SpatialMapRelationMeta>
                 {item.kind} · {node.type}
-              </Text>
-            </button>
+              </SpatialMapRelationMeta>
+            </InspectorToggleButton>
           );
         }}
       </For>
       {props.items.length === 0 ? (
-        <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+        <SpatialMapEmptyState>
           {props.emptyLabel}
-        </Text>
+        </SpatialMapEmptyState>
       ) : null}
     </VStack>
   );

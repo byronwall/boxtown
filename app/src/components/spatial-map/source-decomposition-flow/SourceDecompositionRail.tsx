@@ -1,8 +1,7 @@
 import { For, Show, createMemo, createSignal, onCleanup, onMount, untrack } from "solid-js";
-import { Box, HStack, VStack } from "styled-system/jsx";
+import { HStack, VStack, styled } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import * as Checkbox from "~/components/ui/checkbox";
-import { Text } from "~/components/ui/text";
 import { Textarea } from "~/components/ui/textarea";
 import { getTreeCheckedState, toggleTreeSelection } from "~/lib/context-note-conversion/selection";
 import type { ConversionCandidateTreeItem } from "~/lib/context-note-conversion/types";
@@ -11,9 +10,23 @@ import type { ProjectRecord } from "~/lib/projects/types";
 import { useSpatialMap } from "~/components/spatial-map/SpatialMapContext";
 import { getImageFilesFromDataTransfer } from "~/components/spatial-map/SpatialMapImages";
 import { SpatialMapInspectorHeader } from "~/components/spatial-map/SpatialMapInspectorHeader";
+import {
+  SpatialMapBlockTitle,
+  SpatialMapCandidateRow,
+  SpatialMapCopy,
+  SpatialMapEmptyState,
+  SpatialMapFlowRail,
+  SpatialMapInspectorRow,
+  SpatialMapInspectorSection,
+  SpatialMapRelationMeta,
+  SpatialMapRelationName,
+  SpatialMapRunStep,
+} from "~/components/spatial-map/SpatialMapPanelPrimitives";
 import { isEditableTarget } from "~/components/spatial-map/spatial-map-dom";
 import { SourceImagePreview, SourceImagePreviewDialog } from "./SourceImagePreview";
 import { useSourceDecompositionFlow } from "./useSourceDecompositionFlow";
+
+const SourceFileRemoveButton = styled("button");
 
 interface SourceDecompositionRailProps {
   project: ProjectRecord;
@@ -94,8 +107,7 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
   });
 
   return (
-    <Box class="spatial-map-inspector-rail">
-      <aside id="spatial-map-source-decomposition" class="spatial-map-inspector spatial-map-add-nodes-rail">
+    <SpatialMapFlowRail id="spatial-map-source-decomposition">
         <VStack alignItems="stretch" gap="3" h="full">
           <SpatialMapInspectorHeader
             kicker="Source Decomp"
@@ -106,14 +118,14 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
             onClose={closeRail}
           />
 
-          <Box class="spatial-map-inspector-section">
-            <InspectorRow label="Project" value={props.project.name} />
-            <InspectorRow label="Anchor" value={selectedNode()?.label ?? "No node selected"} />
-            <InspectorRow label="Status" value={flow.snapshot()?.status ?? "idle"} mono />
-          </Box>
+          <SpatialMapInspectorSection>
+            <SpatialMapInspectorRow label="Project" value={props.project.name} />
+            <SpatialMapInspectorRow label="Anchor" value={selectedNode()?.label ?? "No node selected"} />
+            <SpatialMapInspectorRow label="Status" value={flow.snapshot()?.status ?? "idle"} mono />
+          </SpatialMapInspectorSection>
 
-          <Box
-            class={`spatial-map-inspector-section spatial-map-source-dropzone${isDraggingImage() ? " is-dragging-image" : ""}`}
+          <SpatialMapInspectorSection
+            dragging={isDraggingImage()}
             onDragEnter={(event) => {
               if (getImageFilesFromDataTransfer(event.dataTransfer).length === 0) return;
               event.preventDefault();
@@ -132,9 +144,7 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
               addImages(files);
             }}
           >
-            <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-              Sources
-            </Text>
+            <SpatialMapBlockTitle>Sources</SpatialMapBlockTitle>
             <Textarea
               rows={4}
               variant="spatial"
@@ -151,13 +161,13 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
               type="file"
               accept="image/*"
               multiple
-              class="spatial-map-source-file-input"
+              style={{ display: "none" }}
               onChange={(event) => addImages(Array.from(event.currentTarget.files ?? []))}
             />
             <HStack gap="2" justifyContent="space-between" flexWrap="wrap">
-              <Text as="span" class="spatial-map-empty-state">
+              <SpatialMapEmptyState as="span">
                 Paste, drag/drop, or browse for image sources.
-              </Text>
+              </SpatialMapEmptyState>
               <Button
                 size="xs"
                 variant="outline"
@@ -170,20 +180,39 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
               <VStack alignItems="stretch" gap="1">
                 <For each={sourceImages()}>
                   {(file) => (
-                    <HStack justifyContent="space-between" alignItems="center" gap="2" class="spatial-map-source-file-row">
+                    <HStack
+                      justifyContent="space-between"
+                      alignItems="center"
+                      gap="2"
+                      p="6px 7px"
+                      border="1px solid rgba(44, 52, 46, 0.24)"
+                      borderRadius="6px"
+                      background="rgba(239, 242, 237, 0.84)"
+                    >
                       <HStack gap="2" minW="0">
                         <SourceImagePreview file={file} onOpen={() => setPreviewFileIndex(sourceImages().indexOf(file))} />
-                        <Text as="span" class="spatial-map-relation-name">
+                        <SpatialMapRelationName as="span">
                           {file.name || "Pasted image"}
-                        </Text>
+                        </SpatialMapRelationName>
                       </HStack>
-                      <button
+                      <SourceFileRemoveButton
                         type="button"
-                        class="spatial-map-source-file-remove"
+                        border="0"
+                        background="transparent"
+                        color="var(--spatial-map-copy-dim)"
+                        cursor="pointer"
+                        fontFamily="inherit"
+                        fontSize="10px"
+                        letterSpacing="0.1em"
+                        lineHeight="1"
+                        p="2px 0"
+                        textTransform="none"
+                        _hover={{ color: "var(--spatial-map-copy)", outline: "none", textDecoration: "underline", textUnderlineOffset: "3px" }}
+                        _focusVisible={{ color: "var(--spatial-map-copy)", outline: "none", textDecoration: "underline", textUnderlineOffset: "3px" }}
                         onClick={() => setSourceImages((current) => current.filter((entry) => entry !== file))}
                       >
                         Remove
-                      </button>
+                      </SourceFileRemoveButton>
                     </HStack>
                   )}
                 </For>
@@ -208,61 +237,37 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
                 Decompose Sources
               </Button>
             </HStack>
-          </Box>
+          </SpatialMapInspectorSection>
 
           <Show when={flow.snapshot()}>
             {(snapshot) => (
               <>
-                <Box class="spatial-map-inspector-section">
-                  <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-                    Run progress
-                  </Text>
-                  <Text as="p" class="spatial-map-inspector-copy">
-                    {snapshot().latestMessage}
-                  </Text>
+                <SpatialMapInspectorSection>
+                  <SpatialMapBlockTitle>Run progress</SpatialMapBlockTitle>
+                  <SpatialMapCopy>{snapshot().latestMessage}</SpatialMapCopy>
                   <VStack alignItems="stretch" gap="1.5">
                     <For each={snapshot().steps}>
                       {(step) => (
-                        <Box class={`spatial-map-run-step is-${step.status}`}>
-                          <HStack justifyContent="space-between" alignItems="start" gap="3">
-                            <Text as="span" class="spatial-map-run-step-label">
-                              {step.label}
-                            </Text>
-                            <Text as="span" class="spatial-map-run-step-status">
-                              {step.status}
-                            </Text>
-                          </HStack>
-                          <Text as="p" class="spatial-map-run-step-detail">
-                            {step.detail}
-                          </Text>
-                        </Box>
+                        <SpatialMapRunStep status={step.status} label={step.label} detail={step.detail} />
                       )}
                     </For>
                   </VStack>
-                </Box>
+                </SpatialMapInspectorSection>
 
                 <Show when={snapshot().status === "awaiting-review" && snapshot().candidateBatch}>
                   {(candidateBatch) => (
                     <>
-                      <Box class="spatial-map-inspector-section">
-                        <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-                          Style commentary
-                        </Text>
-                        <Text as="p" class="spatial-map-inspector-copy">
-                          {candidateBatch().styleCommentary}
-                        </Text>
-                      </Box>
-                      <Box class="spatial-map-inspector-section">
-                        <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-                          Available nodes
-                        </Text>
-                        <Text as="p" class="spatial-map-inspector-copy">
-                          {candidateBatch().summary}
-                        </Text>
-                        <Text as="p" class="spatial-map-empty-state">
+                      <SpatialMapInspectorSection>
+                        <SpatialMapBlockTitle>Style commentary</SpatialMapBlockTitle>
+                        <SpatialMapCopy>{candidateBatch().styleCommentary}</SpatialMapCopy>
+                      </SpatialMapInspectorSection>
+                      <SpatialMapInspectorSection>
+                        <SpatialMapBlockTitle>Available nodes</SpatialMapBlockTitle>
+                        <SpatialMapCopy>{candidateBatch().summary}</SpatialMapCopy>
+                        <SpatialMapEmptyState>
                           All candidates start selected. Source images attach only to accepted top-level nodes.
-                        </Text>
-                        <VStack alignItems="stretch" gap="1.5" class="spatial-map-candidate-tree">
+                        </SpatialMapEmptyState>
+                        <VStack alignItems="stretch" gap="1.5" pt="2px">
                           <For each={candidateBatch().tree.roots}>
                             {(rootId) => (
                             <CandidateTreeNode
@@ -277,9 +282,9 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
                           </For>
                         </VStack>
                         <HStack justifyContent="space-between" gap="3" flexWrap="wrap">
-                          <Text as="span" class="spatial-map-empty-state">
+                          <SpatialMapEmptyState as="span">
                             {flow.selectedNodeIds().length} of {candidateNodeIds().length} nodes selected
-                          </Text>
+                          </SpatialMapEmptyState>
                           <Button
                             size="xs"
                             colorPalette="green"
@@ -292,28 +297,22 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
                             Accept Selected
                           </Button>
                         </HStack>
-                      </Box>
+                      </SpatialMapInspectorSection>
                     </>
                   )}
                 </Show>
 
                 <Show when={snapshot().result}>
                   {(result) => (
-                    <Box class="spatial-map-inspector-section">
-                      <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-                        Decomposition complete
-                      </Text>
-                      <Text as="p" class="spatial-map-inspector-copy">
-                        {result().summary}
-                      </Text>
-                      <Text as="p" class="spatial-map-empty-state">
+                    <SpatialMapInspectorSection>
+                      <SpatialMapBlockTitle>Decomposition complete</SpatialMapBlockTitle>
+                      <SpatialMapCopy>{result().summary}</SpatialMapCopy>
+                      <SpatialMapEmptyState>
                         {result().acceptedNodeCount} nodes / {result().acceptedLinkCount} links added /
                         {result().attachedImageCount} source image attachments
-                      </Text>
-                      <Text as="p" class="spatial-map-inspector-copy">
-                        {result().styleCommentary}
-                      </Text>
-                    </Box>
+                      </SpatialMapEmptyState>
+                      <SpatialMapCopy>{result().styleCommentary}</SpatialMapCopy>
+                    </SpatialMapInspectorSection>
                   )}
                 </Show>
               </>
@@ -322,11 +321,9 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
 
           <Show when={flow.error()}>
             {(error) => (
-              <Box class="spatial-map-inspector-section spatial-map-add-nodes-error">
-                <Text as="p" class="spatial-map-inspector-copy">
-                  {error()}
-                </Text>
-              </Box>
+              <SpatialMapInspectorSection error>
+                <SpatialMapCopy>{error()}</SpatialMapCopy>
+              </SpatialMapInspectorSection>
             )}
           </Show>
         </VStack>
@@ -340,8 +337,7 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
             }
           }}
         />
-      </aside>
-    </Box>
+      </SpatialMapFlowRail>
   );
 }
 
@@ -356,37 +352,31 @@ function CandidateTreeNode(props: {
   return (
     <VStack alignItems="stretch" gap="1">
       <Checkbox.Root
+        class="group"
         checked={props.getCheckedState(props.item.nodeId)}
         onCheckedChange={(details) => props.onToggle(props.item.nodeId, details.checked === true)}
       >
         <Checkbox.HiddenInput />
-        <HStack
-          alignItems="start"
-          gap="2"
-          class="spatial-map-candidate-tree-row"
-          style={{ "padding-left": `${props.level * 16}px` }}
-        >
+        <SpatialMapCandidateRow level={props.level}>
           <Checkbox.Control>
             <Checkbox.Indicator />
           </Checkbox.Control>
           <VStack alignItems="start" gap="0.5" flex="1">
             <HStack justifyContent="space-between" w="full" gap="2" flexWrap="wrap">
-              <Checkbox.Label class="spatial-map-relation-name">
-                {props.item.label}
+              <Checkbox.Label>
+                <SpatialMapRelationName as="span">{props.item.label}</SpatialMapRelationName>
               </Checkbox.Label>
-              <Text as="span" class="spatial-map-relation-meta">
-                {props.item.type}
-              </Text>
+              <SpatialMapRelationMeta as="span">{props.item.type}</SpatialMapRelationMeta>
             </HStack>
-            <Text as="div" class="spatial-map-relation-meta">
+            <SpatialMapRelationMeta>
               {getNodePrimaryMetadataText(
                 { metadata: props.item.metadata },
                 props.nodeMetadataSchema,
                 "No metadata",
               )}
-            </Text>
+            </SpatialMapRelationMeta>
           </VStack>
-        </HStack>
+        </SpatialMapCandidateRow>
       </Checkbox.Root>
 
       <For each={props.item.childNodeIds}>
@@ -402,24 +392,6 @@ function CandidateTreeNode(props: {
         )}
       </For>
     </VStack>
-  );
-}
-
-function InspectorRow(props: { label: string; value: string; mono?: boolean }) {
-  return (
-    <HStack justifyContent="space-between" alignItems="start" gap="3" class="spatial-map-inspector-row">
-      <Text as="span" textStyle="xs" class="spatial-map-inspector-row-label">
-        {props.label}
-      </Text>
-      <Text
-        as="span"
-        textStyle="sm"
-        class={props.mono ? "spatial-map-inspector-row-value is-mono" : "spatial-map-inspector-row-value"}
-        textAlign="right"
-      >
-        {props.value}
-      </Text>
-    </HStack>
   );
 }
 

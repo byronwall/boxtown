@@ -1,6 +1,7 @@
 import { useSubmission } from "@solidjs/router";
-import { createEffect, createMemo, createSignal, For, onCleanup, Show } from "solid-js";
-import { Box } from "styled-system/jsx";
+import { createEffect, createMemo, createSignal, For, onCleanup, Show, type JSX } from "solid-js";
+import { css } from "styled-system/css";
+import { Box, styled } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
@@ -136,6 +137,61 @@ const NODE_STATUS_BADGE_SIZE = 17;
 const NODE_STATUS_BADGE_MARGIN = 6;
 const NODE_STATUS_LABEL_GAP = 5;
 const NODE_STATUS_LABEL_WIDTH_FACTOR = 6.2;
+
+const SpatialMapButton = styled("button");
+const SpatialMapForm = styled("form");
+const SpatialMapSelect = styled("select");
+const SpatialMapImage = styled("img");
+
+// SVG hover state crosses from the node group into child rect/text elements, so
+// it stays as a local selector instead of a global CSS file rule.
+const nodeInteractionClass = css({
+  "&:hover .spatial-map-node-body, &.is-hovered .spatial-map-node-body": {
+    fill: "color-mix(in srgb, var(--spatial-map-node-fill-hover, var(--spatial-map-neutral-fill-hover)) calc(100% - var(--spatial-map-node-depth-fill-hover-lightness, 0%)), white var(--spatial-map-node-depth-fill-hover-lightness, 0%))",
+    stroke: "color-mix(in srgb, var(--spatial-map-node-stroke-hover, var(--spatial-map-neutral-stroke-hover)) calc(100% - var(--spatial-map-node-depth-stroke-hover-lightness, 0%)), white var(--spatial-map-node-depth-stroke-hover-lightness, 0%))",
+  },
+  "& .spatial-map-node-status:hover .spatial-map-node-status-label-bg, & .spatial-map-node-status:hover .spatial-map-node-status-label": {
+    opacity: "1",
+  },
+});
+
+// The preview hierarchy uses connector rails; the lines are pseudo-elements,
+// which Panda props cannot attach to plain children passed into the row helper.
+const contextTreeClass = css({
+  "& .spatial-map-node-context-card-tree-rail": {
+    position: "relative",
+    minH: "19px",
+  },
+  "& .spatial-map-node-context-card-tree-rail::before": {
+    content: '""',
+    position: "absolute",
+    top: "-10px",
+    bottom: "-10px",
+    left: "8px",
+    borderLeft: "1px solid var(--context-tree-line)",
+  },
+  "& .spatial-map-node-context-card-tree-row.is-current .spatial-map-node-context-card-tree-rail::after, & .spatial-map-node-context-card-tree-row.is-child .spatial-map-node-context-card-tree-rail::after": {
+    content: '""',
+    position: "absolute",
+    top: "50%",
+    left: "8px",
+    w: "12px",
+    borderTop: "1px solid var(--context-tree-line-strong)",
+  },
+  "& .spatial-map-node-context-card-tree-row.is-last .spatial-map-node-context-card-tree-rail::before": {
+    bottom: "50%",
+  },
+  "& .spatial-map-node-context-card-tree-label, & .spatial-map-node-context-card-tree-type": {
+    minW: "0",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  "& .spatial-map-node-context-card-tree-type": {
+    color: "var(--spatial-map-copy-dim)",
+    fontFamily: `"SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace`,
+  },
+});
 const NODE_CONTEXT_PREVIEW_MAX_LENGTH = 160;
 const NODE_CONTEXT_HOVER_DELAY_MS = 200;
 const NODE_CONTEXT_CLOSE_DELAY_MS = 120;
@@ -297,6 +353,19 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
     <Box
       ref={controller.setViewportRef}
       class={`spatial-map-viewport${controller.isPanning() ? " is-panning" : ""}`}
+      position="relative"
+      overflow="hidden"
+      minH="0"
+      border="1px solid rgba(96, 101, 95, 0.46)"
+      borderRadius={{ base: "6px", md: "8px" }}
+      background="linear-gradient(180deg, rgba(248, 250, 248, 0.88), rgba(235, 239, 233, 0.96))"
+      boxShadow={`
+        inset 0 1px 0 rgba(255, 255, 255, 0.64),
+        0 12px 30px rgba(29, 33, 28, 0.06)
+      `}
+      cursor={controller.isPanning() ? "grabbing" : "grab"}
+      touchAction="none"
+      userSelect="none"
       onPointerDown={controller.viewportHandlers.onPointerDown}
       onPointerMove={controller.viewportHandlers.onPointerMove}
       onPointerUp={controller.viewportHandlers.onPointerUp}
@@ -304,16 +373,57 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       onPointerCancel={controller.viewportHandlers.onPointerCancel}
       onWheel={controller.viewportHandlers.onWheel}
     >
-      <Box class="spatial-map-viewport-controls">
-        <Box class="spatial-map-viewport-control-group">
-          <Box as="span" class="spatial-map-zoom-readout">
+      <Box
+        position="absolute"
+        top="0"
+        right="0"
+        zIndex="2"
+        display="inline-flex"
+        alignItems="stretch"
+        gap="6px"
+        pointerEvents="auto"
+      >
+        <Box
+          display="inline-flex"
+          alignItems="stretch"
+          border="1px solid rgba(24, 29, 26, 0.34)"
+          borderTop="0"
+          borderRadius="0 0 6px 6px"
+          background="rgba(227, 231, 225, 0.94)"
+          boxShadow={`
+            inset 0 1px 0 rgba(255, 255, 255, 0.32),
+            inset 0 -1px 0 rgba(44, 52, 46, 0.14)
+          `}
+        >
+          <Box
+            as="span"
+            display="inline-flex"
+            alignItems="center"
+            minH="28px"
+            p="0 8px"
+            borderRight="1px solid rgba(24, 29, 26, 0.22)"
+            color="var(--spatial-map-copy-muted)"
+            fontFamily={`"SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace`}
+            fontSize="12px"
+            lineHeight="1.1"
+            fontWeight="600"
+            letterSpacing="0.05em"
+            textTransform="none"
+            whiteSpace="nowrap"
+            pointerEvents="none"
+          >
             Zoom {controller.zoomPercent()}
           </Box>
           <Button
             colorPalette="green"
             variant="plain"
             size="xs"
-            class="spatial-map-viewport-button"
+            minH="28px"
+            border="0"
+            borderRadius="4px"
+            background="transparent"
+            transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease"
+            _active={{ transform: "scale(0.98)" }}
             onClick={() => controller.fitCameraToNodes()}
           >
             Fit View
@@ -323,6 +433,19 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
             variant="plain"
             size="xs"
             class={`spatial-map-viewport-button spatial-map-viewport-toggle${controller.showEdges() ? " is-active" : ""}`}
+            minH="28px"
+            border="0"
+            borderLeft="1px solid rgba(24, 29, 26, 0.22)"
+            borderRadius="4px"
+            background={controller.showEdges() ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+            color={controller.showEdges() ? "var(--spatial-map-accent-strong)" : undefined}
+            boxShadow={
+              controller.showEdges()
+                ? "inset 0 0 0 1px rgba(45, 111, 72, 0.42), inset 0 -2px 0 rgba(45, 111, 72, 0.86)"
+                : undefined
+            }
+            transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease"
+            _active={{ transform: "scale(0.98)" }}
             aria-pressed={controller.showEdges()}
             onClick={() => controller.toggleEdges()}
           >
@@ -334,6 +457,19 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
               variant="plain"
               size="xs"
               class={`spatial-map-viewport-button spatial-map-viewport-toggle${controller.showLinkedInIsolation() ? " is-active" : ""}`}
+              minH="28px"
+              border="0"
+              borderLeft="1px solid rgba(24, 29, 26, 0.22)"
+              borderRadius="4px"
+              background={controller.showLinkedInIsolation() ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+              color={controller.showLinkedInIsolation() ? "var(--spatial-map-accent-strong)" : undefined}
+              boxShadow={
+                controller.showLinkedInIsolation()
+                  ? "inset 0 0 0 1px rgba(45, 111, 72, 0.42), inset 0 -2px 0 rgba(45, 111, 72, 0.86)"
+                  : undefined
+              }
+              transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease"
+              _active={{ transform: "scale(0.98)" }}
               aria-pressed={controller.showLinkedInIsolation()}
               onClick={() => controller.toggleLinkedInIsolation()}
             >
@@ -342,26 +478,77 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
           </Show>
         </Box>
         <Box
-          class="spatial-map-color-controls spatial-map-color-controls--viewport"
+          display="inline-flex"
+          alignItems="stretch"
+          overflow="hidden"
+          border="1px solid rgba(24, 29, 26, 0.34)"
+          borderTop="0"
+          borderRight="0"
+          borderRadius="0 0 0 6px"
+          background="rgba(227, 231, 225, 0.94)"
+          boxShadow={`
+            inset 0 1px 0 rgba(255, 255, 255, 0.32),
+            inset 0 -1px 0 rgba(44, 52, 46, 0.14)
+          `}
+          pointerEvents="auto"
           role="group"
           aria-label="Node color mode"
         >
-          <button
+          <SpatialMapButton
             type="button"
-            class={`spatial-map-color-toggle${props.nodeColorMode === "type" ? " is-active" : ""}`}
+            display="inline-flex"
+            alignItems="center"
+            justifyContent="center"
+            minW="58px"
+            minH="28px"
+            p="0 10px"
+            border="0"
+            borderRight="1px solid rgba(24, 29, 26, 0.22)"
+            background={props.nodeColorMode === "type" ? "rgba(37, 95, 58, 0.16)" : "transparent"}
+            color={props.nodeColorMode === "type" ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy)"}
+            boxShadow={props.nodeColorMode === "type" ? "inset 0 -2px 0 rgba(23, 62, 39, 0.86)" : undefined}
+            fontFamily="inherit"
+            fontSize="12px"
+            lineHeight="1"
+            fontWeight="700"
+            letterSpacing="0.02em"
+            whiteSpace="nowrap"
+            appearance="none"
+            cursor="pointer"
+            _hover={{ background: "rgba(255, 255, 255, 0.28)", outline: "none" }}
+            _focusVisible={{ background: "rgba(255, 255, 255, 0.28)", outline: "none" }}
             aria-pressed={props.nodeColorMode === "type"}
             onClick={() => props.onNodeColorModeChange("type")}
           >
             Type
-          </button>
-          <button
+          </SpatialMapButton>
+          <SpatialMapButton
             type="button"
-            class={`spatial-map-color-toggle${props.nodeColorMode === "status" ? " is-active" : ""}`}
+            display="inline-flex"
+            alignItems="center"
+            justifyContent="center"
+            minW="58px"
+            minH="28px"
+            p="0 10px"
+            border="0"
+            background={props.nodeColorMode === "status" ? "rgba(37, 95, 58, 0.16)" : "transparent"}
+            color={props.nodeColorMode === "status" ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy)"}
+            boxShadow={props.nodeColorMode === "status" ? "inset 0 -2px 0 rgba(23, 62, 39, 0.86)" : undefined}
+            fontFamily="inherit"
+            fontSize="12px"
+            lineHeight="1"
+            fontWeight="700"
+            letterSpacing="0.02em"
+            whiteSpace="nowrap"
+            appearance="none"
+            cursor="pointer"
+            _hover={{ background: "rgba(255, 255, 255, 0.28)", outline: "none" }}
+            _focusVisible={{ background: "rgba(255, 255, 255, 0.28)", outline: "none" }}
             aria-pressed={props.nodeColorMode === "status"}
             onClick={() => props.onNodeColorModeChange("status")}
           >
             Status
-          </button>
+          </SpatialMapButton>
         </Box>
       </Box>
       <svg
@@ -371,8 +558,22 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
         preserveAspectRatio="none"
         onClick={controller.sceneHandlers.onBackgroundClick}
         onDblClick={controller.sceneHandlers.onBackgroundDoubleClick}
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "block",
+          "user-select": "none",
+          background:
+            "linear-gradient(rgba(26, 33, 28, 0.065) 1px, transparent 1px), linear-gradient(90deg, rgba(26, 33, 28, 0.065) 1px, transparent 1px), linear-gradient(rgba(26, 33, 28, 0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(26, 33, 28, 0.018) 1px, transparent 1px), linear-gradient(180deg, rgba(248, 250, 248, 0.9), rgba(235, 239, 233, 0.96))",
+          "background-size": "96px 96px, 96px 96px, 24px 24px, 24px 24px, auto",
+          "background-position": "-1px -1px, -1px -1px, -1px -1px, -1px -1px, 0 0",
+        }}
       >
-        <g class="spatial-map-scene-layer" transform={controller.sceneTransform()}>
+        <g
+          class="spatial-map-scene-layer"
+          transform={controller.sceneTransform()}
+          style={{ "transform-box": "view-box" }}
+        >
           <g>
             <For each={controller.edgeState()}>
               {(edge) => (
@@ -380,6 +581,11 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                   class="spatial-map-edge"
                   d={edge.path}
                   opacity={edge.opacity}
+                  fill="none"
+                  pointer-events="none"
+                  stroke="rgba(47, 57, 51, 0.42)"
+                  stroke-width="1.25"
+                  stroke-linecap="square"
                 />
               )}
             </For>
@@ -388,6 +594,13 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                 <path
                   class="spatial-map-draft-parent-edge"
                   d={path()}
+                  fill="none"
+                  pointer-events="none"
+                  stroke="rgba(23, 62, 39, 0.68)"
+                  stroke-width="2"
+                  stroke-dasharray="8 7"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
                 />
               )}
             </Show>
@@ -464,16 +677,35 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       </form>
       <Show when={reparentingNode()}>
         {(node) => (
-          <div class="spatial-map-reparent-message" onPointerDown={(event) => event.stopPropagation()}>
-            <div class="spatial-map-reparent-copy">
+          <Box
+            position="absolute"
+            right="10px"
+            bottom="48px"
+            zIndex="4"
+            w="min(360px, calc(100% - 20px))"
+            display="flex"
+            alignItems="center"
+            gap="8px"
+            p="8px"
+            border="1px solid rgba(24, 29, 26, 0.34)"
+            background="rgba(250, 252, 247, 0.98)"
+            color="var(--spatial-map-copy)"
+            pointerEvents="auto"
+            boxShadow="0 12px 28px rgba(20, 25, 22, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.58)"
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            <Box minW="0" flex="1" color="var(--spatial-map-copy-dim)" fontSize="12px" lineHeight="1.25">
               Click the new parent node for {node().label}.
-            </div>
-            <div class="spatial-map-reparent-actions">
+            </Box>
+            <Box display="inline-flex" alignItems="stretch" gap="4px" flex="none">
               <Button
                 colorPalette="green"
                 variant="plain"
                 size="xs"
-                class="spatial-map-viewport-button"
+                minH="28px"
+                border="0"
+                borderRadius="4px"
+                background="transparent"
                 loading={moveSubmission.pending}
                 onClick={() => moveSelectedNode(null)}
               >
@@ -482,14 +714,17 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
               <Button
                 variant="plain"
                 size="xs"
-                class="spatial-map-viewport-button"
+                minH="28px"
+                border="0"
+                borderRadius="4px"
+                background="transparent"
                 disabled={moveSubmission.pending}
                 onClick={() => controller.clearReparentingNode()}
               >
                 Cancel
               </Button>
-            </div>
-          </div>
+            </Box>
+          </Box>
         )}
       </Show>
     </Box>
@@ -711,9 +946,25 @@ function ChildNodePlaceholder(props: {
   };
 
   return (
-    <form
+    <SpatialMapForm
       ref={formRef}
-      class="spatial-map-node-placeholder"
+      position="absolute"
+      zIndex="30"
+      w="min(300px, calc(100% - 24px))"
+      maxH="calc(100% - 24px)"
+      boxSizing="border-box"
+      display="flex"
+      flexDirection="column"
+      gap="8px"
+      p="10px"
+      border="1px solid rgba(47, 57, 50, 0.5)"
+      background="rgba(250, 252, 247, 0.98)"
+      boxShadow="0 12px 28px rgba(20, 25, 22, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7)"
+      color="var(--spatial-map-copy)"
+      overflow="auto"
+      overscrollBehavior="contain"
+      pointerEvents="auto"
+      transform="translate(-50%, -50%)"
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
       style={overlayStyle()}
@@ -748,14 +999,24 @@ function ChildNodePlaceholder(props: {
         }
       }}
     >
-      <div class="spatial-map-node-placeholder-header">
+      <Box color="var(--spatial-map-copy-dim)" fontSize="11px" lineHeight="1" textTransform="none">
         {props.parentNode ? "New child node" : "New node"}
-      </div>
+      </Box>
       <Show when={props.parentNode}>
         {(parentNode) => (
-          <div class="spatial-map-node-placeholder-parent">
+          <Box
+            p="6px 7px"
+            border="1px solid rgba(34, 41, 36, 0.12)"
+            background="rgba(232, 236, 230, 0.72)"
+            color="var(--spatial-map-copy-muted)"
+            fontSize="11px"
+            lineHeight="1.25"
+            overflow="hidden"
+            textOverflow="ellipsis"
+            whiteSpace="nowrap"
+          >
             Parent: {parentNode().label}
-          </div>
+          </Box>
         )}
       </Show>
       <input type="hidden" name="projectId" value={props.project.id} />
@@ -776,11 +1037,31 @@ function ChildNodePlaceholder(props: {
         rows={3}
         onInput={(event) => setTitle(event.currentTarget.value)}
       />
-      <label class="spatial-map-node-placeholder-field">
+      <Box
+        as="label"
+        display="flex"
+        flexDirection="column"
+        gap="4px"
+        color="var(--spatial-map-copy-dim)"
+        fontSize="10px"
+        fontWeight="700"
+        letterSpacing="0.04em"
+        lineHeight="1"
+        textTransform="none"
+      >
         <span>Type</span>
-        <select
+        <SpatialMapSelect
           value={nodeType()}
           disabled={submission.pending}
+          w="100%"
+          minH="30px"
+          border="1px solid rgba(47, 57, 50, 0.28)"
+          background="rgba(248, 250, 248, 0.94)"
+          color="var(--spatial-map-copy)"
+          fontFamily="inherit"
+          fontSize="12px"
+          fontWeight="500"
+          letterSpacing="0"
           onChange={(event) => setNodeType(event.currentTarget.value)}
         >
           <For each={nodeTypeOptions()}>
@@ -790,9 +1071,20 @@ function ChildNodePlaceholder(props: {
               </option>
             )}
           </For>
-        </select>
-      </label>
-      <label class="spatial-map-node-placeholder-field">
+        </SpatialMapSelect>
+      </Box>
+      <Box
+        as="label"
+        display="flex"
+        flexDirection="column"
+        gap="4px"
+        color="var(--spatial-map-copy-dim)"
+        fontSize="10px"
+        fontWeight="700"
+        letterSpacing="0.04em"
+        lineHeight="1"
+        textTransform="none"
+      >
         <span>Context</span>
         <Textarea
           aria-label="New node context"
@@ -803,8 +1095,8 @@ function ChildNodePlaceholder(props: {
           rows={4}
           onInput={(event) => setContext(event.currentTarget.value)}
         />
-      </label>
-      <div class="spatial-map-node-placeholder-actions">
+      </Box>
+      <Box display="flex" gap="6px" justifyContent="flex-end">
         <Button
           size="xs"
           variant="plain"
@@ -823,8 +1115,8 @@ function ChildNodePlaceholder(props: {
         >
           Accept
         </Button>
-      </div>
-    </form>
+      </Box>
+    </SpatialMapForm>
   );
 }
 
@@ -944,11 +1236,14 @@ function SpatialMapNode(props: {
 
   return (
     <g
-      class={`spatial-map-node spatial-map-node--${props.item.node.type}${props.item.isSelected ? " is-selected" : ""}${props.item.isHovered ? " is-hovered" : ""}${props.isIsolationTarget ? " is-isolated" : ""}`}
+      class={`spatial-map-node ${nodeInteractionClass} spatial-map-node--${props.item.node.type}${props.item.isSelected ? " is-selected" : ""}${props.item.isHovered ? " is-hovered" : ""}${props.isIsolationTarget ? " is-isolated" : ""}`}
       data-node-id={props.item.node.id}
       transform={`translate(${x()}, ${y()})`}
       opacity={props.item.opacity}
       style={{
+        filter: "none",
+        transition: "opacity 180ms ease",
+        "user-select": "none",
         "transform-box": "fill-box",
         "transform-origin": "center",
         cursor: "pointer",
@@ -1004,6 +1299,32 @@ function SpatialMapNode(props: {
         class="spatial-map-node-body"
         width={props.item.node.width}
         height={props.item.node.height}
+        rx="0"
+        ry="0"
+        stroke-width={props.item.isSelected ? "2" : props.isIsolationTarget ? "2.4" : "var(--spatial-map-node-depth-stroke-width, 1.4)"}
+        shape-rendering="crispEdges"
+        fill={`color-mix(
+          in srgb,
+          var(--spatial-map-node-fill, var(--spatial-map-neutral-fill))
+            calc(100% - var(--spatial-map-node-depth-fill-lightness, 0%)),
+          white var(--spatial-map-node-depth-fill-lightness, 0%)
+        )`}
+        stroke={
+          props.item.isSelected
+            ? "#0f2f1d"
+            : props.isIsolationTarget
+              ? "#245d7e"
+              : `color-mix(
+                  in srgb,
+                  var(--spatial-map-node-stroke, var(--spatial-map-neutral-stroke))
+                    calc(100% - var(--spatial-map-node-depth-stroke-lightness, 0%)),
+                  white var(--spatial-map-node-depth-stroke-lightness, 0%)
+                )`
+        }
+        style={{
+          filter: "none",
+          transition: "fill 120ms ease, stroke 120ms ease",
+        }}
       />
       <Show when={firstImage()}>
         {(image) => (
@@ -1017,6 +1338,18 @@ function SpatialMapNode(props: {
             <button
               type="button"
               class="spatial-map-node-image-button"
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "100%",
+                display: "block",
+                padding: "0",
+                border: "1px solid rgba(15, 47, 29, 0.38)",
+                "border-radius": "0",
+                background: "rgba(18, 22, 19, 0.1)",
+                cursor: "zoom-in",
+                overflow: "hidden",
+              }}
               aria-label={`Open ${image().originalName}`}
               onPointerDown={(event) => event.stopPropagation()}
               onClick={(event) => {
@@ -1024,9 +1357,36 @@ function SpatialMapNode(props: {
                 imageUi.openImage(image(), props.item.node, nodeImages());
               }}
             >
-              <img src={image().src} alt={image().originalName} loading="lazy" />
+              <img
+                src={image().src}
+                alt={image().originalName}
+                loading="lazy"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  display: "block",
+                  "object-fit": "cover",
+                  "pointer-events": "none",
+                }}
+              />
               <Show when={nodeImages().length > 1}>
-                <span>{nodeImages().length}</span>
+                <span
+                  style={{
+                    position: "absolute",
+                    right: "4px",
+                    bottom: "4px",
+                    "min-width": "22px",
+                    padding: "2px 5px",
+                    border: "1px solid rgba(34, 41, 36, 0.24)",
+                    background: "rgba(249, 250, 247, 0.92)",
+                    color: "var(--spatial-map-copy)",
+                    "font-size": "10px",
+                    "font-weight": "760",
+                    "line-height": "1",
+                  }}
+                >
+                  {nodeImages().length}
+                </span>
               </Show>
             </button>
           </foreignObject>
@@ -1038,6 +1398,16 @@ function SpatialMapNode(props: {
         y={labelStartY()}
         text-anchor="middle"
         font-size={String(labelFontSize())}
+        fill="#131816"
+        font-weight="700"
+        letter-spacing="0"
+        pointer-events="none"
+        text-rendering="geometricPrecision"
+        style={{
+          "line-height": "1.16",
+          transition: "fill 120ms ease, stroke 120ms ease",
+          "user-select": "none",
+        }}
       >
         <tspan x={props.item.node.width / 2} dy="0">
           {labelLineAt(0)}
@@ -1061,6 +1431,15 @@ function SpatialMapNode(props: {
         y={metaBaselineY()}
         text-anchor="middle"
         font-size={String(metaFontSize())}
+        fill="rgba(23, 27, 24, 0.66)"
+        font-family={`"SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace`}
+        letter-spacing="0.04em"
+        pointer-events="none"
+        style={{
+          "text-transform": "none",
+          transition: "fill 120ms ease, stroke 120ms ease",
+          "user-select": "none",
+        }}
       >
         {props.item.node.type}
       </text>
@@ -1068,6 +1447,8 @@ function SpatialMapNode(props: {
         class={`spatial-map-node-status spatial-map-node-status--${props.item.node.status}`}
         transform={`translate(${NODE_STATUS_BADGE_MARGIN}, ${props.item.node.height - NODE_STATUS_BADGE_MARGIN - NODE_STATUS_BADGE_SIZE})`}
         aria-label={`Status: ${statusLabel()}`}
+        pointer-events="auto"
+        style={getNodeStatusStyle(props.item.node.status)}
       >
         <rect
           class="spatial-map-node-status-hit-area"
@@ -1075,6 +1456,9 @@ function SpatialMapNode(props: {
           y="0"
           width={NODE_STATUS_BADGE_SIZE}
           height={NODE_STATUS_BADGE_SIZE}
+          fill="transparent"
+          stroke="none"
+          pointer-events="all"
         />
         <rect
           class="spatial-map-node-status-label-bg"
@@ -1082,18 +1466,33 @@ function SpatialMapNode(props: {
           y="0"
           width={statusLabelWidth()}
           height={NODE_STATUS_BADGE_SIZE}
+          fill="var(--spatial-map-status-fill)"
+          stroke="var(--spatial-map-status-stroke)"
+          stroke-width="1"
+          opacity="0"
+          pointer-events="none"
+          style={{ transition: "opacity 140ms ease" }}
         />
         <circle
           class="spatial-map-node-status-dot"
           cx={NODE_STATUS_BADGE_SIZE / 2}
           cy={NODE_STATUS_BADGE_SIZE / 2}
           r={NODE_STATUS_BADGE_SIZE / 2 - 1}
+          fill="var(--spatial-map-status-fill)"
+          stroke="var(--spatial-map-status-stroke)"
+          stroke-width="1"
         />
         <text
           class="spatial-map-node-status-glyph"
           x={NODE_STATUS_BADGE_SIZE / 2}
           y={NODE_STATUS_BADGE_SIZE / 2 + 3.5}
           text-anchor="middle"
+          fill="var(--spatial-map-status-copy)"
+          font-family={`"SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace`}
+          font-size="10px"
+          font-weight="800"
+          letter-spacing="0"
+          style={{ "user-select": "none" }}
         >
           {getMapNodeStatusGlyph(props.item.node.status)}
         </text>
@@ -1101,6 +1500,17 @@ function SpatialMapNode(props: {
           class="spatial-map-node-status-label"
           x={NODE_STATUS_BADGE_SIZE + NODE_STATUS_LABEL_GAP + 6}
           y={NODE_STATUS_BADGE_SIZE / 2 + 3.5}
+          fill="var(--spatial-map-status-copy)"
+          font-family={`"SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace`}
+          font-size="10px"
+          font-weight="700"
+          letter-spacing="0"
+          opacity="0"
+          pointer-events="none"
+          style={{
+            transition: "opacity 140ms ease",
+            "user-select": "none",
+          }}
         >
           {statusLabel()}
         </text>
@@ -1218,27 +1628,49 @@ function SpatialMapNodeContextCard(props: {
       ref={cardRef}
       class="spatial-map-node-context-card"
       style={positionStyle()}
+      position="absolute"
+      zIndex="18"
+      w="min(340px, calc(100% - 24px))"
+      maxH="calc(100% - 24px)"
+      boxSizing="border-box"
+      p="10px"
+      border="1px solid rgba(34, 41, 36, 0.2)"
+      background="rgba(253, 254, 251, 0.98)"
+      color="var(--spatial-map-copy)"
+      overflow="auto"
+      overscrollBehavior="contain"
+      pointerEvents="auto"
+      boxShadow="0 16px 42px rgba(18, 23, 20, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.74)"
       onPointerDown={(event) => event.stopPropagation()}
       onPointerEnter={props.onPointerEnter}
       onPointerLeave={props.onPointerLeave}
     >
-      <Box class="spatial-map-node-context-card-title">
+      <Box color="var(--spatial-map-copy)" fontSize="12px" fontWeight="760" lineHeight="1.25">
         {props.item.node.label}
       </Box>
-      <Box class="spatial-map-node-context-card-meta">
-        <span>{props.item.node.type}</span>
-        <span>{statusLabel()}</span>
+      <Box display="flex" flexWrap="wrap" gap="5px" mt="7px">
+        <ContextCardPill>{props.item.node.type}</ContextCardPill>
+        <ContextCardPill>{statusLabel()}</ContextCardPill>
         <Show when={images().length > 0}>
-          <span>{images().length} image{images().length === 1 ? "" : "s"}</span>
+          <ContextCardPill>{images().length} image{images().length === 1 ? "" : "s"}</ContextCardPill>
         </Show>
       </Box>
       <Show when={images().length > 0}>
-        <Box class="spatial-map-node-context-card-images">
+        <Box display="grid" gridTemplateColumns="repeat(4, minmax(0, 1fr))" gap="5px" mt="8px">
           <For each={images().slice(0, 4)}>
             {(image) => (
-              <button
+              <SpatialMapButton
                 type="button"
-                class="spatial-map-node-context-card-image"
+                position="relative"
+                aspectRatio="16 / 10"
+                minW="0"
+                p="0"
+                border="1px solid rgba(34, 41, 36, 0.18)"
+                background="rgba(238, 242, 236, 0.72)"
+                cursor="zoom-in"
+                overflow="hidden"
+                _hover={{ borderColor: "rgba(15, 47, 29, 0.5)", outline: "none" }}
+                _focusVisible={{ borderColor: "rgba(15, 47, 29, 0.5)", outline: "none" }}
                 aria-label={`Open ${image.originalName}`}
                 title={image.originalName}
                 onClick={(event) => {
@@ -1246,99 +1678,238 @@ function SpatialMapNodeContextCard(props: {
                   imageUi.openImage(image, props.item.node, images());
                 }}
               >
-                <img src={image.src} alt={image.originalName} loading="lazy" />
-              </button>
+                <SpatialMapImage
+                  src={image.src}
+                  alt={image.originalName}
+                  loading="lazy"
+                  w="100%"
+                  h="100%"
+                  display="block"
+                  objectFit="cover"
+                  pointerEvents="none"
+                />
+              </SpatialMapButton>
             )}
           </For>
           <Show when={images().length > 4}>
-            <span class="spatial-map-node-context-card-image-count">
+            <Box
+              as="span"
+              display="inline-flex"
+              alignItems="center"
+              justifyContent="center"
+              minH="100%"
+              border="1px solid rgba(34, 41, 36, 0.14)"
+              background="rgba(235, 240, 232, 0.64)"
+              color="var(--spatial-map-copy-dim)"
+              fontSize="11px"
+              fontWeight="720"
+            >
               +{images().length - 4}
-            </span>
+            </Box>
           </Show>
           </Box>
         </Show>
-      <Box class="spatial-map-node-context-card-tree" aria-label="Node hierarchy">
+      <Box
+        class={contextTreeClass}
+        aria-label="Node hierarchy"
+        display="grid"
+        mt="8px"
+        p="5px 6px"
+        border="1px solid rgba(34, 41, 36, 0.1)"
+        background="rgba(246, 248, 244, 0.64)"
+        style={{
+          "--context-tree-rail-width": "18px",
+          "--context-tree-child-offset": "8px",
+          "--context-tree-line": "rgba(44, 52, 46, 0.3)",
+          "--context-tree-line-strong": "rgba(44, 52, 46, 0.42)",
+        }}
+      >
         <Show when={hierarchyPreview().parent}>
           {(parent) => (
-            <Box class="spatial-map-node-context-card-tree-row is-parent">
+            <ContextTreeRow class="is-parent">
               <span class="spatial-map-node-context-card-tree-rail" aria-hidden="true" />
               <span class="spatial-map-node-context-card-tree-label" title={parent().label}>
                 {parent().label}
               </span>
               <span class="spatial-map-node-context-card-tree-type">{parent().type}</span>
-            </Box>
+            </ContextTreeRow>
           )}
         </Show>
-        <Box class={`spatial-map-node-context-card-tree-row is-current${hierarchyPreview().parent ? " has-parent" : ""}`}>
+        <ContextTreeRow
+          class={`is-current${hierarchyPreview().parent ? " has-parent" : ""}`}
+          current
+        >
           <span class="spatial-map-node-context-card-tree-rail" aria-hidden="true" />
           <span class="spatial-map-node-context-card-tree-label" title={props.item.node.label}>
             {props.item.node.label}
           </span>
           <span class="spatial-map-node-context-card-tree-type">{props.item.node.type}</span>
-        </Box>
+        </ContextTreeRow>
         <For each={hierarchyPreview().children.slice(0, 3)}>
           {(child, index) => (
-            <Box
-              class={`spatial-map-node-context-card-tree-row is-child${index() === Math.min(hierarchyPreview().children.length, 3) - 1 ? " is-last" : ""}`}
+            <ContextTreeRow
+              class={`is-child${index() === Math.min(hierarchyPreview().children.length, 3) - 1 ? " is-last" : ""}`}
+              child
             >
               <span class="spatial-map-node-context-card-tree-rail" aria-hidden="true" />
               <span class="spatial-map-node-context-card-tree-label" title={child.label}>
                 {child.label}
               </span>
               <span class="spatial-map-node-context-card-tree-type">{child.type}</span>
-            </Box>
+            </ContextTreeRow>
           )}
         </For>
         <Show when={hierarchyPreview().children.length > 3}>
-          <Box class="spatial-map-node-context-card-tree-row is-child is-last">
+          <ContextTreeRow class="is-child is-last" child>
             <span class="spatial-map-node-context-card-tree-rail" aria-hidden="true" />
             <span class="spatial-map-node-context-card-tree-label">
               +{hierarchyPreview().children.length - 3} more
             </span>
-          </Box>
+          </ContextTreeRow>
         </Show>
       </Box>
       <Show when={metadataEntries().length > 0}>
-        <Box class="spatial-map-node-context-card-metadata">
+        <Box display="grid" gap="4px" mt="8px">
           <For each={metadataEntries()}>
             {([key, value]) => (
-              <Box class="spatial-map-node-context-card-metadata-row">
-                <span class="spatial-map-node-context-card-metadata-key">{key}</span>
-                <span class="spatial-map-node-context-card-metadata-value">{value}</span>
+              <Box
+                display="grid"
+                gridTemplateColumns="minmax(54px, 0.34fr) minmax(0, 1fr)"
+                gap="7px"
+                minW="0"
+                p="4px 6px"
+                border="1px solid rgba(34, 41, 36, 0.1)"
+                background="rgba(246, 248, 244, 0.72)"
+                fontSize="11px"
+                lineHeight="1.2"
+              >
+                <Box as="span" minW="0" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap" color="var(--spatial-map-copy-dim)" fontWeight="720">
+                  {key}
+                </Box>
+                <Box as="span" minW="0" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap" color="var(--spatial-map-copy)">
+                  {value}
+                </Box>
               </Box>
             )}
           </For>
         </Box>
       </Show>
       <Show when={activityEntries().length > 0}>
-        <Box class="spatial-map-node-context-card-activity">
+        <Box display="grid" gap="4px" mt="8px">
           <For each={activityEntries()}>
             {(entry) => (
-              <Box class="spatial-map-node-context-card-activity-row" title={entry.summary}>
-                <span>{entry.summary}</span>
-                <time>{formatShortActivityDate(entry.createdAt)}</time>
+              <Box
+                display="grid"
+                gridTemplateColumns="minmax(0, 1fr) auto"
+                gap="8px"
+                minW="0"
+                color="var(--spatial-map-copy-dim)"
+                fontSize="11px"
+                lineHeight="1.25"
+                title={entry.summary}
+              >
+                <Box as="span" minW="0" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+                  {entry.summary}
+                </Box>
+                <Box
+                  as="time"
+                  minW="0"
+                  overflow="hidden"
+                  textOverflow="ellipsis"
+                  whiteSpace="nowrap"
+                  color="var(--spatial-map-copy-muted)"
+                  fontFamily={`"SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace`}
+                >
+                  {formatShortActivityDate(entry.createdAt)}
+                </Box>
               </Box>
             )}
           </For>
         </Box>
       </Show>
       <Show when={context().length > 0}>
-        <Box class="spatial-map-node-context-card-body">
+        <Box
+          mt="8px"
+          color="var(--spatial-map-copy-dim)"
+          fontSize="12px"
+          lineHeight="1.45"
+          maxH="168px"
+          overflow="hidden"
+          whiteSpace="pre-wrap"
+        >
           {contextPreview()}
         </Box>
       </Show>
       <Show when={context().length > 0}>
-        <button
+        <SpatialMapButton
           type="button"
-          class="spatial-map-node-context-card-action"
+          mt="9px"
+          p="0"
+          border="0"
+          background="transparent"
+          color="var(--spatial-map-accent-strong)"
+          cursor="pointer"
+          fontSize="12px"
+          fontWeight="720"
+          lineHeight="1.2"
+          _hover={{ textDecoration: "underline", outline: "none" }}
+          _focusVisible={{ textDecoration: "underline", outline: "none" }}
           onClick={(event) => {
             event.stopPropagation();
             controller.openContextPreview(props.item.node.id);
           }}
         >
           Open context
-        </button>
+        </SpatialMapButton>
       </Show>
+    </Box>
+  );
+}
+
+function ContextCardPill(props: { children: JSX.Element }) {
+  return (
+    <Box
+      as="span"
+      display="inline-flex"
+      alignItems="center"
+      minH="18px"
+      p="0 6px"
+      border="1px solid rgba(34, 41, 36, 0.14)"
+      background="rgba(235, 240, 232, 0.64)"
+      color="var(--spatial-map-copy-dim)"
+      fontSize="10px"
+      lineHeight="1"
+    >
+      {props.children}
+    </Box>
+  );
+}
+
+function ContextTreeRow(props: {
+  children: JSX.Element;
+  class: string;
+  child?: boolean;
+  current?: boolean;
+}) {
+  return (
+    <Box
+      class={`spatial-map-node-context-card-tree-row ${props.class}`}
+      display="grid"
+      gridTemplateColumns={
+        props.child
+          ? "calc(var(--context-tree-rail-width) + var(--context-tree-child-offset)) minmax(0, 1fr) auto"
+          : "var(--context-tree-rail-width) minmax(0, 1fr) auto"
+      }
+      gap="6px"
+      minW="0"
+      alignItems="center"
+      minH="19px"
+      color={props.current ? "var(--spatial-map-copy)" : "var(--spatial-map-copy-dim)"}
+      fontSize="10px"
+      fontWeight={props.current ? "760" : undefined}
+      lineHeight="1.15"
+    >
+      {props.children}
     </Box>
   );
 }
@@ -1355,6 +1926,28 @@ function getNodeTypeFallbackTone(type: string) {
 
 function getNodeStatusTone(status: MapNodeStatus) {
   return NODE_STATUS_TONES[status];
+}
+
+function getNodeStatusStyle(status: MapNodeStatus) {
+  const tone = getNodeStatusTone(status);
+  const copy =
+    status === "planned"
+      ? "#29302b"
+      : status === "implemented"
+        ? "#17391d"
+        : status === "working"
+          ? "#17374b"
+          : status === "blocked"
+            ? "#552417"
+            : status === "needs-review"
+              ? "#4c3712"
+              : "#30322f";
+
+  return {
+    "--spatial-map-status-fill": tone.fill,
+    "--spatial-map-status-stroke": tone.stroke,
+    "--spatial-map-status-copy": copy,
+  };
 }
 
 function getNodeTypeTone(

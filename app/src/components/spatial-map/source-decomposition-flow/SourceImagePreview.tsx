@@ -1,11 +1,12 @@
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-solid";
 import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show } from "solid-js";
-import { Box, HStack, VStack } from "styled-system/jsx";
+import { Box, HStack, VStack, styled } from "styled-system/jsx";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
 import { copyImageTargetToClipboard, downloadImageTarget } from "~/components/spatial-map/image-viewer-actions";
+import { spatialMapImageViewerDialogClass } from "~/components/spatial-map/SpatialMapImages";
 import { createContainedImageViewport } from "~/components/spatial-map/use-contained-image-viewport";
 
 interface SourceImagePreviewProps {
@@ -30,6 +31,8 @@ interface PanSession {
 
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 8;
+const SourcePreviewButton = styled("button");
+const SourcePreviewImage = styled("img");
 
 export function SourceImagePreview(props: SourceImagePreviewProps) {
   const [src, setSrc] = createSignal("");
@@ -41,17 +44,26 @@ export function SourceImagePreview(props: SourceImagePreviewProps) {
   });
 
   return (
-    <button
+    <SourcePreviewButton
       type="button"
-      class="spatial-map-source-image-thumb"
+      w="38px"
+      h="30px"
+      flex="0 0 auto"
+      overflow="hidden"
+      border="1px solid rgba(34, 41, 36, 0.22)"
+      background="rgba(214, 220, 212, 0.92)"
+      cursor="zoom-in"
+      p="0"
+      _hover={{ borderColor: "rgba(23, 62, 39, 0.62)", outline: "none", boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.42)" }}
+      _focusVisible={{ borderColor: "rgba(23, 62, 39, 0.62)", outline: "none", boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.42)" }}
       aria-label={`Preview ${props.file.name || "source image"}`}
       title={props.file.name || "source image"}
       onClick={() => props.onOpen(props.file)}
     >
       <Show when={src()}>
-        {(resolvedSrc) => <img src={resolvedSrc()} alt={props.file.name || "Source image"} />}
+        {(resolvedSrc) => <SourcePreviewImage src={resolvedSrc()} alt={props.file.name || "Source image"} display="block" w="100%" h="100%" objectFit="cover" />}
       </Show>
-    </button>
+    </SourcePreviewButton>
   );
 }
 
@@ -195,10 +207,12 @@ export function SourceImagePreviewDialog(props: SourceImagePreviewDialogProps) {
       title={activeFile()?.name || "Source image"}
       description={activeFile() ? `${activeFile()?.type || "image"} · ${formatBytes(activeFile()?.size ?? 0)}` : undefined}
       maxW="min(1340px, 96vw)"
-      contentClass="spatial-map-image-viewer-dialog"
+      contentClass={spatialMapImageViewerDialogClass}
       footer={
         <HStack justifyContent="space-between" width="100%" gap="2" flexWrap="wrap">
-          <span class="spatial-map-image-viewer-help">Wheel zoom, drag pan, double-click reset.</span>
+          <Box as="span" color="var(--spatial-map-copy-muted)" fontSize="12px">
+            Wheel zoom, drag pan, double-click reset.
+          </Box>
           <HStack gap="2" flexWrap="wrap" justifyContent="flex-end">
             <Button size="xs" variant="outline" onClick={copyImage}>
               Copy Image
@@ -220,38 +234,76 @@ export function SourceImagePreviewDialog(props: SourceImagePreviewDialogProps) {
       }
     >
       <Show when={activeFile() && activeSrc()}>
-        <Box class="spatial-map-image-viewer-layout" data-has-thumbnails={hasMultipleImages() ? "true" : "false"}>
+        <Box
+          data-has-thumbnails={hasMultipleImages() ? "true" : "false"}
+          display="grid"
+          gridTemplateColumns={{ base: "minmax(0, 1fr)", md: hasMultipleImages() ? "180px minmax(0, 1fr)" : "minmax(0, 1fr)" }}
+          flex="1"
+          alignSelf="stretch"
+          h="100%"
+          minH="0"
+          overflow="hidden"
+        >
             <Show when={hasMultipleImages()}>
-              <VStack as="nav" alignItems="stretch" gap="2" class="spatial-map-image-viewer-thumbs" aria-label="Source image thumbnails">
+              <VStack
+                as="nav"
+                alignItems="stretch"
+                gap="2"
+                p={{ base: "0 0 6px", md: "10px" }}
+                borderRight={{ base: "0", md: "1px solid rgba(96, 101, 95, 0.34)" }}
+                borderBottom={{ base: "1px solid rgba(96, 101, 95, 0.34)", md: "0" }}
+                overflowX={{ base: "auto", md: "hidden" }}
+                overflowY={{ base: "hidden", md: "auto" }}
+                display={{ base: "grid", md: "flex" }}
+                gridAutoFlow={{ base: "column", md: undefined }}
+                gridAutoColumns={{ base: "minmax(150px, 200px)", md: undefined }}
+                aria-label="Source image thumbnails"
+              >
                 <For each={props.files}>
                   {(thumbFile, thumbIndex) => (
-                    <button
+                    <SourcePreviewButton
                       type="button"
-                      class="spatial-map-image-viewer-thumb"
-                      classList={{ "is-active": thumbIndex() === props.index }}
+                      h={{ base: "150px", md: "112px" }}
+                      p="0"
+                      position="relative"
+                      border="1px solid"
+                      borderColor={thumbIndex() === props.index ? "rgba(23, 62, 39, 0.62)" : "rgba(34, 41, 36, 0.18)"}
+                      borderRadius="6px"
+                      background="rgba(232, 236, 230, 0.78)"
+                      cursor="pointer"
+                      overflow="hidden"
+                      boxShadow={thumbIndex() === props.index ? "inset 0 0 0 1px rgba(23, 62, 39, 0.42)" : undefined}
                       aria-label={`Show ${thumbFile.name || "source image"}`}
                       aria-current={thumbIndex() === props.index ? "true" : undefined}
                       onClick={() => setActiveIndex(thumbIndex())}
                     >
                       <Show when={thumbSrcs()[thumbIndex()]}>
-                        {(thumbSrc) => <img src={thumbSrc()} alt={thumbFile.name || "Source image"} loading="lazy" />}
+                        {(thumbSrc) => <SourcePreviewImage src={thumbSrc()} alt={thumbFile.name || "Source image"} loading="lazy" display="block" w="100%" h="100%" objectFit="cover" />}
                       </Show>
-                      <span>{thumbIndex() + 1}</span>
-                    </button>
+                      <Box as="span" position="absolute" left="6px" bottom="6px" p="2px 5px" borderRadius="4px" background="rgba(17, 22, 19, 0.72)" color="white" fontSize="10px" fontWeight="700">
+                        {thumbIndex() + 1}
+                      </Box>
+                    </SourcePreviewButton>
                   )}
                 </For>
               </VStack>
             </Show>
-            <VStack alignItems="stretch" gap="2" minW="0">
-              <Box class="spatial-map-image-viewer-frame">
+            <VStack alignItems="stretch" gap="2" minW="0" h="100%" minH="0" overflow="hidden">
+              <Box position="relative" display="grid" minH="0" h="100%" background="rgba(221, 226, 219, 0.72)">
                 <Show when={hasMultipleImages()}>
-                  <button type="button" class="spatial-map-image-viewer-arrow is-previous" aria-label="Show previous image" onClick={showPrevious}>
+                  <SourcePreviewButton type="button" position="absolute" left="10px" top="50%" zIndex="2" transform="translateY(-50%)" display="inline-flex" alignItems="center" justifyContent="center" w="36px" h="36px" border="1px solid rgba(34, 41, 36, 0.22)" borderRadius="999px" background="rgba(252, 253, 252, 0.9)" color="var(--spatial-map-copy)" cursor="pointer" aria-label="Show previous image" onClick={showPrevious}>
                     <ChevronLeftIcon size={22} />
-                  </button>
+                  </SourcePreviewButton>
                 </Show>
                 <Box
                   ref={imageViewport.setStageRef}
-                  class="spatial-map-image-viewer-stage"
+                  minH="0"
+                  h="100%"
+                  overflow="hidden"
+                  cursor="grab"
+                  touchAction="none"
+                  userSelect="none"
+                  position="relative"
                   onWheel={(event) => {
                     event.preventDefault();
                     const rawDelta =
@@ -290,10 +342,15 @@ export function SourceImagePreviewDialog(props: SourceImagePreviewDialogProps) {
                     panSession = undefined;
                   }}
                 >
-                  <img
+                  <SourcePreviewImage
                     src={activeSrc()}
                     alt={activeFile()?.name || "Source image"}
                     draggable={false}
+                    display="block"
+                    maxW="none"
+                    transformOrigin="top left"
+                    userSelect="none"
+                    pointerEvents="none"
                     onLoad={(event) => imageViewport.handleImageLoad(event)}
                     style={{
                       transform: `translate(${imageViewport.offset().x}px, ${imageViewport.offset().y}px) scale(${imageViewport.scale()})`,
@@ -301,12 +358,12 @@ export function SourceImagePreviewDialog(props: SourceImagePreviewDialogProps) {
                   />
                 </Box>
                 <Show when={hasMultipleImages()}>
-                  <button type="button" class="spatial-map-image-viewer-arrow is-next" aria-label="Show next image" onClick={showNext}>
+                  <SourcePreviewButton type="button" position="absolute" right="10px" top="50%" zIndex="2" transform="translateY(-50%)" display="inline-flex" alignItems="center" justifyContent="center" w="36px" h="36px" border="1px solid rgba(34, 41, 36, 0.22)" borderRadius="999px" background="rgba(252, 253, 252, 0.9)" color="var(--spatial-map-copy)" cursor="pointer" aria-label="Show next image" onClick={showNext}>
                     <ChevronRightIcon size={22} />
-                  </button>
+                  </SourcePreviewButton>
                 </Show>
               </Box>
-              <HStack class="spatial-map-image-viewer-meta" gap="2" flexWrap="wrap">
+              <HStack gap="2" flexWrap="wrap">
                 <Badge as="span" variant="spatial" size="2xs">
                   {(props.index ?? 0) + 1} / {props.files.length || 1}
                 </Badge>

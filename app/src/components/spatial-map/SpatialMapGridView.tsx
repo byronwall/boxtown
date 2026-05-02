@@ -10,7 +10,8 @@ import {
   Show,
 } from "solid-js";
 import { Portal } from "solid-js/web";
-import { Box, HStack } from "styled-system/jsx";
+import { css } from "styled-system/css";
+import { Box, HStack, styled } from "styled-system/jsx";
 
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -40,6 +41,109 @@ interface NodeGridRow {
   parentNodeId: string | null;
   pathKey: string;
 }
+
+// Native tables and tree connector rails need descendant and pseudo-element
+// selectors; the surrounding panels still use props below.
+const gridStructureClass = css({
+  "& .spatial-map-grid-table": {
+    w: "100%",
+    minW: "760px",
+    borderCollapse: "separate",
+    borderSpacing: "0",
+    tableLayout: "fixed",
+  },
+  "& .spatial-map-grid-table-x .spatial-map-grid-table": {
+    minW: "0",
+  },
+  "& .spatial-map-grid-table th": {
+    p: "7px 12px",
+    borderBottom: "1px solid rgba(34, 41, 36, 0.16)",
+    background: "rgba(235, 240, 233, 0.98)",
+    color: "var(--spatial-map-copy-dim)",
+    fontSize: "10px",
+    fontWeight: "760",
+    letterSpacing: "0.1em",
+    lineHeight: "1.1",
+    textAlign: "left",
+  },
+  "& .spatial-map-grid-table--links th:first-child, & .spatial-map-grid-table--links td:first-child": {
+    textAlign: "right",
+  },
+  "& .spatial-map-grid-table td": {
+    p: "6px 12px",
+    borderBottom: "1px solid rgba(34, 41, 36, 0.09)",
+    color: "var(--spatial-map-copy)",
+    fontSize: "12px",
+    lineHeight: "1.4",
+    verticalAlign: "middle",
+  },
+  "& .spatial-map-grid-table th:not(:last-child), & .spatial-map-grid-table td:not(:last-child)": {
+    borderRight: "1px solid rgba(34, 41, 36, 0.07)",
+  },
+  "& .spatial-map-grid-table tbody tr": {
+    background: "rgba(252, 253, 252, 0.72)",
+    cursor: "pointer",
+  },
+  "& .spatial-map-grid-table tbody tr:nth-child(even)": {
+    background: "rgba(247, 250, 246, 0.76)",
+  },
+  "& .spatial-map-grid-table tbody tr:hover": {
+    background: "rgba(230, 239, 229, 0.68)",
+  },
+  "& .spatial-map-grid-table tbody tr.is-selected": {
+    background: "rgba(215, 231, 216, 0.88)",
+    color: "#132017",
+  },
+  "& .spatial-map-grid-table tbody tr:focus-visible": {
+    outline: "2px solid rgba(23, 62, 39, 0.48)",
+    outlineOffset: "-2px",
+  },
+  "& .spatial-map-grid-tree-ancestor, & .spatial-map-grid-tree-branch": {
+    position: "relative",
+    display: "inline-flex",
+    flex: "0 0 var(--tree-rail-width)",
+    w: "var(--tree-rail-width)",
+    minH: "28px",
+  },
+  "& .spatial-map-grid-tree-ancestor.has-continuation::before, & .spatial-map-grid-tree-branch::before, & .spatial-map-grid-tree-branch::after": {
+    content: '""',
+    position: "absolute",
+    pointerEvents: "none",
+  },
+  "& .spatial-map-grid-tree-ancestor.has-continuation::before": {
+    top: "calc(-1 * var(--tree-row-bleed))",
+    bottom: "calc(-1 * var(--tree-row-bleed))",
+    left: "8px",
+    borderLeft: "1px solid var(--tree-connector-color)",
+  },
+  "& .spatial-map-grid-tree-branch::before": {
+    top: "calc(-1 * var(--tree-row-bleed))",
+    bottom: "50%",
+    left: "8px",
+    borderLeft: "1px solid var(--tree-connector-strong)",
+  },
+  "& .spatial-map-grid-tree-branch:not(.is-last)::before": {
+    bottom: "calc(-1 * var(--tree-row-bleed))",
+  },
+  "& .spatial-map-grid-tree-branch::after": {
+    top: "50%",
+    left: "8px",
+    w: "10px",
+    borderTop: "1px solid var(--tree-connector-strong)",
+  },
+  "& .spatial-map-grid-tree-branch.is-leaf::after": {
+    w: "18px",
+  },
+  "& .spatial-map-grid-node-title mark": {
+    p: "0",
+    background: "rgba(37, 95, 58, 0.2)",
+    color: "#132017",
+    boxDecorationBreak: "clone",
+  },
+});
+
+const GridButton = styled("button");
+const GridImage = styled("img");
 
 export function SpatialMapGridView(props: {
   project: ProjectRecord;
@@ -113,21 +217,32 @@ export function SpatialMapGridView(props: {
   });
 
   return (
-    <Box class="spatial-map-grid-viewport">
-      <Box class="spatial-map-grid-panel">
-        <Box class="spatial-map-grid-header">
-          <HStack justifyContent="space-between" class="spatial-map-grid-header-main">
-            <Box class="spatial-map-grid-heading">
-              <Box as="h2" class="spatial-map-grid-title">
+    <Box
+      class={gridStructureClass}
+      position="relative"
+      minH="0"
+      overflow="hidden"
+      p="0"
+      border="1px solid rgba(96, 101, 95, 0.46)"
+      borderRadius="8px"
+      background="linear-gradient(90deg, rgba(35, 42, 37, 0.035) 1px, transparent 1px), linear-gradient(rgba(35, 42, 37, 0.035) 1px, transparent 1px), linear-gradient(180deg, rgba(248, 250, 248, 0.88), rgba(235, 239, 233, 0.96))"
+      backgroundSize="40px 40px, 40px 40px, auto"
+      boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.64), 0 12px 30px rgba(29, 33, 28, 0.06)"
+    >
+      <Box display="grid" gridTemplateRows="auto minmax(0, 1fr)" w="100%" h="100%" minH="100%" margin="0 auto" border="0" background="rgba(249, 250, 247, 0.97)" color="var(--spatial-map-copy)" boxShadow="0 18px 48px rgba(29, 33, 28, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5)">
+        <Box zIndex="3" borderBottom="1px solid rgba(44, 52, 46, 0.22)" background="rgba(246, 248, 244, 0.96)" boxShadow="0 10px 22px rgba(29, 33, 28, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.5)">
+          <HStack justifyContent="space-between" gap="16px" minH="54px" p="9px 10px 9px 14px">
+            <Box flex="1 1 auto" flexShrink="0" minW="0">
+              <Box as="h2" m="0 0 4px" color="#141816" fontSize="16px" lineHeight="1.1" fontWeight="760" letterSpacing="0">
                 Metadata grid
               </Box>
-              <Box class="spatial-map-grid-summary">
+              <Box color="var(--spatial-map-copy-dim)" fontSize="11px" lineHeight="1" letterSpacing="0.06em">
                 {mode() === "nodes"
                   ? getNodesSummary(filteredNodes().length, nodes().length, nodeSearchQuery())
                   : `${links().length} visible non-hierarchy links`}
               </Box>
             </Box>
-            <HStack gap="12px" class="spatial-map-grid-header-controls">
+            <HStack gap="12px" flex="0 1 auto" justifyContent="flex-end" minW="0">
               <Show when={mode() === "nodes"}>
                 <MetadataKeyPicker
                   fields={props.project.nodeMetadataSchema}
@@ -142,8 +257,8 @@ export function SpatialMapGridView(props: {
                 />
               </Show>
               <Show when={mode() === "nodes"}>
-                <label class="spatial-map-grid-search">
-                  <span class="spatial-map-grid-search-field">
+                <Box as="label" display="grid" gridTemplateColumns="minmax(180px, 260px)" alignItems="center" flexShrink="0" minW="0">
+                  <Box as="span" position="relative" display="block" minW="0">
                     <Input
                       ref={searchInputRef}
                       type="search"
@@ -155,20 +270,31 @@ export function SpatialMapGridView(props: {
                       placeholder="Filter node names"
                       onInput={(event) => setNodeSearchQuery(event.currentTarget.value)}
                     />
-                    <kbd>/</kbd>
-                  </span>
-                </label>
+                    <Box as="kbd" position="absolute" top="50%" right="6px" display="inline-flex" alignItems="center" justifyContent="center" minW="18px" h="18px" border="1px solid rgba(44, 52, 46, 0.22)" background="rgba(236, 241, 234, 0.92)" color="var(--spatial-map-copy-dim)" font="inherit" fontSize="10px" fontWeight="760" lineHeight="1" transform="translateY(-50%)" pointerEvents="none">/</Box>
+                  </Box>
+                </Box>
               </Show>
               <HStack
                 gap="0"
-                class="spatial-map-toggle-group spatial-map-grid-mode-toggle"
+                flexShrink="0"
+                overflow="hidden"
+                border="1px solid rgba(96, 101, 95, 0.44)"
+                borderRadius="6px"
+                background="rgba(246, 248, 244, 0.94)"
                 aria-label="Grid mode"
               >
                 <Button
                   size="xs"
                   colorPalette="green"
                   variant={mode() === "nodes" ? "surface" : "outline"}
-                  class={`spatial-map-grid-mode-button${mode() === "nodes" ? " is-active" : ""}`}
+                  minW="54px"
+                  h="28px"
+                  p="0 10px"
+                  border="0"
+                  borderRight="1px solid rgba(24, 29, 26, 0.24)"
+                  background={mode() === "nodes" ? "rgba(37, 95, 58, 0.16)" : "transparent"}
+                  color={mode() === "nodes" ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-muted)"}
+                  boxShadow={mode() === "nodes" ? "inset 0 -2px 0 rgba(23, 62, 39, 0.86)" : undefined}
                   aria-pressed={mode() === "nodes"}
                   onClick={() => setMode("nodes")}
                 >
@@ -178,7 +304,13 @@ export function SpatialMapGridView(props: {
                   size="xs"
                   colorPalette="green"
                   variant={mode() === "links" ? "surface" : "outline"}
-                  class={`spatial-map-grid-mode-button${mode() === "links" ? " is-active" : ""}`}
+                  minW="54px"
+                  h="28px"
+                  p="0 10px"
+                  border="0"
+                  background={mode() === "links" ? "rgba(37, 95, 58, 0.16)" : "transparent"}
+                  color={mode() === "links" ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-muted)"}
+                  boxShadow={mode() === "links" ? "inset 0 -2px 0 rgba(23, 62, 39, 0.86)" : undefined}
                   aria-pressed={mode() === "links"}
                   onClick={() => setMode("links")}
                 >
@@ -391,16 +523,18 @@ function NodesGrid(props: {
   return (
     <Box
       ref={gridWrapRef}
-      class="spatial-map-grid-table-wrap"
+      minH="0"
+      overflowX="auto"
+      overflowY="hidden"
       tabIndex={0}
       onKeyDown={handleTreeGridKeyDown}
       onFocusIn={() => setTreeGridActive(true)}
     >
       <Show
         when={visibleRows().length > 0}
-        fallback={<Box class="spatial-map-grid-empty">No visible nodes.</Box>}
+        fallback={<GridEmpty>No visible nodes.</GridEmpty>}
       >
-        <Box class="spatial-map-grid-table-x" style={getNodeGridStyle(props.metadataFields)}>
+        <Box class="spatial-map-grid-table-x" display="grid" gridTemplateRows="auto minmax(0, 1fr)" h="100%" style={getNodeGridStyle(props.metadataFields)}>
           <table class="spatial-map-grid-table spatial-map-grid-table--nodes" role="treegrid">
             <GridColGroup mode="nodes" metadataFields={props.metadataFields} />
             <thead>
@@ -416,7 +550,7 @@ function NodesGrid(props: {
               </tr>
             </thead>
           </table>
-          <Box class="spatial-map-grid-table-body-scroll">
+          <Box minH="0" overflowX="hidden" overflowY="auto">
             <table
               class="spatial-map-grid-table spatial-map-grid-table--nodes"
               role="treegrid"
@@ -488,16 +622,16 @@ function LinksGrid(props: {
   const spatialMap = useSpatialMap();
 
   return (
-    <Box class="spatial-map-grid-table-wrap">
+    <Box minH="0" overflowX="auto" overflowY="hidden">
       <Show
         when={props.links.length > 0}
         fallback={
-          <Box class="spatial-map-grid-empty">
+          <GridEmpty>
             No non-hierarchy links are visible.
-          </Box>
+          </GridEmpty>
         }
       >
-        <Box class="spatial-map-grid-table-x spatial-map-grid-table-x--links">
+        <Box class="spatial-map-grid-table-x spatial-map-grid-table-x--links" display="grid" gridTemplateRows="auto minmax(0, 1fr)" w="100%" minW="760px" h="100%">
           <table class="spatial-map-grid-table spatial-map-grid-table--links">
             <GridColGroup mode="links" />
             <thead>
@@ -509,7 +643,7 @@ function LinksGrid(props: {
               </tr>
             </thead>
           </table>
-          <Box class="spatial-map-grid-table-body-scroll">
+          <Box minH="0" overflowX="hidden" overflowY="auto">
             <table class="spatial-map-grid-table spatial-map-grid-table--links">
               <GridColGroup mode="links" />
               <tbody>
@@ -583,10 +717,10 @@ function GridColGroup(props: {
         />
       </Show>
       <Show when={props.mode === "links"}>
-        <col class="spatial-map-grid-col-node" />
-        <col class="spatial-map-grid-col-meta" />
-        <col class="spatial-map-grid-col-connected" />
-        <col class="spatial-map-grid-col-actions" />
+        <col style={{ width: "36%" }} />
+        <col style={{ width: "18%" }} />
+        <col style={{ width: "36%" }} />
+        <col style={{ width: "10%" }} />
       </Show>
     </colgroup>
   );
@@ -652,10 +786,7 @@ function NodeActionsCell(props: {
   onProjectUpdated?: (project: ProjectRecord) => void;
 }) {
   return (
-    <Box
-      class="spatial-map-grid-actions"
-      onClick={(event) => event.stopPropagation()}
-    >
+    <Box display="flex" alignItems="center" gap="4px" onClick={(event) => event.stopPropagation()}>
       <SpatialMapDeleteNodeControl
         projectId={props.project.id}
         node={props.node}
@@ -708,10 +839,7 @@ function LinkActionsCell(props: {
   };
 
   return (
-    <Box
-      class="spatial-map-grid-actions"
-      onClick={(event) => event.stopPropagation()}
-    >
+    <Box display="flex" alignItems="center" gap="4px" onClick={(event) => event.stopPropagation()}>
       <Tooltip content="Delete link" openDelay={150} closeDelay={80}>
         <Button
           size="xs"
@@ -749,7 +877,7 @@ function LinkActionsCell(props: {
           </HStack>
         }
       >
-        <Box class="spatial-map-grid-delete-copy">
+        <Box color="var(--spatial-map-copy-muted)" fontSize="12px" lineHeight="1.5">
           This removes only the relationship link. The connected nodes stay in the
           map.
         </Box>
@@ -760,9 +888,11 @@ function LinkActionsCell(props: {
 
 function NodeCell(props: { node: MapNode }) {
   return (
-    <Box class="spatial-map-grid-node-cell">
-      <Box class="spatial-map-grid-node-title">{props.node.label}</Box>
-      <HStack gap="1" flexWrap="wrap" class="spatial-map-grid-node-meta">
+    <Box display="grid" gap="6px" minW="0">
+      <Box display="inline-flex" alignItems="center" gap="6px" m="0" color="#141816" fontSize="13px" lineHeight="1.24" fontWeight="640" overflowWrap="anywhere">
+        {props.node.label}
+      </Box>
+      <HStack gap="1" flexWrap="wrap">
         <Badge variant="spatial" size="2xs">{props.node.type}</Badge>
         <Badge variant="spatial" size="2xs">{props.node.status}</Badge>
         <Badge variant="spatial" size="2xs" fontFamily="mono" color="fg.subtle">
@@ -786,8 +916,20 @@ function NodeNameCell(props: {
   const hasContext = createMemo(() => context().length > 0);
 
   return (
-    <Box class="spatial-map-grid-node-cell spatial-map-grid-node-cell--hierarchy">
-      <Box class="spatial-map-grid-tree-gutter" aria-hidden="true">
+    <Box
+      display="flex"
+      alignItems="center"
+      gap="0"
+      minW="0"
+      minH="28px"
+      style={{
+        "--tree-rail-width": "18px",
+        "--tree-row-bleed": "7px",
+        "--tree-connector-color": "rgba(44, 52, 46, 0.28)",
+        "--tree-connector-strong": "rgba(44, 52, 46, 0.36)",
+      }}
+    >
+      <Box display="inline-flex" alignSelf="stretch" alignItems="stretch" flex="0 0 auto" minH="28px" pointerEvents="none" aria-hidden="true">
         <For each={props.row.ancestorHasNextSibling}>
           {(hasNextSibling) => (
             <span
@@ -804,9 +946,22 @@ function NodeNameCell(props: {
       <Show
         when={props.row.hasChildren}
       >
-        <button
+        <GridButton
           type="button"
-          class="spatial-map-grid-tree-chevron"
+          display="inline-flex"
+          alignItems="center"
+          justifyContent="center"
+          flex="0 0 18px"
+          w="18px"
+          h="22px"
+          mr="3px"
+          p="0"
+          border="0"
+          background="transparent"
+          color="rgba(31, 72, 46, 0.78)"
+          cursor="pointer"
+          _hover={{ color: "var(--spatial-map-accent-strong)", outline: "2px solid rgba(23, 62, 39, 0.26)", outlineOffset: "-1px" }}
+          _focusVisible={{ color: "var(--spatial-map-accent-strong)", outline: "2px solid rgba(23, 62, 39, 0.26)", outlineOffset: "-1px" }}
           aria-label={`${props.expanded ? "Collapse" : "Expand"} ${props.node.label}`}
           aria-expanded={props.expanded}
           onClick={(event) => {
@@ -821,10 +976,19 @@ function NodeNameCell(props: {
           >
             <ChevronDown size={14} aria-hidden="true" />
           </Show>
-        </button>
+        </GridButton>
       </Show>
       <Box
         class={`spatial-map-grid-node-title${props.row.hasChildren ? " has-children" : " is-leaf"}`}
+        display="inline-flex"
+        alignItems="center"
+        gap="6px"
+        ml={props.row.hasChildren ? "4px" : "12px"}
+        color="#141816"
+        fontSize="13px"
+        lineHeight="1.24"
+        fontWeight={props.row.hasChildren ? "720" : "640"}
+        overflowWrap="anywhere"
       >
         <HighlightedText
           text={props.node.label}
@@ -838,10 +1002,22 @@ function NodeNameCell(props: {
           >
             <HoverCard.Trigger
               asChild={(triggerProps) => (
-                <button
+                <GridButton
                   {...triggerProps()}
                   type="button"
-                  class="spatial-map-grid-context-icon-button"
+                  display="inline-flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  flexShrink="0"
+                  w="18px"
+                  h="18px"
+                  p="0"
+                  border="1px solid rgba(44, 52, 46, 0.2)"
+                  background="rgba(252, 253, 252, 0.38)"
+                  color="rgba(31, 72, 46, 0.62)"
+                  cursor="pointer"
+                  _hover={{ borderColor: "rgba(23, 62, 39, 0.34)", background: "rgba(229, 239, 229, 0.54)", color: "rgba(23, 62, 39, 0.78)", outline: "2px solid rgba(23, 62, 39, 0.2)", outlineOffset: "1px" }}
+                  _focusVisible={{ borderColor: "rgba(23, 62, 39, 0.34)", background: "rgba(229, 239, 229, 0.54)", color: "rgba(23, 62, 39, 0.78)", outline: "2px solid rgba(23, 62, 39, 0.2)", outlineOffset: "1px" }}
                   aria-label={`Preview context for ${props.node.label}`}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -849,19 +1025,29 @@ function NodeNameCell(props: {
                   }}
                 >
                   <FileText size={14} aria-hidden="true" />
-                </button>
+                </GridButton>
               )}
             />
             <Portal>
               <HoverCard.Positioner>
-                <HoverCard.Content class="spatial-map-grid-context-preview-card">
+                <HoverCard.Content
+                  w="min(360px, calc(100vw - 32px))"
+                  maxH="260px"
+                  gap="8px"
+                  p="12px"
+                  border="1px solid rgba(44, 52, 46, 0.2)"
+                  borderRadius="4px"
+                  background="rgba(250, 252, 249, 0.98)"
+                  color="var(--spatial-map-copy)"
+                  boxShadow="0 16px 36px rgba(24, 29, 26, 0.16)"
+                >
                   <HoverCard.Arrow>
                     <HoverCard.ArrowTip />
                   </HoverCard.Arrow>
-                  <Box class="spatial-map-grid-context-preview-title">
+                  <Box color="#141816" fontSize="11px" fontWeight="760" lineHeight="1.2">
                     {props.node.label}
                   </Box>
-                  <Box class="spatial-map-grid-context-preview-body">
+                  <Box maxH="198px" overflow="hidden" color="var(--spatial-map-copy-muted)" fontSize="11px" lineHeight="1.45" whiteSpace="pre-wrap">
                     {context()}
                   </Box>
                 </HoverCard.Content>
@@ -880,7 +1066,7 @@ function HighlightedText(props: { text: string; query: string }) {
   );
 
   return (
-    <span class="spatial-map-grid-node-title-text">
+    <Box as="span" display="inline">
       <For each={segments()}>
         {(segment) => (
           <Show when={segment.match} fallback={segment.text}>
@@ -888,7 +1074,7 @@ function HighlightedText(props: { text: string; query: string }) {
           </Show>
         )}
       </For>
-    </span>
+    </Box>
   );
 }
 
@@ -901,7 +1087,7 @@ function MetadataValueCell(props: {
   return (
     <Show
       when={value().length > 0}
-      fallback={<td><span class="spatial-map-grid-muted">None</span></td>}
+      fallback={<td><Box as="span" color="var(--spatial-map-copy-dim)" fontSize="11px">None</Box></td>}
     >
       <td>
         <Badge
@@ -931,9 +1117,20 @@ function ImagePreviewCell(props: { node: MapNode }) {
       fallback={null}
     >
       {(previewImage) => (
-        <button
+        <GridButton
           type="button"
-          class="spatial-map-grid-image-preview"
+          position="relative"
+          display="block"
+          w="52px"
+          maxW="100%"
+          aspectRatio="16 / 9"
+          p="0"
+          border="1px solid rgba(34, 41, 36, 0.28)"
+          background="rgba(18, 22, 19, 0.08)"
+          cursor="zoom-in"
+          overflow="hidden"
+          _hover={{ outline: "none", borderColor: "rgba(23, 62, 39, 0.68)", boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.32)" }}
+          _focusVisible={{ outline: "none", borderColor: "rgba(23, 62, 39, 0.68)", boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.32)" }}
           aria-label={`Open ${previewImage().originalName}`}
           title={previewImage().originalName}
           onClick={(event) => {
@@ -941,15 +1138,21 @@ function ImagePreviewCell(props: { node: MapNode }) {
             imageUi.openImage(previewImage(), props.node, images());
           }}
         >
-          <img
+          <GridImage
             src={previewImage().src}
             alt={previewImage().originalName}
             loading="lazy"
+            display="block"
+            w="100%"
+            h="100%"
+            objectFit="cover"
           />
           <Show when={images().length > 1}>
-            <span>+{images().length - 1}</span>
+            <Box as="span" position="absolute" right="4px" bottom="4px" minW="24px" p="2px 5px" border="1px solid rgba(34, 41, 36, 0.24)" background="rgba(249, 250, 247, 0.92)" color="var(--spatial-map-copy)" fontSize="10px" fontWeight="760" lineHeight="1">
+              +{images().length - 1}
+            </Box>
           </Show>
-        </button>
+        </GridButton>
       )}
     </Show>
   );
@@ -1002,6 +1205,14 @@ function getHighlightedSegments(text: string, query: string) {
   }
 
   return segments.length > 0 ? segments : [{ text, match: false }];
+}
+
+function GridEmpty(props: { children: string }) {
+  return (
+    <Box m="12px" p="14px" border="1px solid rgba(34, 41, 36, 0.16)" background="rgba(244, 246, 242, 0.82)" color="var(--spatial-map-copy-muted)" fontSize="11px" lineHeight="1.35" letterSpacing="0.04em">
+      {props.children}
+    </Box>
+  );
 }
 
 function buildNodeGridRows(nodes: MapNode[], links: MapLink[]): NodeGridRow[] {

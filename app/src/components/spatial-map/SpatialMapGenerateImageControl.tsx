@@ -2,11 +2,11 @@ import { For, Show, createEffect, createMemo, untrack } from "solid-js";
 import { Box, HStack, VStack } from "styled-system/jsx";
 import { WandSparklesIcon } from "lucide-solid";
 import { Button } from "~/components/ui/button";
-import { Text } from "~/components/ui/text";
 import { Tooltip } from "~/components/ui/tooltip";
 import { toaster } from "~/components/ui/toast";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode } from "~/lib/spatial-map/types";
+import { SpatialMapCopy, SpatialMapRunStep } from "./SpatialMapPanelPrimitives";
 import { useNodeImageGenerationFlow } from "./useNodeImageGenerationFlow";
 
 interface SpatialMapGenerateImageControlProps {
@@ -77,26 +77,12 @@ export function SpatialMapGenerateImageControl(
 
       <Show when={flow.snapshot()}>
         {(snapshot) => (
-          <Box class="spatial-map-node-image-progress">
-            <Text as="p" class="spatial-map-inspector-copy">
-              {snapshot().latestMessage}
-            </Text>
+          <Box display="grid" gap="7px">
+            <SpatialMapCopy>{snapshot().latestMessage}</SpatialMapCopy>
             <VStack alignItems="stretch" gap="1.5">
               <For each={snapshot().steps}>
                 {(step) => (
-                  <Box class={`spatial-map-run-step is-${step.status}`}>
-                    <HStack justifyContent="space-between" alignItems="start" gap="3">
-                      <Text as="span" class="spatial-map-run-step-label">
-                        {step.label}
-                      </Text>
-                      <Text as="span" class="spatial-map-run-step-status">
-                        {step.status}
-                      </Text>
-                    </HStack>
-                    <Text as="p" class="spatial-map-run-step-detail">
-                      {step.detail}
-                    </Text>
-                  </Box>
+                  <SpatialMapRunStep status={step.status} label={step.label} detail={step.detail} />
                 )}
               </For>
             </VStack>
@@ -106,10 +92,8 @@ export function SpatialMapGenerateImageControl(
 
       <Show when={flow.error()}>
         {(error) => (
-          <Box class="spatial-map-node-image-progress spatial-map-add-nodes-error">
-            <Text as="p" class="spatial-map-inspector-copy">
-              {error()}
-            </Text>
+          <Box display="grid" gap="7px" p="7px 8px" border="1px solid rgba(126, 41, 41, 0.28)" background="rgba(246, 235, 235, 0.82)">
+            <SpatialMapCopy>{error()}</SpatialMapCopy>
           </Box>
         )}
       </Show>

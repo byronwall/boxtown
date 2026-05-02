@@ -1,7 +1,8 @@
 import { useSubmission } from "@solidjs/router";
 import { ArrowDownIcon, ArrowUpIcon, Trash2 } from "lucide-solid";
 import { Index, createEffect, createSignal, type JSX } from "solid-js";
-import { Box, HStack, VStack } from "styled-system/jsx";
+import { css } from "styled-system/css";
+import { Box, HStack, VStack, styled } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import * as Field from "~/components/ui/field";
 import { IconButton } from "~/components/ui/icon-button";
@@ -29,6 +30,43 @@ interface MetadataSchemaRowDraft extends ProjectNodeMetadataField {
 }
 
 interface NodeTypeRowDraft extends ProjectNodeTypeDefinition {}
+
+const ProjectSettingsForm = styled("form");
+
+// SimpleDialog only exposes a content class, so the slot-level dialog chrome
+// stays as a small component-local Panda escape hatch instead of global CSS.
+const projectSettingsDialogClass = css({
+  w: "min(800px, 96vw)",
+  maxW: "min(800px, 96vw) !important",
+  maxH: "calc(100dvh - 24px) !important",
+  py: "12px",
+  border: "1px solid rgba(96, 101, 95, 0.72)",
+  background: "rgba(252, 253, 252, 0.94)",
+  boxShadow: "0 28px 70px rgba(29, 33, 28, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88)",
+  gap: "8px",
+  "& .dialog__header": {
+    minW: "0",
+    mx: "0",
+    p: "12px 16px",
+    borderBottom: "1px solid rgba(96, 101, 95, 0.28)",
+    background: "rgba(248, 250, 248, 0.9)",
+  },
+  "& .dialog__body": {
+    alignItems: "stretch",
+    overflow: "hidden",
+    p: "8px 16px 0",
+  },
+  "& .dialog__body > *": {
+    w: "100%",
+    minW: "0",
+    minH: "0",
+  },
+  "& .dialog__footer": {
+    p: "8px 16px 0",
+    borderTop: "0",
+    background: "transparent",
+  },
+});
 
 export function ProjectMetadataSettingsDialog(
   props: ProjectMetadataSettingsDialogProps,
@@ -86,7 +124,7 @@ export function ProjectMetadataSettingsDialog(
         title="Project Settings"
         description="Edit the project title, subtitle, and node metadata fields."
         maxW="min(800px, 96vw)"
-        contentClass="spatial-map-project-settings-dialog"
+        contentClass={projectSettingsDialogClass}
         footer={
           <HStack>
             <Button variant="outline" onClick={() => setOpen(false)}>
@@ -102,16 +140,32 @@ export function ProjectMetadataSettingsDialog(
           </HStack>
         }
       >
-        <form
-          class="spatial-map-project-settings-form"
+        <ProjectSettingsForm
           id={formId}
           action={normalizeActionUrl(updateProjectMetadataSchema.url)}
           method="post"
+          minW="0"
+          minH="0"
+          p="8px"
+          overflow="auto"
+          border="1px solid rgba(96, 101, 95, 0.48)"
+          borderRadius="4px"
+          background="linear-gradient(90deg, rgba(31, 36, 33, 0.045) 1px, transparent 1px), linear-gradient(rgba(31, 36, 33, 0.045) 1px, transparent 1px), radial-gradient(circle at 12% 8%, rgba(48, 164, 108, 0.08), transparent 24rem), rgba(248, 250, 248, 0.9)"
+          backgroundSize="24px 24px, 24px 24px, auto, auto"
+          boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 14px 36px rgba(29, 33, 28, 0.1)"
         >
           <input type="hidden" name="projectId" value={props.project.id} />
-          <VStack alignItems="stretch" gap="3" class="spatial-map-metadata-dialog">
-            <Box class="spatial-map-project-settings-section">
-              <Field.Root class="spatial-map-project-settings-row">
+          <VStack alignItems="stretch" gap="3" mt="0" overflowX="auto" pb="0">
+            <Box
+              display="grid"
+              gap="6px"
+              minW="656px"
+              p="8px"
+              border="1px solid rgba(96, 101, 95, 0.34)"
+              background="rgba(239, 241, 239, 0.86)"
+              boxShadow="inset 3px 0 0 rgba(48, 164, 108, 0.22)"
+            >
+              <Field.Root display="grid" gridTemplateColumns="96px minmax(0, 1fr)" alignItems="start" gap="8px">
                 <Field.Label>Title</Field.Label>
                 <Textarea
                   variant="spatial"
@@ -126,7 +180,7 @@ export function ProjectMetadataSettingsDialog(
                   rows={1}
                 />
               </Field.Root>
-              <Field.Root class="spatial-map-project-settings-row">
+              <Field.Root display="grid" gridTemplateColumns="96px minmax(0, 1fr)" alignItems="start" gap="8px">
                 <Field.Label>Subtitle</Field.Label>
                 <Textarea
                   variant="spatial"
@@ -143,21 +197,21 @@ export function ProjectMetadataSettingsDialog(
               </Field.Root>
             </Box>
 
-            <Text as="h3" class="spatial-map-settings-section-title">
+            <SettingsSectionTitle>
               Node Metadata Fields
-            </Text>
-            <Box class="spatial-map-metadata-grid spatial-map-metadata-grid--header">
-              <Text as="span">Key</Text>
-              <Text as="span">Label</Text>
-              <Text as="span">Default Value</Text>
-              <Text as="span">Order</Text>
+            </SettingsSectionTitle>
+            <Box {...metadataGridProps()} minH="30px" borderTop="1px solid rgba(96, 101, 95, 0.4)" borderBottom="1px solid rgba(96, 101, 95, 0.34)" background="rgba(226, 232, 224, 0.9)">
+              <GridHeaderCell>Key</GridHeaderCell>
+              <GridHeaderCell>Label</GridHeaderCell>
+              <GridHeaderCell>Default Value</GridHeaderCell>
+              <GridHeaderCell centered>Order</GridHeaderCell>
             </Box>
 
-            <Box class="spatial-map-metadata-grid spatial-map-metadata-grid--body">
+            <Box {...metadataGridProps()} borderBottom="1px solid rgba(96, 101, 95, 0.34)" background="rgba(239, 241, 239, 0.86)">
               <Index each={rows()}>
                 {(row, index) => (
                   <>
-                    <Field.Root>
+                    <Field.Root {...gridCellProps()}>
                       <input
                         type="hidden"
                         name="originalKey"
@@ -180,7 +234,7 @@ export function ProjectMetadataSettingsDialog(
                         rows={1}
                       />
                     </Field.Root>
-                    <Field.Root>
+                    <Field.Root {...gridCellProps()}>
                       <Textarea
                         aria-label={`Label for metadata field ${index + 1}`}
                         variant="spatial"
@@ -198,7 +252,7 @@ export function ProjectMetadataSettingsDialog(
                         rows={1}
                       />
                     </Field.Root>
-                    <Field.Root>
+                    <Field.Root {...gridCellProps()}>
                       <Textarea
                         aria-label={`Default value for metadata field ${index + 1}`}
                         variant="spatial"
@@ -216,7 +270,7 @@ export function ProjectMetadataSettingsDialog(
                         rows={1}
                       />
                     </Field.Root>
-                    <HStack gap="1" class="spatial-map-metadata-row-actions">
+                    <HStack gap="1" {...gridCellProps()} justifyContent="center" alignItems="center" background="rgba(232, 237, 229, 0.72)">
                       <IconButton
                         aria-label={`Move ${row().label || row().key || "field"} up`}
                         title="Move up"
@@ -275,19 +329,19 @@ export function ProjectMetadataSettingsDialog(
               </Button>
             </HStack>
 
-            <Text as="h3" class="spatial-map-settings-section-title">
+            <SettingsSectionTitle>
               Node Types
-            </Text>
-            <Box class="spatial-map-type-grid spatial-map-type-grid--header">
-              <Text as="span">Type Name</Text>
-              <Text as="span">Expected Color</Text>
-              <Text as="span">Order</Text>
+            </SettingsSectionTitle>
+            <Box {...typeGridProps()} minH="30px" borderTop="1px solid rgba(96, 101, 95, 0.4)" borderBottom="1px solid rgba(96, 101, 95, 0.34)" background="rgba(226, 232, 224, 0.9)">
+              <GridHeaderCell>Type Name</GridHeaderCell>
+              <GridHeaderCell>Expected Color</GridHeaderCell>
+              <GridHeaderCell centered>Order</GridHeaderCell>
             </Box>
-            <Box class="spatial-map-type-grid spatial-map-type-grid--body">
+            <Box {...typeGridProps()} borderBottom="1px solid rgba(96, 101, 95, 0.34)" background="rgba(239, 241, 239, 0.86)">
               <Index each={typeRows()}>
                 {(row, index) => (
                   <>
-                    <Field.Root>
+                    <Field.Root {...gridCellProps()}>
                       <Textarea
                         aria-label={`Name for node type ${index + 1}`}
                         variant="spatial"
@@ -305,10 +359,16 @@ export function ProjectMetadataSettingsDialog(
                         rows={1}
                       />
                     </Field.Root>
-                    <Field.Root class="spatial-map-type-color-field">
+                    <Field.Root {...gridCellProps()} display="flex" alignItems="center" gap="8px" background="rgba(248, 250, 248, 0.74)">
                       <input
                         aria-label={`Color for node type ${row().name || index + 1}`}
-                        class="spatial-map-type-color-input"
+                        style={{
+                          width: "34px",
+                          height: "30px",
+                          padding: "0",
+                          border: "1px solid rgba(34, 41, 36, 0.28)",
+                          background: "transparent",
+                        }}
                         type="color"
                         name="nodeTypeColor"
                         value={row().color}
@@ -316,11 +376,11 @@ export function ProjectMetadataSettingsDialog(
                           updateTypeRow(index, { color: event.currentTarget.value }, setTypeRows)
                         }
                       />
-                      <Text as="span" class="spatial-map-type-color-value">
+                      <Text as="span" color="var(--spatial-map-copy-muted)" fontSize="12px" fontWeight="700">
                         {row().color}
                       </Text>
                     </Field.Root>
-                    <HStack gap="1" class="spatial-map-metadata-row-actions">
+                    <HStack gap="1" {...gridCellProps()} justifyContent="center" alignItems="center" background="rgba(232, 237, 229, 0.72)">
                       <IconButton
                         aria-label={`Move ${row().name || "type"} up`}
                         title="Move up"
@@ -379,10 +439,83 @@ export function ProjectMetadataSettingsDialog(
               </Button>
             </HStack>
           </VStack>
-        </form>
+        </ProjectSettingsForm>
       </SimpleDialog>
     </>
   );
+}
+
+function SettingsSectionTitle(props: { children: JSX.Element }) {
+  return (
+    <Text
+      as="h3"
+      m="4px 0 -1px"
+      color="var(--spatial-map-copy-muted)"
+      fontSize="11px"
+      fontWeight="700"
+      letterSpacing="0.08em"
+      lineHeight="1"
+      textTransform="none"
+    >
+      {props.children}
+    </Text>
+  );
+}
+
+function GridHeaderCell(props: { children: JSX.Element; centered?: boolean }) {
+  return (
+    <Text
+      as="span"
+      display="flex"
+      alignItems="center"
+      justifyContent={props.centered ? "center" : undefined}
+      minW="0"
+      p="0 9px"
+      borderRight={props.centered ? "0" : "1px solid rgba(96, 101, 95, 0.24)"}
+      color="var(--spatial-map-copy-muted)"
+      fontSize="11px"
+      fontWeight="700"
+      letterSpacing="0.08em"
+      lineHeight="1"
+      textTransform="none"
+    >
+      {props.children}
+    </Text>
+  );
+}
+
+function metadataGridProps() {
+  return {
+    display: "grid",
+    gridTemplateColumns: "minmax(150px, 0.85fr) minmax(150px, 0.9fr) minmax(240px, 1.45fr) 94px",
+    gap: "0",
+    alignItems: "stretch",
+    w: "100%",
+    minW: "656px",
+    borderInline: "1px solid rgba(96, 101, 95, 0.34)",
+  } as const;
+}
+
+function typeGridProps() {
+  return {
+    display: "grid",
+    gridTemplateColumns: "minmax(220px, 1fr) minmax(180px, 0.75fr) 94px",
+    gap: "0",
+    alignItems: "stretch",
+    w: "100%",
+    minW: "520px",
+    borderInline: "1px solid rgba(96, 101, 95, 0.34)",
+  } as const;
+}
+
+function gridCellProps() {
+  return {
+    minW: "0",
+    minH: "44px",
+    p: "5px",
+    borderRight: "1px solid rgba(96, 101, 95, 0.18)",
+    borderBottom: "1px solid rgba(96, 101, 95, 0.18)",
+  } as const;
 }
 
 function createRows(schema: ProjectNodeMetadataField[]): MetadataSchemaRowDraft[] {

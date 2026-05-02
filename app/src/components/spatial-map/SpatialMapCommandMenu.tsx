@@ -10,7 +10,8 @@ import {
   Show,
   Switch,
 } from "solid-js";
-import { Box, HStack, VStack } from "styled-system/jsx";
+import { css } from "styled-system/css";
+import { Box, HStack, VStack, styled } from "styled-system/jsx";
 import { Badge } from "~/components/ui/badge";
 import { Input } from "~/components/ui/input";
 import { Kbd } from "~/components/ui/kbd";
@@ -21,6 +22,24 @@ import { isEditableTarget } from "./spatial-map-dom";
 import { useSpatialMap } from "./SpatialMapContext";
 
 const RESULT_LIMIT = 12;
+
+const CommandResultButton = styled("button");
+
+// SimpleDialog owns the actual content slot, so command palette chrome uses a
+// component-local Panda class while rendered rows use direct style props.
+const commandMenuDialogClass = css({
+  w: "min(600px, calc(100dvw - 32px)) !important",
+  maxW: "min(600px, calc(100dvw - 32px)) !important",
+  border: "1px solid rgba(96, 101, 95, 0.62) !important",
+  borderRadius: "10px !important",
+  background: "linear-gradient(90deg, rgba(35, 42, 37, 0.035) 1px, transparent 1px), linear-gradient(rgba(35, 42, 37, 0.035) 1px, transparent 1px), rgba(252, 253, 252, 0.96) !important",
+  backgroundSize: "40px 40px, 40px 40px, auto !important",
+  boxShadow: "0 28px 70px rgba(29, 33, 28, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88) !important",
+  "& .dialog__body": {
+    alignItems: "stretch",
+    p: "0",
+  },
+});
 
 interface SearchResult {
   node: MapNode;
@@ -99,11 +118,18 @@ export function SpatialMapCommandMenu() {
       onOpenChange={setOpen}
       showClose={false}
       maxW="min(600px, calc(100dvw - 32px))"
-      contentClass="spatial-map-command-menu"
+      contentClass={commandMenuDialogClass}
       initialFocusEl={() => inputRef ?? null}
     >
-      <VStack alignItems="stretch" gap="0" class="spatial-map-command-menu-body">
-        <HStack gap="2" class="spatial-map-command-search-row">
+      <VStack alignItems="stretch" gap="0" w="100%" minW="0">
+        <HStack
+          gap="2"
+          minH="54px"
+          p="9px 12px"
+          borderBottom="1px solid rgba(96, 101, 95, 0.28)"
+          background="rgba(248, 250, 248, 0.9)"
+          color="var(--spatial-map-copy-dim)"
+        >
           <SearchIcon size={17} aria-hidden="true" />
           <Input
             ref={inputRef}
@@ -145,21 +171,37 @@ export function SpatialMapCommandMenu() {
           <Kbd>⌘K</Kbd>
         </HStack>
 
-        <Box class="spatial-map-command-results" role="listbox">
+        <Box w="100%" maxH="min(440px, 58vh)" p="5px" overflowY="auto" role="listbox">
           <Switch>
             <Match when={results().length > 0}>
               <For each={results()}>
                 {(result, index) => (
-                  <button
+                  <CommandResultButton
                     type="button"
-                    class={`spatial-map-command-result${index() === activeIndex() ? " is-active" : ""}`}
                     role="option"
                     aria-selected={index() === activeIndex()}
+                    display="block"
+                    w="100%"
+                    p="8px 10px"
+                    border="1px solid"
+                    borderColor={index() === activeIndex() ? "rgba(45, 111, 72, 0.38)" : "transparent"}
+                    borderRadius="6px"
+                    background={index() === activeIndex() ? "rgba(229, 239, 229, 0.52)" : "transparent"}
+                    color="var(--spatial-map-copy)"
+                    cursor="pointer"
+                    textAlign="left"
+                    transition="background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease"
+                    _hover={{
+                      borderColor: "rgba(45, 111, 72, 0.38)",
+                      background: "rgba(229, 239, 229, 0.52)",
+                      boxShadow: "inset 0 0 0 1px rgba(45, 111, 72, 0.08)",
+                    }}
+                    _focusVisible={{ outline: "2px solid rgba(45, 111, 72, 0.7)", outlineOffset: "2px" }}
                     onMouseEnter={() => setActiveIndex(index())}
                     onClick={() => selectResult(result)}
                   >
-                    <HStack justifyContent="space-between" gap="2" class="spatial-map-command-result-row">
-                      <Box class="spatial-map-command-result-title">
+                    <HStack justifyContent="space-between" gap="2" minW="0">
+                      <Box flex="1 1 auto" minW="0" overflow="hidden" fontWeight="760" lineHeight="1.25" textOverflow="ellipsis" whiteSpace="nowrap">
                         <HighlightedText
                           text={result.node.label}
                           query={query()}
@@ -167,9 +209,9 @@ export function SpatialMapCommandMenu() {
                         />
                       </Box>
                       <Show when={result.fieldLabel !== "Title"}>
-                        <Box class="spatial-map-command-result-match">
-                          <span>{result.fieldLabel}</span>
-                          <Box as="span" class="spatial-map-command-result-match-text">
+                        <Box display="flex" flex="2 1 180px" minW="0" gap="8px" color="var(--spatial-map-copy-muted)" fontSize="12px" lineHeight="1.25" overflow="hidden" whiteSpace="nowrap">
+                          <Box as="span" flex="0 0 auto" color="var(--spatial-map-copy-dim)" fontWeight="700">{result.fieldLabel}</Box>
+                          <Box as="span" minW="0" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
                             <HighlightedText
                               text={result.matchedText}
                               query={query()}
@@ -187,15 +229,15 @@ export function SpatialMapCommandMenu() {
                         {result.node.type}
                       </Badge>
                     </HStack>
-                  </button>
+                  </CommandResultButton>
                 )}
               </For>
             </Match>
             <Match when={query().trim().length > 0}>
-              <Box class="spatial-map-command-empty">No matching nodes</Box>
+              <CommandEmpty>No matching nodes</CommandEmpty>
             </Match>
             <Match when>
-              <Box class="spatial-map-command-empty">Type to search all nodes</Box>
+              <CommandEmpty>Type to search all nodes</CommandEmpty>
             </Match>
           </Switch>
         </Box>
@@ -298,9 +340,28 @@ function HighlightedText(props: {
     <>
       {parts().before}
       <Show when={parts().match}>
-        {(match) => <mark class="spatial-map-command-highlight">{match()}</mark>}
+        {(match) => (
+          <Box
+            as="mark"
+            p="0 2px"
+            borderRadius="3px"
+            background="rgba(250, 204, 21, 0.56)"
+            color="#2f2a12"
+            boxShadow="inset 0 -1px 0 rgba(154, 117, 0, 0.32)"
+          >
+            {match()}
+          </Box>
+        )}
       </Show>
       {parts().after}
     </>
+  );
+}
+
+function CommandEmpty(props: { children: string }) {
+  return (
+    <Box p="28px 12px" color="var(--spatial-map-copy-muted)" fontSize="13px" textAlign="center">
+      {props.children}
+    </Box>
   );
 }

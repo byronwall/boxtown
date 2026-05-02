@@ -1,8 +1,7 @@
 import { For, Show, createMemo, untrack } from "solid-js";
-import { Box, Grid, HStack, VStack } from "styled-system/jsx";
+import { Box, HStack, VStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import * as Checkbox from "~/components/ui/checkbox";
-import { Text } from "~/components/ui/text";
 import { Tooltip } from "~/components/ui/tooltip";
 import { getTreeCheckedState, toggleTreeSelection } from "~/lib/context-note-conversion/selection";
 import type { ConversionCandidateTreeItem } from "~/lib/context-note-conversion/types";
@@ -10,6 +9,22 @@ import { getNodePrimaryMetadataText } from "~/lib/projects/node-metadata";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { SpatialMapInspectorHeader } from "~/components/spatial-map/SpatialMapInspectorHeader";
 import { useSpatialMap } from "~/components/spatial-map/SpatialMapContext";
+import {
+  SpatialMapAnswerGrid,
+  SpatialMapBlockTitle,
+  SpatialMapCandidateRow,
+  SpatialMapCopy,
+  SpatialMapEmptyState,
+  SpatialMapFlowRail,
+  SpatialMapInspectorRow,
+  SpatialMapInspectorSection,
+  SpatialMapOptionButton,
+  SpatialMapQuestionHelper,
+  SpatialMapQuestionTitle,
+  SpatialMapRelationMeta,
+  SpatialMapRelationName,
+  SpatialMapRunStep,
+} from "~/components/spatial-map/SpatialMapPanelPrimitives";
 import { useContextNoteConversionFlow } from "./useContextNoteConversionFlow";
 
 interface ContextNoteConversionRailProps {
@@ -65,8 +80,7 @@ export function ContextNoteConversionRail(props: ContextNoteConversionRailProps)
   };
 
   return (
-    <Box class="spatial-map-inspector-rail">
-      <aside id="spatial-map-context-note-conversion" class="spatial-map-inspector spatial-map-add-nodes-rail">
+    <SpatialMapFlowRail id="spatial-map-context-note-conversion">
         <VStack alignItems="stretch" gap="3" h="full">
           <SpatialMapInspectorHeader
             kicker="Generate From Context"
@@ -77,10 +91,10 @@ export function ContextNoteConversionRail(props: ContextNoteConversionRailProps)
             onClose={closeRail}
           />
 
-          <Box class="spatial-map-inspector-section">
-            <InspectorRow label="Project" value={props.project.name} />
-            <InspectorRow label="Selection" value={selectedNode()?.label ?? "No node selected"} />
-            <InspectorRow label="Status" value={flow.snapshot()?.status ?? "idle"} mono />
+          <SpatialMapInspectorSection>
+            <SpatialMapInspectorRow label="Project" value={props.project.name} />
+            <SpatialMapInspectorRow label="Selection" value={selectedNode()?.label ?? "No node selected"} />
+            <SpatialMapInspectorRow label="Status" value={flow.snapshot()?.status ?? "idle"} mono />
             <HStack justifyContent="flex-end">
               <Button
                 size="xs"
@@ -98,57 +112,35 @@ export function ContextNoteConversionRail(props: ContextNoteConversionRailProps)
                 Generate Questions
               </Button>
             </HStack>
-          </Box>
+          </SpatialMapInspectorSection>
 
           <Show when={flow.snapshot()}>
             {(snapshot) => (
               <>
-                <Box class="spatial-map-inspector-section">
-                  <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-                    Run progress
-                  </Text>
-                  <Text as="p" class="spatial-map-inspector-copy">
-                    {snapshot().latestMessage}
-                  </Text>
+                <SpatialMapInspectorSection>
+                  <SpatialMapBlockTitle>Run progress</SpatialMapBlockTitle>
+                  <SpatialMapCopy>{snapshot().latestMessage}</SpatialMapCopy>
                   <VStack alignItems="stretch" gap="1.5">
                     <For each={snapshot().steps}>
                       {(step) => (
-                        <Box class={`spatial-map-run-step is-${step.status}`}>
-                          <HStack justifyContent="space-between" alignItems="start" gap="3">
-                            <Text as="span" class="spatial-map-run-step-label">
-                              {step.label}
-                            </Text>
-                            <Text as="span" class="spatial-map-run-step-status">
-                              {step.status}
-                            </Text>
-                          </HStack>
-                          <Text as="p" class="spatial-map-run-step-detail">
-                            {step.detail}
-                          </Text>
-                        </Box>
+                        <SpatialMapRunStep status={step.status} label={step.label} detail={step.detail} />
                       )}
                     </For>
                   </VStack>
-                </Box>
+                </SpatialMapInspectorSection>
 
                 <Show when={snapshot().status === "awaiting-input" && snapshot().questions.length > 0}>
-                  <Box class="spatial-map-inspector-section">
-                    <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-                      Clarifying questions
-                    </Text>
+                  <SpatialMapInspectorSection>
+                    <SpatialMapBlockTitle>Clarifying questions</SpatialMapBlockTitle>
                     <VStack alignItems="stretch" gap="3">
                       <For each={snapshot().questions}>
                         {(question) => (
                           <VStack alignItems="stretch" gap="2">
                             <Box>
-                              <Text as="div" class="spatial-map-question-title">
-                                {question.prompt}
-                              </Text>
-                              <Text as="div" class="spatial-map-question-helper">
-                                {question.helperText}
-                              </Text>
+                              <SpatialMapQuestionTitle>{question.prompt}</SpatialMapQuestionTitle>
+                              <SpatialMapQuestionHelper>{question.helperText}</SpatialMapQuestionHelper>
                             </Box>
-                            <Grid class="spatial-map-answer-grid">
+                            <SpatialMapAnswerGrid>
                               <For each={question.options}>
                                 {(option) => (
                                   <Tooltip
@@ -157,28 +149,24 @@ export function ContextNoteConversionRail(props: ContextNoteConversionRailProps)
                                     closeDelay={80}
                                     portalled={false}
                                   >
-                                    <button
-                                      type="button"
-                                      class={`spatial-map-answer-option${
-                                        flow.answerDraft()[question.id] === option.id ? " is-selected" : ""
-                                      }`}
+                                    <SpatialMapOptionButton
+                                      selected={flow.answerDraft()[question.id] === option.id}
                                       onClick={() => flow.chooseAnswer(question.id, option.id)}
-                                      aria-pressed={flow.answerDraft()[question.id] === option.id}
                                     >
                                       {option.label}
-                                    </button>
+                                    </SpatialMapOptionButton>
                                   </Tooltip>
                                 )}
                               </For>
-                            </Grid>
+                            </SpatialMapAnswerGrid>
                           </VStack>
                         )}
                       </For>
                     </VStack>
                     <HStack justifyContent="space-between" gap="3" flexWrap="wrap">
-                      <Text as="span" class="spatial-map-empty-state">
+                      <SpatialMapEmptyState as="span">
                         Hover any answer for guidance before you choose it.
-                      </Text>
+                      </SpatialMapEmptyState>
                       <Button
                         size="xs"
                         colorPalette="green"
@@ -191,22 +179,18 @@ export function ContextNoteConversionRail(props: ContextNoteConversionRailProps)
                         Generate Suggestions
                       </Button>
                     </HStack>
-                  </Box>
+                  </SpatialMapInspectorSection>
                 </Show>
 
                 <Show when={snapshot().status === "awaiting-review" && snapshot().candidateBatch}>
                   {(candidateBatch) => (
-                    <Box class="spatial-map-inspector-section">
-                      <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-                        Suggested hierarchy
-                      </Text>
-                      <Text as="p" class="spatial-map-inspector-copy">
-                        {candidateBatch().summary}
-                      </Text>
-                      <Text as="p" class="spatial-map-empty-state">
+                    <SpatialMapInspectorSection>
+                      <SpatialMapBlockTitle>Suggested hierarchy</SpatialMapBlockTitle>
+                      <SpatialMapCopy>{candidateBatch().summary}</SpatialMapCopy>
+                      <SpatialMapEmptyState>
                         All candidates start selected. Uncheck anything you do not want to add.
-                      </Text>
-                      <VStack alignItems="stretch" gap="1.5" class="spatial-map-candidate-tree">
+                      </SpatialMapEmptyState>
+                      <VStack alignItems="stretch" gap="1.5" pt="2px">
                         <For each={candidateBatch().tree.roots}>
                           {(rootId) => (
                             <CandidateTreeNode
@@ -221,9 +205,9 @@ export function ContextNoteConversionRail(props: ContextNoteConversionRailProps)
                         </For>
                       </VStack>
                       <HStack justifyContent="space-between" gap="3" flexWrap="wrap">
-                        <Text as="span" class="spatial-map-empty-state">
+                        <SpatialMapEmptyState as="span">
                           {flow.selectedNodeIds().length} of {candidateNodeIds().length} nodes selected
-                        </Text>
+                        </SpatialMapEmptyState>
                         <Button
                           size="xs"
                           colorPalette="green"
@@ -236,26 +220,20 @@ export function ContextNoteConversionRail(props: ContextNoteConversionRailProps)
                           Accept Selected
                         </Button>
                       </HStack>
-                    </Box>
+                    </SpatialMapInspectorSection>
                   )}
                 </Show>
 
                 <Show when={snapshot().result}>
                   {(result) => (
-                    <Box class="spatial-map-inspector-section">
-                      <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-block-title">
-                        Conversion complete
-                      </Text>
-                      <Text as="p" class="spatial-map-inspector-copy">
-                        {result().summary}
-                      </Text>
-                      <Text as="p" class="spatial-map-empty-state">
+                    <SpatialMapInspectorSection>
+                      <SpatialMapBlockTitle>Conversion complete</SpatialMapBlockTitle>
+                      <SpatialMapCopy>{result().summary}</SpatialMapCopy>
+                      <SpatialMapEmptyState>
                         {result().acceptedNodeCount} nodes / {result().acceptedLinkCount} links added
-                      </Text>
-                      <Text as="p" class="spatial-map-inspector-copy">
-                        {result().trimSummary}
-                      </Text>
-                    </Box>
+                      </SpatialMapEmptyState>
+                      <SpatialMapCopy>{result().trimSummary}</SpatialMapCopy>
+                    </SpatialMapInspectorSection>
                   )}
                 </Show>
               </>
@@ -264,16 +242,13 @@ export function ContextNoteConversionRail(props: ContextNoteConversionRailProps)
 
           <Show when={flow.error()}>
             {(error) => (
-              <Box class="spatial-map-inspector-section spatial-map-add-nodes-error">
-                <Text as="p" class="spatial-map-inspector-copy">
-                  {error()}
-                </Text>
-              </Box>
+              <SpatialMapInspectorSection error>
+                <SpatialMapCopy>{error()}</SpatialMapCopy>
+              </SpatialMapInspectorSection>
             )}
           </Show>
         </VStack>
-      </aside>
-    </Box>
+      </SpatialMapFlowRail>
   );
 }
 
@@ -288,37 +263,35 @@ function CandidateTreeNode(props: {
   return (
     <VStack alignItems="stretch" gap="1">
       <Checkbox.Root
+        class="group"
         checked={props.getCheckedState(props.item.nodeId)}
         onCheckedChange={(details) => props.onToggle(props.item.nodeId, details.checked === true)}
       >
         <Checkbox.HiddenInput />
-        <HStack
-          alignItems="start"
-          gap="2"
-          class="spatial-map-candidate-tree-row"
-          style={{ "padding-left": `${props.level * 16}px` }}
-        >
+        <SpatialMapCandidateRow level={props.level}>
           <Checkbox.Control>
             <Checkbox.Indicator />
           </Checkbox.Control>
           <VStack alignItems="start" gap="0.5" flex="1">
             <HStack justifyContent="space-between" w="full" gap="2" flexWrap="wrap">
-              <Checkbox.Label class="spatial-map-relation-name">
+              <Checkbox.Label>
+                <SpatialMapRelationName as="span">
                 {props.item.label}
+                </SpatialMapRelationName>
               </Checkbox.Label>
-              <Text as="span" class="spatial-map-relation-meta">
+              <SpatialMapRelationMeta as="span">
                 {props.item.type}
-              </Text>
+              </SpatialMapRelationMeta>
             </HStack>
-            <Text as="div" class="spatial-map-relation-meta">
+            <SpatialMapRelationMeta>
               {getNodePrimaryMetadataText(
                 { metadata: props.item.metadata },
                 props.nodeMetadataSchema,
                 "No metadata",
               )}
-            </Text>
+            </SpatialMapRelationMeta>
           </VStack>
-        </HStack>
+        </SpatialMapCandidateRow>
       </Checkbox.Root>
 
       <For each={props.item.childNodeIds}>
@@ -334,23 +307,5 @@ function CandidateTreeNode(props: {
         )}
       </For>
     </VStack>
-  );
-}
-
-function InspectorRow(props: { label: string; value: string; mono?: boolean }) {
-  return (
-    <HStack justifyContent="space-between" alignItems="start" gap="3" class="spatial-map-inspector-row">
-      <Text as="span" textStyle="xs" class="spatial-map-inspector-row-label">
-        {props.label}
-      </Text>
-      <Text
-        as="span"
-        textStyle="sm"
-        class={props.mono ? "spatial-map-inspector-row-value is-mono" : "spatial-map-inspector-row-value"}
-        textAlign="right"
-      >
-        {props.value}
-      </Text>
-    </HStack>
   );
 }

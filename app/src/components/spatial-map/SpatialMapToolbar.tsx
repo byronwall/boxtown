@@ -57,15 +57,54 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
   };
 
   return (
-    <Box class="spatial-map-topbar">
-      <HStack gap="3" alignItems="center" class="spatial-map-topbar-copy">
-        <Box class="spatial-map-title-row">
+    <Box
+      class="spatial-map-topbar"
+      display="grid"
+      gridTemplateColumns={{ base: "minmax(0, 1fr)", xl: "minmax(0, 1fr) auto minmax(0, 1fr)" }}
+      alignItems="center"
+      gap="8px"
+      minH="54px"
+      p="8px 10px"
+      border="1px solid rgba(119, 125, 117, 0.42)"
+      borderRadius={{ base: "6px", md: "8px" }}
+      background="rgba(248, 250, 248, 0.9)"
+      boxShadow={`
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        0 10px 28px rgba(29, 33, 28, 0.06)
+      `}
+    >
+      <HStack gap="3" alignItems="center" minW="0" overflow="hidden" justifySelf="start">
+        <Box display="flex" minW="0" alignItems="baseline" gap="8px">
           {!props.backHref ? (
-            <Text as="span" class="spatial-map-eyebrow">
+            <Text
+              as="span"
+              display="inline-flex"
+              p="3px 6px"
+              border="1px solid rgba(45, 111, 72, 0.34)"
+              borderRadius="4px"
+              background="rgba(229, 239, 229, 0.74)"
+              color="var(--spatial-map-accent-strong)"
+              fontSize="11px"
+              lineHeight="1"
+              letterSpacing="0.12em"
+              textTransform="none"
+            >
               {props.eyebrow ?? "System map / operator view"}
             </Text>
           ) : null}
-          <Box as="h1" class="spatial-map-title">
+          <Box
+            as="h1"
+            m="0"
+            color="#141816"
+            fontSize="clamp(1rem, 1.45vw, 1.35rem)"
+            lineHeight="1"
+            fontWeight="740"
+            letterSpacing="-0.04em"
+            textTransform="none"
+            whiteSpace="nowrap"
+            overflow="hidden"
+            textOverflow="ellipsis"
+          >
             {props.title ?? "Recipe Architecture Grid"}
           </Box>
           <ProjectMetadataSettingsDialog
@@ -76,7 +115,12 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
                 colorPalette="green"
                 variant="outline"
                 size="xs"
-                class="spatial-map-title-settings-button"
+                flexShrink="0"
+                alignSelf="center"
+                w="24px"
+                minW="24px"
+                h="24px"
+                minH="24px"
                 aria-label="Project settings"
                 title="Project settings"
                 onClick={open}
@@ -92,7 +136,10 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
         gap="1.5"
         flexWrap="wrap"
         justifyContent="flex-end"
-        class="spatial-map-control-strip"
+        alignContent="center"
+        alignItems="center"
+        justifySelf="end"
+        minW="0"
       >
         {spatialMap.isolationModeActive() ? (
           <Button
@@ -100,6 +147,14 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             variant="outline"
             size="xs"
             class="spatial-map-isolation-clear"
+            ml="-6px"
+            borderColor="var(--spatial-map-panel-border-strong)"
+            color="var(--spatial-map-copy-muted)"
+            background="rgba(231, 235, 228, 0.98)"
+            _hover={{
+              color: "var(--spatial-map-copy)",
+              background: "rgba(219, 227, 217, 0.98)",
+            }}
             aria-label="Clear isolation"
             onClick={() => spatialMap.clearIsolation()}
           >
@@ -124,7 +179,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             )}
           />
           <Menu.Positioner>
-            <Menu.Content class="spatial-map-create-menu">
+            <Menu.Content minW="190px" borderRadius="0" fontFamily="inherit" textTransform="none">
               <Menu.Item
                 value="add-nodes"
                 onClick={() => spatialMap.openAddNodesFlow()}
@@ -164,7 +219,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             )}
           />
           <Menu.Positioner>
-            <Menu.Content class="spatial-map-create-menu">
+            <Menu.Content minW="190px" borderRadius="0" fontFamily="inherit" textTransform="none">
               <Menu.Item
                 value="copy-visible-nodes-markdown"
                 onClick={copyVisibleNodesAsMarkdown}
@@ -185,6 +240,15 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
         <HStack
           gap="0"
           class="spatial-map-toggle-group"
+          overflow="hidden"
+          border="1px solid var(--spatial-map-panel-border-strong)"
+          borderColor="rgba(96, 101, 95, 0.44)"
+          borderRadius="6px"
+          background="rgba(246, 248, 244, 0.94)"
+          boxShadow={`
+            inset 0 1px 0 rgba(255, 255, 255, 0.36),
+            inset 0 -1px 0 rgba(44, 52, 46, 0.14)
+          `}
           aria-label="Map view mode"
         >
           <Button
@@ -192,6 +256,16 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             variant={spatialMap.viewMode() === "canvas" ? "surface" : "outline"}
             size="xs"
             class={`spatial-map-toggle-button${spatialMap.viewMode() === "canvas" ? " is-active" : ""}`}
+            minW="34px"
+            borderWidth="0 1px 0 0"
+            borderColor="rgba(24, 29, 26, 0.24)"
+            background={spatialMap.viewMode() === "canvas" ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+            color={spatialMap.viewMode() === "canvas" ? "var(--spatial-map-accent-strong)" : undefined}
+            boxShadow={
+              spatialMap.viewMode() === "canvas"
+                ? "inset 0 0 0 1px rgba(45, 111, 72, 0.42), inset 0 -2px 0 rgba(45, 111, 72, 0.86)"
+                : undefined
+            }
             aria-pressed={spatialMap.viewMode() === "canvas"}
             onClick={() => spatialMap.setViewMode("canvas")}
           >
@@ -202,6 +276,16 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             variant={spatialMap.viewMode() === "tree" ? "surface" : "outline"}
             size="xs"
             class={`spatial-map-toggle-button${spatialMap.viewMode() === "tree" ? " is-active" : ""}`}
+            minW="34px"
+            borderWidth="0 1px 0 0"
+            borderColor="rgba(24, 29, 26, 0.24)"
+            background={spatialMap.viewMode() === "tree" ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+            color={spatialMap.viewMode() === "tree" ? "var(--spatial-map-accent-strong)" : undefined}
+            boxShadow={
+              spatialMap.viewMode() === "tree"
+                ? "inset 0 0 0 1px rgba(45, 111, 72, 0.42), inset 0 -2px 0 rgba(45, 111, 72, 0.86)"
+                : undefined
+            }
             aria-pressed={spatialMap.viewMode() === "tree"}
             onClick={() => spatialMap.setViewMode("tree")}
           >
@@ -212,6 +296,16 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             variant={spatialMap.viewMode() === "grid" ? "surface" : "outline"}
             size="xs"
             class={`spatial-map-toggle-button${spatialMap.viewMode() === "grid" ? " is-active" : ""}`}
+            minW="34px"
+            borderWidth="0"
+            borderColor="rgba(24, 29, 26, 0.24)"
+            background={spatialMap.viewMode() === "grid" ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+            color={spatialMap.viewMode() === "grid" ? "var(--spatial-map-accent-strong)" : undefined}
+            boxShadow={
+              spatialMap.viewMode() === "grid"
+                ? "inset 0 0 0 1px rgba(45, 111, 72, 0.42), inset 0 -2px 0 rgba(45, 111, 72, 0.86)"
+                : undefined
+            }
             aria-pressed={spatialMap.viewMode() === "grid"}
             onClick={() => spatialMap.setViewMode("grid")}
           >
@@ -221,6 +315,15 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
         <HStack
           gap="0"
           class="spatial-map-toggle-group"
+          overflow="hidden"
+          border="1px solid var(--spatial-map-panel-border-strong)"
+          borderColor="rgba(96, 101, 95, 0.44)"
+          borderRadius="6px"
+          background="rgba(246, 248, 244, 0.94)"
+          boxShadow={`
+            inset 0 1px 0 rgba(255, 255, 255, 0.36),
+            inset 0 -1px 0 rgba(44, 52, 46, 0.14)
+          `}
           aria-label="Displayed hierarchy levels"
         >
           <For each={spatialMap.availableDepthLevels()}>
@@ -238,6 +341,16 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
                   variant={active() ? "surface" : "outline"}
                   size="xs"
                   class={`spatial-map-depth-button${active() ? " is-active" : ""}`}
+                  minW="34px"
+                  borderWidth="0 1px 0 0"
+                  borderColor="rgba(24, 29, 26, 0.24)"
+                  background={active() ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+                  color={active() ? "var(--spatial-map-accent-strong)" : undefined}
+                  boxShadow={
+                    active()
+                      ? "inset 0 0 0 1px rgba(45, 111, 72, 0.42), inset 0 -2px 0 rgba(45, 111, 72, 0.86)"
+                      : undefined
+                  }
                   aria-label={`Show ${label()} hierarchy ${level === 1 ? "level" : "levels"}`}
                   aria-pressed={active()}
                   onClick={() => spatialMap.setVisibleDepthLevel(selection())}
