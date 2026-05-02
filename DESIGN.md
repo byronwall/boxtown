@@ -1,16 +1,28 @@
 ---
 version: alpha
 name: Product Grid Industrial Drafting
-description: "A dense, calm, industrial drafting interface for Product Grid Management: spatial product maps, metadata grids, inspector rails, AI workflow panels, markdown context, and image-backed architecture nodes."
+description: "A dense, calm, industrial drafting interface for Product Grid Management: an olive index surface, contained workspace shells, spatial product maps, metadata grids, inspector rails, AI workflow panels, markdown context, and image-backed architecture nodes."
 colors:
   primary: "#143A29"
   primary-strong: "#0F2D20"
   primary-muted: "#5D8068"
+  operational-green: "#30A46C"
   secondary: "#6D7472"
   tertiary: "#9B3A3A"
+  olive-1: "#FCFDFC"
+  olive-2: "#F8FAF8"
+  olive-3: "#EFF1EF"
+  olive-4: "#E7E9E7"
+  olive-6: "#D7DAD7"
+  olive-7: "#CCCFCC"
+  olive-8: "#B9BCB8"
+  olive-11: "#60655F"
+  olive-12: "#1D211C"
   neutral: "#F7F9F7"
   background: "#EAEEEA"
   surface: "#F7F9F7"
+  surface-shell: "rgba(252,253,252,0.94)"
+  surface-header: "rgba(248,250,248,0.90)"
   surface-muted: "#EFF3EF"
   surface-raised: "#FFFFFF"
   surface-selected: "#D7E8D8"
@@ -38,6 +50,18 @@ colors:
   danger-surface: "#F8EAEA"
   shadow: "#18201826"
 typography:
+  app-headline-lg:
+    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
+    fontSize: 30px
+    fontWeight: 700
+    lineHeight: 1.05
+    letterSpacing: 0em
+  app-body-md:
+    fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif"
+    fontSize: 14px
+    fontWeight: 400
+    lineHeight: 1.45
+    letterSpacing: 0em
   headline-lg:
     fontFamily: "JetBrains Mono, IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace"
     fontSize: 22px
@@ -126,6 +150,10 @@ components:
   app-shell:
     backgroundColor: "{colors.background}"
     textColor: "{colors.text}"
+    typography: "{typography.app-body-md}"
+  spatial-workspace:
+    backgroundColor: "{colors.background}"
+    textColor: "{colors.text}"
     typography: "{typography.body-md}"
   top-toolbar:
     backgroundColor: "{colors.surface}"
@@ -210,7 +238,15 @@ components:
 
 Product Grid Management should feel like a drafting table for software architecture: technical, calm, spatial, precise, and intentionally dense. The interface is not decorative or consumer-playful. It is a working environment for mapping product ideas, UI architecture, system relationships, planning notes, markdown context, images, and AI-generated graph expansions.
 
-The visual style observed in the screenshots is a soft industrial UI with pale green-gray surfaces, crisp hairline borders, grid-paper canvas texture, monospaced typography, small capsule labels, and low-shadow panels. It should feel like an engineering notebook merged with a graph editor.
+This document reconciles the broader product design direction with the existing `docs/design-language-index-surface.md` language. The index-surface doc is now treated as the baseline for page fields, app shells, token usage, modal treatment, and restrained interaction states because the current index page, drawer/dialog recipes, console log capture shell, and several spatial-map dialogs clearly follow it. The denser spatial-map workspace keeps the more technical drafting-table rules where the existing site already uses them.
+
+The visual style observed in the implemented site is a soft industrial UI with muted olive page fields, near-white translucent shells, crisp hairline borders, subtle grid texture, technical metadata typography, compact labels, and low-shadow panels. It should feel like an engineering notebook merged with a graph editor, not like a marketing SaaS dashboard.
+
+Use this document as the cleanup target for the repo. When existing code diverges, prefer the rule that is already working in the strongest implemented surfaces:
+
+- **Index surface baseline:** page background, outer shell, left creation/import rail, right data list, modal backdrop language, token-led olive surfaces, compact chips, restrained green focus/active states.
+- **Spatial map drafting baseline:** canvas nodes, metadata grid, tree view, inspector rail, AI workflow rails, image tools, and project settings dialogs.
+- **Shared cleanup direction:** converge custom spatial-map colors toward Panda olive/green/red/blue/amber tokens without losing the denser drafting feel.
 
 Design goals:
 
@@ -226,11 +262,45 @@ Design goals:
 - Treat AI workflows as native workspace tools.
   - Create-menu actions, workflow rails, candidate review states, progress steps, and generated nodes should use the same industrial control language.
 - Prefer legibility over polish.
-  - Text is monospaced, labels are compact, controls are square-ish, and most depth comes from borders and tonal changes.
+  - Workspace text can be monospaced where density and technical scanning matter.
+  - Index and general app surfaces may use the standard Panda heading/body stack, with mono reserved for ids, counts, filenames, metadata, shortcuts, and code-like values.
+  - Labels are compact, controls are square-ish, and most depth comes from borders and tonal changes.
+
+## Relationship to the Index Surface
+
+The index page is the clearest completed reference for the general product surface. Carry these rules forward anywhere the app renders a page-level layout, modal, drawer, shell, or non-canvas management view:
+
+- Use the olive/gray Panda token family for major surfaces: `olive.1`, `olive.2`, `olive.3`, `olive.4`, `olive.6`, `olive.7`, and `olive.8`.
+- Use near-white translucent shells such as `rgba(252,253,252,0.94)` over muted olive fields.
+- Use green as an operational accent only: primary actions, active controls, focus rings, selected states, and occasional row hover markers.
+- Avoid pure black app surfaces, black modal stages, bright white full-page fields, glossy cards, and high-contrast black/white UI.
+- Use one strong outer shell for page-level tools: `olive.8` border, `l3` radius, near-white translucent fill, large tinted shadow, subtle white outline, and inset top highlight.
+- Use interior bands, rails, list rows, and framed tool surfaces instead of nested decorative cards.
+- Selected menu/list states should use restrained fill plus text weight/color. Do not add decorative side bars, inset stripes, or rail markers for ordinary selected/current states.
+
+Where the spatial-map workspace currently uses sharper zero-radius controls, full mono typography, or custom CSS variables, treat that as a specialized drafting mode. New shared UI and cleanup work should bias back toward index-surface tokens and small radii unless the component is explicitly part of the scaled SVG/canvas or metadata-grid drafting surface.
 
 ## Colors
 
-The palette is built from muted industrial greens, warm white-gray surfaces, blueprint-like node tints, and restrained red for destructive actions.
+The palette is built from Panda olive/gray tokens, muted industrial greens, warm near-white surfaces, blueprint-like node tints, and restrained red for destructive actions. In implementation, prefer token references over hard-coded hex values whenever possible.
+
+### Canonical token families
+
+- **Olive surface tokens**
+  - Use `olive.4` as the page field/base background for index-like surfaces.
+  - Use `olive.1`, `olive.2`, and `olive.3` for interior panels, list rows, rails, and work-area bands.
+  - Use `olive.6`, `olive.7`, and `olive.8` for borders, with `olive.8` reserved for outer shells and stronger containers.
+  - Use `olive.11` and `olive.12` for muted and primary text when using Panda semantic tokens.
+- **Shell surface (`rgba(252,253,252,0.94)`)**
+  - Used for the main index-page shell and should become the default page-level shell surface.
+  - Pair with a larger tinted shadow, subtle white outline, and inset highlight.
+- **Header band (`rgba(248,250,248,0.90)`)**
+  - Used for shell headers, modal headers, drawer headers, and management-surface title bands.
+- **Operational green (`green.9` / `#30A46C`)**
+  - Use for primary actions, focus rings, active controls, and selected/focused state accents.
+  - Do not use green as a broad decorative wash when olive tokens can provide structure.
+
+### Semantic working colors
 
 - **Primary / Forest Ink (`#143A29`)**
   - Used for active controls, important icons, tab text, selected borders, and high-emphasis action states.
@@ -253,6 +323,13 @@ The palette is built from muted industrial greens, warm white-gray surfaces, blu
   - Used only for destructive actions such as delete buttons and trash icons.
   - Always pair with a pale red surface for small icon buttons.
 
+Cleanup guidance:
+
+- Convert page-level and overlay surfaces toward Panda `olive.*` tokens before inventing new hex values.
+- Keep hard-coded rgba values only where the translucency is part of the shell/grid effect and no semantic token exists yet.
+- Keep the spatial-map CSS variable palette temporarily, but align new values with olive/green/red/blue/amber tokens as the module is cleaned up.
+- Avoid broad dark or black surfaces except for true media-inspection needs.
+
 Node type colors should stay muted and low-saturation:
 
 - **Page nodes:** pale blueprint blue (`#DCE9F4`).
@@ -261,6 +338,8 @@ Node type colors should stay muted and low-saturation:
 - **Component nodes:** near-white green (`#F4F7F3`).
 - **Block nodes:** pale blue-gray (`#DDEBF0`).
 - **Note/context nodes:** warm paper tan (`#F1EAD9`).
+
+Current implementation note: the spatial map currently maps page/area to blue, assembly/module to green, component/contract/standard to neutral, taxonomy to steel, and note to amber. Treat those as the live taxonomy until a dedicated node-type token set is created.
 
 Status colors should be quieter than type colors. Status is a work-tracking overlay, not the primary visual identity.
 
@@ -271,7 +350,21 @@ Status colors should be quieter than type colors. Status is a work-tracking over
 
 ## Typography
 
-The product should use a monospaced technical typeface across the application. The screenshots read as a code-oriented UI, so a stack such as `JetBrains Mono`, `IBM Plex Mono`, and system monospace is appropriate.
+The product should use a technical typography system, but it should not force every surface into monospace. The implemented index surface uses standard Panda heading/body styles for approachable management copy and reserves the mono stack for ids, counts, file details, and technical metadata. The spatial-map workspace currently uses full monospace and can keep that stronger drafting character.
+
+Recommended stack split:
+
+- **General app/index surfaces**
+  - Use existing Panda `Heading`, `Text`, and `textStyle` tokens.
+  - Keep headings heavy, direct, and tight.
+  - Use muted text for helper copy and descriptions.
+  - Use monospaced text for project ids, file names, counts, metadata chips, keyboard shortcuts, command labels, code, and structured values.
+- **Spatial-map workspace**
+  - Use the project mono stack across toolbar, grid, tree, inspector, canvas labels, and AI workflow rails.
+  - Current stack: `IBM Plex Mono`, `SFMono-Regular`, `SF Mono`, `Roboto Mono`, `Consolas`, `Liberation Mono`, monospace.
+- **Markdown/prose surfaces**
+  - Use monospace for code, metadata, tables, ids, and diagram labels.
+  - Long-form prose can use the standard readable body stack when a full-mono preview hurts scanning.
 
 Type should be compact and sharp:
 
@@ -294,11 +387,36 @@ Type should be compact and sharp:
   - Use bold 14-18px monospaced text depending on node size and hierarchy depth.
   - Wrap labels within SVG/card bounds rather than truncating primary node names.
 
-Avoid mixed typographic personalities. Do not introduce a proportional marketing font into the workspace UI unless it is isolated to a public landing page.
+Avoid mixed typographic personalities. The acceptable split is standard Panda app typography for broad management surfaces and mono for technical/drafting surfaces. Do not introduce a decorative proportional marketing font into the workspace UI.
 
 ## Layout
 
-The layout is a three-part workbench:
+The product has two related layout families: the index/management surface and the spatial workbench.
+
+### Index and management surfaces
+
+Use the current project index page as the baseline:
+
+- Page field:
+  - `minH="100dvh"` with `olive.4` base.
+  - Layered background with low-opacity radial green/olive washes, a subtle 40px grid, and a light vertical wash.
+  - Keep the grid quiet enough that text reads only on opaque or near-opaque panels.
+- Outer shell:
+  - Constrain to a wide container, currently `maxW="7xl"` with responsive padding.
+  - Use one strong shell with `olive.8` border, `l3` radius, near-white translucent fill, and layered shadow.
+  - The shell should feel like a contained desktop tool.
+- Interior layout:
+  - Prefer a two-column work layout when the page has setup/actions plus primary data.
+  - Left rail contains creation, import, setup, filters, or project controls.
+  - Right side contains primary data lists, tables, grids, or previews.
+  - Separate sections with border lines and background shifts, not decorative nested cards.
+- Density:
+  - Keep rows moderate and scannable.
+  - Avoid marketing-style oversized cards, oversized empty states, and decorative hero composition inside authenticated app surfaces.
+
+### Spatial workbench
+
+The spatial-map project page is a three-part workbench:
 
 - **Top project toolbar**
   - Contains back navigation, project title, settings, color/type/status mode controls, create/actions controls, view switches, and depth controls.
@@ -331,6 +449,8 @@ Alignment rules:
 
 Responsive behavior:
 
+- Index/management surfaces should stack the left rail above the primary data area on small screens.
+- Page-level shells should retain useful padding and avoid clipping controls on mobile.
 - Preserve the inspector rail on desktop.
 - Allow the rail to collapse when viewport width becomes constrained.
 - Let the center workspace shrink before shrinking table font size.
@@ -343,7 +463,9 @@ Depth should be created with tonal layers, borders, and opacity rather than heav
 
 Use elevation sparingly:
 
-- **Base layer:** green-gray app background.
+- **Page field:** olive base with soft radial washes, quiet grid texture, and vertical wash.
+- **Outer shell:** near-white translucent frame with strong olive boundary and layered shadow.
+- **Base workspace layer:** green-gray app background.
 - **Canvas layer:** pale grid plane with subtle vertical and horizontal grid lines.
 - **Panel layer:** near-white surface with 1px border.
 - **Raised overlay:** popovers and menus may use a small shadow plus a stronger border.
@@ -352,9 +474,11 @@ Use elevation sparingly:
 
 Shadow guidance:
 
-- Default panels: no visible shadow.
+- Page-level shells: may use the index-surface shadow pattern, currently `0 28px 70px rgba(29,33,28,0.2)`, a subtle white outline, and inset top highlight.
+- Default interior panels: no visible shadow.
 - Popovers, menus, dialogs: use a small soft shadow like `0 8px 24px #18201826`.
 - Avoid modern glossy card shadows. They conflict with the drafting-table style.
+- Dialogs and drawers can use the stronger shell shadow when they are page-like tools rather than tiny menus.
 
 Opacity guidance for focus states:
 
@@ -371,10 +495,14 @@ The shape language is rectilinear and engineered.
   - Rectangles are preferred over pill shapes.
   - Node shape should emphasize architecture blocks and diagram objects.
 - **Panels and toolbar containers**
-  - Use modest 8-12px radii.
+  - Use modest radii.
+  - Page-level outer shells use `l3`.
+  - Interior containers usually use `l1`/`l2`.
+  - Spatial-map toolbar/canvas containers may stay sharper when matching the drafting surface.
   - The outer app frame can be slightly rounder than internal controls.
 - **Buttons, inputs, and selects**
-  - Use 4-6px radii.
+  - Use small radii (`l1`/`l2`, roughly 4-6px) on shared app surfaces.
+  - Spatial-map module controls currently use zero-radius square buttons; keep only where it reinforces the dense drafting mode.
   - Controls should feel precise and compact.
 - **Pills and tags**
   - Use 2-4px radii for metadata chips.
@@ -387,13 +515,43 @@ The shape language is rectilinear and engineered.
 
 ### App shell
 
-- Use the green-gray background as the global canvas behind everything.
-- Put the app inside a thin bordered frame when the viewport allows it.
-- The frame should feel like a contained desktop tool, not a full-bleed website.
+- Use the olive/green-gray background as the global page field behind everything.
+- For page-level management surfaces, use the index-surface shell:
+  - `olive.4` page base.
+  - subtle radial washes.
+  - 40px low-opacity grid.
+  - `maxW="7xl"` constrained content.
+  - `olive.8` shell border.
+  - `rgba(252,253,252,0.94)` shell fill.
+  - `l3` shell radius.
+  - large tinted shadow, white outline, and inset highlight.
+- For full-workbench tools such as the spatial map, the app may fill the viewport but should still feel bounded by topbar, stage, and rail borders.
+- The frame should feel like a contained desktop tool, not a full-bleed website or marketing page.
+
+### Index surface
+
+The index page is the reference implementation for app-level management screens.
+
+- Header band:
+  - Slightly brighter/translucent than the work area.
+  - Contains direct heading, concise helper copy, and compact summary stats.
+  - Summary stats use bordered `olive.1`/`olive.2` capsules with tabular numbers.
+- Left rail:
+  - Contains create/import/setup actions.
+  - Uses `olive.2` and `olive.1` bands with `olive.7` borders.
+  - Form controls use small radii and compact heights.
+- Primary data area:
+  - Uses list rows or tables over `olive.1`.
+  - Rows separate with `olive.6`/`olive.7` borders.
+  - Row hover may lift with `olive.2` and a restrained green marker only when the row is actionable.
+  - Project ids and technical details use mono; headings/body copy can use standard Panda typography.
+- Empty states:
+  - Keep them compact and useful.
+  - Do not introduce illustration-heavy hero panels.
 
 ### Project toolbar
 
-- Use a large rounded container with surface fill and thin border.
+- Use a prominent bordered toolbar container with muted surface fill.
 - Left section:
   - Back link outside or above the main frame.
   - Project title in bold monospace.
@@ -412,7 +570,7 @@ The shape language is rectilinear and engineered.
 - Active item:
   - Pale moss background.
   - Dark green text.
-  - Strong green border.
+  - Stronger green/olive border or a subtle bottom inset when the control is already built as a connected segmented group.
 - Inactive item:
   - Near-white or muted surface.
   - Dark text or dark green text depending on context.
@@ -502,10 +660,12 @@ The shape language is rectilinear and engineered.
 
 ### Forms and inputs
 
-- Inputs use white surfaces, thin borders, monospaced text, and compact height.
+- Inputs use white or near-white surfaces, thin borders, and compact height.
+- Spatial-map inputs should usually inherit the mono workspace stack.
+- Index/management forms may use standard Panda body typography while preserving mono for ids and structured values.
 - Textareas use the same border language but larger internal padding.
 - Focus state should use a green outline or border, not a bright glow.
-- Placeholder text should be muted and monospaced.
+- Placeholder text should be muted.
 
 ### Selects and pills
 
@@ -523,10 +683,16 @@ The shape language is rectilinear and engineered.
 
 ### Dialogs and popovers
 
-- Use the same surface, border, and monospaced typography as the rest of the app.
+- Use the same surface, border, and typography split as the rest of the app: standard Panda text for management dialogs, mono for spatial-map/tooling dialogs and technical values.
 - Popovers can have slightly stronger depth than panels.
 - Dialogs should remain compact and task-oriented.
 - Do not introduce large marketing-style modal headers.
+- Modal/dialog treatment should inherit the index-surface language:
+  - Avoid black stage/backdrop treatment unless the content is truly a dark media-inspection mode.
+  - Use a warm olive/grid field behind large dialog content when the dialog behaves like a tool.
+  - Use a near-white shell, strong olive boundary shadow, compact header band, and token-aligned controls.
+  - Active thumbnails, focus rings, and selected controls use green accents.
+  - Project settings, image viewer tools, drawers, and console capture panels should converge on this family.
 
 ### AI workflow rails
 
@@ -548,14 +714,19 @@ The shape language is rectilinear and engineered.
 
 Do:
 
+- Use the index page as the baseline for page fields, shells, management layouts, drawers, and dialogs.
+- Use Panda `olive.*` tokens for major surfaces and borders.
+- Use green as an operational accent, not a decorative theme wash.
 - Use pale green-gray surfaces and crisp borders as the main visual language.
 - Keep the interface dense, aligned, and technical.
-- Use monospaced typography consistently.
+- Use monospaced typography consistently inside the spatial-map workspace and for technical metadata elsewhere.
+- Use standard Panda heading/body typography for index-like management surfaces when it improves readability.
 - Use the selected-node state across canvas, grid, tree, and inspector.
 - Use muted type colors for nodes and stronger green only for active controls.
 - Use table indentation and canvas proximity to communicate hierarchy.
 - Keep create, decomposition, and AI workflows visually integrated with the core app.
 - Prefer 1px borders, small labels, and tonal grouping over heavy shadows.
+- Prefer bands, rails, rows, and framed tool surfaces over decorative card stacks.
 
 Don't:
 
@@ -567,10 +738,24 @@ Don't:
 - Do not make canvas edges overly prominent by default.
 - Do not mix in decorative fonts, gradients, glassmorphism, or glossy effects.
 - Do not expand spacing so much that the tool loses its dense architecture-workbench feel.
+- Do not add decorative left/right accent bars, inset side borders, or stripe markers for ordinary selected/current states.
+- Do not use black app surfaces or black modal stages unless the interaction is explicitly media inspection.
 
-## Screenshot-Derived Details
+## Site-Derived Details
 
-These details were inferred directly from the provided metadata-grid and create-menu screenshots.
+These details are derived from the existing index surface, theme tokens, spatial-map workspace, metadata-grid view, create menu, and modal/drawer treatments.
+
+Index-surface details:
+
+- The index page uses `olive.4` as the base field with soft radial washes, a subtle 40px grid, and a light vertical wash.
+- The index shell uses `rgba(252,253,252,0.94)`, `olive.8` border, `l3` radius, and the layered shadow `0 28px 70px rgba(29,33,28,0.2)` plus white outline/inset highlight.
+- The index content is a two-column work layout on desktop: left rail for new project/import controls, right side for existing project rows.
+- The left rail and primary data area use `olive.1`, `olive.2`, `olive.3`, `olive.6`, and `olive.7`.
+- Project rows are list rows, not cards. They use borders, compact stats, and restrained hover lift.
+- Project ids use a mono stack; headings and helper copy use the standard Panda type styles.
+- Focus rings and primary actions use green, currently `green.9`.
+
+Spatial-map details:
 
 - The app frame has a subtle green-gray background and a large bordered content container.
 - The top toolbar is a rounded white-green panel with compact grouped controls.
@@ -585,6 +770,8 @@ These details were inferred directly from the provided metadata-grid and create-
 - The inspector metadata section includes editable Purpose and Implementation textareas and a Save Metadata button.
 - The images section has a quiet dashed drop target.
 - Destructive actions are represented by small red trash icon buttons.
+- Project settings dialogs already match the index-surface shell language: near-white translucent content, strong boundary shadow, brighter header band, compact bordered controls, and subtle grid texture in the form area.
+- Drawer/dialog recipes include the same olive grid backdrop pattern and should remain the shared overlay foundation.
 
 ## Implementation Notes
 
@@ -592,9 +779,20 @@ This design system maps cleanly to Panda CSS tokens, recipes, layer styles, and 
 
 Suggested implementation approach:
 
+- Treat `docs/design-language-index-surface.md` as reconciled into this file. Future design cleanup should target `DESIGN.md` as the working source of truth and leave the index-surface doc as historical/reference context unless it is explicitly updated too.
 - Create semantic color tokens first, then alias node type and status colors.
+- Promote index-surface shell values into reusable layer styles or component wrappers:
+  - page field/background composition.
+  - outer shell.
+  - shell header band.
+  - interior rail/list/table bands.
+  - modal/drawer tool shell.
+- Continue using Panda `olive.*` tokens for broad app surfaces. Avoid adding new hex values unless they fill a real semantic gap.
+- Gradually replace spatial-map hard-coded surface variables with semantic aliases where it does not risk canvas behavior or layout regressions.
 - Use component recipes for buttons, segmented controls, inspector panels, table rows, node cards, and icon buttons.
 - Keep canvas SVG styling token-driven but allow graph logic to determine opacity, scale, and focus states.
 - Build metadata-grid row styling around data attributes such as `data-selected`, `data-depth`, `data-expanded`, and `data-has-image`.
 - Build inspector sections as reusable panel components with `title`, `actions`, and `children` slots.
 - Treat menu, popover, select, and dialog primitives as a single overlay family with shared border, shadow, and typography tokens.
+- For selected/current items in menus, lists, inspectors, grids, and dropdowns, implement background fill plus text treatment. Reserve side markers for hover affordances or true navigation rails/timelines.
+- Keep the spatial SVG canvas free of CSS filters, shadows, blur, and forced-compositing hints on scaled scene layers and nodes.
