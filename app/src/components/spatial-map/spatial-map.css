@@ -2207,11 +2207,14 @@
   position: absolute;
   z-index: 18;
   width: min(340px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
   box-sizing: border-box;
   padding: 10px;
   border: 1px solid rgba(34, 41, 36, 0.2);
   background: rgba(253, 254, 251, 0.98);
   color: var(--spatial-map-copy);
+  overflow: auto;
+  overscroll-behavior: contain;
   pointer-events: auto;
   box-shadow:
     0 16px 42px rgba(18, 23, 20, 0.18),

@@ -140,6 +140,9 @@ const NODE_CONTEXT_PREVIEW_MAX_LENGTH = 160;
 const NODE_CONTEXT_HOVER_DELAY_MS = 200;
 const NODE_CONTEXT_CLOSE_DELAY_MS = 120;
 const NODE_CONTEXT_CARD_GAP = 12;
+const NODE_CONTEXT_CARD_VIEWPORT_INSET = 12;
+const NODE_CONTEXT_CARD_FALLBACK_WIDTH = 340;
+const NODE_CONTEXT_CARD_FALLBACK_HEIGHT = 260;
 
 interface SpatialMapSceneProps {
   project: ProjectRecord;
@@ -1114,6 +1117,14 @@ function SpatialMapNodeContextCard(props: {
 }) {
   const controller = useSpatialMap();
   const imageUi = useSpatialMapImages();
+  const [cardSize, setCardSize] = createSignal({
+    width: NODE_CONTEXT_CARD_FALLBACK_WIDTH,
+    height: NODE_CONTEXT_CARD_FALLBACK_HEIGHT,
+  });
+  const [viewportSize, setViewportSize] = createSignal({
+    width: VIEWPORT_WIDTH,
+    height: VIEWPORT_HEIGHT,
+  });
   const context = createMemo(() => getNodeContext(props.item.node));
   const contextPreview = createMemo(() => getNodeContextPreview(props.item.node));
   const statusLabel = () => getMapNodeStatusLabel(props.item.node.status);
@@ -1131,24 +1142,80 @@ function SpatialMapNodeContextCard(props: {
   const hierarchyPreview = createMemo(() =>
     getNodeHierarchyPreview(props.project, props.item.node.id),
   );
+  let cardRef: HTMLDivElement | undefined;
+
+  createEffect(() => {
+    const element = cardRef;
+
+    if (!element) {
+      return;
+    }
+
+    const updateMeasuredBounds = () => {
+      const cardRect = element.getBoundingClientRect();
+      const viewportRect = element.parentElement?.getBoundingClientRect();
+
+      setCardSize({
+        width: Math.max(cardRect.width, 1),
+        height: Math.max(cardRect.height, 1),
+      });
+      setViewportSize({
+        width: Math.max(viewportRect?.width ?? VIEWPORT_WIDTH, 1),
+        height: Math.max(viewportRect?.height ?? VIEWPORT_HEIGHT, 1),
+      });
+    };
+
+    updateMeasuredBounds();
+
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", updateMeasuredBounds);
+      onCleanup(() => window.removeEventListener("resize", updateMeasuredBounds));
+      return;
+    }
+
+    const resizeObserver = new ResizeObserver(updateMeasuredBounds);
+    resizeObserver.observe(element);
+
+    if (element.parentElement) {
+      resizeObserver.observe(element.parentElement);
+    }
+
+    onCleanup(() => resizeObserver.disconnect());
+  });
+
   const positionStyle = createMemo(() => {
     const camera = controller.camera();
     const node = props.item.node;
+    const viewport = viewportSize();
+    const card = cardSize();
     const cameraCenterX = camera.x + camera.width / 2;
     const placeLeft = node.x > cameraCenterX;
     const anchorX = placeLeft
       ? node.x - node.width / 2 - NODE_CONTEXT_CARD_GAP
       : node.x + node.width / 2 + NODE_CONTEXT_CARD_GAP;
+    const anchorLeft = ((anchorX - camera.x) / camera.width) * viewport.width;
+    const nodeTop = ((node.y - node.height / 2 - camera.y) / camera.height) * viewport.height;
+    const idealLeft = placeLeft ? anchorLeft - card.width : anchorLeft;
+    const maxLeft = viewport.width - card.width - NODE_CONTEXT_CARD_VIEWPORT_INSET;
+    const maxTop = viewport.height - card.height - NODE_CONTEXT_CARD_VIEWPORT_INSET;
 
     return {
-      left: `${((anchorX - camera.x) / camera.width) * 100}%`,
-      top: `${((node.y - node.height / 2 - camera.y) / camera.height) * 100}%`,
-      transform: placeLeft ? "translateX(-100%)" : "none",
+      left: `${clampValue(
+        idealLeft,
+        NODE_CONTEXT_CARD_VIEWPORT_INSET,
+        Math.max(NODE_CONTEXT_CARD_VIEWPORT_INSET, maxLeft),
+      )}px`,
+      top: `${clampValue(
+        nodeTop,
+        NODE_CONTEXT_CARD_VIEWPORT_INSET,
+        Math.max(NODE_CONTEXT_CARD_VIEWPORT_INSET, maxTop),
+      )}px`,
     };
   });
 
   return (
     <Box
+      ref={cardRef}
       class="spatial-map-node-context-card"
       style={positionStyle()}
       onPointerDown={(event) => event.stopPropagation()}
@@ -1323,6 +1390,10 @@ function getNodeContextPreview(node: NodeVisualState["node"]) {
   }
 
   return `${context.slice(0, NODE_CONTEXT_PREVIEW_MAX_LENGTH - 3).trimEnd()}...`;
+}
+
+function clampValue(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
 }
 
 function getNodeContext(node: NodeVisualState["node"]) {
