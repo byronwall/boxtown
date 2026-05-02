@@ -106,7 +106,13 @@ export function SpatialMapCommandMenu() {
           <SearchIcon size={17} aria-hidden="true" />
           <Input
             ref={inputRef}
-            class="spatial-map-command-input"
+            variant="spatial"
+            size="sm"
+            border="0"
+            bg="transparent"
+            boxShadow="none"
+            fontSize="0.95rem"
+            fontWeight="650"
             aria-label="Search nodes"
             placeholder="Search nodes..."
             value={query()}

@@ -70,9 +70,22 @@ export const textarea = defineRecipe({
           },
         },
       },
+      spatial: {
+        bg: "rgba(246, 248, 244, 0.92)",
+        borderWidth: "1px",
+        borderColor: "rgba(44, 52, 46, 0.34)",
+        boxShadow:
+          "0 1px 2px rgba(15, 23, 42, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.84)",
+        _focus: {
+          borderColor: "rgba(45, 111, 72, 0.78)",
+          boxShadow:
+            "0 0 0 3px rgba(45, 111, 72, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.84)",
+        },
+      },
     },
     size: {
       xs: { textStyle: "sm", px: "2", py: "5px", scrollPaddingBottom: "5px" },
+      compact: { textStyle: "sm", px: "2", py: "1.5", scrollPaddingBottom: "1.5" },
       sm: { textStyle: "sm", px: "2.5", py: "7px", scrollPaddingBottom: "7px" },
       md: { textStyle: "md", px: "3", py: "7px", scrollPaddingBottom: "7px" },
       lg: { textStyle: "md", px: "3.5", py: "9px", scrollPaddingBottom: "9px" },

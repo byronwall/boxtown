@@ -199,19 +199,19 @@ export function SourceImagePreviewDialog(props: SourceImagePreviewDialogProps) {
         <HStack justifyContent="space-between" width="100%" gap="2" flexWrap="wrap">
           <span class="spatial-map-image-viewer-help">Wheel zoom, drag pan, double-click reset.</span>
           <HStack gap="2" flexWrap="wrap" justifyContent="flex-end">
-            <Button size="xs" variant="outline" class="spatial-map-button" onClick={copyImage}>
+            <Button size="xs" variant="outline" onClick={copyImage}>
               Copy Image
             </Button>
-            <Button size="xs" variant="outline" class="spatial-map-button" onClick={downloadImage}>
+            <Button size="xs" variant="outline" onClick={downloadImage}>
               Download
             </Button>
-            <Button size="xs" variant="outline" class="spatial-map-button" onClick={() => zoomBy(0.8)}>
+            <Button size="xs" variant="outline" onClick={() => zoomBy(0.8)}>
               Zoom Out
             </Button>
-            <Button size="xs" variant="outline" class="spatial-map-button" onClick={resetView}>
+            <Button size="xs" variant="outline" onClick={resetView}>
               Reset
             </Button>
-            <Button size="xs" variant="outline" class="spatial-map-button" onClick={() => zoomBy(1.25)}>
+            <Button size="xs" variant="outline" onClick={() => zoomBy(1.25)}>
               Zoom In
             </Button>
           </HStack>

@@ -1,6 +1,7 @@
 import { Show, createMemo } from "solid-js";
 import type { JSX } from "solid-js";
 import { Box, VStack } from "styled-system/jsx";
+import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
 import { useSpatialMap } from "./SpatialMapContext";
 
@@ -71,8 +72,7 @@ export function InspectorToggle(props: {
   );
 
   return (
-    <button
-      type="button"
+    <IconButton
       class={`spatial-map-inspector-toggle${props.inToolbar ? " is-toolbar" : ""}`}
       onClick={props.onClick ?? (() => spatialMap.setInspectorOpen((current) => !current))}
       aria-expanded={expanded()}
@@ -83,6 +83,6 @@ export function InspectorToggle(props: {
       <span aria-hidden="true" class="spatial-map-inspector-toggle-icon">
         {expanded() ? ">" : "<"}
       </span>
-    </button>
+    </IconButton>
   );
 }

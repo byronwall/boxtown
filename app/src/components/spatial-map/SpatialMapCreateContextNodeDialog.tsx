@@ -120,7 +120,6 @@ export function SpatialMapCreateContextNodeDialog(
           colorPalette="green"
           variant="surface"
           size="xs"
-          class="spatial-map-button spatial-map-button--strong"
           onClick={() => handleOpenChange(true)}
         >
           New Context Node
@@ -183,7 +182,11 @@ export function SpatialMapCreateContextNodeDialog(
               <Field.Label>Context</Field.Label>
               <Textarea
                 name="context"
-                class="spatial-map-context-textarea"
+                variant="spatial"
+                size="sm"
+                autoResize={false}
+                minH="180px"
+                resize="vertical"
                 value={context()}
                 onInput={(event) => setContext(event.currentTarget.value)}
                 rows={14}

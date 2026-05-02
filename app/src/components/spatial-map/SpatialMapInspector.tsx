@@ -1,5 +1,5 @@
 import { useSubmission } from "@solidjs/router";
-import { For, Show, createEffect, createMemo, createSignal, onMount } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 import {
   BotIcon,
   DatabaseBackupIcon,
@@ -74,7 +74,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const [editingContext, setEditingContext] = createSignal(false);
   const [contextDialogOpen, setContextDialogOpen] = createSignal(false);
   const [inspectorView, setInspectorView] = createSignal<SpatialMapInspectorView>("details");
-  const [isHydrated, setIsHydrated] = createSignal(false);
   const [titlePending, setTitlePending] = createSignal(false);
   const [statusPending, setStatusPending] = createSignal(false);
   const [typePending, setTypePending] = createSignal(false);
@@ -102,13 +101,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   });
   const recentProjectActivity = createMemo(() => props.project.operationLog.slice(0, 8));
   const globalProjectActivity = createMemo(() => props.project.operationLog);
-  const selectedNodeWithOriginalContext = createMemo(() => {
-    const node = selectedNode();
-    if (!node || node.rawContext.trim() === node.context.trim()) {
-      return null;
-    }
-    return node;
-  });
   const selectedNodeTitle = createMemo(() => {
     const node = selectedNode();
     if (!node) return "Select an item";
@@ -149,10 +141,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     spatialMap.setSelectedNodeId(nodeId);
     spatialMap.setInspectorOpen(true);
   };
-
-  onMount(() => {
-    setIsHydrated(true);
-  });
 
   createEffect(() => {
     setContextDraft(selectedNode()?.context ?? "");
@@ -472,7 +460,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                 <HStack class="spatial-map-inspector-action-row" gap="0" flexWrap="wrap">
                   <Button
                     size="xs"
-                    class="spatial-map-button spatial-map-button--strong"
                     colorPalette="green"
                     variant="surface"
                     onClick={() => spatialMap.openContextNoteConversionFlow()}
@@ -523,46 +510,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
             )}
           </Show>
 
-          <Show when={isHydrated() ? selectedNodeWithOriginalContext() : null}>
-            {(node) => (
-              <Box class="spatial-map-inspector-section">
-                <HStack justifyContent="space-between" alignItems="center" gap="3">
-                  <Text
-                    as="h3"
-                    margin="0"
-                    fontSize="sm"
-                    fontWeight="semibold"
-                    class="spatial-map-inspector-section-title is-heading"
-                  >
-                    Original Context
-                  </Text>
-                  <Button
-                    size="xs"
-                    variant="surface"
-                    class="spatial-map-button"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(node().rawContext);
-                        toaster.success({
-                          title: "Original context copied",
-                          description: "The original note content is now in your clipboard.",
-                        });
-                      } catch {
-                        toaster.error({
-                          title: "Copy failed",
-                          description: "The original context could not be copied from this browser session.",
-                        });
-                      }
-                    }}
-                  >
-                    Copy
-                  </Button>
-                </HStack>
-                <RawContextPreview context={node().rawContext} />
-              </Box>
-            )}
-          </Show>
-
           <Box class="spatial-map-inspector-section">
             <HStack justifyContent="space-between" alignItems="center" gap="3">
               <Text
@@ -582,7 +529,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                         type="button"
                         size="xs"
                         variant="outline"
-                        class="spatial-map-button"
                         onClick={() => setMetadataDraft(node().metadata)}
                       >
                         Reset
@@ -592,7 +538,8 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                       type="submit"
                       form={metadataFormId}
                       size="xs"
-                      class="spatial-map-button spatial-map-button--strong"
+                      colorPalette="green"
+                      variant="surface"
                       loading={saveMetadataSubmission.pending}
                       disabled={!metadataIsDirty()}
                     >
@@ -666,7 +613,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                     <Button
                       size="xs"
                       variant="surface"
-                      class="spatial-map-button"
                       onClick={() => setContextDialogOpen(true)}
                     >
                       Expand
@@ -674,7 +620,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                     <Button
                       size="xs"
                       variant={editingContext() ? "outline" : "surface"}
-                      class="spatial-map-button"
                       onClick={() => setEditingContext((current) => !current)}
                     >
                       {editingContext() ? "Preview" : "Edit"}
@@ -717,7 +662,11 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                         <Field.Label>Markdown Context</Field.Label>
                         <Textarea
                           name="context"
-                          class="spatial-map-context-textarea"
+                          variant="spatial"
+                          size="sm"
+                          autoResize={false}
+                          minH="180px"
+                          resize="vertical"
                           value={contextDraft()}
                           onInput={(event) => setContextDraft(event.currentTarget.value)}
                           rows={14}
@@ -735,7 +684,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                           size="xs"
                           variant="outline"
                           type="button"
-                          class="spatial-map-button"
                           onClick={() => {
                             setContextDraft(selectedNode()?.context ?? "");
                             setEditingContext(false);
@@ -747,7 +695,8 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                           type="submit"
                           form={contextFormId}
                           size="xs"
-                          class="spatial-map-button spatial-map-button--strong"
+                          colorPalette="green"
+                          variant="surface"
                           loading={saveContextSubmission.pending}
                         >
                           Save Context
@@ -824,34 +773,6 @@ function ContextPreview(props: { context: string; class?: string }) {
     >
       <Box class={`spatial-map-context-markdown${props.class ? ` ${props.class}` : ""}`}>
         <MarkdownRenderer>{props.context}</MarkdownRenderer>
-      </Box>
-    </Show>
-  );
-}
-
-function RawContextPreview(props: { context: string }) {
-  const hasContent = () => props.context.trim().length > 0;
-
-  return (
-    <Show
-      when={hasContent()}
-      fallback={
-        <Box class="spatial-map-context-empty">
-          <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
-            No raw context was captured for this node.
-          </Text>
-        </Box>
-      }
-    >
-      <Box class="spatial-map-context-markdown">
-        <Text
-          as="pre"
-          margin="0"
-          fontSize="sm"
-          class="spatial-map-raw-context"
-        >
-          {props.context}
-        </Text>
       </Box>
     </Show>
   );
@@ -1049,7 +970,6 @@ function ContextPreviewDialog(props: {
           <Button
             size="sm"
             variant="outline"
-            class="spatial-map-button"
             onClick={() => props.onOpenChange(false)}
           >
             Close

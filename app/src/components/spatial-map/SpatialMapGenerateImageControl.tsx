@@ -51,7 +51,6 @@ export function SpatialMapGenerateImageControl(
             <Button
               size="xs"
               variant="surface"
-              class="spatial-map-button spatial-map-button--strong"
               loading={isRunning()}
               loadingText="Generating"
               disabled={isRunning()}
@@ -65,8 +64,7 @@ export function SpatialMapGenerateImageControl(
         <Tooltip content="Generate mockup" openDelay={150} closeDelay={80}>
           <Button
             size="xs"
-            variant="surface"
-            class="spatial-map-button spatial-map-icon-button spatial-map-button--strong"
+            variant="surface" px="0"
             loading={isRunning()}
             disabled={isRunning()}
             onClick={() => void flow.startRun({ nodeId: props.node.id })}

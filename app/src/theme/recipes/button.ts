@@ -98,6 +98,22 @@ export const button = defineRecipe({
           bg: "colorPalette.plain.bg.active",
         },
       },
+      danger: {
+        bg: "red.subtle.bg",
+        borderWidth: "1px",
+        borderColor: "red.outline.border",
+        color: "red.outline.fg",
+        _hover: {
+          bg: "red.subtle.bg.hover",
+          borderColor: "red.surface.border.hover",
+        },
+        _active: {
+          bg: "red.subtle.bg.active",
+        },
+        _on: {
+          bg: "red.subtle.bg.active",
+        },
+      },
     },
     size: {
       "2xs": {

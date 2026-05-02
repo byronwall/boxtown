@@ -74,7 +74,6 @@ export function ProjectMetadataSettingsDialog(
           colorPalette="green"
           variant="outline"
           size="xs"
-          class="spatial-map-button"
           onClick={() => setOpen(true)}
         >
           Project Settings
@@ -115,7 +114,11 @@ export function ProjectMetadataSettingsDialog(
               <Field.Root class="spatial-map-project-settings-row">
                 <Field.Label>Title</Field.Label>
                 <Textarea
-                  class="spatial-map-settings-input"
+                  variant="spatial"
+                  size="compact"
+                  autoResize={false}
+                  minH="34px"
+                  overflow="hidden"
                   name="name"
                   value={name()}
                   onInput={(event) => setName(event.currentTarget.value)}
@@ -126,7 +129,11 @@ export function ProjectMetadataSettingsDialog(
               <Field.Root class="spatial-map-project-settings-row">
                 <Field.Label>Subtitle</Field.Label>
                 <Textarea
-                  class="spatial-map-settings-input spatial-map-settings-textarea"
+                  variant="spatial"
+                  size="compact"
+                  autoResize={false}
+                  minH="54px"
+                  resize="vertical"
                   name="description"
                   value={description()}
                   onInput={(event) => setDescription(event.currentTarget.value)}
@@ -158,7 +165,12 @@ export function ProjectMetadataSettingsDialog(
                       />
                       <Textarea
                         aria-label={`Key for metadata field ${index + 1}`}
-                        class="spatial-map-metadata-input"
+                        variant="spatial"
+                        size="compact"
+                        autoResize={false}
+                        minH="30px"
+                        overflow="hidden"
+                        resize="none"
                         name="key"
                         value={row().key}
                         onInput={(event) =>
@@ -171,7 +183,12 @@ export function ProjectMetadataSettingsDialog(
                     <Field.Root>
                       <Textarea
                         aria-label={`Label for metadata field ${index + 1}`}
-                        class="spatial-map-metadata-input"
+                        variant="spatial"
+                        size="compact"
+                        autoResize={false}
+                        minH="30px"
+                        overflow="hidden"
+                        resize="none"
                         name="label"
                         value={row().label}
                         onInput={(event) =>
@@ -184,7 +201,12 @@ export function ProjectMetadataSettingsDialog(
                     <Field.Root>
                       <Textarea
                         aria-label={`Default value for metadata field ${index + 1}`}
-                        class="spatial-map-metadata-input"
+                        variant="spatial"
+                        size="compact"
+                        autoResize={false}
+                        minH="30px"
+                        overflow="hidden"
+                        resize="none"
                         name="defaultValue"
                         value={row().defaultValue}
                         onInput={(event) =>
@@ -201,7 +223,6 @@ export function ProjectMetadataSettingsDialog(
                         type="button"
                         size="xs"
                         variant="outline"
-                        class="spatial-map-button spatial-map-icon-button"
                         disabled={index === 0}
                         onClick={() => moveRow(index, -1, setRows)}
                       >
@@ -213,7 +234,6 @@ export function ProjectMetadataSettingsDialog(
                         type="button"
                         size="xs"
                         variant="outline"
-                        class="spatial-map-button spatial-map-icon-button"
                         disabled={index === rows().length - 1}
                         onClick={() => moveRow(index, 1, setRows)}
                       >
@@ -224,8 +244,7 @@ export function ProjectMetadataSettingsDialog(
                         title="Remove"
                         type="button"
                         size="xs"
-                        variant="outline"
-                        class="spatial-map-button spatial-map-icon-button spatial-map-button--danger"
+                        variant="danger"
                         onClick={() => removeRow(index, setRows)}
                       >
                         <Trash2 size={15} />
@@ -244,7 +263,6 @@ export function ProjectMetadataSettingsDialog(
                 type="button"
                 size="xs"
                 variant="surface"
-                class="spatial-map-button spatial-map-button--strong"
                 colorPalette="green"
                 onClick={() =>
                   setRows((current) => [
@@ -272,7 +290,12 @@ export function ProjectMetadataSettingsDialog(
                     <Field.Root>
                       <Textarea
                         aria-label={`Name for node type ${index + 1}`}
-                        class="spatial-map-metadata-input"
+                        variant="spatial"
+                        size="compact"
+                        autoResize={false}
+                        minH="30px"
+                        overflow="hidden"
+                        resize="none"
                         name="nodeTypeName"
                         value={row().name}
                         onInput={(event) =>
@@ -304,7 +327,6 @@ export function ProjectMetadataSettingsDialog(
                         type="button"
                         size="xs"
                         variant="outline"
-                        class="spatial-map-button spatial-map-icon-button"
                         disabled={index === 0}
                         onClick={() => moveRow(index, -1, setTypeRows)}
                       >
@@ -316,7 +338,6 @@ export function ProjectMetadataSettingsDialog(
                         type="button"
                         size="xs"
                         variant="outline"
-                        class="spatial-map-button spatial-map-icon-button"
                         disabled={index === typeRows().length - 1}
                         onClick={() => moveRow(index, 1, setTypeRows)}
                       >
@@ -327,8 +348,7 @@ export function ProjectMetadataSettingsDialog(
                         title="Remove"
                         type="button"
                         size="xs"
-                        variant="outline"
-                        class="spatial-map-button spatial-map-icon-button spatial-map-button--danger"
+                        variant="danger"
                         onClick={() => removeRow(index, setTypeRows)}
                       >
                         <Trash2 size={15} />
@@ -347,7 +367,6 @@ export function ProjectMetadataSettingsDialog(
                 type="button"
                 size="xs"
                 variant="surface"
-                class="spatial-map-button spatial-map-button--strong"
                 colorPalette="green"
                 onClick={() =>
                   setTypeRows((current) => [

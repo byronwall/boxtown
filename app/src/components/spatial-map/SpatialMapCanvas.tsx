@@ -103,8 +103,6 @@ function SpatialMapCanvasLayout(props: {
             <SpatialMapToolbar
               {...props.header}
               project={props.project}
-              nodeColorMode={nodeColorMode()}
-              onNodeColorModeChange={setNodeColorMode}
               onProjectUpdated={props.onProjectUpdated}
             />
             <SpatialMapCommandMenu />
@@ -112,6 +110,7 @@ function SpatialMapCanvasLayout(props: {
               <SpatialMapScene
                 project={props.project}
                 nodeColorMode={nodeColorMode()}
+                onNodeColorModeChange={setNodeColorMode}
                 onProjectUpdated={props.onProjectUpdated}
               />
             </Show>

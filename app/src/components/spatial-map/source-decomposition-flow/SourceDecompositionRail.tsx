@@ -137,9 +137,13 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
             </Text>
             <Textarea
               rows={4}
+              variant="spatial"
+              size="sm"
+              autoResize={false}
+              minH="112px"
+              resize="vertical"
               value={sourceText()}
               onInput={(event) => setSourceText(event.currentTarget.value)}
-              class="spatial-map-add-nodes-textarea"
               placeholder="Optional: paste notes about interaction goals, target platform, or what you want copied from the source."
             />
             <input
@@ -157,7 +161,6 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
               <Button
                 size="xs"
                 variant="outline"
-                class="spatial-map-button"
                 onClick={() => fileInputRef?.click()}
               >
                 Browse Images
@@ -189,7 +192,6 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
             <HStack gap="2" justifyContent="flex-end">
               <Button
                 size="xs"
-                class="spatial-map-button spatial-map-button--strong"
                 colorPalette="green"
                 variant="surface"
                 loading={flow.starting()}
@@ -280,7 +282,6 @@ export function SourceDecompositionRail(props: SourceDecompositionRailProps) {
                           </Text>
                           <Button
                             size="xs"
-                            class="spatial-map-button spatial-map-button--strong"
                             colorPalette="green"
                             variant="surface"
                             loading={flow.accepting()}

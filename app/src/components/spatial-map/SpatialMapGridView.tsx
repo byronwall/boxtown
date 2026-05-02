@@ -14,6 +14,7 @@ import { Box, HStack } from "styled-system/jsx";
 
 import { Button } from "~/components/ui/button";
 import * as HoverCard from "~/components/ui/hover-card";
+import { Input } from "~/components/ui/input";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
 import { Tooltip } from "~/components/ui/tooltip";
@@ -142,9 +143,12 @@ export function SpatialMapGridView(props: {
               <Show when={mode() === "nodes"}>
                 <label class="spatial-map-grid-search">
                   <span class="spatial-map-grid-search-field">
-                    <input
+                    <Input
                       ref={searchInputRef}
                       type="search"
+                      variant="spatial"
+                      size="compact"
+                      pr="30px"
                       aria-label="Filter node names"
                       value={nodeSearchQuery()}
                       placeholder="Filter node names"
@@ -159,22 +163,26 @@ export function SpatialMapGridView(props: {
                 class="spatial-map-toggle-group spatial-map-grid-mode-toggle"
                 aria-label="Grid mode"
               >
-                <button
-                  type="button"
+                <Button
+                  size="xs"
+                  colorPalette="green"
+                  variant={mode() === "nodes" ? "surface" : "outline"}
                   class={`spatial-map-grid-mode-button${mode() === "nodes" ? " is-active" : ""}`}
                   aria-pressed={mode() === "nodes"}
                   onClick={() => setMode("nodes")}
                 >
                   Nodes
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  size="xs"
+                  colorPalette="green"
+                  variant={mode() === "links" ? "surface" : "outline"}
                   class={`spatial-map-grid-mode-button${mode() === "links" ? " is-active" : ""}`}
                   aria-pressed={mode() === "links"}
                   onClick={() => setMode("links")}
                 >
                   Links
-                </button>
+                </Button>
               </HStack>
             </HStack>
           </HStack>
@@ -676,8 +684,8 @@ function LinkActionsCell(props: {
       <Tooltip content="Delete link" openDelay={150} closeDelay={80}>
         <Button
           size="xs"
-          variant="outline"
-          class="spatial-map-button spatial-map-button--danger spatial-map-icon-button"
+          variant="danger"
+          px="0"
           aria-label="Delete link"
           onClick={() => setOpen(true)}
         >
@@ -700,7 +708,7 @@ function LinkActionsCell(props: {
               ref={deleteButtonRef}
               type="button"
               loading={pending()}
-              class="spatial-map-button spatial-map-button--danger"
+              variant="danger"
               onClick={() => {
                 void deleteLink();
               }}

@@ -3,7 +3,6 @@ import {
   MoreHorizontalIcon,
   PlusIcon,
   SettingsIcon,
-  SlidersHorizontalIcon,
   XIcon,
 } from "lucide-solid";
 import { For, createSignal } from "solid-js";
@@ -12,12 +11,10 @@ import { Button } from "~/components/ui/button";
 import { IconButton } from "~/components/ui/icon-button";
 import * as Menu from "~/components/ui/menu";
 import { Text } from "~/components/ui/text";
-import { Tooltip } from "~/components/ui/tooltip";
 import { toaster } from "~/components/ui/toast";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { ProjectMetadataSettingsDialog } from "./ProjectMetadataSettingsDialog";
 import { buildVisibleNodesMarkdown } from "./spatial-map-markdown-export";
-import type { SpatialMapNodeColorMode } from "./spatial-map-canvas.types";
 import { SpatialMapCreateContextNodeDialog } from "./SpatialMapCreateContextNodeDialog";
 import { useSpatialMap } from "./SpatialMapContext";
 import { InspectorToggle } from "./SpatialMapInspectorHeader";
@@ -29,8 +26,6 @@ interface SpatialMapToolbarProps {
   subtitle?: string;
   backHref?: string;
   backLabel?: string;
-  nodeColorMode: SpatialMapNodeColorMode;
-  onNodeColorModeChange: (mode: SpatialMapNodeColorMode) => void;
   onProjectUpdated?: (project: ProjectRecord) => void;
 }
 
@@ -81,7 +76,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
                 colorPalette="green"
                 variant="outline"
                 size="xs"
-                class="spatial-map-button spatial-map-icon-button spatial-map-title-settings-button"
+                class="spatial-map-title-settings-button"
                 aria-label="Project settings"
                 title="Project settings"
                 onClick={open}
@@ -92,32 +87,6 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
           />
         </Box>
       </HStack>
-
-      <Box
-        class="spatial-map-color-controls spatial-map-color-controls--header"
-        role="group"
-        aria-label="Node color mode"
-      >
-        <Box as="span" class="spatial-map-color-controls-label">
-          Color
-        </Box>
-        <button
-          type="button"
-          class={`spatial-map-color-toggle${props.nodeColorMode === "type" ? " is-active" : ""}`}
-          aria-pressed={props.nodeColorMode === "type"}
-          onClick={() => props.onNodeColorModeChange("type")}
-        >
-          Type
-        </button>
-        <button
-          type="button"
-          class={`spatial-map-color-toggle${props.nodeColorMode === "status" ? " is-active" : ""}`}
-          aria-pressed={props.nodeColorMode === "status"}
-          onClick={() => props.onNodeColorModeChange("status")}
-        >
-          Status
-        </button>
-      </Box>
 
       <HStack
         gap="1.5"
@@ -130,7 +99,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             colorPalette="green"
             variant="outline"
             size="xs"
-            class="spatial-map-button spatial-map-icon-button spatial-map-isolation-clear"
+            class="spatial-map-isolation-clear"
             aria-label="Clear isolation"
             onClick={() => spatialMap.clearIsolation()}
           >
@@ -148,7 +117,6 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
                 colorPalette="green"
                 variant="surface"
                 size="xs"
-                class="spatial-map-button spatial-map-icon-button spatial-map-button--strong"
                 aria-label="Create nodes"
               >
                 <PlusIcon size={16} />
@@ -189,7 +157,6 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
                 colorPalette="green"
                 variant="outline"
                 size="xs"
-                class="spatial-map-button spatial-map-icon-button"
                 aria-label="More map actions"
               >
                 <MoreHorizontalIcon size={16} aria-hidden="true" />
@@ -215,54 +182,6 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
           onOpenChange={setContextNodeDialogOpen}
           trigger={() => null}
         />
-        <Menu.Root
-          positioning={{ placement: "bottom-end", gutter: 4 }}
-          size="sm"
-        >
-          <Menu.Trigger
-            asChild={(triggerProps) => (
-              <Button
-                {...triggerProps()}
-                colorPalette="green"
-                variant="outline"
-                size="xs"
-                class="spatial-map-button spatial-map-icon-button"
-                aria-label="Display options"
-              >
-                <SlidersHorizontalIcon size={16} aria-hidden="true" />
-              </Button>
-            )}
-          />
-          <Menu.Positioner>
-            <Menu.Content class="spatial-map-create-menu">
-              {spatialMap.isolationModeActive() ? (
-                <Tooltip
-                  content="Show nodes directly linked to the isolated node, even when they are outside the isolated branch."
-                  openDelay={150}
-                  closeDelay={80}
-                  positioning={{ placement: "left" }}
-                >
-                  <Menu.CheckboxItem
-                    value="show-linked"
-                    checked={spatialMap.showLinkedInIsolation()}
-                    onClick={() => spatialMap.toggleLinkedInIsolation()}
-                  >
-                    <Menu.ItemText>Show Linked</Menu.ItemText>
-                    <Menu.ItemIndicator />
-                  </Menu.CheckboxItem>
-                </Tooltip>
-              ) : null}
-              <Menu.CheckboxItem
-                value="show-edges"
-                checked={spatialMap.showEdges()}
-                onClick={() => spatialMap.toggleEdges()}
-              >
-                <Menu.ItemText>Show Edges</Menu.ItemText>
-                <Menu.ItemIndicator />
-              </Menu.CheckboxItem>
-            </Menu.Content>
-          </Menu.Positioner>
-        </Menu.Root>
         <HStack
           gap="0"
           class="spatial-map-toggle-group"
@@ -272,7 +191,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             colorPalette="green"
             variant={spatialMap.viewMode() === "canvas" ? "surface" : "outline"}
             size="xs"
-            class={`spatial-map-button spatial-map-toggle-button${spatialMap.viewMode() === "canvas" ? " is-active" : ""}`}
+            class={`spatial-map-toggle-button${spatialMap.viewMode() === "canvas" ? " is-active" : ""}`}
             aria-pressed={spatialMap.viewMode() === "canvas"}
             onClick={() => spatialMap.setViewMode("canvas")}
           >
@@ -282,7 +201,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             colorPalette="green"
             variant={spatialMap.viewMode() === "tree" ? "surface" : "outline"}
             size="xs"
-            class={`spatial-map-button spatial-map-toggle-button${spatialMap.viewMode() === "tree" ? " is-active" : ""}`}
+            class={`spatial-map-toggle-button${spatialMap.viewMode() === "tree" ? " is-active" : ""}`}
             aria-pressed={spatialMap.viewMode() === "tree"}
             onClick={() => spatialMap.setViewMode("tree")}
           >
@@ -292,7 +211,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             colorPalette="green"
             variant={spatialMap.viewMode() === "grid" ? "surface" : "outline"}
             size="xs"
-            class={`spatial-map-button spatial-map-toggle-button${spatialMap.viewMode() === "grid" ? " is-active" : ""}`}
+            class={`spatial-map-toggle-button${spatialMap.viewMode() === "grid" ? " is-active" : ""}`}
             aria-pressed={spatialMap.viewMode() === "grid"}
             onClick={() => spatialMap.setViewMode("grid")}
           >
@@ -318,7 +237,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
                   colorPalette="green"
                   variant={active() ? "surface" : "outline"}
                   size="xs"
-                  class={`spatial-map-button spatial-map-depth-button${active() ? " is-active" : ""}`}
+                  class={`spatial-map-depth-button${active() ? " is-active" : ""}`}
                   aria-label={`Show ${label()} hierarchy ${level === 1 ? "level" : "levels"}`}
                   aria-pressed={active()}
                   onClick={() => spatialMap.setVisibleDepthLevel(selection())}

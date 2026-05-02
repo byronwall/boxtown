@@ -95,8 +95,8 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
         <Tooltip content="Delete node" disabled={!props.compact} openDelay={150} closeDelay={80}>
           <Button
             size="xs"
-            variant="outline"
-            class={`spatial-map-button spatial-map-button--danger${props.compact ? " spatial-map-icon-button" : ""}`}
+            variant="danger"
+            px={props.compact ? "0" : undefined}
             onClick={() => setDialogOpen(true)}
             aria-label={props.compact ? "Delete node" : undefined}
           >
@@ -121,7 +121,7 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
               ref={deleteButtonRef}
               type="button"
               loading={pending()}
-              class="spatial-map-button spatial-map-button--danger"
+              variant="danger"
               onClick={() => {
                 void deleteNode();
               }}

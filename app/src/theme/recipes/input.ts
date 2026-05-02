@@ -75,10 +75,24 @@ export const input = {
           },
         },
       },
+      spatial: {
+        bg: "rgba(246, 248, 244, 0.92)",
+        borderWidth: "1px",
+        borderColor: "rgba(44, 52, 46, 0.34)",
+        boxShadow:
+          "0 1px 2px rgba(15, 23, 42, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.84)",
+        focusVisibleRing: "inside",
+        _focus: {
+          borderColor: "rgba(45, 111, 72, 0.78)",
+          boxShadow:
+            "0 0 0 3px rgba(45, 111, 72, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.84)",
+        },
+      },
     },
     size: {
       "2xs": { textStyle: "xs", px: "1.5", "--input-height": "sizes.7" },
       xs: { textStyle: "sm", px: "2", "--input-height": "sizes.8" },
+      compact: { textStyle: "sm", px: "2", "--input-height": "sizes.7" },
       sm: { textStyle: "sm", px: "2.5", "--input-height": "sizes.9" },
       md: { textStyle: "md", px: "3", "--input-height": "sizes.10" },
       lg: { textStyle: "md", px: "3.5", "--input-height": "sizes.11" },

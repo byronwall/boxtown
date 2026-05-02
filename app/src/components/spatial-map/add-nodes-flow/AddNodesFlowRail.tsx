@@ -64,9 +64,13 @@ export function AddNodesFlowRail(props: AddNodesFlowRailProps) {
             </Text>
             <Textarea
               rows={4}
+              variant="spatial"
+              size="sm"
+              autoResize={false}
+              minH="112px"
+              resize="vertical"
               value={flow.brief()}
               onInput={(event) => flow.setBrief(event.currentTarget.value)}
-              class="spatial-map-add-nodes-textarea"
               placeholder="Add a billing setup flow with plan selection, invoice history, and admin handoff nodes."
             />
             <HStack gap="2" justifyContent="space-between" flexWrap="wrap">
@@ -75,7 +79,6 @@ export function AddNodesFlowRail(props: AddNodesFlowRailProps) {
               </Text>
               <Button
                 size="xs"
-                class="spatial-map-button spatial-map-button--strong"
                 colorPalette="green"
                 variant="surface"
                 loading={flow.starting()}
@@ -173,7 +176,6 @@ export function AddNodesFlowRail(props: AddNodesFlowRailProps) {
                       </Text>
                       <Button
                         size="xs"
-                        class="spatial-map-button spatial-map-button--strong"
                         colorPalette="green"
                         variant="surface"
                         loading={flow.submittingAnswers()}

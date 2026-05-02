@@ -138,6 +138,7 @@ const NODE_STATUS_LABEL_WIDTH_FACTOR = 6.2;
 interface SpatialMapSceneProps {
   project: ProjectRecord;
   nodeColorMode: SpatialMapNodeColorMode;
+  onNodeColorModeChange: (mode: SpatialMapNodeColorMode) => void;
   onProjectUpdated?: (project: ProjectRecord) => void;
 }
 
@@ -234,18 +235,64 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       onWheel={controller.viewportHandlers.onWheel}
     >
       <Box class="spatial-map-viewport-controls">
-        <Box as="span" class="spatial-map-zoom-readout">
-          Zoom {controller.zoomPercent()}
+        <Box class="spatial-map-viewport-control-group">
+          <Box as="span" class="spatial-map-zoom-readout">
+            Zoom {controller.zoomPercent()}
+          </Box>
+          <Button
+            colorPalette="green"
+            variant="plain"
+            size="xs"
+            class="spatial-map-viewport-button"
+            onClick={() => controller.fitCameraToNodes()}
+          >
+            Fit View
+          </Button>
+          <Button
+            colorPalette="green"
+            variant="plain"
+            size="xs"
+            class={`spatial-map-viewport-button spatial-map-viewport-toggle${controller.showEdges() ? " is-active" : ""}`}
+            aria-pressed={controller.showEdges()}
+            onClick={() => controller.toggleEdges()}
+          >
+            Show Edges
+          </Button>
+          <Show when={controller.isolationModeActive()}>
+            <Button
+              colorPalette="green"
+              variant="plain"
+              size="xs"
+              class={`spatial-map-viewport-button spatial-map-viewport-toggle${controller.showLinkedInIsolation() ? " is-active" : ""}`}
+              aria-pressed={controller.showLinkedInIsolation()}
+              onClick={() => controller.toggleLinkedInIsolation()}
+            >
+              Show Links
+            </Button>
+          </Show>
         </Box>
-        <Button
-          colorPalette="green"
-          variant="plain"
-          size="xs"
-          class="spatial-map-button spatial-map-viewport-button"
-          onClick={() => controller.fitCameraToNodes()}
+        <Box
+          class="spatial-map-color-controls spatial-map-color-controls--viewport"
+          role="group"
+          aria-label="Node color mode"
         >
-          Fit View
-        </Button>
+          <button
+            type="button"
+            class={`spatial-map-color-toggle${props.nodeColorMode === "type" ? " is-active" : ""}`}
+            aria-pressed={props.nodeColorMode === "type"}
+            onClick={() => props.onNodeColorModeChange("type")}
+          >
+            Type
+          </button>
+          <button
+            type="button"
+            class={`spatial-map-color-toggle${props.nodeColorMode === "status" ? " is-active" : ""}`}
+            aria-pressed={props.nodeColorMode === "status"}
+            onClick={() => props.onNodeColorModeChange("status")}
+          >
+            Status
+          </button>
+        </Box>
       </Box>
       <svg
         ref={controller.setSvgRef}
@@ -330,7 +377,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                 colorPalette="green"
                 variant="plain"
                 size="xs"
-                class="spatial-map-button spatial-map-viewport-button"
+                class="spatial-map-viewport-button"
                 loading={moveSubmission.pending}
                 onClick={() => moveSelectedNode(null)}
               >
@@ -339,7 +386,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
               <Button
                 variant="plain"
                 size="xs"
-                class="spatial-map-button spatial-map-viewport-button"
+                class="spatial-map-viewport-button"
                 disabled={moveSubmission.pending}
                 onClick={() => controller.clearReparentingNode()}
               >
