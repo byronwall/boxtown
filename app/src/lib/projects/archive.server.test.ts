@@ -38,7 +38,6 @@ describe("project archives", () => {
                 },
                 context: "",
                 rawContext: "",
-                contextMode: "structured",
                 images: [
                   {
                     id: "image-1",

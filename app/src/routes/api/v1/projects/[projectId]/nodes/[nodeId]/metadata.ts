@@ -1,6 +1,7 @@
 import type { APIEvent } from "@solidjs/start/server";
 import { AgentApiError } from "~/lib/agent-api/errors.server";
 import { withAgentApi } from "~/lib/agent-api/handler.server";
+import { toAgentOperationActor } from "~/lib/agent-api/operation-actor";
 import { toAgentMapNode } from "~/lib/agent-api/projections.server";
 import { agentJson } from "~/lib/agent-api/response.server";
 import {
@@ -37,7 +38,7 @@ type PatchMetadataRequest = {
 };
 
 export async function PATCH(event: APIEvent) {
-  return withAgentApi(event, { scopes: ["node:write"] }, async () => {
+  return withAgentApi(event, { scopes: ["node:write"] }, async (context) => {
     const input = (await event.request.json().catch(() => null)) as PatchMetadataRequest | null;
     if (!input) {
       throw new AgentApiError("invalid_json", "A JSON body is required.", 400);
@@ -70,6 +71,7 @@ export async function PATCH(event: APIEvent) {
         projectId: event.params.projectId,
         nodeId: event.params.nodeId,
         metadata: nextMetadata,
+        actor: toAgentOperationActor(context.actor),
       });
       const updatedNode = updatedProject.spatialMap.nodes.find((item) => item.id === event.params.nodeId);
       if (!updatedNode) {

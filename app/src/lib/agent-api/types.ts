@@ -56,7 +56,6 @@ export interface AgentNodeContextResponse {
   nodeId: string;
   context: string;
   rawContext: string;
-  contextMode: MapNode["contextMode"];
 }
 
 export interface AgentNodeMetadataResponse {

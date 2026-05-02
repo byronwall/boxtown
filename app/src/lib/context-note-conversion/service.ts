@@ -107,7 +107,6 @@ function createCandidateBatchSchema(
         metadata: createNodeMetadataObjectSchema(nodeMetadataSchema),
         context: z.string().default(""),
         rawContext: z.string().default(""),
-        contextMode: z.literal("structured").default("structured"),
       }),
     ).min(1).max(10),
     links: z.array(candidateLinkSchema),
@@ -301,7 +300,6 @@ function sanitizeCandidateNodes(
     }),
     context: node.context ?? "",
     rawContext: node.rawContext ?? node.context ?? "",
-    contextMode: "structured" as const,
   }));
 }
 
@@ -418,10 +416,6 @@ export async function startContextNoteConversionRun(args: {
   if (!sourceNode) {
     throw new Error("Source note not found.");
   }
-  if (sourceNode.contextMode !== "context-only") {
-    throw new Error("Only context-only notes can be converted.");
-  }
-
   const runId = `context-note-conversion-${crypto.randomUUID()}`;
   const snapshot = createInitialSnapshot({
     runId,

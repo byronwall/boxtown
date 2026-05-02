@@ -101,7 +101,6 @@ function appendNode(
   pushField(lines, "ID", `\`${node.id}\``);
   pushField(lines, "Type", node.type);
   pushField(lines, "Status", node.status);
-  pushField(lines, "Context mode", node.contextMode);
 
   lines.push("");
   lines.push("#### Metadata");

@@ -1,6 +1,7 @@
 import type { APIEvent } from "@solidjs/start/server";
 import { AgentApiError } from "~/lib/agent-api/errors.server";
 import { withAgentApi } from "~/lib/agent-api/handler.server";
+import { toAgentOperationActor } from "~/lib/agent-api/operation-actor";
 import { toAgentMapNode } from "~/lib/agent-api/projections.server";
 import { agentJson } from "~/lib/agent-api/response.server";
 import {
@@ -27,7 +28,6 @@ export async function GET(event: APIEvent) {
       nodeId: node.id,
       context: node.context,
       rawContext: node.rawContext,
-      contextMode: node.contextMode,
     });
   });
 }
@@ -37,7 +37,7 @@ type SetContextRequest = {
 };
 
 export async function PUT(event: APIEvent) {
-  return withAgentApi(event, { scopes: ["node:write"] }, async () => {
+  return withAgentApi(event, { scopes: ["node:write"] }, async (context) => {
     const input = (await event.request.json().catch(() => null)) as SetContextRequest | null;
     if (!input || typeof input.context !== "string") {
       throw new AgentApiError("invalid_context", "A string context is required.", 400);
@@ -48,6 +48,7 @@ export async function PUT(event: APIEvent) {
         projectId: event.params.projectId,
         nodeId: event.params.nodeId,
         context: input.context,
+        actor: toAgentOperationActor(context.actor),
       });
       const node = project.spatialMap.nodes.find((item) => item.id === event.params.nodeId);
       if (!node) {

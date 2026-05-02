@@ -24,6 +24,11 @@ import {
   serializeProjectRecord,
 } from "./project-record-format";
 import type {
+  ProjectOperationActor,
+  ProjectOperationKind,
+  ProjectOperationLogEntry,
+  ProjectOperationPayload,
+  ProjectOperationState,
   ProjectNodeMetadataField,
   ProjectRecord,
   ProjectSummary,
@@ -31,30 +36,35 @@ import type {
 
 interface CreateProjectInput {
   name?: string;
+  actor?: ProjectOperationActor;
 }
 
 interface UpdateProjectNodeContextInput {
   projectId: string;
   nodeId: string;
   context: string;
+  actor?: ProjectOperationActor;
 }
 
 interface UpdateProjectNodeTitleInput {
   projectId: string;
   nodeId: string;
   title: string;
+  actor?: ProjectOperationActor;
 }
 
 interface UpdateProjectNodeStatusInput {
   projectId: string;
   nodeId: string;
   status: MapNodeStatus;
+  actor?: ProjectOperationActor;
 }
 
 interface UpdateProjectNodeTypeInput {
   projectId: string;
   nodeId: string;
   type: string;
+  actor?: ProjectOperationActor;
 }
 
 interface CreateContextNodeInput {
@@ -64,6 +74,7 @@ interface CreateContextNodeInput {
   metadata?: Record<string, unknown>;
   splitByHeadingLevel?: boolean;
   maxHeadingDepth?: number;
+  actor?: ProjectOperationActor;
 }
 
 interface CreateChildNodeInput {
@@ -74,12 +85,14 @@ interface CreateChildNodeInput {
   status?: MapNodeStatus;
   context?: string;
   metadata?: Record<string, unknown>;
+  actor?: ProjectOperationActor;
 }
 
 interface UpdateProjectNodeMetadataInput {
   projectId: string;
   nodeId: string;
   metadata: Record<string, unknown>;
+  actor?: ProjectOperationActor;
 }
 
 interface UpdateProjectMetadataSchemaInput {
@@ -88,6 +101,7 @@ interface UpdateProjectMetadataSchemaInput {
   description?: string;
   fields: ProjectMetadataSchemaRowInput[];
   nodeTypes: ProjectNodeTypeRowInput[];
+  actor?: ProjectOperationActor;
 }
 
 interface ProjectMetadataSchemaRowInput {
@@ -105,6 +119,7 @@ interface ProjectNodeTypeRowInput {
 interface DeleteProjectNodeInput {
   projectId: string;
   nodeId: string;
+  actor?: ProjectOperationActor;
 }
 
 interface DeleteProjectLinkInput {
@@ -112,24 +127,28 @@ interface DeleteProjectLinkInput {
   source: string;
   target: string;
   relationship: string;
+  actor?: ProjectOperationActor;
 }
 
 interface MoveProjectNodeInput {
   projectId: string;
   nodeId: string;
   parentNodeId: string | null;
+  actor?: ProjectOperationActor;
 }
 
 interface AddProjectNodeImagesInput {
   projectId: string;
   nodeId: string;
   images: File[];
+  actor?: ProjectOperationActor;
 }
 
 interface DeleteProjectNodeImageInput {
   projectId: string;
   nodeId: string;
   imageId: string;
+  actor?: ProjectOperationActor;
 }
 
 interface ProjectNodeImageSource {
@@ -143,12 +162,62 @@ interface AddProjectNodeImageSourcesInput {
   projectId: string;
   nodeIds: string[];
   images: ProjectNodeImageSource[];
+  actor?: ProjectOperationActor;
 }
 
 export function createBlankSpatialMapData(): SpatialMapData {
   return {
     nodes: [],
     links: [],
+  };
+}
+
+function createProjectOperationLogEntry(input: {
+  kind: ProjectOperationKind;
+  summary: string;
+  createdAt?: string;
+  nodeIds?: string[];
+  linkKeys?: string[];
+  metadata?: Record<string, string>;
+  payload?: ProjectOperationPayload;
+  actor?: ProjectOperationActor;
+}): ProjectOperationLogEntry {
+  return {
+    id: randomUUID(),
+    kind: input.kind,
+    actor: input.actor ?? { kind: "human" },
+    createdAt: input.createdAt ?? new Date().toISOString(),
+    summary: input.summary,
+    nodeIds: input.nodeIds ?? [],
+    linkKeys: input.linkKeys,
+    metadata: input.metadata,
+    payload: input.payload,
+  };
+}
+
+function getProjectOperationState(record: ProjectRecord): ProjectOperationState {
+  return {
+    nodeMetadataSchema: record.nodeMetadataSchema,
+    nodeTypeSchema: record.nodeTypeSchema,
+    spatialMap: record.spatialMap,
+  };
+}
+
+function appendProjectOperation(
+  record: ProjectRecord,
+  operation: Parameters<typeof createProjectOperationLogEntry>[0],
+): ProjectRecord {
+  const operationWithState = {
+    ...operation,
+    payload: operation.payload ?? { state: getProjectOperationState(record) },
+  };
+
+  return {
+    ...record,
+    operationLog: [
+      createProjectOperationLogEntry(operationWithState),
+      ...(record.operationLog ?? []),
+    ].slice(0, 250),
   };
 }
 
@@ -192,6 +261,21 @@ export async function createProjectOnDisk(
     nodeMetadataSchema: createDefaultProjectNodeMetadataSchema(),
     nodeTypeSchema: createDefaultProjectNodeTypeSchema(),
     spatialMap: createBlankSpatialMapData(),
+    operationLog: [
+      createProjectOperationLogEntry({
+        kind: "project.created",
+        actor: input.actor,
+        createdAt: now,
+        summary: `Created project "${name}".`,
+        payload: {
+          state: {
+            nodeMetadataSchema: createDefaultProjectNodeMetadataSchema(),
+            nodeTypeSchema: createDefaultProjectNodeTypeSchema(),
+            spatialMap: createBlankSpatialMapData(),
+          },
+        },
+      }),
+    ],
   };
 
   records.push(nextRecord);
@@ -235,7 +319,6 @@ export function mergeGeneratedSpatialMapData(
       metadata: sanitizeNodeMetadata(node.metadata, nodeMetadataSchema, {
         omitDefaultValues: true,
       }),
-      contextMode: node.contextMode ?? (node.type === "note" ? "context-only" : "structured"),
       rawContext: node.rawContext ?? node.context,
     });
   }
@@ -276,6 +359,7 @@ export function mergeGeneratedSpatialMapData(
 export async function appendGeneratedNodesToProjectOnDisk(input: {
   projectId: string;
   generated: GeneratedNodeBatch;
+  actor?: ProjectOperationActor;
 }) {
   const records = await readProjectRecordsFromDisk();
   const recordIndex = records.findIndex((record) => record.id === input.projectId);
@@ -285,15 +369,24 @@ export async function appendGeneratedNodesToProjectOnDisk(input: {
   }
 
   const current = records[recordIndex];
-  const nextRecord: ProjectRecord = {
+  const nextSpatialMap = mergeGeneratedSpatialMapData(
+    current.spatialMap,
+    input.generated,
+    current.nodeMetadataSchema,
+  );
+  const createdNodes = nextSpatialMap.nodes.slice(current.spatialMap.nodes.length);
+  const createdLinks = nextSpatialMap.links.slice(current.spatialMap.links.length);
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: new Date().toISOString(),
-    spatialMap: mergeGeneratedSpatialMapData(
-      current.spatialMap,
-      input.generated,
-      current.nodeMetadataSchema,
-    ),
-  };
+    spatialMap: nextSpatialMap,
+  }, {
+    kind: "nodes.generated",
+    actor: input.actor,
+    summary: `Generated ${createdNodes.length} nodes and ${createdLinks.length} links.`,
+    nodeIds: createdNodes.map((node) => node.id),
+    linkKeys: createdLinks.map(getLinkKey),
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -321,14 +414,19 @@ export async function updateProjectNodeContextOnDisk(
     index === nodeIndex ? { ...node, context: input.context } : node,
   );
 
-  const nextRecord: ProjectRecord = {
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: new Date().toISOString(),
     spatialMap: {
       ...current.spatialMap,
       nodes: nextNodes,
     },
-  };
+  }, {
+    kind: "node.context.updated",
+    actor: input.actor,
+    summary: `Updated context for "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}".`,
+    nodeIds: [input.nodeId],
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -357,14 +455,19 @@ export async function updateProjectNodeTitleOnDisk(
     index === nodeIndex ? { ...node, label: title } : node,
   );
 
-  const nextRecord: ProjectRecord = {
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: new Date().toISOString(),
     spatialMap: {
       ...current.spatialMap,
       nodes: nextNodes,
     },
-  };
+  }, {
+    kind: "node.title.updated",
+    actor: input.actor,
+    summary: `Renamed "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}" to "${title}".`,
+    nodeIds: [input.nodeId],
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -396,14 +499,19 @@ export async function updateProjectNodeStatusOnDisk(
     index === nodeIndex ? { ...node, status: input.status } : node,
   );
 
-  const nextRecord: ProjectRecord = {
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: new Date().toISOString(),
     spatialMap: {
       ...current.spatialMap,
       nodes: nextNodes,
     },
-  };
+  }, {
+    kind: "node.status.updated",
+    actor: input.actor,
+    summary: `Changed "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}" status to ${input.status}.`,
+    nodeIds: [input.nodeId],
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -440,14 +548,19 @@ export async function updateProjectNodeTypeOnDisk(
     index === nodeIndex ? { ...node, type: nextType } : node,
   );
 
-  const nextRecord: ProjectRecord = {
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: new Date().toISOString(),
     spatialMap: {
       ...current.spatialMap,
       nodes: nextNodes,
     },
-  };
+  }, {
+    kind: "node.type.updated",
+    actor: input.actor,
+    summary: `Changed "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}" type to ${nextType}.`,
+    nodeIds: [input.nodeId],
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -482,14 +595,19 @@ export async function updateProjectNodeMetadataOnDisk(
       : node,
   );
 
-  const nextRecord: ProjectRecord = {
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: new Date().toISOString(),
     spatialMap: {
       ...current.spatialMap,
       nodes: nextNodes,
     },
-  };
+  }, {
+    kind: "node.metadata.updated",
+    actor: input.actor,
+    summary: `Updated metadata for "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}".`,
+    nodeIds: [input.nodeId],
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -514,7 +632,7 @@ export async function updateProjectMetadataSchemaOnDisk(
     metadata: remapNodeMetadataForSchema(node.metadata, current.nodeMetadataSchema, nextSchema, input.fields),
   }));
 
-  const nextRecord: ProjectRecord = {
+  const nextRecord = appendProjectOperation({
     ...current,
     name: sanitizeProjectName(input.name ?? current.name),
     description: sanitizeProjectDescription(input.description ?? current.description),
@@ -525,7 +643,11 @@ export async function updateProjectMetadataSchemaOnDisk(
       ...current.spatialMap,
       nodes: nextNodes,
     },
-  };
+  }, {
+    kind: "project.schema.updated",
+    actor: input.actor,
+    summary: "Updated project metadata and node type schema.",
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -581,14 +703,20 @@ export async function addProjectNodeImagesOnDisk(
       : node,
   );
 
-  const nextRecord: ProjectRecord = {
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: now,
     spatialMap: {
       ...current.spatialMap,
       nodes: nextNodes,
     },
-  };
+  }, {
+    kind: "node.images.added",
+    actor: input.actor,
+    summary: `Added ${storedImages.length} images to "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}".`,
+    nodeIds: [input.nodeId],
+    metadata: { imageCount: String(storedImages.length) },
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -625,14 +753,20 @@ export async function deleteProjectNodeImageOnDisk(
       : item,
   );
 
-  const nextRecord: ProjectRecord = {
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: now,
     spatialMap: {
       ...current.spatialMap,
       nodes: nextNodes,
     },
-  };
+  }, {
+    kind: "node.image.deleted",
+    actor: input.actor,
+    summary: `Deleted image "${image.originalName}" from "${node.label}".`,
+    nodeIds: [input.nodeId],
+    metadata: { imageId: input.imageId },
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -708,14 +842,20 @@ export async function addProjectNodeImageSourcesOnDisk(
       : node,
   );
 
-  const nextRecord: ProjectRecord = {
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: now,
     spatialMap: {
       ...current.spatialMap,
       nodes: nextNodes,
     },
-  };
+  }, {
+    kind: "node.images.added",
+    actor: input.actor,
+    summary: `Attached ${input.images.length} source images to ${input.nodeIds.length} nodes.`,
+    nodeIds: input.nodeIds,
+    metadata: { imageCount: String(input.images.length) },
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -759,7 +899,7 @@ export async function createContextNodeOnDisk(
         existingIds,
       });
 
-  const nextRecord: ProjectRecord = {
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: new Date().toISOString(),
     spatialMap: {
@@ -767,7 +907,13 @@ export async function createContextNodeOnDisk(
       nodes: [...current.spatialMap.nodes, ...createdNodes.nodes],
       links: [...current.spatialMap.links, ...createdNodes.links],
     },
-  };
+  }, {
+    kind: "context.nodes.imported",
+    actor: input.actor,
+    summary: `Imported ${createdNodes.nodes.length} context nodes from "${baseLabel}".`,
+    nodeIds: createdNodes.nodes.map((node) => node.id),
+    linkKeys: createdNodes.links.map(getLinkKey),
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -822,10 +968,9 @@ export async function createChildNodeOnDisk(
     }),
     context,
     rawContext: context,
-    contextMode: parentNode?.contextMode ?? "structured",
   } satisfies SpatialMapData["nodes"][number];
 
-  const nextRecord: ProjectRecord = {
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: new Date().toISOString(),
     spatialMap: {
@@ -838,7 +983,12 @@ export async function createChildNodeOnDisk(
           ]
         : current.spatialMap.links,
     },
-  };
+  }, {
+    kind: "node.created",
+    actor: input.actor,
+    summary: `Created "${label}"${parentNode ? ` under "${parentNode.label}"` : ""}.`,
+    nodeIds: [node.id, ...(parentNode ? [parentNode.id] : [])],
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -938,7 +1088,6 @@ function createContextNoteNode(input: {
     metadata: input.metadata,
     context: input.context,
     rawContext: input.context,
-    contextMode: "context-only" as const,
   };
 }
 
@@ -959,7 +1108,8 @@ export async function deleteProjectNodeOnDisk(
     throw new Error("Node not found.");
   }
 
-  const nextRecord: ProjectRecord = {
+  const removedNode = current.spatialMap.nodes.find((node) => node.id === input.nodeId);
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: new Date().toISOString(),
     spatialMap: {
@@ -968,7 +1118,12 @@ export async function deleteProjectNodeOnDisk(
         (link) => link.source !== input.nodeId && link.target !== input.nodeId,
       ),
     },
-  };
+  }, {
+    kind: "node.deleted",
+    actor: input.actor,
+    summary: `Deleted "${removedNode?.label ?? input.nodeId}".`,
+    nodeIds: [input.nodeId],
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -999,14 +1154,19 @@ export async function deleteProjectLinkOnDisk(
     throw new Error("Link not found.");
   }
 
-  const nextRecord: ProjectRecord = {
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: new Date().toISOString(),
     spatialMap: {
       ...current.spatialMap,
       links: nextLinks,
     },
-  };
+  }, {
+    kind: "link.deleted",
+    actor: input.actor,
+    summary: `Deleted ${relationship} link from ${input.source} to ${input.target}.`,
+    nodeIds: [input.source, input.target],
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);
@@ -1052,14 +1212,25 @@ export async function moveProjectNodeOnDisk(
       ]
     : linksWithoutCurrentParent;
 
-  const nextRecord: ProjectRecord = {
+  const movedNode = current.spatialMap.nodes.find((node) => node.id === input.nodeId);
+  const parentNode = input.parentNodeId
+    ? current.spatialMap.nodes.find((node) => node.id === input.parentNodeId)
+    : null;
+  const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: new Date().toISOString(),
     spatialMap: {
       ...current.spatialMap,
       links: nextLinks,
     },
-  };
+  }, {
+    kind: "node.moved",
+    actor: input.actor,
+    summary: parentNode
+      ? `Moved "${movedNode?.label ?? input.nodeId}" under "${parentNode.label}".`
+      : `Moved "${movedNode?.label ?? input.nodeId}" to the root.`,
+    nodeIds: [input.nodeId, ...(input.parentNodeId ? [input.parentNodeId] : [])],
+  });
 
   records[recordIndex] = nextRecord;
   await writeProjectRecordsToDisk(records);

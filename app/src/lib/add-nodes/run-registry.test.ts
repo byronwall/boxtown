@@ -32,6 +32,7 @@ function buildState(): AddNodesRunState {
       nodeMetadataSchema: createDefaultProjectNodeMetadataSchema(),
       nodeTypeSchema: createDefaultProjectNodeTypeSchema(),
       spatialMap: { nodes: [], links: [] },
+      operationLog: [],
     },
     selectedNode: null,
     questions: [],

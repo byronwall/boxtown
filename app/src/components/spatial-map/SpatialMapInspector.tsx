@@ -1,5 +1,20 @@
 import { useSubmission } from "@solidjs/router";
 import { For, Show, createEffect, createMemo, createSignal, onMount } from "solid-js";
+import {
+  BotIcon,
+  DatabaseBackupIcon,
+  FilePlusIcon,
+  GitBranchPlusIcon,
+  HistoryIcon,
+  ImageIcon,
+  Link2OffIcon,
+  MoveIcon,
+  PencilIcon,
+  PlusIcon,
+  Settings2Icon,
+  Trash2Icon,
+  UserIcon,
+} from "lucide-solid";
 import { Box, HStack, VStack } from "styled-system/jsx";
 import { MarkdownRenderer } from "~/components/markdown-renderer";
 import { Button } from "~/components/ui/button";
@@ -14,7 +29,7 @@ import {
 } from "~/lib/projects/data";
 import { patchProjectNode } from "~/lib/projects/client-mutations";
 import { updateProjectNode } from "~/lib/projects/optimistic";
-import type { ProjectRecord } from "~/lib/projects/types";
+import type { ProjectOperationLogEntry, ProjectRecord } from "~/lib/projects/types";
 import { normalizeActionUrl } from "~/lib/router/action-url";
 import { Text } from "~/components/ui/text";
 import { getMapNodeStatusLabel } from "~/lib/spatial-map/node-status";
@@ -31,6 +46,9 @@ interface SpatialMapInspectorProps {
   project: ProjectRecord;
   onProjectUpdated?: (project: ProjectRecord) => void;
 }
+
+type SpatialMapInspectorView = "details" | "activity";
+type ActivityTone = "create" | "edit" | "image" | "delete" | "system" | "link";
 
 export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const spatialMap = useSpatialMap();
@@ -55,6 +73,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const [metadataDraft, setMetadataDraft] = createSignal<Record<string, string>>({});
   const [editingContext, setEditingContext] = createSignal(false);
   const [contextDialogOpen, setContextDialogOpen] = createSignal(false);
+  const [inspectorView, setInspectorView] = createSignal<SpatialMapInspectorView>("details");
   const [isHydrated, setIsHydrated] = createSignal(false);
   const [titlePending, setTitlePending] = createSignal(false);
   const [statusPending, setStatusPending] = createSignal(false);
@@ -76,7 +95,20 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   } | null>(null);
   const contextFormId = "spatial-map-context-form";
   const metadataFormId = "spatial-map-metadata-form";
-  const isContextOnlyNode = createMemo(() => selectedNode()?.contextMode === "context-only");
+  const selectedNodeActivity = createMemo(() => {
+    const nodeId = selectedNode()?.id;
+    if (!nodeId) return [];
+    return props.project.operationLog.filter((entry) => entry.nodeIds.includes(nodeId)).slice(0, 8);
+  });
+  const recentProjectActivity = createMemo(() => props.project.operationLog.slice(0, 8));
+  const globalProjectActivity = createMemo(() => props.project.operationLog);
+  const selectedNodeWithOriginalContext = createMemo(() => {
+    const node = selectedNode();
+    if (!node || node.rawContext.trim() === node.context.trim()) {
+      return null;
+    }
+    return node;
+  });
   const selectedNodeTitle = createMemo(() => {
     const node = selectedNode();
     if (!node) return "Select an item";
@@ -112,6 +144,11 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
       return (metadataDraft()[field.key] ?? "") !== (node.metadata[field.key] ?? "");
     });
   });
+
+  const selectActivityNode = (nodeId: string) => {
+    spatialMap.setSelectedNodeId(nodeId);
+    spatialMap.setInspectorOpen(true);
+  };
 
   onMount(() => {
     setIsHydrated(true);
@@ -336,6 +373,31 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
 
   return (
     <Box class="spatial-map-inspector-rail">
+      <HStack
+        class="spatial-map-toggle-group spatial-map-inspector-view-toggle"
+        role="tablist"
+        aria-label="Inspector view"
+      >
+        <button
+          type="button"
+          class={`spatial-map-toggle-button${inspectorView() === "details" ? " is-active" : ""}`}
+          role="tab"
+          aria-selected={inspectorView() === "details"}
+          onClick={() => setInspectorView("details")}
+        >
+          Details
+        </button>
+        <button
+          type="button"
+          class={`spatial-map-toggle-button${inspectorView() === "activity" ? " is-active" : ""}`}
+          role="tab"
+          aria-selected={inspectorView() === "activity"}
+          onClick={() => setInspectorView("activity")}
+        >
+          Activity
+        </button>
+      </HStack>
+
       <aside
         id="spatial-map-inspector"
         class={`spatial-map-inspector${spatialMap.inspectorOpen() ? "" : " is-collapsed"}`}
@@ -358,6 +420,22 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
             }
           />
 
+          <Show when={inspectorView() === "activity"}>
+            <Box class="spatial-map-inspector-section spatial-map-inspector-global-activity">
+              <Text as="h3" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-section-title is-heading">
+                Global Activity
+              </Text>
+              <ActivityList
+                entries={globalProjectActivity()}
+                emptyLabel="No activity yet"
+                nodeById={spatialMap.sourceNodesById()}
+                selectedNodeId={spatialMap.selectedNodeId()}
+                onSelect={selectActivityNode}
+              />
+            </Box>
+          </Show>
+
+          <Show when={inspectorView() === "details"}>
           <Box class="spatial-map-inspector-section spatial-map-inspector-summary">
             <HStack gap="1.5" flexWrap="wrap">
               <Show when={selectedNodeWithOptimisticStatus()}>
@@ -388,22 +466,19 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                   />
                 )}
               </Show>
-              <InspectorChip label="Mode" value={selectedNode()?.contextMode ?? "Unknown"} />
             </HStack>
             <Show when={selectedNode()}>
               {(node) => (
                 <HStack class="spatial-map-inspector-action-row" gap="0" flexWrap="wrap">
-                  <Show when={isContextOnlyNode()}>
-                    <Button
-                      size="xs"
-                      class="spatial-map-button spatial-map-button--strong"
-                      colorPalette="green"
-                      variant="surface"
-                      onClick={() => spatialMap.openContextNoteConversionFlow()}
-                    >
-                      Convert to Proper Node
-                    </Button>
-                  </Show>
+                  <Button
+                    size="xs"
+                    class="spatial-map-button spatial-map-button--strong"
+                    colorPalette="green"
+                    variant="surface"
+                    onClick={() => spatialMap.openContextNoteConversionFlow()}
+                  >
+                    Generate From Context
+                  </Button>
                   <SpatialMapDeleteNodeControl
                     projectId={props.project.id}
                     node={node()}
@@ -448,7 +523,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
             )}
           </Show>
 
-          <Show when={isHydrated() && isContextOnlyNode() && selectedNode()}>
+          <Show when={isHydrated() ? selectedNodeWithOriginalContext() : null}>
             {(node) => (
               <Box class="spatial-map-inspector-section">
                 <HStack justifyContent="space-between" alignItems="center" gap="3">
@@ -459,7 +534,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                     fontWeight="semibold"
                     class="spatial-map-inspector-section-title is-heading"
                   >
-                    Raw Context
+                    Original Context
                   </Text>
                   <Button
                     size="xs"
@@ -469,13 +544,13 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                       try {
                         await navigator.clipboard.writeText(node().rawContext);
                         toaster.success({
-                          title: "Raw context copied",
+                          title: "Original context copied",
                           description: "The original note content is now in your clipboard.",
                         });
                       } catch {
                         toaster.error({
                           title: "Copy failed",
-                          description: "The raw context could not be copied from this browser session.",
+                          description: "The original context could not be copied from this browser session.",
                         });
                       }
                     }}
@@ -627,21 +702,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                 <Show
                   when={editingContext()}
                   fallback={
-                    <Show
-                      when={!isContextOnlyNode() || isHydrated()}
-                      fallback={
-                        <Box class="spatial-map-context-empty">
-                          <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
-                            Context preview will appear once the note finishes hydrating.
-                          </Text>
-                        </Box>
-                      }
-                    >
-                      <ContextPreview
-                        context={node().context}
-                        plainText={node().contextMode === "context-only"}
-                      />
-                    </Show>
+                        <ContextPreview context={node().context} />
                   }
                 >
                   <form
@@ -720,13 +781,34 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
               onSelect={(nodeId) => spatialMap.setSelectedNodeId(nodeId)}
             />
           </Box>
+
+          <Box class="spatial-map-inspector-section">
+            <Text as="h3" margin="0 0 6px" fontSize="sm" fontWeight="semibold" class="spatial-map-inspector-section-title">
+              Activity
+            </Text>
+            <Show
+              when={selectedNode() ? selectedNodeActivity() : recentProjectActivity()}
+              keyed
+            >
+              {(entries) => (
+                <ActivityList
+                  entries={entries}
+                  emptyLabel={selectedNode() ? "No activity for this node yet" : "No activity yet"}
+                  nodeById={spatialMap.sourceNodesById()}
+                  selectedNodeId={spatialMap.selectedNodeId()}
+                  onSelect={selectActivityNode}
+                />
+              )}
+            </Show>
+          </Box>
+          </Show>
         </VStack>
       </aside>
     </Box>
   );
 }
 
-function ContextPreview(props: { context: string; class?: string; plainText?: boolean }) {
+function ContextPreview(props: { context: string; class?: string }) {
   const hasContent = () => props.context.trim().length > 0;
 
   return (
@@ -740,20 +822,9 @@ function ContextPreview(props: { context: string; class?: string; plainText?: bo
         </Box>
       }
     >
-      <Show
-        when={!props.plainText}
-        fallback={
-          <Box class={`spatial-map-context-markdown${props.class ? ` ${props.class}` : ""}`}>
-            <Text as="pre" margin="0" fontSize="sm" class="spatial-map-raw-context">
-              {props.context}
-            </Text>
-          </Box>
-        }
-      >
-        <Box class={`spatial-map-context-markdown${props.class ? ` ${props.class}` : ""}`}>
-          <MarkdownRenderer>{props.context}</MarkdownRenderer>
-        </Box>
-      </Show>
+      <Box class={`spatial-map-context-markdown${props.class ? ` ${props.class}` : ""}`}>
+        <MarkdownRenderer>{props.context}</MarkdownRenderer>
+      </Box>
     </Show>
   );
 }
@@ -784,6 +855,179 @@ function RawContextPreview(props: { context: string }) {
       </Box>
     </Show>
   );
+}
+
+function ActivityList(props: {
+  entries: ProjectOperationLogEntry[];
+  emptyLabel: string;
+  nodeById: Map<string, MapNode>;
+  selectedNodeId: string | null;
+  onSelect: (nodeId: string) => void;
+}) {
+  const getTargetNode = (entry: ProjectOperationLogEntry) => {
+    const nodeId = entry.nodeIds.find((item) => props.nodeById.has(item));
+    return nodeId ? props.nodeById.get(nodeId) ?? null : null;
+  };
+
+  return (
+    <VStack alignItems="stretch" gap="0" class="spatial-map-activity-timeline">
+      <For each={props.entries}>
+        {(entry) => {
+          const targetNode = getTargetNode(entry);
+          const isSelected = () => Boolean(targetNode && props.selectedNodeId === targetNode.id);
+          const config = getActivityKindConfig(entry.kind);
+
+          return (
+            <Show
+              when={targetNode}
+              fallback={
+                <Box class={`spatial-map-activity-entry is-${config.tone}`}>
+                  <ActivityEntryContent entry={entry} config={config} />
+                </Box>
+              }
+            >
+              {(node) => (
+                <button
+                  type="button"
+                  class={`spatial-map-activity-entry spatial-map-activity-button is-${config.tone}${isSelected() ? " is-selected" : ""}`}
+                  onClick={() => props.onSelect(node().id)}
+                  aria-pressed={isSelected()}
+                >
+                  <ActivityEntryContent entry={entry} node={node()} config={config} />
+                </button>
+              )}
+            </Show>
+          );
+        }}
+      </For>
+      <Show when={props.entries.length === 0}>
+        <Text as="p" margin="0" fontSize="sm" class="spatial-map-empty-state">
+          {props.emptyLabel}
+        </Text>
+      </Show>
+    </VStack>
+  );
+}
+
+function ActivityEntryContent(props: {
+  entry: ProjectOperationLogEntry;
+  node?: MapNode;
+  config: ActivityKindConfig;
+}) {
+  const Icon = props.config.icon;
+  const ActorIcon = props.entry.actor.kind === "agent" ? BotIcon : UserIcon;
+
+  return (
+    <Box class="spatial-map-activity-content">
+      <Box class="spatial-map-activity-body">
+        <HStack justifyContent="space-between" alignItems="start" gap="2" class="spatial-map-activity-head">
+          <Text as="div" margin="0" fontSize="sm" fontWeight="semibold" class="spatial-map-activity-summary">
+            {props.entry.summary}
+          </Text>
+        </HStack>
+        <HStack gap="1.5" flexWrap="wrap" class="spatial-map-activity-meta">
+          <span class="spatial-map-activity-chip is-kind">
+            <Icon size={11} strokeWidth={2.3} />
+            {props.config.label}
+          </span>
+          <Show when={props.node}>
+            {(node) => (
+              <span class="spatial-map-activity-chip is-node">
+                {node().label}
+              </span>
+            )}
+          </Show>
+          <span class="spatial-map-activity-chip is-actor">
+            <ActorIcon size={11} strokeWidth={2.25} />
+            {formatActivityActor(props.entry)}
+          </span>
+          <time class="spatial-map-activity-chip is-time" title={formatActivityDate(props.entry.createdAt)}>
+            {formatRelativeActivityDate(props.entry.createdAt)}
+          </time>
+        </HStack>
+      </Box>
+    </Box>
+  );
+}
+
+type ActivityKindConfig = {
+  label: string;
+  tone: ActivityTone;
+  icon: typeof HistoryIcon;
+};
+
+function getActivityKindConfig(kind: ProjectOperationLogEntry["kind"]): ActivityKindConfig {
+  switch (kind) {
+    case "node.image.deleted":
+    case "node.deleted":
+      return { label: "Deleted", tone: "delete", icon: Trash2Icon };
+    case "node.images.added":
+      return { label: "Image", tone: "image", icon: ImageIcon };
+    case "node.metadata.updated":
+    case "node.context.updated":
+    case "node.title.updated":
+    case "node.status.updated":
+    case "node.type.updated":
+      return { label: "Updated", tone: "edit", icon: PencilIcon };
+    case "node.created":
+      return { label: "Created", tone: "create", icon: PlusIcon };
+    case "nodes.generated":
+      return { label: "Generated", tone: "create", icon: GitBranchPlusIcon };
+    case "context.nodes.imported":
+      return { label: "Imported", tone: "create", icon: FilePlusIcon };
+    case "project.schema.updated":
+      return { label: "Schema", tone: "system", icon: Settings2Icon };
+    case "project.backfilled":
+      return { label: "Backfill", tone: "system", icon: DatabaseBackupIcon };
+    case "link.deleted":
+      return { label: "Link", tone: "link", icon: Link2OffIcon };
+    case "node.moved":
+      return { label: "Moved", tone: "link", icon: MoveIcon };
+    case "project.created":
+    default:
+      return { label: "Project", tone: "system", icon: HistoryIcon };
+  }
+}
+
+function formatActivityActor(entry: ProjectOperationLogEntry) {
+  return entry.actor.label ?? (entry.actor.kind === "agent" ? "Agent" : "Human");
+}
+
+function formatActivityDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toISOString().slice(0, 16).replace("T", " ");
+}
+
+function formatRelativeActivityDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  const diffMs = Date.now() - date.getTime();
+  const absMs = Math.abs(diffMs);
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  if (absMs < minute) return "just now";
+  if (absMs < hour) {
+    const minutes = Math.max(1, Math.round(absMs / minute));
+    return diffMs >= 0 ? `${minutes}m ago` : `in ${minutes}m`;
+  }
+  if (absMs < day) {
+    const hours = Math.round(absMs / hour);
+    return diffMs >= 0 ? `${hours}h ago` : `in ${hours}h`;
+  }
+  if (absMs < 7 * day) {
+    const days = Math.round(absMs / day);
+    return diffMs >= 0 ? `${days}d ago` : `in ${days}d`;
+  }
+
+  return date.toISOString().slice(0, 10);
 }
 
 function ContextPreviewDialog(props: {

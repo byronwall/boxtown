@@ -142,7 +142,6 @@ describe("spatial map layout", () => {
           metadata: {},
           context: "",
           rawContext: "",
-          contextMode: "structured",
         },
         {
           id: "deep-parent-1",
@@ -152,7 +151,6 @@ describe("spatial map layout", () => {
           metadata: {},
           context: "",
           rawContext: "",
-          contextMode: "structured",
         },
         {
           id: "deep-parent-2",
@@ -162,7 +160,6 @@ describe("spatial map layout", () => {
           metadata: {},
           context: "",
           rawContext: "",
-          contextMode: "structured",
         },
         {
           id: "deep",
@@ -172,7 +169,6 @@ describe("spatial map layout", () => {
           metadata: {},
           context: "",
           rawContext: "",
-          contextMode: "structured",
         },
       ],
       links: [
@@ -204,7 +200,6 @@ describe("spatial map layout", () => {
           metadata: {},
           context: "",
           rawContext: "",
-          contextMode: "structured",
         },
       ],
       links: [],
@@ -220,7 +215,6 @@ describe("spatial map layout", () => {
           metadata: {},
           context: "",
           rawContext: "",
-          contextMode: "structured",
         },
       ],
       links: [{ source: "home", target: "hero", parentChild: true }],
@@ -351,7 +345,6 @@ function createPositionedNode(
     metadata: {},
     context: "",
     rawContext: "",
-    contextMode: "structured",
     width,
     height,
     fontSize: 12,
@@ -372,7 +365,6 @@ function createMapNode(id: string, label: string, depth: number) {
     metadata: {},
     context: "",
     rawContext: "",
-    contextMode: "structured" as const,
   };
 }
 

@@ -1,6 +1,7 @@
 import type { APIEvent } from "@solidjs/start/server";
 import { AgentApiError } from "~/lib/agent-api/errors.server";
 import { withAgentApi } from "~/lib/agent-api/handler.server";
+import { toAgentOperationActor } from "~/lib/agent-api/operation-actor";
 import { toAgentMapNode } from "~/lib/agent-api/projections.server";
 import { agentJson } from "~/lib/agent-api/response.server";
 import { createContextNodeOnDisk } from "~/lib/projects/data.server";
@@ -16,18 +17,18 @@ type MarkdownImportRequest = {
 };
 
 export async function POST(event: APIEvent) {
-  return withAgentApi(event, { scopes: ["node:write"] }, async () => {
+  return withAgentApi(event, { scopes: ["node:write"] }, async (context) => {
     const input = (await event.request.json().catch(() => null)) as MarkdownImportRequest | null;
     if (!input) {
       throw new AgentApiError("invalid_json", "A JSON body is required.", 400);
     }
 
     const label = getString(input.title) ?? getString(input.label);
-    const context = getString(input.markdown) ?? getString(input.context);
+    const markdown = getString(input.markdown) ?? getString(input.context);
     if (!label?.trim()) {
       throw new AgentApiError("invalid_title", "A node title is required.", 400);
     }
-    if (context === undefined) {
+    if (markdown === undefined) {
       throw new AgentApiError("invalid_markdown", "Markdown content is required.", 400);
     }
 
@@ -35,10 +36,11 @@ export async function POST(event: APIEvent) {
       const result = await createContextNodeOnDisk({
         projectId: event.params.projectId,
         label,
-        context,
+        context: markdown,
         metadata: getMetadata(input.metadata),
         splitByHeadingLevel: input.splitByHeadingLevel === true,
         maxHeadingDepth: getPositiveInteger(input.maxHeadingDepth),
+        actor: toAgentOperationActor(context.actor),
       });
       const createdNodeIdSet = new Set(result.createdNodeIds);
       const nodes = result.project.spatialMap.nodes

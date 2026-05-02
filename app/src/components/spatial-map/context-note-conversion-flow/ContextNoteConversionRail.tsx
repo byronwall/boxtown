@@ -69,8 +69,8 @@ export function ContextNoteConversionRail(props: ContextNoteConversionRailProps)
       <aside id="spatial-map-context-note-conversion" class="spatial-map-inspector spatial-map-add-nodes-rail">
         <VStack alignItems="stretch" gap="3" h="full">
           <SpatialMapInspectorHeader
-            kicker="Convert Context Node"
-            title="Convert loose context into structured nodes"
+            kicker="Generate From Context"
+            title="Generate nodes from selected context"
             description="Answer the generated questions, review the candidate hierarchy, and only add the pieces worth promoting into the map."
             controls="spatial-map-context-note-conversion"
             closeLabel="Close context note conversion panel"
@@ -88,7 +88,7 @@ export function ContextNoteConversionRail(props: ContextNoteConversionRailProps)
                 colorPalette="green"
                 variant="surface"
                 loading={flow.starting()}
-                disabled={selectedNode()?.contextMode !== "context-only"}
+                disabled={!selectedNode()}
                 onClick={() => {
                   const sourceNodeId = selectedNode()?.id;
                   if (sourceNodeId) {

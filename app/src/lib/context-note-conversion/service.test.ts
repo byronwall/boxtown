@@ -73,7 +73,6 @@ function buildSourceNode(overrides: Partial<MapNode> = {}): MapNode {
     },
     context: "Original note context",
     rawContext: "Original note context",
-    contextMode: "context-only",
     ...overrides,
     status: overrides.status ?? "planned",
   };
@@ -101,12 +100,12 @@ function buildProject(sourceNode: MapNode = buildSourceNode()): ProjectRecord {
           },
           context: "",
           rawContext: "",
-          contextMode: "structured",
         },
         sourceNode,
       ],
       links: [],
     },
+    operationLog: [],
   };
 }
 
@@ -178,7 +177,6 @@ describe("context note conversion service", () => {
               },
               context: "",
               rawContext: "",
-              contextMode: "structured",
             },
             {
               id: "candidate-child",
@@ -191,7 +189,6 @@ describe("context note conversion service", () => {
               },
               context: "",
               rawContext: "",
-              contextMode: "structured",
             },
           ],
           links: [
@@ -293,7 +290,6 @@ describe("context note conversion service", () => {
               },
               context: "",
               rawContext: "",
-              contextMode: "structured",
             },
             {
               id: "candidate-child",
@@ -306,7 +302,6 @@ describe("context note conversion service", () => {
               },
               context: "",
               rawContext: "",
-              contextMode: "structured",
             },
           ],
           links: [
@@ -342,7 +337,6 @@ describe("context note conversion service", () => {
             },
             context: "",
             rawContext: "",
-            contextMode: "structured",
           },
         ],
         links: [],

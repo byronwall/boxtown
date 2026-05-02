@@ -1,6 +1,7 @@
 import type { APIEvent } from "@solidjs/start/server";
 import { AgentApiError } from "~/lib/agent-api/errors.server";
 import { withAgentApi } from "~/lib/agent-api/handler.server";
+import { toAgentOperationActor } from "~/lib/agent-api/operation-actor";
 import {
   toAgentProjectDetail,
   toAgentProjectSummary,
@@ -25,14 +26,17 @@ type CreateProjectRequest = {
 };
 
 export async function POST(event: APIEvent) {
-  return withAgentApi(event, { scopes: ["project:write"] }, async () => {
+  return withAgentApi(event, { scopes: ["project:write"] }, async (context) => {
     const input = (await event.request.json().catch(() => ({}))) as CreateProjectRequest;
     if (input.name !== undefined && typeof input.name !== "string") {
       throw new AgentApiError("invalid_name", "Project name must be a string.", 400);
     }
 
     try {
-      const project = await createProjectOnDisk({ name: input.name });
+      const project = await createProjectOnDisk({
+        name: input.name,
+        actor: toAgentOperationActor(context.actor),
+      });
       return agentJson({
         project: toAgentProjectDetail(project),
       }, { status: 201 });

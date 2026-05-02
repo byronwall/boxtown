@@ -82,12 +82,12 @@ function buildProject(): ProjectRecord {
           },
           context: "",
           rawContext: "",
-          contextMode: "structured",
           images: [],
         },
       ],
       links: [],
     },
+    operationLog: [],
   };
 }
 
@@ -123,7 +123,6 @@ describe("source decomposition service", () => {
             },
             context: "",
             rawContext: "",
-            contextMode: "structured",
             sourceAssetIds: ["asset-root"],
           },
           {
@@ -137,7 +136,6 @@ describe("source decomposition service", () => {
             },
             context: "",
             rawContext: "",
-            contextMode: "structured",
             sourceAssetIds: [],
           },
         ],
@@ -190,7 +188,6 @@ describe("source decomposition service", () => {
             },
             context: "",
             rawContext: "",
-            contextMode: "structured",
             sourceAssetIds: [],
           },
           {
@@ -204,7 +201,6 @@ describe("source decomposition service", () => {
             },
             context: "",
             rawContext: "",
-            contextMode: "structured",
             sourceAssetIds: ["asset-1"],
           },
         ],
@@ -235,7 +231,6 @@ describe("source decomposition service", () => {
             },
             context: "",
             rawContext: "",
-            contextMode: "structured",
             images: [],
           },
           {
@@ -249,7 +244,6 @@ describe("source decomposition service", () => {
             },
             context: "",
             rawContext: "",
-            contextMode: "structured",
             images: [],
           },
         ],

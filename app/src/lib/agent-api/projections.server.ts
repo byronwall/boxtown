@@ -46,7 +46,6 @@ export function toAgentMapNode(node: MapNode): AgentMapNode {
     metadata: node.metadata,
     context: node.context,
     rawContext: node.rawContext,
-    contextMode: node.contextMode,
     images: node.images ?? [],
   };
 }

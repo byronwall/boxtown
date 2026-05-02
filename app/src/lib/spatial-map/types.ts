@@ -17,7 +17,6 @@ export interface MapNode {
   metadata: Record<string, string>;
   context: string;
   rawContext: string;
-  contextMode: "context-only" | "structured";
   images?: MapNodeImage[];
 }
 

@@ -47,7 +47,6 @@ function parseMapNode(
     implementation,
     context,
     rawContext,
-    contextMode,
     images,
   } = input;
   if (!isNonEmptyString(id)) throw new Error("Node id must be a non-empty string.");
@@ -67,24 +66,11 @@ function parseMapNode(
   if (rawContext !== undefined && typeof rawContext !== "string") {
     throw new Error("Node rawContext must be a string when provided.");
   }
-  if (
-    contextMode !== undefined &&
-    contextMode !== "context-only" &&
-    contextMode !== "structured"
-  ) {
-    throw new Error('Node contextMode must be "context-only" or "structured" when provided.');
-  }
   if (images !== undefined && !Array.isArray(images)) {
     throw new Error("Node images must be an array when provided.");
   }
 
   const resolvedContext = typeof context === "string" ? context : "";
-  const resolvedContextMode =
-    typeof contextMode === "string"
-      ? contextMode
-      : type === "note"
-        ? "context-only"
-        : "structured";
   const metadataRecord = parseNodeMetadata(
     metadata,
     { purpose, implementation },
@@ -102,7 +88,6 @@ function parseMapNode(
     metadata: metadataRecord,
     context: resolvedContext,
     rawContext: typeof rawContext === "string" ? rawContext : resolvedContext,
-    contextMode: resolvedContextMode,
     images: Array.isArray(images) ? images.map(parseMapNodeImage) : [],
   };
 }

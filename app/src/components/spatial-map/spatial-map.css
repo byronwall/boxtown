@@ -2595,6 +2595,33 @@
   padding: 8px 0;
 }
 
+.spatial-map-inspector-view-toggle {
+  position: absolute;
+  top: -28px;
+  left: 12px;
+  right: 9px;
+  z-index: 5;
+  min-height: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex-shrink: 0;
+  box-shadow: 0 1px 0 rgba(34, 41, 36, 0.08);
+}
+
+.spatial-map-inspector-view-toggle .spatial-map-toggle-button {
+  min-width: 0;
+  height: 24px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.spatial-map-inspector-global-activity {
+  min-height: 0;
+  overflow: auto;
+}
+
 .spatial-map-inspector-chip {
   min-width: 0;
   min-height: 20px;
@@ -3461,6 +3488,148 @@ body:has(.spatial-map-image-viewer-dialog) {
   background: rgba(209, 221, 209, 0.98);
   border-color: rgba(23, 62, 39, 0.56);
   box-shadow: inset 2px 0 0 rgba(23, 62, 39, 0.9);
+}
+
+.spatial-map-activity-timeline {
+  position: relative;
+  width: 100%;
+  gap: 7px;
+}
+
+.spatial-map-activity-entry {
+  --activity-accent: rgba(42, 104, 67, 0.92);
+  --activity-accent-soft: rgba(42, 104, 67, 0.1);
+  --activity-accent-border: rgba(42, 104, 67, 0.24);
+  width: 100%;
+  padding: 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.spatial-map-activity-entry.is-create {
+  --activity-accent: rgba(42, 104, 67, 0.94);
+  --activity-accent-soft: rgba(42, 104, 67, 0.11);
+  --activity-accent-border: rgba(42, 104, 67, 0.28);
+}
+
+.spatial-map-activity-entry.is-edit {
+  --activity-accent: rgba(82, 93, 61, 0.94);
+  --activity-accent-soft: rgba(133, 150, 91, 0.16);
+  --activity-accent-border: rgba(82, 93, 61, 0.26);
+}
+
+.spatial-map-activity-entry.is-image {
+  --activity-accent: rgba(43, 101, 116, 0.94);
+  --activity-accent-soft: rgba(43, 101, 116, 0.12);
+  --activity-accent-border: rgba(43, 101, 116, 0.26);
+}
+
+.spatial-map-activity-entry.is-delete {
+  --activity-accent: rgba(143, 68, 62, 0.96);
+  --activity-accent-soft: rgba(143, 68, 62, 0.11);
+  --activity-accent-border: rgba(143, 68, 62, 0.26);
+}
+
+.spatial-map-activity-entry.is-system {
+  --activity-accent: rgba(92, 85, 117, 0.94);
+  --activity-accent-soft: rgba(92, 85, 117, 0.1);
+  --activity-accent-border: rgba(92, 85, 117, 0.24);
+}
+
+.spatial-map-activity-entry.is-link {
+  --activity-accent: rgba(125, 91, 44, 0.94);
+  --activity-accent-soft: rgba(125, 91, 44, 0.12);
+  --activity-accent-border: rgba(125, 91, 44, 0.26);
+}
+
+.spatial-map-activity-content {
+  width: 100%;
+}
+
+.spatial-map-activity-body {
+  min-width: 0;
+  flex: 1;
+  padding: 7px 8px;
+  border: 1px solid rgba(34, 41, 36, 0.13);
+  background: rgba(245, 246, 242, 0.82);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+}
+
+.spatial-map-activity-summary {
+  min-width: 0;
+  color: var(--spatial-map-copy);
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
+.spatial-map-activity-meta {
+  margin-top: 6px;
+}
+
+.spatial-map-activity-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 2px 5px;
+  border: 1px solid rgba(75, 84, 72, 0.16);
+  background: rgba(252, 253, 252, 0.58);
+  color: var(--spatial-map-copy-dim);
+  font-family: "SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace;
+  font-size: 10px;
+  line-height: 1.25;
+}
+
+.spatial-map-activity-chip.is-time {
+  border-color: rgba(75, 84, 72, 0.12);
+  background: transparent;
+  color: var(--spatial-map-copy-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.spatial-map-activity-chip.is-kind {
+  border-color: var(--activity-accent-border);
+  background: var(--activity-accent-soft);
+  color: var(--activity-accent);
+  font-weight: 700;
+}
+
+.spatial-map-activity-chip.is-node {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spatial-map-activity-button {
+  appearance: none;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.spatial-map-activity-button:hover .spatial-map-activity-body {
+  border-color: var(--activity-accent-border);
+  background: rgba(250, 251, 248, 0.94);
+}
+
+.spatial-map-activity-button:focus-visible {
+  outline: none;
+}
+
+.spatial-map-activity-button:focus-visible .spatial-map-activity-body {
+  border-color: rgba(37, 95, 58, 0.56);
+  box-shadow:
+    inset 0 0 0 1px rgba(37, 95, 58, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.56);
+}
+
+.spatial-map-activity-button.is-selected .spatial-map-activity-body {
+  background: rgba(239, 243, 236, 0.96);
+  border-color: var(--activity-accent-border);
 }
 
 .spatial-map-relation-meta,

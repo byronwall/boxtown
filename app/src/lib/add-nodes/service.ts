@@ -322,7 +322,6 @@ function sanitizeGeneratedBatch(
       }),
       context: node.context,
       rawContext: "",
-      contextMode: "structured" as const,
     })),
     links: batch.links.map((link) =>
       link.parentChild

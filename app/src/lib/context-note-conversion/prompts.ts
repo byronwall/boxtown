@@ -5,7 +5,7 @@ import type { MapNode } from "~/lib/spatial-map/types";
 import type { ClarifyingQuestion } from "./types";
 
 function summarizeNode(node: MapNode, project: ProjectRecord) {
-  return `${node.id} | ${node.label} | ${node.type} | ${node.contextMode} | metadata: ${summarizeNodeMetadata(node, project.nodeMetadataSchema)}`;
+  return `${node.id} | ${node.label} | ${node.type} | metadata: ${summarizeNodeMetadata(node, project.nodeMetadataSchema)}`;
 }
 
 function summarizeGraph(project: ProjectRecord) {
@@ -79,7 +79,6 @@ export function buildSuggestionPrompt(input: {
     "You are converting a freeform context note into structured technical graph nodes.",
     "Generate 3 to 10 candidate structured nodes extracted from the note.",
     'Do not reproduce the source note itself as a candidate node. The source note remains a context inbox.',
-    'Use contextMode \"structured\" for every generated node.',
     "Keep labels compact and concrete.",
     "Use only the project metadata keys listed below when populating metadata.",
     "Each populated metadata value should stay concise and concrete.",

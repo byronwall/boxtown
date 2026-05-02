@@ -141,6 +141,33 @@ describe("createProjectOnDisk", () => {
       expect(created.id).toBe("ideal-cli-tool");
       expect(persisted?.name).toBe("Ideal CLI tool");
       expect(persisted?.nodeMetadataSchema).toEqual(defaultSchema);
+      expect(persisted?.operationLog[0]?.actor.kind).toBe("human");
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("stores an agent actor when one is provided", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-agent-actor-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
+
+    try {
+      process.chdir(tempRoot);
+
+      const created = await createProjectOnDisk({
+        name: "Agent Project",
+        actor: { kind: "agent", id: "token:esting", label: "Agent token ...esting" },
+      });
+      const persisted = await readProjectByIdFromDisk(created.id);
+
+      expect(persisted?.operationLog[0]?.actor).toEqual({
+        kind: "agent",
+        id: "token:esting",
+        label: "Agent token ...esting",
+      });
     } finally {
       process.chdir(originalCwd);
     }
@@ -244,7 +271,6 @@ describe("context node persistence", () => {
         context: "# Checkout\n\nContext",
         rawContext: "# Checkout\n\nContext",
         metadata: { purpose: "Checkout entry" },
-        contextMode: "structured",
       });
     } finally {
       process.chdir(originalCwd);
@@ -281,7 +307,6 @@ describe("context node persistence", () => {
         metadata: { purpose: "Captured research notes" },
         context: "## Inbox\n\n- Keep this here",
         rawContext: "## Inbox\n\n- Keep this here",
-        contextMode: "context-only",
       });
       expect(result.createdNodeCount).toBe(1);
     } finally {
@@ -491,7 +516,6 @@ describe("context node persistence", () => {
         metadata: { purpose: "Purpose", implementation: "Implementation" },
         context: "Legacy context",
         rawContext: "Legacy context",
-        contextMode: "context-only",
       });
     } finally {
       process.chdir(originalCwd);
@@ -531,9 +555,97 @@ describe("context node persistence", () => {
       const writtenBack = JSON.parse(
         readFileSync(path.join(dataDir, "projects", projectId, "project.json"), "utf8"),
       ) as {
-        spatialMap: { nodes: Array<{ metadata?: Record<string, string> }> };
+        operationLog: Array<{
+          kind: string;
+          actor: { kind: string };
+          payload?: {
+            state?: {
+              spatialMap: { nodes: Array<{ metadata?: Record<string, string> }> };
+            };
+          };
+        }>;
       };
-      expect(writtenBack.spatialMap.nodes[0]?.metadata).toEqual({});
+      expect(writtenBack.operationLog.some((entry) => entry.kind === "project.backfilled")).toBe(false);
+      expect(writtenBack.operationLog[0]?.payload?.state?.spatialMap.nodes[0]?.metadata).toEqual({});
+      expect(writtenBack.operationLog[0]?.kind).toBe("node.type.updated");
+      expect(writtenBack.operationLog[0]?.actor.kind).toBe("human");
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("migrates legacy and project backfill state into node activity entries", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-oplog-migration-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    const projectId = "backfilled-project";
+    const node = buildNode({
+      id: "page-home",
+      label: "Home",
+      type: "page",
+      depth: 0,
+      metadata: { purpose: "Homepage" },
+      context: "# Home",
+      rawContext: "# Home",
+    });
+    writeProjectFixture(dataDir, {
+      id: projectId,
+      name: projectId,
+      description: "Test fixture",
+      createdAt: "2026-04-20T00:00:00.000Z",
+      updatedAt: "2026-04-20T00:00:00.000Z",
+      operationLog: [
+        {
+          id: "legacy-backfill-backfilled-project",
+          kind: "project.backfilled",
+          actor: { kind: "human", label: "Legacy project owner" },
+          createdAt: "2026-04-20T00:00:00.000Z",
+          summary: "Backfilled current project state into the canonical operation log.",
+          nodeIds: [node.id],
+          linkKeys: [],
+          payload: {
+            state: {
+              nodeMetadataSchema: defaultSchema,
+              nodeTypeSchema: defaultTypeSchema,
+              spatialMap: {
+                nodes: [node],
+                links: [],
+              },
+            },
+          },
+        },
+      ],
+    });
+
+    try {
+      process.chdir(tempRoot);
+
+      const persisted = await readProjectByIdFromDisk(projectId);
+      expect(persisted?.spatialMap.nodes[0]).toMatchObject({
+        id: "page-home",
+        label: "Home",
+        metadata: { purpose: "Homepage" },
+      });
+
+      const writtenBack = JSON.parse(
+        readFileSync(path.join(dataDir, "projects", projectId, "project.json"), "utf8"),
+      ) as {
+        operationLog: Array<{
+          kind: string;
+          metadata?: Record<string, string>;
+        }>;
+      };
+      expect(writtenBack.operationLog.map((entry) => entry.kind)).toEqual([
+        "node.metadata.updated",
+        "node.type.updated",
+        "node.created",
+        "project.schema.updated",
+        "project.created",
+      ]);
+      expect(writtenBack.operationLog[0]?.metadata?.sourceOperationId).toBe(
+        "legacy-backfill-backfilled-project",
+      );
     } finally {
       process.chdir(originalCwd);
     }
@@ -650,7 +762,6 @@ describe("context node persistence", () => {
             metadata: { purpose: "Purpose", implementation: "Implementation" },
             context: "Context",
             rawContext: "Context",
-            contextMode: "context-only",
           }),
         ],
         links: [
@@ -736,7 +847,6 @@ function buildNode(input: {
   metadata?: Record<string, string>;
   context?: string;
   rawContext?: string;
-  contextMode?: "context-only" | "structured";
   images?: MapNodeImage[];
 }) {
   return {
@@ -748,7 +858,6 @@ function buildNode(input: {
     metadata: input.metadata ?? {},
     context: input.context ?? "",
     rawContext: input.rawContext ?? "",
-    contextMode: input.contextMode ?? "structured",
     images: input.images ?? [],
   };
 }

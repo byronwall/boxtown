@@ -1,6 +1,7 @@
 import type { APIEvent } from "@solidjs/start/server";
 import { AgentApiError } from "~/lib/agent-api/errors.server";
 import { withAgentApi } from "~/lib/agent-api/handler.server";
+import { toAgentOperationActor } from "~/lib/agent-api/operation-actor";
 import { toAgentMapNode } from "~/lib/agent-api/projections.server";
 import { agentJson } from "~/lib/agent-api/response.server";
 import {
@@ -51,7 +52,7 @@ type CreateNodeRequest = {
 };
 
 export async function POST(event: APIEvent) {
-  return withAgentApi(event, { scopes: ["node:write"] }, async () => {
+  return withAgentApi(event, { scopes: ["node:write"] }, async (context) => {
     const input = (await event.request.json().catch(() => null)) as CreateNodeRequest | null;
     if (!input) {
       throw new AgentApiError("invalid_json", "A JSON body is required.", 400);
@@ -76,6 +77,7 @@ export async function POST(event: APIEvent) {
         status: isMapNodeStatus(input.status) ? input.status : undefined,
         context: getString(input.context),
         metadata: getMetadata(input.metadata),
+        actor: toAgentOperationActor(context.actor),
       });
       const node = result.project.spatialMap.nodes.find((item) => item.id === result.nodeId);
       const parentLink = result.project.spatialMap.links.find(

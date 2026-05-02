@@ -483,7 +483,6 @@ function ChildNodePlaceholder(props: {
             metadata: {},
             context: "",
             rawContext: "",
-            contextMode: props.parentNode?.contextMode ?? "structured",
           },
         ],
         links: props.parentNode

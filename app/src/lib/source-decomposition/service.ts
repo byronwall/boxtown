@@ -81,7 +81,6 @@ function createSourceDecompositionBatchSchema(
         metadata: createNodeMetadataObjectSchema(nodeMetadataSchema),
         context: z.string().default(""),
         rawContext: z.string().default(""),
-        contextMode: z.literal("structured").default("structured"),
         sourceAssetIds: z.array(z.string().min(1)).default([]),
       }),
     ).min(1).max(12),
@@ -219,7 +218,6 @@ function sanitizeCandidateNodes(
     }),
     context: node.context ?? "",
     rawContext: node.rawContext ?? node.context ?? "",
-    contextMode: "structured" as const,
   }));
 }
 

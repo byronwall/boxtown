@@ -4,7 +4,6 @@ import { createOrderedNodeState } from "./spatial-map-relations";
 
 const baseNode: PositionedMapNode = {
   context: "",
-  contextMode: "structured",
   depth: 0,
   fontSize: 16,
   height: 100,

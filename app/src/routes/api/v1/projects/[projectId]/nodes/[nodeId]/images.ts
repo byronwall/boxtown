@@ -1,6 +1,7 @@
 import type { APIEvent } from "@solidjs/start/server";
 import { AgentApiError } from "~/lib/agent-api/errors.server";
 import { withAgentApi } from "~/lib/agent-api/handler.server";
+import { toAgentOperationActor } from "~/lib/agent-api/operation-actor";
 import { agentJson } from "~/lib/agent-api/response.server";
 import {
   addProjectNodeImagesOnDisk,
@@ -32,7 +33,7 @@ export async function GET(event: APIEvent) {
 }
 
 export async function POST(event: APIEvent) {
-  return withAgentApi(event, { scopes: ["image:write"] }, async () => {
+  return withAgentApi(event, { scopes: ["image:write"] }, async (context) => {
     const beforeProject = await readProjectByIdFromDisk(event.params.projectId);
     const beforeNode = beforeProject?.spatialMap.nodes.find((node) => node.id === event.params.nodeId);
     if (!beforeProject) {
@@ -61,6 +62,7 @@ export async function POST(event: APIEvent) {
         projectId: event.params.projectId,
         nodeId: event.params.nodeId,
         images,
+        actor: toAgentOperationActor(context.actor),
       });
       const node = project.spatialMap.nodes.find((item) => item.id === event.params.nodeId);
       const addedImages = (node?.images ?? []).filter((image) => !previousImageIds.has(image.id));
@@ -85,7 +87,7 @@ type DeleteImageRequest = {
 };
 
 export async function DELETE(event: APIEvent) {
-  return withAgentApi(event, { scopes: ["image:write"] }, async () => {
+  return withAgentApi(event, { scopes: ["image:write"] }, async (context) => {
     const input = (await event.request.json().catch(() => ({}))) as DeleteImageRequest;
     if (typeof input.imageId !== "string" || input.imageId.trim().length === 0) {
       throw new AgentApiError("image_id_required", "An image id is required.", 400);
@@ -96,6 +98,7 @@ export async function DELETE(event: APIEvent) {
         projectId: event.params.projectId,
         nodeId: event.params.nodeId,
         imageId: input.imageId,
+        actor: toAgentOperationActor(context.actor),
       });
       const node = project.spatialMap.nodes.find((item) => item.id === event.params.nodeId);
 
