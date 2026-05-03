@@ -1,18 +1,15 @@
-import { useSubmission } from "@solidjs/router";
+import { useAction } from "@solidjs/router";
 import { createEffect, createMemo, createSignal, For, onCleanup, Show, type JSX } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, styled } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
-import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
-import { createProjectChildNode, moveProjectNode } from "~/lib/projects/data";
-import { ensureProjectNodeTypeOptions, getProjectNodeType } from "~/lib/projects/node-types";
+import { moveProjectNode } from "~/lib/projects/data";
+import { getProjectNodeType } from "~/lib/projects/node-types";
 import type { ProjectRecord } from "~/lib/projects/types";
-import { normalizeActionUrl } from "~/lib/router/action-url";
 import { createParentChildLink } from "~/lib/spatial-map/links";
 import { VIEWPORT_HEIGHT, VIEWPORT_WIDTH } from "~/lib/spatial-map/layout";
 import {
-  DEFAULT_MAP_NODE_STATUS,
   getMapNodeStatusGlyph,
   getMapNodeStatusLabel,
 } from "~/lib/spatial-map/node-status";
@@ -23,6 +20,7 @@ import type {
   NodeVisualState,
   SpatialMapNodeColorMode,
 } from "./spatial-map-canvas.types";
+import { SpatialMapChildNodePlaceholder } from "./SpatialMapChildNodePlaceholder";
 import { getImageFilesFromDataTransfer, useSpatialMapImages } from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
 
@@ -139,8 +137,6 @@ const NODE_STATUS_LABEL_GAP = 5;
 const NODE_STATUS_LABEL_WIDTH_FACTOR = 6.2;
 
 const SpatialMapButton = styled("button");
-const SpatialMapForm = styled("form");
-const SpatialMapSelect = styled("select");
 const SpatialMapImage = styled("img");
 
 // SVG hover state crosses from the node group into child rect/text elements, so
@@ -226,14 +222,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
 
     return createDraftConnectorPath(parentNode, draft);
   });
-  const moveSubmission = useSubmission(moveProjectNode, (input) => {
-    const formData = input[0];
-    return (
-      formData instanceof FormData &&
-      formData.get("projectId") === props.project.id &&
-      formData.get("nodeId") === controller.reparentingNodeId()
-    );
-  });
+  const submitMoveProjectNode = useAction(moveProjectNode);
   const reparentingNode = createMemo(() => {
     const nodeId = controller.reparentingNodeId();
     return nodeId ? controller.sourceNodesById().get(nodeId) ?? null : null;
@@ -243,6 +232,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
     return nodeId ? getDescendantNodeIds(props.project.spatialMap, nodeId) : new Set<string>();
   });
   const [contextHoverNodeId, setContextHoverNodeId] = createSignal<string | null>(null);
+  const [movePending, setMovePending] = createSignal(false);
   const contextHoverItem = createMemo(() => {
     const nodeId = contextHoverNodeId();
     if (!nodeId) {
@@ -251,9 +241,6 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
 
     return controller.orderedNodes().find((entry) => entry.node.id === nodeId) ?? null;
   });
-  let moveFormRef: HTMLFormElement | undefined;
-  let moveNodeIdInputRef: HTMLInputElement | undefined;
-  let moveParentNodeIdInputRef: HTMLInputElement | undefined;
   let contextHoverOpenTimeout: ReturnType<typeof setTimeout> | undefined;
   let contextHoverCloseTimeout: ReturnType<typeof setTimeout> | undefined;
 
@@ -298,36 +285,9 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
     clearContextHoverCloseTimeout();
   });
 
-  createEffect(() => {
-    const result = moveSubmission.result;
-    if (!result || moveSubmission.pending) {
-      return;
-    }
-
-    props.onProjectUpdated?.(result);
-    controller.clearReparentingNode();
-    toaster.success({ title: "Node moved" });
-    moveSubmission.clear();
-  });
-
-  createEffect(() => {
-    if (!moveSubmission.error || moveSubmission.pending) {
-      return;
-    }
-
-    toaster.error({
-      title: "Node was not moved",
-      description:
-        moveSubmission.error instanceof Error
-          ? moveSubmission.error.message
-          : "The server action failed. Try again after the dev server reconnects.",
-    });
-    moveSubmission.clear();
-  });
-
-  const moveSelectedNode = (parentNodeId: string | null) => {
+  const moveSelectedNode = async (parentNodeId: string | null) => {
     const nodeId = controller.reparentingNodeId();
-    if (!nodeId || !moveFormRef || !moveNodeIdInputRef || !moveParentNodeIdInputRef) {
+    if (!nodeId || movePending()) {
       return;
     }
     if (parentNodeId === nodeId) {
@@ -342,11 +302,29 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       return;
     }
 
-    moveNodeIdInputRef.value = nodeId;
-    moveParentNodeIdInputRef.value = parentNodeId ?? "";
     props.onProjectUpdated?.(moveProjectNodeOptimistically(props.project, nodeId, parentNodeId));
-    moveFormRef.requestSubmit();
     controller.clearReparentingNode();
+    const formData = new FormData();
+    formData.set("projectId", props.project.id);
+    formData.set("nodeId", nodeId);
+    formData.set("parentNodeId", parentNodeId ?? "");
+
+    setMovePending(true);
+    try {
+      const result = await submitMoveProjectNode(formData);
+      props.onProjectUpdated?.(result);
+      toaster.success({ title: "Node moved" });
+    } catch (error) {
+      toaster.error({
+        title: "Node was not moved",
+        description:
+          error instanceof Error
+            ? error.message
+            : "The server action failed. Try again after the dev server reconnects.",
+      });
+    } finally {
+      setMovePending(false);
+    }
   };
 
   return (
@@ -616,7 +594,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                   viewportScale={controller.viewportScale()}
                   onClick={(nodeId) => {
                     if (controller.reparentingNodeId()) {
-                      moveSelectedNode(nodeId);
+                      void moveSelectedNode(nodeId);
                       return;
                     }
                     controller.sceneHandlers.onNodeClick(nodeId);
@@ -657,7 +635,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       </Show>
       <Show when={controller.childNodeDraft()}>
         {(draft) => (
-          <ChildNodePlaceholder
+          <SpatialMapChildNodePlaceholder
             draft={draft()}
             parentNode={draftParentNode() ?? undefined}
             project={props.project}
@@ -665,16 +643,6 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
           />
         )}
       </Show>
-      <form
-        ref={moveFormRef}
-        action={normalizeActionUrl(moveProjectNode.url)}
-        method="post"
-        hidden
-      >
-        <input type="hidden" name="projectId" value={props.project.id} />
-        <input ref={moveNodeIdInputRef} type="hidden" name="nodeId" />
-        <input ref={moveParentNodeIdInputRef} type="hidden" name="parentNodeId" />
-      </form>
       <Show when={reparentingNode()}>
         {(node) => (
           <Box
@@ -706,8 +674,10 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                 border="0"
                 borderRadius="4px"
                 background="transparent"
-                loading={moveSubmission.pending}
-                onClick={() => moveSelectedNode(null)}
+                loading={movePending()}
+                onClick={() => {
+                  void moveSelectedNode(null);
+                }}
               >
                 Move to root
               </Button>
@@ -718,7 +688,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                 border="0"
                 borderRadius="4px"
                 background="transparent"
-                disabled={moveSubmission.pending}
+                disabled={movePending()}
                 onClick={() => controller.clearReparentingNode()}
               >
                 Cancel
@@ -815,332 +785,6 @@ function getDescendantNodeIds(data: ProjectRecord["spatialMap"], nodeId: string)
   }
 
   return descendants;
-}
-
-function ChildNodePlaceholder(props: {
-  draft: ChildNodeDraft;
-  parentNode?: NodeVisualState["node"];
-  project: ProjectRecord;
-  onProjectUpdated?: (project: ProjectRecord) => void;
-}) {
-  const controller = useSpatialMap();
-  const submission = useSubmission(createProjectChildNode, (input) => {
-    const formData = input[0];
-    return (
-      formData instanceof FormData &&
-      formData.get("projectId") === props.project.id &&
-      (props.parentNode
-        ? formData.get("parentNodeId") === props.parentNode.id
-        : !formData.get("parentNodeId"))
-    );
-  });
-  const [title, setTitle] = createSignal("");
-  const nodeTypeOptions = createMemo(() =>
-    ensureProjectNodeTypeOptions(props.project.nodeTypeSchema, props.parentNode?.type),
-  );
-  const [nodeType, setNodeType] = createSignal(
-    props.parentNode?.type ?? nodeTypeOptions()[0]?.name ?? "page",
-  );
-  const [context, setContext] = createSignal("");
-  let formRef: HTMLFormElement | undefined;
-  let textareaRef: HTMLTextAreaElement | undefined;
-  let closeOnBlurTimer: number | undefined;
-
-  const overlayStyle = createMemo(() => {
-    const camera = controller.camera();
-    return {
-      left: `${((props.draft.x - camera.x) / camera.width) * 100}%`,
-      top: `${((props.draft.y - camera.y) / camera.height) * 100}%`,
-    };
-  });
-
-  createEffect(() => {
-    textareaRef?.focus();
-  });
-
-  onCleanup(() => {
-    if (closeOnBlurTimer !== undefined) {
-      window.clearTimeout(closeOnBlurTimer);
-    }
-  });
-
-  const scheduleCloseOnBlur = () => {
-    if (closeOnBlurTimer !== undefined) {
-      window.clearTimeout(closeOnBlurTimer);
-    }
-
-    closeOnBlurTimer = window.setTimeout(() => {
-      closeOnBlurTimer = undefined;
-      if (!formRef || submission.pending) {
-        return;
-      }
-      const activeElement = document.activeElement;
-      if (activeElement instanceof Node && formRef.contains(activeElement)) {
-        return;
-      }
-      controller.clearChildNodeDraft();
-    }, 0);
-  };
-
-  createEffect(() => {
-    const result = submission.result;
-    if (!result || submission.pending) {
-      return;
-    }
-
-    props.onProjectUpdated?.(result.project);
-    controller.clearChildNodeDraft();
-    queueMicrotask(() => controller.setSelectedNodeId(result.nodeId));
-    submission.clear();
-  });
-
-  createEffect(() => {
-    if (!submission.error || submission.pending) {
-      return;
-    }
-
-    toaster.error({
-      title: "Child node was not created",
-      description:
-        submission.error instanceof Error
-          ? submission.error.message
-          : "The server action failed. Try again after the dev server reconnects.",
-    });
-    submission.clear();
-  });
-
-  const applyOptimisticChild = (nextTitle: string, nextType: string, nextContext: string) => {
-    const nodeId = createUniqueNodeId(
-      nextTitle,
-      nextType,
-      new Set(props.project.spatialMap.nodes.map((node) => node.id)),
-    );
-
-    props.onProjectUpdated?.({
-      ...props.project,
-      updatedAt: new Date().toISOString(),
-      spatialMap: {
-        ...props.project.spatialMap,
-        nodes: [
-          ...props.project.spatialMap.nodes,
-          {
-            id: nodeId,
-            label: nextTitle,
-            type: nextType,
-            status: DEFAULT_MAP_NODE_STATUS,
-            metadata: {},
-            context: nextContext,
-            rawContext: nextContext,
-          },
-        ],
-        links: props.parentNode
-          ? [
-              ...props.project.spatialMap.links,
-              createParentChildLink({ source: props.parentNode.id, target: nodeId }),
-            ]
-          : props.project.spatialMap.links,
-      },
-    });
-    controller.clearChildNodeDraft();
-    queueMicrotask(() => controller.setSelectedNodeId(nodeId));
-  };
-
-  return (
-    <SpatialMapForm
-      ref={formRef}
-      position="absolute"
-      zIndex="30"
-      w="min(300px, calc(100% - 24px))"
-      maxH="calc(100% - 24px)"
-      boxSizing="border-box"
-      display="flex"
-      flexDirection="column"
-      gap="8px"
-      p="10px"
-      border="1px solid rgba(47, 57, 50, 0.5)"
-      background="rgba(250, 252, 247, 0.98)"
-      boxShadow="0 12px 28px rgba(20, 25, 22, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7)"
-      color="var(--spatial-map-copy)"
-      overflow="auto"
-      overscrollBehavior="contain"
-      pointerEvents="auto"
-      transform="translate(-50%, -50%)"
-      onPointerDown={(event) => event.stopPropagation()}
-      onClick={(event) => event.stopPropagation()}
-      style={overlayStyle()}
-      action={normalizeActionUrl(createProjectChildNode.url)}
-      method="post"
-      onFocusOut={scheduleCloseOnBlur}
-      onSubmit={(event) => {
-        const nextTitle = title().trim();
-        if (!nextTitle) {
-          event.preventDefault();
-          return;
-        }
-
-        applyOptimisticChild(nextTitle, nodeType(), context().trim());
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          controller.clearChildNodeDraft();
-          return;
-        }
-
-        if (
-          event.key === "Enter" &&
-          !event.shiftKey &&
-          !event.metaKey &&
-          !event.ctrlKey &&
-          !event.altKey
-        ) {
-          event.preventDefault();
-          formRef?.requestSubmit();
-        }
-      }}
-    >
-      <Box color="var(--spatial-map-copy-dim)" fontSize="11px" lineHeight="1" textTransform="none">
-        {props.parentNode ? "New child node" : "New node"}
-      </Box>
-      <Show when={props.parentNode}>
-        {(parentNode) => (
-          <Box
-            p="6px 7px"
-            border="1px solid rgba(34, 41, 36, 0.12)"
-            background="rgba(232, 236, 230, 0.72)"
-            color="var(--spatial-map-copy-muted)"
-            fontSize="11px"
-            lineHeight="1.25"
-            overflow="hidden"
-            textOverflow="ellipsis"
-            whiteSpace="nowrap"
-          >
-            Parent: {parentNode().label}
-          </Box>
-        )}
-      </Show>
-      <input type="hidden" name="projectId" value={props.project.id} />
-      <Show when={props.parentNode}>
-        {(parentNode) => (
-          <input type="hidden" name="parentNodeId" value={parentNode().id} />
-        )}
-      </Show>
-      <input type="hidden" name="type" value={nodeType()} />
-      <Textarea
-        ref={textareaRef}
-        aria-label="New node title"
-        name="title"
-        required
-        value={title()}
-        disabled={submission.pending}
-        placeholder="Node title"
-        rows={3}
-        onInput={(event) => setTitle(event.currentTarget.value)}
-      />
-      <Box
-        as="label"
-        display="flex"
-        flexDirection="column"
-        gap="4px"
-        color="var(--spatial-map-copy-dim)"
-        fontSize="10px"
-        fontWeight="700"
-        letterSpacing="0.04em"
-        lineHeight="1"
-        textTransform="none"
-      >
-        <span>Type</span>
-        <SpatialMapSelect
-          value={nodeType()}
-          disabled={submission.pending}
-          w="100%"
-          minH="30px"
-          border="1px solid rgba(47, 57, 50, 0.28)"
-          background="rgba(248, 250, 248, 0.94)"
-          color="var(--spatial-map-copy)"
-          fontFamily="inherit"
-          fontSize="12px"
-          fontWeight="500"
-          letterSpacing="0"
-          onChange={(event) => setNodeType(event.currentTarget.value)}
-        >
-          <For each={nodeTypeOptions()}>
-            {(option) => (
-              <option value={option.name}>
-                {option.name}
-              </option>
-            )}
-          </For>
-        </SpatialMapSelect>
-      </Box>
-      <Box
-        as="label"
-        display="flex"
-        flexDirection="column"
-        gap="4px"
-        color="var(--spatial-map-copy-dim)"
-        fontSize="10px"
-        fontWeight="700"
-        letterSpacing="0.04em"
-        lineHeight="1"
-        textTransform="none"
-      >
-        <span>Context</span>
-        <Textarea
-          aria-label="New node context"
-          name="context"
-          value={context()}
-          disabled={submission.pending}
-          placeholder="Optional context"
-          rows={4}
-          onInput={(event) => setContext(event.currentTarget.value)}
-        />
-      </Box>
-      <Box display="flex" gap="6px" justifyContent="flex-end">
-        <Button
-          size="xs"
-          variant="plain"
-          type="button"
-          disabled={submission.pending}
-          onClick={() => controller.clearChildNodeDraft()}
-        >
-          Cancel
-        </Button>
-        <Button
-          size="xs"
-          colorPalette="green"
-          disabled={!title().trim()}
-          loading={submission.pending}
-          type="submit"
-        >
-          Accept
-        </Button>
-      </Box>
-    </SpatialMapForm>
-  );
-}
-
-function createUniqueNodeId(label: string, type: string, existingIds: Set<string>) {
-  const baseId = slugifyProjectName(`${type}-${label}`);
-  if (!existingIds.has(baseId)) {
-    return baseId;
-  }
-
-  let suffix = 2;
-  while (existingIds.has(`${baseId}-${suffix}`)) {
-    suffix += 1;
-  }
-
-  return `${baseId}-${suffix}`;
-}
-
-function slugifyProjectName(name: string) {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return slug || "project";
 }
 
 function SpatialMapNode(props: {

@@ -18,6 +18,22 @@ interface MutableMarkdownHeadingSection {
   bodyLines: string[];
 }
 
+interface MarkdownHeadingParserState {
+  sections: MutableMarkdownHeadingSection[];
+  preambleLines: string[];
+  headingStack: Array<{ level: number }>;
+  includedHeadingStack: Array<{ index: number; level: number }>;
+  detectedMaxHeadingDepth: number;
+  activeSectionIndex: number | null;
+  activeFenceMarker: string | null;
+}
+
+interface NormalizedHeadingSplitOptions {
+  maxHeadingDepth: number | null;
+  splitListItems: boolean;
+  splitNestedListItems: boolean;
+}
+
 const ATX_HEADING_PATTERN = /^( {0,3})(#{1,6})[ \t]+(.+?)(?:[ \t]+#+[ \t]*)?$/;
 const FENCE_PATTERN = /^( {0,3})(`{3,}|~{3,})/;
 const LIST_ITEM_PATTERN = /^([ \t]*)(?:[-+*]|\d+[.)])[ \t]+(.+)$/;
@@ -46,151 +62,185 @@ function parseMarkdownHeadingSections(
   options: SplitMarkdownIntoHeadingSectionsOptions = {},
 ) {
   const lines = markdown.split(/\r?\n/);
-  const sections: MutableMarkdownHeadingSection[] = [];
-  const preambleLines: string[] = [];
-  const headingStack: Array<{ level: number }> = [];
-  const includedHeadingStack: Array<{ index: number; level: number }> = [];
-  const maxHeadingDepth =
-    typeof options.maxHeadingDepth === "number" && Number.isFinite(options.maxHeadingDepth)
-      ? Math.max(1, Math.floor(options.maxHeadingDepth))
-      : null;
-  const splitListItems = options.splitListItems === true;
-  const splitNestedListItems = options.splitNestedListItems !== false;
-  let detectedMaxHeadingDepth = 0;
-  let activeSectionIndex: number | null = null;
-  let activeFenceMarker: string | null = null;
+  const state: MarkdownHeadingParserState = {
+    sections: [],
+    preambleLines: [],
+    headingStack: [],
+    includedHeadingStack: [],
+    detectedMaxHeadingDepth: 0,
+    activeSectionIndex: null,
+    activeFenceMarker: null,
+  };
+  const normalizedOptions = normalizeHeadingSplitOptions(options);
 
   for (const line of lines) {
-    const fenceMatch = line.match(FENCE_PATTERN);
-    if (fenceMatch) {
-      const marker = fenceMatch[2]?.[0] ?? null;
-      if (marker) {
-        if (activeFenceMarker === marker) {
-          activeFenceMarker = null;
-        } else if (activeFenceMarker === null) {
-          activeFenceMarker = marker;
-        }
-      }
-    }
+    updateFenceState(state, line);
 
-    const headingMatch =
-      activeFenceMarker === null ? line.match(ATX_HEADING_PATTERN) : null;
-    const listItemMatch =
-      splitListItems && activeFenceMarker === null ? line.match(LIST_ITEM_PATTERN) : null;
-
-    if (headingMatch) {
-      const level = headingMatch[2].length;
-      const rawLabel = headingMatch[3]?.trim() ?? "";
-      const label = rawLabel.replace(/[ \t]+#+$/, "").trim();
-
-      if (label.length === 0) {
-        continue;
-      }
-
-      while (headingStack.length > 0) {
-        const lastHeading = headingStack[headingStack.length - 1];
-        if (!lastHeading || lastHeading.level < level) {
-          break;
-        }
-        headingStack.pop();
-      }
-
-      const headingDepth = headingStack.length + 1;
-      detectedMaxHeadingDepth = Math.max(detectedMaxHeadingDepth, headingDepth);
-      headingStack.push({ level });
-
-      while (includedHeadingStack.length > 0) {
-        const lastIncludedHeading = includedHeadingStack[includedHeadingStack.length - 1];
-        if (!lastIncludedHeading || lastIncludedHeading.level < level) {
-          break;
-        }
-        includedHeadingStack.pop();
-      }
-
-      if (maxHeadingDepth !== null && headingDepth > maxHeadingDepth) {
-        const parentSectionIndex = includedHeadingStack[includedHeadingStack.length - 1]?.index;
-        if (parentSectionIndex === undefined) {
-          preambleLines.push(line);
-          activeSectionIndex = null;
-        } else {
-          sections[parentSectionIndex]?.bodyLines.push(line);
-          activeSectionIndex = parentSectionIndex;
-        }
-        continue;
-      }
-
-      const parentIndex =
-        includedHeadingStack[includedHeadingStack.length - 1]?.index ?? null;
-      const nextSectionIndex = sections.length;
-      sections.push({
-        level,
-        label,
-        parentIndex,
-        bodyLines: [],
-      });
-      includedHeadingStack.push({ index: nextSectionIndex, level });
-      activeSectionIndex = nextSectionIndex;
+    if (handleHeadingLine(state, normalizedOptions, line)) {
       continue;
     }
 
-    if (listItemMatch) {
-      const indent = getListIndentWidth(listItemMatch[1] ?? "");
-      const label = (listItemMatch[2] ?? "").trim();
-
-      if (label.length === 0) {
-        continue;
-      }
-
-      const parentSectionIndex = getListItemParentIndex({
-        sections,
-        activeSectionIndex,
-        indent,
-        splitNestedListItems,
-      });
-
-      if (!splitNestedListItems && shouldRollNestedListItemIntoContext({
-        sections,
-        activeSectionIndex,
-        indent,
-      })) {
-        appendLineToSectionOrPreamble({
-          sections,
-          preambleLines,
-          activeSectionIndex,
-          line,
-        });
-        continue;
-      }
-
-      const nextSectionIndex = sections.length;
-      sections.push({
-        level: 7 + indent,
-        label,
-        parentIndex: parentSectionIndex,
-        bodyLines: [],
-      });
-      activeSectionIndex = nextSectionIndex;
+    if (handleListItemLine(state, normalizedOptions, line)) {
       continue;
     }
 
-    if (activeSectionIndex === null) {
-      preambleLines.push(line);
-      continue;
-    }
-
-    sections[activeSectionIndex]?.bodyLines.push(line);
+    appendLineToSectionOrPreamble(state, line);
   }
 
   return {
-    preamble: trimMarkdownBlock(preambleLines.join("\n")),
-    maxHeadingDepth: detectedMaxHeadingDepth,
-    sections: sections.map((section) => ({
+    preamble: trimMarkdownBlock(state.preambleLines.join("\n")),
+    maxHeadingDepth: state.detectedMaxHeadingDepth,
+    sections: state.sections.map((section) => ({
       level: section.level,
       label: section.label,
       parentIndex: section.parentIndex,
       context: trimMarkdownBlock(section.bodyLines.join("\n")),
     })),
   };
+}
+
+function normalizeHeadingSplitOptions(
+  options: SplitMarkdownIntoHeadingSectionsOptions,
+): NormalizedHeadingSplitOptions {
+  return {
+    maxHeadingDepth:
+      typeof options.maxHeadingDepth === "number" && Number.isFinite(options.maxHeadingDepth)
+        ? Math.max(1, Math.floor(options.maxHeadingDepth))
+        : null,
+    splitListItems: options.splitListItems === true,
+    splitNestedListItems: options.splitNestedListItems !== false,
+  };
+}
+
+function updateFenceState(state: MarkdownHeadingParserState, line: string) {
+  const fenceMatch = line.match(FENCE_PATTERN);
+  const marker = fenceMatch?.[2]?.[0] ?? null;
+  if (!marker) {
+    return;
+  }
+
+  if (state.activeFenceMarker === marker) {
+    state.activeFenceMarker = null;
+  } else if (state.activeFenceMarker === null) {
+    state.activeFenceMarker = marker;
+  }
+}
+
+function handleHeadingLine(
+  state: MarkdownHeadingParserState,
+  options: NormalizedHeadingSplitOptions,
+  line: string,
+) {
+  const headingMatch = state.activeFenceMarker === null ? line.match(ATX_HEADING_PATTERN) : null;
+  if (!headingMatch) {
+    return false;
+  }
+
+  const level = headingMatch[2].length;
+  const label = normalizeHeadingLabel(headingMatch[3]);
+  if (label.length === 0) {
+    return true;
+  }
+
+  const headingDepth = updateHeadingStack(state, level);
+  pruneIncludedHeadingStack(state, level);
+
+  if (options.maxHeadingDepth !== null && headingDepth > options.maxHeadingDepth) {
+    appendSkippedHeadingToNearestParent(state, line);
+    return true;
+  }
+
+  const parentIndex = state.includedHeadingStack[state.includedHeadingStack.length - 1]?.index ?? null;
+  const nextSectionIndex = state.sections.length;
+  state.sections.push({
+    level,
+    label,
+    parentIndex,
+    bodyLines: [],
+  });
+  state.includedHeadingStack.push({ index: nextSectionIndex, level });
+  state.activeSectionIndex = nextSectionIndex;
+  return true;
+}
+
+function normalizeHeadingLabel(rawLabel: string | undefined) {
+  return (rawLabel?.trim() ?? "").replace(/[ \t]+#+$/, "").trim();
+}
+
+function updateHeadingStack(state: MarkdownHeadingParserState, level: number) {
+  pruneStackAtLevel(state.headingStack, level);
+  const headingDepth = state.headingStack.length + 1;
+  state.detectedMaxHeadingDepth = Math.max(state.detectedMaxHeadingDepth, headingDepth);
+  state.headingStack.push({ level });
+  return headingDepth;
+}
+
+function pruneIncludedHeadingStack(state: MarkdownHeadingParserState, level: number) {
+  pruneStackAtLevel(state.includedHeadingStack, level);
+}
+
+function pruneStackAtLevel(stack: Array<{ level: number }>, level: number) {
+  while (stack.length > 0) {
+    const lastHeading = stack[stack.length - 1];
+    if (!lastHeading || lastHeading.level < level) {
+      break;
+    }
+    stack.pop();
+  }
+}
+
+function appendSkippedHeadingToNearestParent(state: MarkdownHeadingParserState, line: string) {
+  const parentSectionIndex = state.includedHeadingStack[state.includedHeadingStack.length - 1]?.index;
+  if (parentSectionIndex === undefined) {
+    state.preambleLines.push(line);
+    state.activeSectionIndex = null;
+    return;
+  }
+
+  state.sections[parentSectionIndex]?.bodyLines.push(line);
+  state.activeSectionIndex = parentSectionIndex;
+}
+
+function handleListItemLine(
+  state: MarkdownHeadingParserState,
+  options: NormalizedHeadingSplitOptions,
+  line: string,
+) {
+  const listItemMatch =
+    options.splitListItems && state.activeFenceMarker === null ? line.match(LIST_ITEM_PATTERN) : null;
+  if (!listItemMatch) {
+    return false;
+  }
+
+  const indent = getListIndentWidth(listItemMatch[1] ?? "");
+  const label = (listItemMatch[2] ?? "").trim();
+  if (label.length === 0) {
+    return true;
+  }
+
+  if (!options.splitNestedListItems && shouldRollNestedListItemIntoContext({
+    sections: state.sections,
+    activeSectionIndex: state.activeSectionIndex,
+    indent,
+  })) {
+    appendLineToSectionOrPreamble(state, line);
+    return true;
+  }
+
+  const nextSectionIndex = state.sections.length;
+  state.sections.push({
+    level: 7 + indent,
+    label,
+    parentIndex: getListItemParentIndex({
+      sections: state.sections,
+      activeSectionIndex: state.activeSectionIndex,
+      indent,
+      splitNestedListItems: options.splitNestedListItems,
+    }),
+    bodyLines: [],
+  });
+  state.activeSectionIndex = nextSectionIndex;
+  return true;
 }
 
 function getListIndentWidth(indent: string) {
@@ -261,18 +311,13 @@ function shouldRollNestedListItemIntoContext(input: {
   );
 }
 
-function appendLineToSectionOrPreamble(input: {
-  sections: MutableMarkdownHeadingSection[];
-  preambleLines: string[];
-  activeSectionIndex: number | null;
-  line: string;
-}) {
-  if (input.activeSectionIndex === null) {
-    input.preambleLines.push(input.line);
+function appendLineToSectionOrPreamble(state: MarkdownHeadingParserState, line: string) {
+  if (state.activeSectionIndex === null) {
+    state.preambleLines.push(line);
     return;
   }
 
-  input.sections[input.activeSectionIndex]?.bodyLines.push(input.line);
+  state.sections[state.activeSectionIndex]?.bodyLines.push(line);
 }
 
 function trimMarkdownBlock(value: string) {

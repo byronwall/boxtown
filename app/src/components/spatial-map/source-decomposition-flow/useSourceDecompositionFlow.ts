@@ -1,12 +1,13 @@
+import { useAction } from "@solidjs/router";
 import { createSignal, onCleanup } from "solid-js";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type { SourceDecompositionRunSnapshot } from "~/lib/source-decomposition/types";
 import {
-  acceptSourceDecompositionRequest,
-  loadSourceDecompositionRunRequest,
-  startSourceDecompositionRunRequest,
-  subscribeSourceDecompositionRun,
-} from "./sourceDecomposition.api";
+  acceptSourceDecompositionAction,
+  loadSourceDecompositionRun,
+  startSourceDecompositionRunAction,
+} from "~/lib/spatial-map/run-actions";
+import { subscribeSourceDecompositionRun } from "./sourceDecomposition.api";
 
 interface UseSourceDecompositionFlowOptions {
   projectId: string;
@@ -18,6 +19,8 @@ function isTerminal(snapshot: SourceDecompositionRunSnapshot) {
 }
 
 export function useSourceDecompositionFlow(options: UseSourceDecompositionFlowOptions) {
+  const submitStartRun = useAction(startSourceDecompositionRunAction);
+  const submitAcceptSelection = useAction(acceptSourceDecompositionAction);
   const [snapshot, setSnapshot] = createSignal<SourceDecompositionRunSnapshot | null>(null);
   const [error, setError] = createSignal<string | null>(null);
   const [starting, setStarting] = createSignal(false);
@@ -62,7 +65,7 @@ export function useSourceDecompositionFlow(options: UseSourceDecompositionFlowOp
 
     const poll = async () => {
       try {
-        applySnapshot(await loadSourceDecompositionRunRequest(options.projectId, runId));
+        applySnapshot(await loadSourceDecompositionRun({ projectId: options.projectId, runId }));
       } catch (pollError) {
         setError(
           pollError instanceof Error
@@ -108,7 +111,7 @@ export function useSourceDecompositionFlow(options: UseSourceDecompositionFlowOp
         formData.append("images", image);
       }
 
-      const started = await startSourceDecompositionRunRequest(options.projectId, formData);
+      const started = await submitStartRun({ projectId: options.projectId, formData });
       applySnapshot(started.snapshot);
       startStream(started.runId);
     } catch (startError) {
@@ -130,11 +133,14 @@ export function useSourceDecompositionFlow(options: UseSourceDecompositionFlowOp
       unsubscribe?.();
       unsubscribe = null;
       stopPolling();
-      const nextSnapshot = await acceptSourceDecompositionRequest(
-        options.projectId,
-        activeSnapshot.runId,
-        { acceptedNodeIds: selectedNodeIds() },
-      );
+      const nextSnapshot = await submitAcceptSelection({
+        projectId: options.projectId,
+        runId: activeSnapshot.runId,
+        body: { acceptedNodeIds: selectedNodeIds() },
+      });
+      if (!nextSnapshot) {
+        throw new Error("Failed to accept source decomposition suggestions.");
+      }
       applySnapshot(nextSnapshot);
       if (!isTerminal(nextSnapshot)) {
         startStream(nextSnapshot.runId);

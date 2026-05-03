@@ -57,6 +57,9 @@ Run inside `app/`:
 - Use `ClearButton` and `CloseButton` for icon-only clear/close actions.
 - Keep SSR + hydration output stable for overlay controls.
 - Use Panda tokens and recipes; avoid hard-coded spacing/colors unless a token is missing.
+- Keep component styles in the TSX component that owns the markup. Prefer Panda JSX props, recipes, variants, and small local `styled(...)` primitives over feature-level CSS files or detached style modules.
+- Use `css(...)` only for cases that cannot be expressed through props, such as third-party/generated descendant markup, pseudo-elements, or component slot class hooks. Keep those selectors local to the component file and add a short comment explaining why the CSS escape hatch is needed.
+- Do not reintroduce broad component stylesheets for `app/src/components/spatial-map/`; spatial map styling should stay in component props/local primitives, with only justified local `css(...)` selectors for structural exceptions.
 - For selected/current items in menus, dropdowns, lists, and inspectors, prefer a subtle background fill plus text treatment. Do not add decorative left/right accent bars, inset side borders, or stripe markers unless the component is explicitly a navigation rail or timeline.
 
 ## Spatial Map Canvas Safety

@@ -428,8 +428,16 @@ export function stepLayout(
   const collisionIndex = new SpatialCollisionIndex(nextNodes);
 
   nudgeHoveredCluster(nextNodes, nodesById, adjacency, hoveredNodeId);
+  applyRadialForces(nextNodes);
+  applyEdgeForces(adjacency, nodesById);
+  resolveCollisions(nextNodes, collisionIndex);
+  applyNeighborGravityAndIntegrate(nextNodes, nodesById, adjacency);
 
-  for (const node of nextNodes) {
+  return nextNodes;
+}
+
+function applyRadialForces(nodes: PositionedMapNode[]) {
+  for (const node of nodes) {
     const dx = node.x - VIEWPORT_CENTER_X;
     const dy = node.y - VIEWPORT_CENTER_Y;
     const distance = Math.hypot(dx, dy) || 1;
@@ -441,7 +449,12 @@ export function stepLayout(
     node.vx += -(dx / distance) * radialError * radialStrength;
     node.vy += -(dy / distance) * radialError * radialStrength;
   }
+}
 
+function applyEdgeForces(
+  adjacency: AdjacencyMap,
+  nodesById: Map<string, PositionedMapNode>,
+) {
   for (const [sourceId, neighbors] of adjacency) {
     for (const targetId of neighbors) {
       if (sourceId > targetId) {
@@ -469,8 +482,13 @@ export function stepLayout(
       target.vy -= fy;
     }
   }
+}
 
-  for (const a of nextNodes) {
+function resolveCollisions(
+  nodes: PositionedMapNode[],
+  collisionIndex: SpatialCollisionIndex,
+) {
+  for (const a of nodes) {
     for (const b of collisionIndex.queryNode(a)) {
       if (a.id >= b.id) {
         continue;
@@ -496,11 +514,15 @@ export function stepLayout(
       }
     }
   }
+}
 
-  for (const node of nextNodes) {
-    const neighbors = [...(adjacency.get(node.id) ?? [])]
-      .map((id) => nodesById.get(id))
-      .filter((item): item is PositionedMapNode => Boolean(item));
+function applyNeighborGravityAndIntegrate(
+  nodes: PositionedMapNode[],
+  nodesById: Map<string, PositionedMapNode>,
+  adjacency: AdjacencyMap,
+) {
+  for (const node of nodes) {
+    const neighbors = getNodeNeighbors(node.id, nodesById, adjacency);
 
     if (neighbors.length > 0) {
       const avgX =
@@ -520,8 +542,16 @@ export function stepLayout(
       VIEWPORT_HEIGHT - node.height / 2 - 28,
     );
   }
+}
 
-  return nextNodes;
+function getNodeNeighbors(
+  nodeId: string,
+  nodesById: Map<string, PositionedMapNode>,
+  adjacency: AdjacencyMap,
+) {
+  return [...(adjacency.get(nodeId) ?? [])]
+    .map((id) => nodesById.get(id))
+    .filter((item): item is PositionedMapNode => Boolean(item));
 }
 
 export function solveStaticLayout(

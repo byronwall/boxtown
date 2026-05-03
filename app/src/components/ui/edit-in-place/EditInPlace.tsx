@@ -47,7 +47,19 @@ const rootClass = css({
   },
 });
 
-export function EditInPlace(props: EditInPlace.Props) {
+export type EditInPlaceState = "idle" | "selected" | "editing";
+export type EditInPlaceAnim = "confirmed" | "reverted";
+export type EditInPlaceProps =
+  Omit<JSX.IntrinsicElements["div"], "onBlur" | "contentEditable" | "children"> & {
+    value: string;
+    disabled?: boolean;
+    isEditing?: boolean;
+    shouldAllowMultiline?: boolean;
+    onConfirm?: (value: string) => void;
+    onBlur?: (value: string) => void;
+  };
+
+export function EditInPlace(props: EditInPlaceProps) {
   const [local, rest] = splitProps(props, [
     "value",
     "disabled",
@@ -95,17 +107,4 @@ export function EditInPlace(props: EditInPlace.Props) {
       class={[rootClass, local.class].filter(Boolean).join(" ")}
     />
   );
-}
-
-export namespace EditInPlace {
-  export type State = "idle" | "selected" | "editing";
-  export type Anim = "confirmed" | "reverted";
-  export type Props = Omit<JSX.IntrinsicElements["div"], "onBlur" | "contentEditable" | "children"> & {
-    value: string;
-    disabled?: boolean;
-    isEditing?: boolean;
-    shouldAllowMultiline?: boolean;
-    onConfirm?: (value: string) => void;
-    onBlur?: (value: string) => void;
-  };
 }

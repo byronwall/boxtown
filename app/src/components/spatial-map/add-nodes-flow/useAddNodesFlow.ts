@@ -1,12 +1,13 @@
+import { useAction } from "@solidjs/router";
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import type { AddNodesRunSnapshot } from "~/lib/add-nodes/types";
 import type { ProjectRecord } from "~/lib/projects/types";
 import {
-  loadAddNodesRunRequest,
-  startAddNodesRunRequest,
-  submitAddNodesAnswersRequest,
-  subscribeAddNodesRun,
-} from "./addNodesFlow.api";
+  loadAddNodesRun,
+  startAddNodesRunAction,
+  submitAddNodesAnswersAction,
+} from "~/lib/spatial-map/run-actions";
+import { subscribeAddNodesRun } from "./addNodesFlow.api";
 
 interface UseAddNodesFlowOptions {
   projectId: string;
@@ -18,6 +19,8 @@ function isTerminal(snapshot: AddNodesRunSnapshot) {
 }
 
 export function useAddNodesFlow(options: UseAddNodesFlowOptions) {
+  const submitStartRun = useAction(startAddNodesRunAction);
+  const submitAnswersRequest = useAction(submitAddNodesAnswersAction);
   const [brief, setBrief] = createSignal("");
   const [snapshot, setSnapshot] = createSignal<AddNodesRunSnapshot | null>(null);
   const [error, setError] = createSignal<string | null>(null);
@@ -58,7 +61,7 @@ export function useAddNodesFlow(options: UseAddNodesFlowOptions) {
 
     const poll = async () => {
       try {
-        applySnapshot(await loadAddNodesRunRequest(options.projectId, runId));
+        applySnapshot(await loadAddNodesRun({ projectId: options.projectId, runId }));
       } catch (pollError) {
         setError(
           pollError instanceof Error
@@ -96,9 +99,12 @@ export function useAddNodesFlow(options: UseAddNodesFlowOptions) {
     setError(null);
     setAnswerDraft({});
     try {
-      const started = await startAddNodesRunRequest(options.projectId, {
-        brief: activeBrief,
-        selectedNodeId: input?.selectedNodeId ?? null,
+      const started = await submitStartRun({
+        projectId: options.projectId,
+        body: {
+          brief: activeBrief,
+          selectedNodeId: input?.selectedNodeId ?? null,
+        },
       });
       setBrief(activeBrief);
       applySnapshot(started.snapshot);
@@ -122,11 +128,14 @@ export function useAddNodesFlow(options: UseAddNodesFlowOptions) {
       unsubscribe?.();
       unsubscribe = null;
       stopPolling();
-      const nextSnapshot = await submitAddNodesAnswersRequest(
-        options.projectId,
-        activeSnapshot.runId,
-        { answers: answerDraft() },
-      );
+      const nextSnapshot = await submitAnswersRequest({
+        projectId: options.projectId,
+        runId: activeSnapshot.runId,
+        body: { answers: answerDraft() },
+      });
+      if (!nextSnapshot) {
+        throw new Error("Failed to submit add-nodes answers.");
+      }
       applySnapshot(nextSnapshot);
       if (!isTerminal(nextSnapshot)) {
         startStream(nextSnapshot.runId);

@@ -1,21 +1,40 @@
-import { useSubmission } from "@solidjs/router";
+import { useAction } from "@solidjs/router";
 import { Upload } from "lucide-solid";
+import { createSignal } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, VStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import * as Field from "~/components/ui/field";
 import { Text } from "~/components/ui/text";
+import { toaster } from "~/components/ui/toast";
 import { importProject } from "~/lib/projects/data";
-import { normalizeActionUrl } from "~/lib/router/action-url";
 
 const monoFont =
   '"IBM Plex Mono", "SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace';
 
 export function ProjectImportControl() {
-  const submission = useSubmission(importProject);
+  const submitImportProject = useAction(importProject);
+  const [pending, setPending] = createSignal(false);
 
   return (
-    <form action={normalizeActionUrl(importProject.url)} method="post" enctype="multipart/form-data">
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (pending()) {
+          return;
+        }
+
+        setPending(true);
+        void submitImportProject(new FormData(event.currentTarget)).catch((error) => {
+          setPending(false);
+          toaster.error({
+            title: "Import failed",
+            description:
+              error instanceof Error ? error.message : "The project archive could not be imported.",
+          });
+        });
+      }}
+    >
       <VStack alignItems="stretch" gap="3">
         <Field.Root>
           <Field.Label fontSize="sm">
@@ -45,7 +64,7 @@ export function ProjectImportControl() {
         <Button
           type="submit"
           size="sm"
-          loading={submission.pending}
+          loading={pending()}
           loadingText="Importing"
           variant="outline"
           borderRadius="l1"

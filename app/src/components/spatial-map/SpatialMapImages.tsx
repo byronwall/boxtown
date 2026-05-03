@@ -1,4 +1,4 @@
-import { useSubmission } from "@solidjs/router";
+import { useAction } from "@solidjs/router";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -35,7 +35,6 @@ import {
   deleteProjectNodeImage,
 } from "~/lib/projects/data";
 import type { ProjectRecord } from "~/lib/projects/types";
-import { normalizeActionUrl } from "~/lib/router/action-url";
 import type {
   MapLink,
   MapNode,
@@ -135,54 +134,10 @@ export function SpatialMapImageProvider(props: {
   const [pendingDeleteImageId, setPendingDeleteImageId] = createSignal<
     string | null
   >(null);
-  const imageUploadSubmission = useSubmission(addProjectNodeImages, (input) => {
-    const formData = input[0];
-    return (
-      formData instanceof FormData &&
-      formData.get("projectId") === props.projectId
-    );
-  });
-  const imageDeleteSubmission = useSubmission(
-    deleteProjectNodeImage,
-    (input) => {
-      const formData = input[0];
-      return (
-        formData instanceof FormData &&
-        formData.get("projectId") === props.projectId
-      );
-    },
-  );
-  let uploadFormRef: HTMLFormElement | undefined;
-  let uploadFileInputRef: HTMLInputElement | undefined;
-  let uploadNodeIdInputRef: HTMLInputElement | undefined;
-  let deleteFormRef: HTMLFormElement | undefined;
-  let deleteNodeIdInputRef: HTMLInputElement | undefined;
-  let deleteImageIdInputRef: HTMLInputElement | undefined;
+  const submitAddProjectNodeImages = useAction(addProjectNodeImages);
+  const submitDeleteProjectNodeImage = useAction(deleteProjectNodeImage);
 
-  createEffect(() => {
-    const result = imageUploadSubmission.result;
-    if (!result || imageUploadSubmission.pending) {
-      return;
-    }
-
-    console.info(IMAGE_DEBUG_PREFIX, "upload submission resolved", {
-      projectId: result.id,
-      nodeCount: result.spatialMap.nodes.length,
-    });
-    props.onProjectUpdated?.(result);
-    toaster.success({
-      title: "Images attached",
-      description: "Image files were stored on disk and attached to the node.",
-    });
-    imageUploadSubmission.clear();
-  });
-
-  createEffect(() => {
-    const result = imageDeleteSubmission.result;
-    if (!result || imageDeleteSubmission.pending) {
-      return;
-    }
-
+  const applyDeletedImageResult = (result: ProjectRecord) => {
     props.onProjectUpdated?.(result);
     setViewerState((state) => {
       if (!state) return state;
@@ -209,25 +164,7 @@ export function SpatialMapImageProvider(props: {
       description: "The image was removed from this node.",
     });
     setPendingDeleteImageId(null);
-    imageDeleteSubmission.clear();
-  });
-
-  createEffect(() => {
-    const error = imageDeleteSubmission.error;
-    if (!error || imageDeleteSubmission.pending) {
-      return;
-    }
-
-    toaster.error({
-      title: "Delete failed",
-      description:
-        error instanceof Error
-          ? error.message
-          : "The image could not be deleted.",
-    });
-    setPendingDeleteImageId(null);
-    imageDeleteSubmission.clear();
-  });
+  };
 
   const uploadImages = async (nodeId: string, files: File[]) => {
     console.info(IMAGE_DEBUG_PREFIX, "upload requested", {
@@ -244,23 +181,26 @@ export function SpatialMapImageProvider(props: {
     }
 
     try {
-      if (!uploadFormRef || !uploadFileInputRef || !uploadNodeIdInputRef) {
-        throw new Error("Upload form is not mounted.");
-      }
-
-      const transfer = new DataTransfer();
+      const formData = new FormData();
+      formData.set("projectId", props.projectId);
+      formData.set("nodeId", nodeId);
       for (const file of imageFiles) {
-        transfer.items.add(file);
+        formData.append("images", file);
       }
-
-      uploadNodeIdInputRef.value = nodeId;
-      uploadFileInputRef.files = transfer.files;
       console.info(IMAGE_DEBUG_PREFIX, "submitting upload form", {
         nodeId,
-        actionUrl: normalizeActionUrl(addProjectNodeImages.url),
-        uploadedFiles: describeFiles(Array.from(uploadFileInputRef.files)),
+        uploadedFiles: describeFiles(imageFiles),
       });
-      uploadFormRef.requestSubmit();
+      const result = await submitAddProjectNodeImages(formData);
+      console.info(IMAGE_DEBUG_PREFIX, "upload submission resolved", {
+        projectId: result.id,
+        nodeCount: result.spatialMap.nodes.length,
+      });
+      props.onProjectUpdated?.(result);
+      toaster.success({
+        title: "Images attached",
+        description: "Image files were stored on disk and attached to the node.",
+      });
     } catch (error) {
       console.error(IMAGE_DEBUG_PREFIX, "upload failed", {
         nodeId,
@@ -279,14 +219,12 @@ export function SpatialMapImageProvider(props: {
 
   const deleteImage = async (nodeId: string, imageId: string) => {
     try {
-      if (!deleteFormRef || !deleteNodeIdInputRef || !deleteImageIdInputRef) {
-        throw new Error("Delete form is not mounted.");
-      }
-
       setPendingDeleteImageId(imageId);
-      deleteNodeIdInputRef.value = nodeId;
-      deleteImageIdInputRef.value = imageId;
-      deleteFormRef.requestSubmit();
+      const formData = new FormData();
+      formData.set("projectId", props.projectId);
+      formData.set("nodeId", nodeId);
+      formData.set("imageId", imageId);
+      applyDeletedImageResult(await submitDeleteProjectNodeImage(formData));
     } catch (error) {
       setPendingDeleteImageId(null);
       toaster.error({
@@ -383,33 +321,6 @@ export function SpatialMapImageProvider(props: {
         uploadImages,
       }}
     >
-      <form
-        ref={uploadFormRef}
-        action={normalizeActionUrl(addProjectNodeImages.url)}
-        method="post"
-        enctype="multipart/form-data"
-        style={{ display: "none" }}
-      >
-        <input type="hidden" name="projectId" value={props.projectId} />
-        <input ref={uploadNodeIdInputRef} type="hidden" name="nodeId" />
-        <input
-          ref={uploadFileInputRef}
-          type="file"
-          name="images"
-          accept="image/*"
-          multiple
-        />
-      </form>
-      <form
-        ref={deleteFormRef}
-        action={normalizeActionUrl(deleteProjectNodeImage.url)}
-        method="post"
-        style={{ display: "none" }}
-      >
-        <input type="hidden" name="projectId" value={props.projectId} />
-        <input ref={deleteNodeIdInputRef} type="hidden" name="nodeId" />
-        <input ref={deleteImageIdInputRef} type="hidden" name="imageId" />
-      </form>
       {props.children}
       <SpatialMapImageViewer
         state={viewerState()}

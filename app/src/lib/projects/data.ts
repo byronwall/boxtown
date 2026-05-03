@@ -169,6 +169,34 @@ export const updateProjectNodeStatus = action(
   "update-project-node-status",
 );
 
+export const updateProjectNodeType = action(
+  async (formData: FormData) => {
+    "use server";
+    const { updateProjectNodeTypeOnDisk } = await import("./data.server");
+
+    const projectId = formData.get("projectId");
+    const nodeId = formData.get("nodeId");
+    const type = formData.get("type");
+
+    if (typeof projectId !== "string" || projectId.trim().length === 0) {
+      throw new Error("A project id is required.");
+    }
+    if (typeof nodeId !== "string" || nodeId.trim().length === 0) {
+      throw new Error("A node id is required.");
+    }
+    if (typeof type !== "string" || type.trim().length === 0) {
+      throw new Error("A valid node type is required.");
+    }
+
+    return updateProjectNodeTypeOnDisk({
+      projectId,
+      nodeId,
+      type,
+    });
+  },
+  "update-project-node-type",
+);
+
 export const addProjectNodeImages = action(
   async (formData: FormData) => {
     "use server";

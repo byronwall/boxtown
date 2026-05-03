@@ -244,197 +244,208 @@ async function dispatchProject(context, action) {
 
 async function dispatchNode(context, action) {
   const projectId = requireProject(context);
-  const subaction = context.parsed.command[2];
+  const handlers = {
+    list: dispatchNodeList,
+    view: dispatchNodeView,
+    create: dispatchNodeCreate,
+    update: dispatchNodeUpdate,
+    move: dispatchNodeMove,
+    context: dispatchNodeContext,
+    metadata: dispatchNodeMetadata,
+    "import-markdown": dispatchNodeImportMarkdown,
+  };
+  const handler = handlers[action];
+  if (!handler) {
+    throw new CliError("Usage: pgm node <list|view|create|update|move|context|metadata|import-markdown>", exitCodes.usage);
+  }
 
-  if (action === "list") {
-    const nodes = await context.client.listNodes(projectId, {
-      status: context.parsed.options.status,
-      type: context.parsed.options.type,
-      search: context.parsed.options.search,
-    });
+  await handler(context, projectId);
+}
+
+async function dispatchNodeList(context, projectId) {
+  const nodes = await context.client.listNodes(projectId, {
+    status: context.parsed.options.status,
+    type: context.parsed.options.type,
+    search: context.parsed.options.search,
+  });
+  if (context.parsed.options.json) {
+    writeJson({ nodes }, context.io.stdout);
+  } else {
+    writeTable(nodes, pickNodeColumns(), context.io.stdout);
+  }
+}
+
+async function dispatchNodeView(context, projectId) {
+  const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
+  if (context.parsed.options.withAncestors || context.parsed.options.withContext) {
+    const contextTree = await context.client.getNodeContextTree(projectId, nodeId);
     if (context.parsed.options.json) {
-      writeJson({ nodes }, context.io.stdout);
+      writeJson(contextTree, context.io.stdout);
     } else {
-      writeTable(nodes, pickNodeColumns(), context.io.stdout);
+      writeContextTreeSummary(contextTree, context.io.stdout);
     }
     return;
   }
 
-  if (action === "view") {
-    const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
-    if (context.parsed.options.withAncestors || context.parsed.options.withContext) {
-      const contextTree = await context.client.getNodeContextTree(projectId, nodeId);
-      if (context.parsed.options.json) {
-        writeJson(contextTree, context.io.stdout);
-      } else {
-        writeContextTreeSummary(contextTree, context.io.stdout);
-      }
-      return;
-    }
-
-    const node = await context.client.getNode(projectId, nodeId);
-    if (context.parsed.options.json) {
-      writeJson({ node }, context.io.stdout);
-    } else {
-      context.io.stdout.write(`${node.label} (${node.id})\n`);
-      context.io.stdout.write(`Status: ${node.status}\nType: ${node.type}\nImages: ${node.images.length}\n`);
-      if (node.context) {
-        context.io.stdout.write(`\n${node.context}\n`);
-      }
-    }
+  const node = await context.client.getNode(projectId, nodeId);
+  if (context.parsed.options.json) {
+    writeJson({ node }, context.io.stdout);
     return;
   }
 
-  if (action === "create") {
-    const title = context.parsed.options.title ?? context.parsed.options.label ?? context.parsed.positionals.join(" ");
-    requireOption(title, "A node title is required. Pass --title <title> or a positional title.");
-    const contextText = await readOptionalTextInput(context.parsed.options.contextFile, context.io.cwd);
-    const result = await context.client.createNode(projectId, {
-      title,
-      type: context.parsed.options.type,
-      status: context.parsed.options.status,
-      parentNodeId: context.parsed.options.parent ?? context.parsed.options.parentNodeId ?? null,
-      context: contextText,
-      metadata: parseMetadataJson(context.parsed.options.metadataJson),
-    });
+  context.io.stdout.write(`${node.label} (${node.id})\n`);
+  context.io.stdout.write(`Status: ${node.status}\nType: ${node.type}\nImages: ${node.images.length}\n`);
+  if (node.context) {
+    context.io.stdout.write(`\n${node.context}\n`);
+  }
+}
 
-    if (context.parsed.options.json) {
-      writeJson(result, context.io.stdout);
-    } else {
-      context.io.stdout.write(`Created ${result.node?.label ?? title} (${result.nodeId}).\n`);
-      if (result.parentLink) {
-        context.io.stdout.write(`Parent: ${result.parentLink.source}\n`);
-      }
-    }
+async function dispatchNodeCreate(context, projectId) {
+  const title = context.parsed.options.title ?? context.parsed.options.label ?? context.parsed.positionals.join(" ");
+  requireOption(title, "A node title is required. Pass --title <title> or a positional title.");
+  const contextText = await readOptionalTextInput(context.parsed.options.contextFile, context.io.cwd);
+  const result = await context.client.createNode(projectId, {
+    title,
+    type: context.parsed.options.type,
+    status: context.parsed.options.status,
+    parentNodeId: context.parsed.options.parent ?? context.parsed.options.parentNodeId ?? null,
+    context: contextText,
+    metadata: parseMetadataJson(context.parsed.options.metadataJson),
+  });
+
+  if (context.parsed.options.json) {
+    writeJson(result, context.io.stdout);
     return;
   }
 
-  if (action === "update") {
-    const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
-    const input = {};
-    if (context.parsed.options.title !== undefined) {
-      input.title = context.parsed.options.title;
-    }
-    if (context.parsed.options.label !== undefined) {
-      input.label = context.parsed.options.label;
-    }
-    if (context.parsed.options.status !== undefined) {
-      input.status = context.parsed.options.status;
-    }
-    if (context.parsed.options.type !== undefined) {
-      input.type = context.parsed.options.type;
-    }
-    if (Object.keys(input).length === 0) {
-      throw new CliError("At least one of --title, --status, or --type is required.", exitCodes.usage);
-    }
-    const result = await context.client.updateNode(projectId, nodeId, input);
-    writeNodeMutationResult(context, result, "Updated");
-    return;
+  context.io.stdout.write(`Created ${result.node?.label ?? title} (${result.nodeId}).\n`);
+  if (result.parentLink) {
+    context.io.stdout.write(`Parent: ${result.parentLink.source}\n`);
   }
+}
 
-  if (action === "move") {
-    const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
-    const hasRoot = Boolean(context.parsed.options.root);
-    const parentNodeId = hasRoot
-      ? null
-      : requireOption(
-        context.parsed.options.parent ?? context.parsed.options.parentNodeId,
-        "A parent node id is required. Pass --parent <node-id> or --root.",
-      );
-    const result = await context.client.moveNode(projectId, nodeId, { parentNodeId });
-    if (context.parsed.options.json) {
-      writeJson(result, context.io.stdout);
-    } else {
-      context.io.stdout.write(`Moved ${result.node.label} (${result.node.id}).\n`);
-      context.io.stdout.write(`Parent: ${result.parentLink?.source ?? "(root)"}\n`);
-    }
-    return;
+async function dispatchNodeUpdate(context, projectId) {
+  const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
+  const input = {};
+  if (context.parsed.options.title !== undefined) {
+    input.title = context.parsed.options.title;
   }
-
-  if (action === "context") {
-    const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
-    if (subaction === "get") {
-      const result = await context.client.getNodeContext(projectId, nodeId);
-      if (context.parsed.options.json) {
-        writeJson(result, context.io.stdout);
-      } else {
-        context.io.stdout.write(`${result.context}\n`);
-      }
-      return;
-    }
-    if (subaction === "set") {
-      const file = requireOption(context.parsed.options.file, "--file <path> is required.");
-      const contextText = await readFile(resolveInputPath(file, context.io.cwd), "utf8");
-      const result = await context.client.setNodeContext(projectId, nodeId, contextText);
-      writeNodeMutationResult(context, result, "Updated context for");
-      return;
-    }
-    throw new CliError("Usage: pgm node context <get|set> <node-id>", exitCodes.usage);
+  if (context.parsed.options.label !== undefined) {
+    input.label = context.parsed.options.label;
   }
-
-  if (action === "metadata") {
-    const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
-    if (subaction === "get") {
-      const result = await context.client.getNodeMetadata(projectId, nodeId);
-      if (context.parsed.options.json) {
-        writeJson(result, context.io.stdout);
-      } else {
-        writeJson(result.metadata, context.io.stdout);
-      }
-      return;
-    }
-    if (subaction === "set") {
-      const key = requireOption(context.parsed.positionals[1], "A metadata key is required.");
-      const value = requireOption(context.parsed.positionals[2] ?? context.parsed.options.value, "A metadata value is required.");
-      const result = await context.client.patchNodeMetadata(projectId, nodeId, {
-        set: { [key]: value },
-      });
-      writeNodeMutationResult(context, result, "Updated metadata for");
-      return;
-    }
-    if (subaction === "unset") {
-      const key = requireOption(context.parsed.positionals[1], "A metadata key is required.");
-      const result = await context.client.patchNodeMetadata(projectId, nodeId, {
-        unset: [key],
-      });
-      writeNodeMutationResult(context, result, "Updated metadata for");
-      return;
-    }
-    throw new CliError("Usage: pgm node metadata <get|set|unset> <node-id>", exitCodes.usage);
+  if (context.parsed.options.status !== undefined) {
+    input.status = context.parsed.options.status;
   }
+  if (context.parsed.options.type !== undefined) {
+    input.type = context.parsed.options.type;
+  }
+  if (Object.keys(input).length === 0) {
+    throw new CliError("At least one of --title, --status, or --type is required.", exitCodes.usage);
+  }
+  const result = await context.client.updateNode(projectId, nodeId, input);
+  writeNodeMutationResult(context, result, "Updated");
+}
 
-  if (action === "import-markdown") {
-    const file = requireOption(
-      context.parsed.options.file ?? context.parsed.positionals[0],
-      "A markdown file is required. Pass --file <path> or a positional file path.",
+async function dispatchNodeMove(context, projectId) {
+  const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
+  const hasRoot = Boolean(context.parsed.options.root);
+  const parentNodeId = hasRoot
+    ? null
+    : requireOption(
+      context.parsed.options.parent ?? context.parsed.options.parentNodeId,
+      "A parent node id is required. Pass --parent <node-id> or --root.",
     );
-    const filePath = resolveInputPath(file, context.io.cwd);
-    const markdown = await readFile(filePath, "utf8");
-    const title = context.parsed.options.title ?? context.parsed.options.label ?? titleFromFile(filePath);
-    const metadata = parseMetadataJson(context.parsed.options.metadataJson);
-    const result = await context.client.importMarkdown(projectId, {
-      title,
-      markdown,
-      metadata,
-      splitByHeadingLevel: Boolean(
-        context.parsed.options.splitHeadings ?? context.parsed.options.splitByHeadingLevel,
-      ),
-      maxHeadingDepth: parseOptionalInteger(context.parsed.options.maxHeadingDepth, "--max-heading-depth"),
-    });
+  const result = await context.client.moveNode(projectId, nodeId, { parentNodeId });
+  if (context.parsed.options.json) {
+    writeJson(result, context.io.stdout);
+  } else {
+    context.io.stdout.write(`Moved ${result.node.label} (${result.node.id}).\n`);
+    context.io.stdout.write(`Parent: ${result.parentLink?.source ?? "(root)"}\n`);
+  }
+}
 
+async function dispatchNodeContext(context, projectId) {
+  const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
+  const subaction = context.parsed.command[2];
+  if (subaction === "get") {
+    const result = await context.client.getNodeContext(projectId, nodeId);
     if (context.parsed.options.json) {
       writeJson(result, context.io.stdout);
     } else {
-      context.io.stdout.write(
-        `Imported ${result.import.createdNodeCount} node${result.import.createdNodeCount === 1 ? "" : "s"} from ${file}.\n`,
-      );
-      context.io.stdout.write(`Root: ${result.import.rootNodeId}\n`);
-      context.io.stdout.write(`Nodes: ${result.import.createdNodeIds.join(", ")}\n`);
+      context.io.stdout.write(`${result.context}\n`);
     }
     return;
   }
+  if (subaction === "set") {
+    const file = requireOption(context.parsed.options.file, "--file <path> is required.");
+    const contextText = await readFile(resolveInputPath(file, context.io.cwd), "utf8");
+    const result = await context.client.setNodeContext(projectId, nodeId, contextText);
+    writeNodeMutationResult(context, result, "Updated context for");
+    return;
+  }
+  throw new CliError("Usage: pgm node context <get|set> <node-id>", exitCodes.usage);
+}
 
-  throw new CliError("Usage: pgm node <list|view|create|update|move|context|metadata|import-markdown>", exitCodes.usage);
+async function dispatchNodeMetadata(context, projectId) {
+  const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
+  const subaction = context.parsed.command[2];
+  if (subaction === "get") {
+    const result = await context.client.getNodeMetadata(projectId, nodeId);
+    if (context.parsed.options.json) {
+      writeJson(result, context.io.stdout);
+    } else {
+      writeJson(result.metadata, context.io.stdout);
+    }
+    return;
+  }
+  if (subaction === "set") {
+    const key = requireOption(context.parsed.positionals[1], "A metadata key is required.");
+    const value = requireOption(context.parsed.positionals[2] ?? context.parsed.options.value, "A metadata value is required.");
+    const result = await context.client.patchNodeMetadata(projectId, nodeId, {
+      set: { [key]: value },
+    });
+    writeNodeMutationResult(context, result, "Updated metadata for");
+    return;
+  }
+  if (subaction === "unset") {
+    const key = requireOption(context.parsed.positionals[1], "A metadata key is required.");
+    const result = await context.client.patchNodeMetadata(projectId, nodeId, {
+      unset: [key],
+    });
+    writeNodeMutationResult(context, result, "Updated metadata for");
+    return;
+  }
+  throw new CliError("Usage: pgm node metadata <get|set|unset> <node-id>", exitCodes.usage);
+}
+
+async function dispatchNodeImportMarkdown(context, projectId) {
+  const file = requireOption(
+    context.parsed.options.file ?? context.parsed.positionals[0],
+    "A markdown file is required. Pass --file <path> or a positional file path.",
+  );
+  const filePath = resolveInputPath(file, context.io.cwd);
+  const markdown = await readFile(filePath, "utf8");
+  const title = context.parsed.options.title ?? context.parsed.options.label ?? titleFromFile(filePath);
+  const metadata = parseMetadataJson(context.parsed.options.metadataJson);
+  const result = await context.client.importMarkdown(projectId, {
+    title,
+    markdown,
+    metadata,
+    splitByHeadingLevel: Boolean(
+      context.parsed.options.splitHeadings ?? context.parsed.options.splitByHeadingLevel,
+    ),
+    maxHeadingDepth: parseOptionalInteger(context.parsed.options.maxHeadingDepth, "--max-heading-depth"),
+  });
+
+  if (context.parsed.options.json) {
+    writeJson(result, context.io.stdout);
+  } else {
+    context.io.stdout.write(
+      `Imported ${result.import.createdNodeCount} node${result.import.createdNodeCount === 1 ? "" : "s"} from ${file}.\n`,
+    );
+    context.io.stdout.write(`Root: ${result.import.rootNodeId}\n`);
+    context.io.stdout.write(`Nodes: ${result.import.createdNodeIds.join(", ")}\n`);
+  }
 }
 
 async function dispatchImage(context, action) {

@@ -1,5 +1,5 @@
-import { A } from "@solidjs/router";
-import { For } from "solid-js";
+import { A, useAction } from "@solidjs/router";
+import { For, createSignal } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, Grid, HStack, Stack, VStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
@@ -7,6 +7,7 @@ import * as Field from "~/components/ui/field";
 import { Heading } from "~/components/ui/heading";
 import { Input } from "~/components/ui/input";
 import { Text } from "~/components/ui/text";
+import { createProject } from "~/lib/projects/data";
 import type { ProjectSummary } from "~/lib/projects/types";
 import { ProjectDeleteControl } from "./ProjectDeleteControl";
 import { ProjectExportControl } from "./ProjectExportControl";
@@ -14,8 +15,6 @@ import { ProjectImportControl } from "./ProjectImportControl";
 
 interface ProjectIndexPageProps {
   projects: ProjectSummary[];
-  createProjectActionUrl: string;
-  createProjectSubmission?: { pending: boolean };
 }
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
@@ -38,6 +37,8 @@ const projectLinkClass = css({
 });
 
 export function ProjectIndexPage(props: ProjectIndexPageProps) {
+  const submitCreateProject = useAction(createProject);
+  const [creatingProject, setCreatingProject] = createSignal(false);
   const totalNodes = () => props.projects.reduce((count, project) => count + project.nodeCount, 0);
   const totalLinks = () => props.projects.reduce((count, project) => count + project.linkCount, 0);
 
@@ -121,7 +122,18 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
                   </Text>
                 </Box>
                 <Box px="4" py="4" borderBottomWidth="1px" borderColor="olive.7" bg="olive.1">
-                  <form action={props.createProjectActionUrl} method="post">
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (creatingProject()) {
+                        return;
+                      }
+
+                      setCreatingProject(true);
+                      void submitCreateProject(new FormData(event.currentTarget))
+                        .catch(() => setCreatingProject(false));
+                    }}
+                  >
                     <VStack alignItems="stretch" gap="3">
                       <Field.Root>
                         <Field.Label fontSize="sm">
@@ -142,7 +154,7 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
                       <Button
                         type="submit"
                         size="sm"
-                        loading={props.createProjectSubmission?.pending}
+                        loading={creatingProject()}
                         loadingText="Initializing"
                         colorPalette="green"
                         borderRadius="l1"

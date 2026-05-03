@@ -1,3 +1,4 @@
+import { useAction } from "@solidjs/router";
 import {
   createEffect,
   createMemo,
@@ -12,7 +13,7 @@ import { Box, VStack, styled } from "styled-system/jsx";
 import { MarkdownRenderer } from "~/components/markdown-renderer";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
-import { patchProjectNode } from "~/lib/projects/client-mutations";
+import { updateProjectNodeStatus, updateProjectNodeType } from "~/lib/projects/data";
 import { getNodeMetadataEntries } from "~/lib/projects/node-metadata";
 import { updateProjectNode } from "~/lib/projects/optimistic";
 import type { ProjectRecord } from "~/lib/projects/types";
@@ -105,6 +106,8 @@ export function SpatialMapTreeView(props: {
   onProjectUpdated?: (project: ProjectRecord) => void;
 }) {
   const spatialMap = useSpatialMap();
+  const submitSaveStatus = useAction(updateProjectNodeStatus);
+  const submitSaveType = useAction(updateProjectNodeType);
   const tree = createMemo(() => buildSpatialMapTree(spatialMap.visibleData()));
   let viewportRef: HTMLDivElement | undefined;
   const [statusPending, setStatusPending] = createSignal(false);
@@ -194,7 +197,11 @@ export function SpatialMapTreeView(props: {
     );
 
     try {
-      const result = await patchProjectNode(props.project.id, nodeId, { status });
+      const formData = new FormData();
+      formData.set("projectId", props.project.id);
+      formData.set("nodeId", nodeId);
+      formData.set("status", status);
+      const result = await submitSaveStatus(formData);
       props.onProjectUpdated?.(result);
       setOptimisticStatus(null);
     } catch (error) {
@@ -222,7 +229,11 @@ export function SpatialMapTreeView(props: {
     );
 
     try {
-      const result = await patchProjectNode(props.project.id, nodeId, { type });
+      const formData = new FormData();
+      formData.set("projectId", props.project.id);
+      formData.set("nodeId", nodeId);
+      formData.set("type", type);
+      const result = await submitSaveType(formData);
       props.onProjectUpdated?.(result);
       setOptimisticType(null);
     } catch (error) {

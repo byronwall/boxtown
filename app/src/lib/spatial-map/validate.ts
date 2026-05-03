@@ -168,29 +168,52 @@ function parseNodeMetadata(
     entries.set(key, value);
   }
 
-  if (!entries.has("purpose") && typeof legacy.purpose === "string") {
-    const value = legacy.purpose.trim();
-    if (
-      value.length > 0 &&
-      !(options.omitLegacyDefaults && value === DEFAULT_NOTE_PURPOSE) &&
-      (!allowedKeys || allowedKeys.has("purpose"))
-    ) {
-      entries.set("purpose", value);
-    }
-  }
-
-  if (!entries.has("implementation") && typeof legacy.implementation === "string") {
-    const value = legacy.implementation.trim();
-    if (
-      value.length > 0 &&
-      !(options.omitLegacyDefaults && value === DEFAULT_NOTE_IMPLEMENTATION) &&
-      (!allowedKeys || allowedKeys.has("implementation"))
-    ) {
-      entries.set("implementation", value);
-    }
-  }
+  addLegacyMetadataEntry(entries, {
+    allowedKeys,
+    key: "purpose",
+    rawValue: legacy.purpose,
+    defaultValue: DEFAULT_NOTE_PURPOSE,
+    omitDefault: options.omitLegacyDefaults,
+  });
+  addLegacyMetadataEntry(entries, {
+    allowedKeys,
+    key: "implementation",
+    rawValue: legacy.implementation,
+    defaultValue: DEFAULT_NOTE_IMPLEMENTATION,
+    omitDefault: options.omitLegacyDefaults,
+  });
 
   return Object.fromEntries(entries);
+}
+
+function addLegacyMetadataEntry(
+  entries: Map<string, string>,
+  input: {
+    allowedKeys: Set<string> | null;
+    key: string;
+    rawValue: unknown;
+    defaultValue: string;
+    omitDefault: boolean;
+  },
+) {
+  if (entries.has(input.key) || typeof input.rawValue !== "string") {
+    return;
+  }
+
+  const value = input.rawValue.trim();
+  if (value.length === 0 || !isAllowedMetadataKey(input.allowedKeys, input.key)) {
+    return;
+  }
+
+  if (input.omitDefault && value === input.defaultValue) {
+    return;
+  }
+
+  entries.set(input.key, value);
+}
+
+function isAllowedMetadataKey(allowedKeys: Set<string> | null, key: string) {
+  return !allowedKeys || allowedKeys.has(key);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

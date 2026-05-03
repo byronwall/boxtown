@@ -1,4 +1,4 @@
-import { useSubmission } from "@solidjs/router";
+import { useAction } from "@solidjs/router";
 import { ArrowDownIcon, ArrowUpIcon, Trash2 } from "lucide-solid";
 import { Index, createEffect, createSignal, type JSX } from "solid-js";
 import { css } from "styled-system/css";
@@ -17,7 +17,6 @@ import type {
   ProjectNodeTypeDefinition,
   ProjectRecord,
 } from "~/lib/projects/types";
-import { normalizeActionUrl } from "~/lib/router/action-url";
 
 interface ProjectMetadataSettingsDialogProps {
   project: ProjectRecord;
@@ -71,8 +70,9 @@ const projectSettingsDialogClass = css({
 export function ProjectMetadataSettingsDialog(
   props: ProjectMetadataSettingsDialogProps,
 ) {
-  const updateSubmission = useSubmission(updateProjectMetadataSchema);
+  const submitUpdateSettings = useAction(updateProjectMetadataSchema);
   const [open, setOpen] = createSignal(false);
+  const [pending, setPending] = createSignal(false);
   const [name, setName] = createSignal("");
   const [description, setDescription] = createSignal("");
   const [rows, setRows] = createSignal<MetadataSchemaRowDraft[]>([]);
@@ -88,20 +88,30 @@ export function ProjectMetadataSettingsDialog(
     }
   });
 
-  createEffect(() => {
-    const result = updateSubmission.result;
-    if (!result || updateSubmission.pending) {
+  const saveSettings = async (formData: FormData) => {
+    if (pending()) {
       return;
     }
 
-    props.onProjectUpdated?.(result);
-    setOpen(false);
-    toaster.success({
-      title: "Project settings updated",
-      description: "Project details and metadata settings were saved.",
-    });
-    updateSubmission.clear();
-  });
+    setPending(true);
+    try {
+      const result = await submitUpdateSettings(formData);
+      props.onProjectUpdated?.(result);
+      setOpen(false);
+      toaster.success({
+        title: "Project settings updated",
+        description: "Project details and metadata settings were saved.",
+      });
+    } catch (error) {
+      toaster.error({
+        title: "Settings were not saved",
+        description:
+          error instanceof Error ? error.message : "Project settings could not be saved.",
+      });
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <>
@@ -133,7 +143,7 @@ export function ProjectMetadataSettingsDialog(
             <Button
               type="submit"
               form={formId}
-              loading={updateSubmission.pending}
+              loading={pending()}
             >
               Save Settings
             </Button>
@@ -142,8 +152,10 @@ export function ProjectMetadataSettingsDialog(
       >
         <ProjectSettingsForm
           id={formId}
-          action={normalizeActionUrl(updateProjectMetadataSchema.url)}
-          method="post"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void saveSettings(new FormData(event.currentTarget));
+          }}
           minW="0"
           minH="0"
           p="8px"

@@ -1,11 +1,12 @@
+import { useAction } from "@solidjs/router";
 import { createSignal, onCleanup } from "solid-js";
 import type { NodeImageGenerationRunSnapshot } from "~/lib/node-images/types";
 import type { ProjectRecord } from "~/lib/projects/types";
 import {
-  loadNodeImageGenerationRunRequest,
-  startNodeImageGenerationRequest,
-  subscribeNodeImageGenerationRun,
-} from "./node-image-generation.api";
+  loadNodeImageGenerationRun,
+  startNodeImageGenerationAction,
+} from "~/lib/spatial-map/run-actions";
+import { subscribeNodeImageGenerationRun } from "./node-image-generation.api";
 
 interface UseNodeImageGenerationFlowOptions {
   projectId: string;
@@ -17,6 +18,7 @@ function isTerminal(snapshot: NodeImageGenerationRunSnapshot) {
 }
 
 export function useNodeImageGenerationFlow(options: UseNodeImageGenerationFlowOptions) {
+  const submitStartRun = useAction(startNodeImageGenerationAction);
   const [snapshot, setSnapshot] = createSignal<NodeImageGenerationRunSnapshot | null>(null);
   const [error, setError] = createSignal<string | null>(null);
   const [starting, setStarting] = createSignal(false);
@@ -53,7 +55,7 @@ export function useNodeImageGenerationFlow(options: UseNodeImageGenerationFlowOp
 
     const poll = async () => {
       try {
-        applySnapshot(await loadNodeImageGenerationRunRequest(options.projectId, runId));
+        applySnapshot(await loadNodeImageGenerationRun({ projectId: options.projectId, runId }));
       } catch (pollError) {
         setError(
           pollError instanceof Error
@@ -89,7 +91,10 @@ export function useNodeImageGenerationFlow(options: UseNodeImageGenerationFlowOp
     setError(null);
 
     try {
-      const started = await startNodeImageGenerationRequest(options.projectId, input);
+      const started = await submitStartRun({
+        projectId: options.projectId,
+        body: input,
+      });
       applySnapshot(started.snapshot);
       startStream(started.runId);
     } catch (startError) {

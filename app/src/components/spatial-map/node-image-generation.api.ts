@@ -1,41 +1,4 @@
-import type {
-  NodeImageGenerationRunSnapshot,
-  NodeImageGenerationStartRequest,
-  NodeImageGenerationStartResponse,
-} from "~/lib/node-images/types";
-
-async function parseJsonResponse<T>(response: Response, fallbackMessage: string) {
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(payload?.error ?? fallbackMessage);
-  }
-
-  return response.json() as Promise<T>;
-}
-
-export async function startNodeImageGenerationRequest(
-  projectId: string,
-  body: NodeImageGenerationStartRequest,
-) {
-  return parseJsonResponse<NodeImageGenerationStartResponse>(
-    await fetch(`/api/projects/${encodeURIComponent(projectId)}/node-images`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    }),
-    "Failed to start node image generation.",
-  );
-}
-
-export async function loadNodeImageGenerationRunRequest(projectId: string, runId: string) {
-  return parseJsonResponse<NodeImageGenerationRunSnapshot>(
-    await fetch(
-      `/api/projects/${encodeURIComponent(projectId)}/node-images/${encodeURIComponent(runId)}`,
-      { cache: "no-store" },
-    ),
-    "Failed to load node image generation progress.",
-  );
-}
+import type { NodeImageGenerationRunSnapshot } from "~/lib/node-images/types";
 
 export function subscribeNodeImageGenerationRun(
   projectId: string,

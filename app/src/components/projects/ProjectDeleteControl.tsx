@@ -1,11 +1,11 @@
-import { useSubmission } from "@solidjs/router";
+import { useAction } from "@solidjs/router";
 import { Trash2 } from "lucide-solid";
 import { createSignal } from "solid-js";
 import { Box, HStack, VStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
-import { normalizeActionUrl } from "~/lib/router/action-url";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { Text } from "~/components/ui/text";
+import { toaster } from "~/components/ui/toast";
 import { deleteProject } from "~/lib/projects/data";
 
 type ProjectDeleteControlProps = {
@@ -15,12 +15,29 @@ type ProjectDeleteControlProps = {
 
 export function ProjectDeleteControl(props: ProjectDeleteControlProps) {
   const [open, setOpen] = createSignal(false);
+  const [pending, setPending] = createSignal(false);
   let deleteButtonRef: HTMLButtonElement | undefined;
-  const deleteSubmission = useSubmission(
-    deleteProject,
-    (input) => input[0] instanceof FormData && input[0].get("projectId") === props.projectId,
-  );
-  const formId = `delete-project-${props.projectId}`;
+  const submitDeleteProject = useAction(deleteProject);
+
+  const deleteCurrentProject = async () => {
+    if (pending()) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("projectId", props.projectId);
+
+    setPending(true);
+    try {
+      await submitDeleteProject(formData);
+    } catch (error) {
+      setPending(false);
+      toaster.error({
+        title: "Delete failed",
+        description: error instanceof Error ? error.message : "The project could not be deleted.",
+      });
+    }
+  };
 
   return (
     <>
@@ -55,28 +72,23 @@ export function ProjectDeleteControl(props: ProjectDeleteControlProps) {
             </Button>
             <Button
               ref={deleteButtonRef}
-              type="submit"
-              form={formId}
+              type="button"
               variant="solid"
-              loading={deleteSubmission.pending}
+              loading={pending()}
+              onClick={() => {
+                void deleteCurrentProject();
+              }}
             >
               Delete
             </Button>
           </HStack>
         }
       >
-        <form
-          id={formId}
-          action={normalizeActionUrl(deleteProject.url)}
-          method="post"
-        >
-          <VStack gap="4" alignItems="stretch">
-            <input type="hidden" name="projectId" value={props.projectId} />
-            <Text textStyle="sm" color="#4a524a">
-              This removes the project from the registry immediately.
-            </Text>
-          </VStack>
-        </form>
+        <VStack gap="4" alignItems="stretch">
+          <Text textStyle="sm" color="#4a524a">
+            This removes the project from the registry immediately.
+          </Text>
+        </VStack>
       </SimpleDialog>
     </>
   );

@@ -1,13 +1,14 @@
+import { useAction } from "@solidjs/router";
 import { createEffect, createSignal, onCleanup } from "solid-js";
 import type { ContextNoteConversionRunSnapshot } from "~/lib/context-note-conversion/types";
 import type { ProjectRecord } from "~/lib/projects/types";
 import {
-  acceptContextNoteConversionRequest,
-  loadContextNoteConversionRunRequest,
-  startContextNoteConversionRunRequest,
-  submitContextNoteConversionAnswersRequest,
-  subscribeContextNoteConversionRun,
-} from "./contextNoteConversion.api";
+  acceptContextNoteConversionAction,
+  loadContextNoteConversionRun,
+  startContextNoteConversionRunAction,
+  submitContextNoteConversionAnswersAction,
+} from "~/lib/spatial-map/run-actions";
+import { subscribeContextNoteConversionRun } from "./contextNoteConversion.api";
 
 interface UseContextNoteConversionFlowOptions {
   projectId: string;
@@ -19,6 +20,9 @@ function isTerminal(snapshot: ContextNoteConversionRunSnapshot) {
 }
 
 export function useContextNoteConversionFlow(options: UseContextNoteConversionFlowOptions) {
+  const submitStartRun = useAction(startContextNoteConversionRunAction);
+  const submitAnswersRequest = useAction(submitContextNoteConversionAnswersAction);
+  const submitAcceptSelection = useAction(acceptContextNoteConversionAction);
   const [snapshot, setSnapshot] = createSignal<ContextNoteConversionRunSnapshot | null>(null);
   const [error, setError] = createSignal<string | null>(null);
   const [starting, setStarting] = createSignal(false);
@@ -66,7 +70,7 @@ export function useContextNoteConversionFlow(options: UseContextNoteConversionFl
 
     const poll = async () => {
       try {
-        applySnapshot(await loadContextNoteConversionRunRequest(options.projectId, runId));
+        applySnapshot(await loadContextNoteConversionRun({ projectId: options.projectId, runId }));
       } catch (pollError) {
         setError(
           pollError instanceof Error
@@ -100,7 +104,10 @@ export function useContextNoteConversionFlow(options: UseContextNoteConversionFl
     setSelectedNodeIds([]);
 
     try {
-      const started = await startContextNoteConversionRunRequest(options.projectId, { sourceNodeId });
+      const started = await submitStartRun({
+        projectId: options.projectId,
+        body: { sourceNodeId },
+      });
       applySnapshot(started.snapshot);
       startStream(started.runId);
     } catch (startError) {
@@ -122,11 +129,14 @@ export function useContextNoteConversionFlow(options: UseContextNoteConversionFl
       unsubscribe?.();
       unsubscribe = null;
       stopPolling();
-      const nextSnapshot = await submitContextNoteConversionAnswersRequest(
-        options.projectId,
-        activeSnapshot.runId,
-        { answers: answerDraft() },
-      );
+      const nextSnapshot = await submitAnswersRequest({
+        projectId: options.projectId,
+        runId: activeSnapshot.runId,
+        body: { answers: answerDraft() },
+      });
+      if (!nextSnapshot) {
+        throw new Error("Failed to submit note conversion answers.");
+      }
       applySnapshot(nextSnapshot);
       if (!isTerminal(nextSnapshot)) {
         startStream(nextSnapshot.runId);
@@ -152,11 +162,14 @@ export function useContextNoteConversionFlow(options: UseContextNoteConversionFl
       unsubscribe?.();
       unsubscribe = null;
       stopPolling();
-      const nextSnapshot = await acceptContextNoteConversionRequest(
-        options.projectId,
-        activeSnapshot.runId,
-        { acceptedNodeIds: selectedNodeIds() },
-      );
+      const nextSnapshot = await submitAcceptSelection({
+        projectId: options.projectId,
+        runId: activeSnapshot.runId,
+        body: { acceptedNodeIds: selectedNodeIds() },
+      });
+      if (!nextSnapshot) {
+        throw new Error("Failed to accept note conversion suggestions.");
+      }
       applySnapshot(nextSnapshot);
       if (!isTerminal(nextSnapshot)) {
         startStream(nextSnapshot.runId);

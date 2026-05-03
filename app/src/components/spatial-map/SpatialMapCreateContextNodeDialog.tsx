@@ -1,10 +1,9 @@
-import { useSubmission } from "@solidjs/router";
+import { useAction } from "@solidjs/router";
 import { For, Show, createEffect, createMemo, createSignal, type JSX } from "solid-js";
 import { Box, HStack, VStack } from "styled-system/jsx";
 import { createProjectContextNode } from "~/lib/projects/data";
 import { detectMarkdownMaxHeadingDepth } from "~/lib/projects/context-node-markdown";
 import type { ProjectRecord } from "~/lib/projects/types";
-import { normalizeActionUrl } from "~/lib/router/action-url";
 import { Button } from "~/components/ui/button";
 import * as Checkbox from "~/components/ui/checkbox";
 import * as Field from "~/components/ui/field";
@@ -26,8 +25,9 @@ export function SpatialMapCreateContextNodeDialog(
   props: SpatialMapCreateContextNodeDialogProps,
 ) {
   const spatialMap = useSpatialMap();
-  const createContextNodeSubmission = useSubmission(createProjectContextNode);
+  const submitCreateContextNode = useAction(createProjectContextNode);
   const [uncontrolledOpen, setUncontrolledOpen] = createSignal(false);
+  const [pending, setPending] = createSignal(false);
   const [label, setLabel] = createSignal("");
   const [context, setContext] = createSignal("");
   const [metadataDraft, setMetadataDraft] = createSignal<Record<string, string>>({});
@@ -53,7 +53,6 @@ export function SpatialMapCreateContextNodeDialog(
     setSplitNestedListItems(true);
     setSelectedMaxHeadingDepth(1);
     setHasManualHeadingDepth(false);
-    createContextNodeSubmission.clear();
   };
 
   const handleSplitByHeadingLevelChange = (checked: boolean) => {
@@ -84,29 +83,39 @@ export function SpatialMapCreateContextNodeDialog(
     }
   };
 
-  createEffect(() => {
-    const result = createContextNodeSubmission.result;
-    if (!result || createContextNodeSubmission.pending) {
+  const createContextNode = async (formData: FormData) => {
+    if (pending()) {
       return;
     }
 
-    props.onProjectUpdated?.(result.project);
-    handleOpenChange(false);
-    setLabel("");
-    setContext("");
-    queueMicrotask(() => {
-      spatialMap.setSelectedNodeId(result.nodeId);
-      spatialMap.setInspectorOpen(true);
-    });
-    toaster.success({
-      title: result.createdNodeCount > 1 ? "Context nodes created" : "Context node created",
-      description:
-        result.createdNodeCount > 1
-          ? `${result.createdNodeCount} linked context nodes are now available in the map.`
-          : `${result.project.spatialMap.nodes.find((node) => node.id === result.nodeId)?.label ?? "New node"} is now available in the map.`,
-    });
-    createContextNodeSubmission.clear();
-  });
+    setPending(true);
+    try {
+      const result = await submitCreateContextNode(formData);
+      props.onProjectUpdated?.(result.project);
+      handleOpenChange(false);
+      setLabel("");
+      setContext("");
+      queueMicrotask(() => {
+        spatialMap.setSelectedNodeId(result.nodeId);
+        spatialMap.setInspectorOpen(true);
+      });
+      toaster.success({
+        title: result.createdNodeCount > 1 ? "Context nodes created" : "Context node created",
+        description:
+          result.createdNodeCount > 1
+            ? `${result.createdNodeCount} linked context nodes are now available in the map.`
+            : `${result.project.spatialMap.nodes.find((node) => node.id === result.nodeId)?.label ?? "New node"} is now available in the map.`,
+      });
+    } catch (error) {
+      toaster.error({
+        title: "Context node was not created",
+        description:
+          error instanceof Error ? error.message : "The context node could not be created.",
+      });
+    } finally {
+      setPending(false);
+    }
+  };
 
   createEffect(() => {
     const maxDepth = detectedMaxHeadingDepth();
@@ -152,7 +161,7 @@ export function SpatialMapCreateContextNodeDialog(
             <Button
               type="submit"
               form={formId}
-              loading={createContextNodeSubmission.pending}
+              loading={pending()}
             >
               Create Node
             </Button>
@@ -161,8 +170,10 @@ export function SpatialMapCreateContextNodeDialog(
       >
         <form
           id={formId}
-          action={normalizeActionUrl(createProjectContextNode.url)}
-          method="post"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void createContextNode(new FormData(event.currentTarget));
+          }}
         >
           <VStack alignItems="stretch" gap="4">
             <input type="hidden" name="projectId" value={props.project.id} />

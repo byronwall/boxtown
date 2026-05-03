@@ -246,6 +246,30 @@ function sanitizePathSegment(value: string) {
 }
 
 function serializeJsonValue(value: unknown, depth = 0, seen = new WeakSet<object>()): JsonValue | undefined {
+  const scalar = serializeJsonScalar(value);
+  if (scalar !== notSerialized) {
+    return scalar;
+  }
+
+  const specialObject = serializeSpecialObject(value);
+  if (specialObject !== notSerialized) {
+    return specialObject;
+  }
+
+  if (Array.isArray(value)) {
+    return serializeJsonArray(value, depth, seen);
+  }
+
+  if (value !== null && typeof value === "object") {
+    return serializeJsonObject(value, depth, seen);
+  }
+
+  return String(value);
+}
+
+const notSerialized = Symbol("notSerialized");
+
+function serializeJsonScalar(value: unknown): JsonValue | undefined | typeof notSerialized {
   if (value === undefined) {
     return undefined;
   }
@@ -255,6 +279,10 @@ function serializeJsonValue(value: unknown, depth = 0, seen = new WeakSet<object
   if (typeof value === "bigint") {
     return value.toString();
   }
+  return notSerialized;
+}
+
+function serializeSpecialObject(value: unknown): JsonValue | typeof notSerialized {
   if (value instanceof Date) {
     return value.toISOString();
   }
@@ -291,33 +319,42 @@ function serializeJsonValue(value: unknown, depth = 0, seen = new WeakSet<object
       mimeType: value.type,
     };
   }
-  if (Array.isArray(value)) {
-    if (depth >= 6) {
-      return value.map(() => "[MaxDepth]");
-    }
-    return value.map((entry) => serializeJsonValue(entry, depth + 1, seen) ?? null);
-  }
-  if (typeof value === "object") {
-    if (seen.has(value)) {
-      return "[Circular]";
-    }
-    if (depth >= 6) {
-      return "[MaxDepth]";
-    }
+  return notSerialized;
+}
 
-    seen.add(value);
-    const record = value as Record<string, unknown>;
-    const serializedEntries = Object.entries(record)
-      .map(([key, entry]) => {
-        const serialized = serializeJsonValue(entry, depth + 1, seen);
-        return serialized === undefined ? null : [key, serialized] as const;
-      })
-      .filter((entry): entry is readonly [string, JsonValue] => Boolean(entry));
-    seen.delete(value);
-    return Object.fromEntries(serializedEntries);
+function serializeJsonArray(
+  value: unknown[],
+  depth: number,
+  seen: WeakSet<object>,
+): JsonValue[] {
+  if (depth >= 6) {
+    return value.map(() => "[MaxDepth]");
+  }
+  return value.map((entry) => serializeJsonValue(entry, depth + 1, seen) ?? null);
+}
+
+function serializeJsonObject(
+  value: object,
+  depth: number,
+  seen: WeakSet<object>,
+): JsonValue {
+  if (seen.has(value)) {
+    return "[Circular]";
+  }
+  if (depth >= 6) {
+    return "[MaxDepth]";
   }
 
-  return String(value);
+  seen.add(value);
+  const record = value as Record<string, unknown>;
+  const serializedEntries = Object.entries(record)
+    .map(([key, entry]) => {
+      const serialized = serializeJsonValue(entry, depth + 1, seen);
+      return serialized === undefined ? null : [key, serialized] as const;
+    })
+    .filter((entry): entry is readonly [string, JsonValue] => Boolean(entry));
+  seen.delete(value);
+  return Object.fromEntries(serializedEntries);
 }
 
 function isJsonValue(value: unknown): value is JsonValue {

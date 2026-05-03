@@ -1,4 +1,4 @@
-import { useSubmission } from "@solidjs/router";
+import { useAction } from "@solidjs/router";
 import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
 import {
   BotIcon,
@@ -28,11 +28,12 @@ import { toaster } from "~/components/ui/toast";
 import {
   updateProjectNodeContext,
   updateProjectNodeMetadata,
+  updateProjectNodeStatus,
+  updateProjectNodeTitle,
+  updateProjectNodeType,
 } from "~/lib/projects/data";
-import { patchProjectNode } from "~/lib/projects/client-mutations";
 import { updateProjectNode } from "~/lib/projects/optimistic";
 import type { ProjectOperationLogEntry, ProjectRecord } from "~/lib/projects/types";
-import { normalizeActionUrl } from "~/lib/router/action-url";
 import { Text } from "~/components/ui/text";
 import { getMapNodeStatusLabel } from "~/lib/spatial-map/node-status";
 import { type MapNode, type MapNodeStatus } from "~/lib/spatial-map/types";
@@ -88,22 +89,11 @@ type ActivityTone = "create" | "edit" | "image" | "delete" | "system" | "link";
 
 export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const spatialMap = useSpatialMap();
-  const saveContextSubmission = useSubmission(updateProjectNodeContext, (input) => {
-    const formData = input[0];
-    return (
-      formData instanceof FormData &&
-      formData.get("projectId") === props.project.id &&
-      formData.get("nodeId") === spatialMap.selectedNodeId()
-    );
-  });
-  const saveMetadataSubmission = useSubmission(updateProjectNodeMetadata, (input) => {
-    const formData = input[0];
-    return (
-      formData instanceof FormData &&
-      formData.get("projectId") === props.project.id &&
-      formData.get("nodeId") === spatialMap.selectedNodeId()
-    );
-  });
+  const submitSaveContext = useAction(updateProjectNodeContext);
+  const submitSaveMetadata = useAction(updateProjectNodeMetadata);
+  const submitSaveTitle = useAction(updateProjectNodeTitle);
+  const submitSaveStatus = useAction(updateProjectNodeStatus);
+  const submitSaveType = useAction(updateProjectNodeType);
   const selectedNode = createMemo(() => spatialMap.selectedNode());
   const [contextDraft, setContextDraft] = createSignal("");
   const [metadataDraft, setMetadataDraft] = createSignal<Record<string, string>>({});
@@ -113,6 +103,8 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const [titlePending, setTitlePending] = createSignal(false);
   const [statusPending, setStatusPending] = createSignal(false);
   const [typePending, setTypePending] = createSignal(false);
+  const [contextPending, setContextPending] = createSignal(false);
+  const [metadataPending, setMetadataPending] = createSignal(false);
   const [optimisticTitle, setOptimisticTitle] = createSignal<{
     nodeId: string;
     previousTitle: string;
@@ -201,36 +193,56 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     spatialMap.clearContextPreviewRequest();
   });
 
-  createEffect(() => {
-    const result = saveContextSubmission.result;
-    if (!result || saveContextSubmission.pending) {
+  const saveContext = async (formData: FormData) => {
+    if (contextPending()) {
       return;
     }
 
-    const label = result.spatialMap.nodes.find((node) => node.id === spatialMap.selectedNodeId())?.label;
-    props.onProjectUpdated?.(result);
-    setEditingContext(false);
-    toaster.success({
-      title: "Context updated",
-      description: `${label ?? "This node"} now includes the latest markdown context.`,
-    });
-    saveContextSubmission.clear();
-  });
+    setContextPending(true);
+    try {
+      const result = await submitSaveContext(formData);
+      const label = result.spatialMap.nodes.find((node) => node.id === spatialMap.selectedNodeId())?.label;
+      props.onProjectUpdated?.(result);
+      setEditingContext(false);
+      toaster.success({
+        title: "Context updated",
+        description: `${label ?? "This node"} now includes the latest markdown context.`,
+      });
+    } catch (error) {
+      toaster.error({
+        title: "Context was not saved",
+        description:
+          error instanceof Error ? error.message : "The selected node context could not be saved.",
+      });
+    } finally {
+      setContextPending(false);
+    }
+  };
 
-  createEffect(() => {
-    const result = saveMetadataSubmission.result;
-    if (!result || saveMetadataSubmission.pending) {
+  const saveMetadata = async (formData: FormData) => {
+    if (metadataPending()) {
       return;
     }
 
-    const label = result.spatialMap.nodes.find((node) => node.id === spatialMap.selectedNodeId())?.label;
-    props.onProjectUpdated?.(result);
-    toaster.success({
-      title: "Metadata updated",
-      description: `${label ?? "This node"} now uses the current project metadata values.`,
-    });
-    saveMetadataSubmission.clear();
-  });
+    setMetadataPending(true);
+    try {
+      const result = await submitSaveMetadata(formData);
+      const label = result.spatialMap.nodes.find((node) => node.id === spatialMap.selectedNodeId())?.label;
+      props.onProjectUpdated?.(result);
+      toaster.success({
+        title: "Metadata updated",
+        description: `${label ?? "This node"} now uses the current project metadata values.`,
+      });
+    } catch (error) {
+      toaster.error({
+        title: "Metadata was not saved",
+        description:
+          error instanceof Error ? error.message : "The selected node metadata could not be saved.",
+      });
+    } finally {
+      setMetadataPending(false);
+    }
+  };
 
   const rollBackTitle = (error: unknown) => {
     const optimistic = optimisticTitle();
@@ -315,7 +327,11 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     );
 
     try {
-      const result = await patchProjectNode(props.project.id, node.id, { title });
+      const formData = new FormData();
+      formData.set("projectId", props.project.id);
+      formData.set("nodeId", node.id);
+      formData.set("title", title);
+      const result = await submitSaveTitle(formData);
       const label = result.spatialMap.nodes.find((item) => item.id === node.id)?.label;
       props.onProjectUpdated?.(result);
       toaster.success({
@@ -348,7 +364,11 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     );
 
     try {
-      const result = await patchProjectNode(props.project.id, node.id, { status });
+      const formData = new FormData();
+      formData.set("projectId", props.project.id);
+      formData.set("nodeId", node.id);
+      formData.set("status", status);
+      const result = await submitSaveStatus(formData);
       const updatedNode = result.spatialMap.nodes.find((item) => item.id === node.id);
       props.onProjectUpdated?.(result);
       toaster.success({
@@ -381,7 +401,11 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     );
 
     try {
-      const result = await patchProjectNode(props.project.id, node.id, { type });
+      const formData = new FormData();
+      formData.set("projectId", props.project.id);
+      formData.set("nodeId", node.id);
+      formData.set("type", type);
+      const result = await submitSaveType(formData);
       props.onProjectUpdated?.(result);
       toaster.success({
         title: "Type updated",
@@ -643,7 +667,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                       size="xs"
                       colorPalette="green"
                       variant="surface"
-                      loading={saveMetadataSubmission.pending}
+                      loading={metadataPending()}
                       disabled={!metadataIsDirty()}
                     >
                       Save Metadata
@@ -663,8 +687,10 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
               {(node) => (
                 <form
                   id={metadataFormId}
-                  action={normalizeActionUrl(updateProjectNodeMetadata.url)}
-                  method="post"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void saveMetadata(new FormData(event.currentTarget));
+                  }}
                 >
                   <VStack alignItems="stretch" gap="3">
                     <input type="hidden" name="projectId" value={props.project.id} />
@@ -756,8 +782,10 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                 >
                   <form
                     id={contextFormId}
-                    action={normalizeActionUrl(updateProjectNodeContext.url)}
-                    method="post"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void saveContext(new FormData(event.currentTarget));
+                    }}
                   >
                     <VStack alignItems="stretch" gap="3">
                       <input type="hidden" name="projectId" value={props.project.id} />
@@ -801,7 +829,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                           size="xs"
                           colorPalette="green"
                           variant="surface"
-                          loading={saveContextSubmission.pending}
+                          loading={contextPending()}
                         >
                           Save Context
                         </Button>

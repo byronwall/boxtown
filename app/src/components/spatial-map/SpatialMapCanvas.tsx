@@ -336,64 +336,47 @@ type SpatialMapSearchParams = {
   linked?: string;
 };
 
+interface SpatialMapUrlState {
+  nodeId: string | null;
+  viewMode: SpatialMapViewMode | null;
+  depthLevel: SpatialMapDepthLevel | null;
+  showEdges: boolean | null;
+  inspectorOpen: boolean | null;
+  isolatedNodeId: string | null;
+  showLinked: boolean | null;
+}
+
+interface SpatialMapNodeLookup {
+  has(nodeId: string): boolean;
+}
+
 function SpatialMapUrlSync() {
   const controller = useSpatialMap();
   const [searchParams, setSearchParams] =
     useSearchParams<SpatialMapSearchParams>();
 
   createEffect(() => {
-    const nodeId = getStringParam(searchParams.node);
+    const nodeId = getStringParam(searchParams.node) ?? null;
     const viewMode = parseViewMode(getStringParam(searchParams.view));
     const depthLevel = parseDepthLevel(getStringParam(searchParams.depth));
     const showEdges = parseBooleanParam(getStringParam(searchParams.edges));
     const inspectorOpen = parseInspectorParam(
       getStringParam(searchParams.inspector),
     );
-    const isolatedNodeId = getStringParam(searchParams.isolate);
+    const isolatedNodeId = getStringParam(searchParams.isolate) ?? null;
     const showLinked = parseBooleanParam(getStringParam(searchParams.linked));
     const nodeIds = controller.sourceNodesById();
 
     untrack(() => {
-      if (viewMode && controller.viewMode() !== viewMode) {
-        controller.setViewMode(viewMode);
-      }
-
-      if (
-        controller.visibleDepthSelection() !== (depthLevel ?? "max")
-      ) {
-        controller.setVisibleDepthLevel(depthLevel ?? "max");
-      }
-
-      if (showEdges !== null && controller.showEdges() !== showEdges) {
-        controller.setShowEdges(showEdges);
-      }
-
-      if (
-        inspectorOpen !== null &&
-        controller.inspectorOpen() !== inspectorOpen
-      ) {
-        controller.setInspectorOpen(inspectorOpen);
-      }
-
-      if (isolatedNodeId && nodeIds.has(isolatedNodeId)) {
-        if (controller.isolatedNodeId() !== isolatedNodeId) {
-          controller.isolateNode(isolatedNodeId);
-        }
-      } else if (controller.isolatedNodeId()) {
-        controller.clearIsolation();
-      }
-
-      if (
-        showLinked !== null &&
-        controller.showLinkedInIsolation() !== showLinked
-      ) {
-        controller.setShowLinkedInIsolation(showLinked);
-      }
-
-      const nextSelectedNodeId = nodeId && nodeIds.has(nodeId) ? nodeId : null;
-      if (controller.selectedNodeId() !== nextSelectedNodeId) {
-        controller.setSelectedNodeId(nextSelectedNodeId);
-      }
+      syncControllerFromUrlState(controller, nodeIds, {
+        nodeId,
+        viewMode,
+        depthLevel,
+        showEdges,
+        inspectorOpen,
+        isolatedNodeId,
+        showLinked,
+      });
     });
   });
 
@@ -433,6 +416,64 @@ function SpatialMapUrlSync() {
   });
 
   return null;
+}
+
+function syncControllerFromUrlState(
+  controller: ReturnType<typeof useSpatialMap>,
+  nodeIds: SpatialMapNodeLookup,
+  state: SpatialMapUrlState,
+) {
+  if (state.viewMode && controller.viewMode() !== state.viewMode) {
+    controller.setViewMode(state.viewMode);
+  }
+
+  const nextDepthLevel = state.depthLevel ?? "max";
+  if (controller.visibleDepthSelection() !== nextDepthLevel) {
+    controller.setVisibleDepthLevel(nextDepthLevel);
+  }
+
+  if (state.showEdges !== null && controller.showEdges() !== state.showEdges) {
+    controller.setShowEdges(state.showEdges);
+  }
+
+  if (
+    state.inspectorOpen !== null &&
+    controller.inspectorOpen() !== state.inspectorOpen
+  ) {
+    controller.setInspectorOpen(state.inspectorOpen);
+  }
+
+  syncIsolationFromUrlState(controller, nodeIds, state);
+
+  if (
+    state.showLinked !== null &&
+    controller.showLinkedInIsolation() !== state.showLinked
+  ) {
+    controller.setShowLinkedInIsolation(state.showLinked);
+  }
+
+  const nextSelectedNodeId =
+    state.nodeId && nodeIds.has(state.nodeId) ? state.nodeId : null;
+  if (controller.selectedNodeId() !== nextSelectedNodeId) {
+    controller.setSelectedNodeId(nextSelectedNodeId);
+  }
+}
+
+function syncIsolationFromUrlState(
+  controller: ReturnType<typeof useSpatialMap>,
+  nodeIds: SpatialMapNodeLookup,
+  state: Pick<SpatialMapUrlState, "isolatedNodeId">,
+) {
+  if (state.isolatedNodeId && nodeIds.has(state.isolatedNodeId)) {
+    if (controller.isolatedNodeId() !== state.isolatedNodeId) {
+      controller.isolateNode(state.isolatedNodeId);
+    }
+    return;
+  }
+
+  if (controller.isolatedNodeId()) {
+    controller.clearIsolation();
+  }
 }
 
 function getStringParam(value: string | string[] | undefined) {
