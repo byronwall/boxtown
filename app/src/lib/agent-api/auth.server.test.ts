@@ -26,7 +26,7 @@ describe("authenticateAgentRequest", () => {
 
   it("accepts a configured token with colon-delimited scope names", () => {
     vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("AGENT_API_TOKENS", "local-token:project:read|node:read|task:read");
+    vi.stubEnv("AGENT_API_TOKENS", "local-token:project:read|node:read");
 
     const actor = authenticateAgentRequest(createEvent("Bearer local-token"), [
       "project:read",
@@ -34,7 +34,7 @@ describe("authenticateAgentRequest", () => {
     ]);
 
     expect(actor.id).toBe("token:-token");
-    expect(actor.scopes).toEqual(["project:read", "node:read", "task:read"]);
+    expect(actor.scopes).toEqual(["project:read", "node:read"]);
   });
 
   it("rejects missing scopes", () => {

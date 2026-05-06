@@ -33,7 +33,7 @@ For local development, `/api/v1` allows read access without a token when `AGENT_
 To test token auth locally, start the app with:
 
 ```bash
-AGENT_API_TOKENS='local-token:project:read|node:read|task:read' pnpm dev
+AGENT_API_TOKENS='local-token:project:read|node:read' pnpm dev
 ```
 
 Then log in:
@@ -45,7 +45,7 @@ pgm auth login --token local-token
 For write commands such as project creation, markdown import, and image upload, include write scopes:
 
 ```bash
-AGENT_API_TOKENS='local-token:project:read|project:write|node:read|task:read|node:write|image:write' pnpm dev
+AGENT_API_TOKENS='local-token:project:read|project:write|node:read|node:write|image:write' pnpm dev
 ```
 
 ## First Commands
@@ -54,13 +54,15 @@ AGENT_API_TOKENS='local-token:project:read|project:write|node:read|task:read|nod
 pgm project list
 pgm project create "New Product Site" --link --json
 pgm project link <project-id>
-pgm task list --search "checkout" --with-ancestors --json
-pgm task view <node-id> --json
-pgm task export-context <node-id> --output ./task-context.md
+pgm project schema --json
+pgm node list --roots --compact --json
+pgm node list --type task --status planned --with-ancestors --json
 pgm node list --search "checkout" --json
 pgm node view <node-id> --with-context --json
+pgm node export-context <node-id> --output ./node-context.md
 pgm node create --title "Checkout" --type page --json
 pgm node update <node-id> --status working --json
+pgm node complete <node-id> --note "Implemented the requested change." --json
 pgm node move <node-id> --parent <parent-node-id> --json
 pgm node import-markdown --file ./brief.md --title "Product Brief" --split-headings --json
 pgm image add <node-id> ./screenshot.png --json
@@ -68,7 +70,7 @@ pgm image list <node-id> --json
 pgm project export-markdown --output ./project-context.md
 ```
 
-Avoid starting with `pgm project view --json` for agent work; it returns the full graph and can be much larger than the task/node context needed for a scoped change.
+Avoid starting with `pgm project view --json` for agent work; it returns the full graph and can be much larger than the schema and node context needed for a scoped change.
 
 ## Agent Write Commands
 
@@ -99,6 +101,7 @@ Create or update product structure nodes:
 ```bash
 pgm node create --title "Checkout" --type page --parent <parent-node-id> --context-file ./context.md --json
 pgm node update <node-id> --title "Checkout" --status working --type page --json
+pgm node complete <node-id> --note "Implemented the requested change." --json
 pgm node context set <node-id> --file ./context.md --json
 pgm node metadata set <node-id> purpose "Checkout entry point" --json
 pgm node move <node-id> --parent <parent-node-id> --json
@@ -112,10 +115,10 @@ pgm image list <node-id> --json
 pgm image remove <node-id> <image-id> --json
 ```
 
-Export scoped task context as LLM-ready markdown:
+Export scoped node context as LLM-ready markdown:
 
 ```bash
-pgm task export-context <node-id> --output ./task-context.md
+pgm node export-context <node-id> --output ./node-context.md
 ```
 
 Export full project context only for broad handoffs:

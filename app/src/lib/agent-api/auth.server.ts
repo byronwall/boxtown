@@ -6,7 +6,6 @@ const allDevScopes = [
   "project:read",
   "project:write",
   "node:read",
-  "task:read",
   "image:read",
   "node:write",
   "image:write",

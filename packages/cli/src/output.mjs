@@ -39,16 +39,7 @@ export function pickNodeColumns() {
     { header: "ID", value: (row) => row.id },
     { header: "STATUS", value: (row) => row.status },
     { header: "TYPE", value: (row) => row.type },
-    { header: "TITLE", value: (row) => row.label },
-  ];
-}
-
-export function pickTaskColumns() {
-  return [
-    { header: "ID", value: (row) => row.id },
-    { header: "STATUS", value: (row) => row.status },
-    { header: "TYPE", value: (row) => row.type },
-    { header: "TITLE", value: (row) => row.titlePath ?? row.title },
+    { header: "TITLE", value: (row) => row.titlePath ?? row.label ?? row.title },
   ];
 }
 

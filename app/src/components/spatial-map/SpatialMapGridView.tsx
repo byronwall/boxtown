@@ -9,13 +9,11 @@ import {
   onMount,
   Show,
 } from "solid-js";
-import { Portal } from "solid-js/web";
 import { css } from "styled-system/css";
 import { Box, HStack, styled } from "styled-system/jsx";
 
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
-import * as HoverCard from "~/components/ui/hover-card";
 import { Input } from "~/components/ui/input";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
@@ -995,65 +993,29 @@ function NodeNameCell(props: {
           query={props.searchQuery ?? ""}
         />
         <Show when={hasContext()}>
-          <HoverCard.Root
-            openDelay={180}
-            closeDelay={90}
-            positioning={{ placement: "right-start", offset: { mainAxis: 8 } }}
+          <GridButton
+            type="button"
+            display="inline-flex"
+            alignItems="center"
+            justifyContent="center"
+            flexShrink="0"
+            w="18px"
+            h="18px"
+            p="0"
+            border="1px solid rgba(44, 52, 46, 0.2)"
+            background="rgba(252, 253, 252, 0.38)"
+            color="rgba(31, 72, 46, 0.62)"
+            cursor="pointer"
+            _hover={{ borderColor: "rgba(23, 62, 39, 0.34)", background: "rgba(229, 239, 229, 0.54)", color: "rgba(23, 62, 39, 0.78)", outline: "2px solid rgba(23, 62, 39, 0.2)", outlineOffset: "1px" }}
+            _focusVisible={{ borderColor: "rgba(23, 62, 39, 0.34)", background: "rgba(229, 239, 229, 0.54)", color: "rgba(23, 62, 39, 0.78)", outline: "2px solid rgba(23, 62, 39, 0.2)", outlineOffset: "1px" }}
+            aria-label={`Open context preview for ${props.node.label}`}
+            onClick={(event) => {
+              event.stopPropagation();
+              spatialMap.openContextPreview(props.node.id);
+            }}
           >
-            <HoverCard.Trigger
-              asChild={(triggerProps) => (
-                <GridButton
-                  {...triggerProps()}
-                  type="button"
-                  display="inline-flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  flexShrink="0"
-                  w="18px"
-                  h="18px"
-                  p="0"
-                  border="1px solid rgba(44, 52, 46, 0.2)"
-                  background="rgba(252, 253, 252, 0.38)"
-                  color="rgba(31, 72, 46, 0.62)"
-                  cursor="pointer"
-                  _hover={{ borderColor: "rgba(23, 62, 39, 0.34)", background: "rgba(229, 239, 229, 0.54)", color: "rgba(23, 62, 39, 0.78)", outline: "2px solid rgba(23, 62, 39, 0.2)", outlineOffset: "1px" }}
-                  _focusVisible={{ borderColor: "rgba(23, 62, 39, 0.34)", background: "rgba(229, 239, 229, 0.54)", color: "rgba(23, 62, 39, 0.78)", outline: "2px solid rgba(23, 62, 39, 0.2)", outlineOffset: "1px" }}
-                  aria-label={`Preview context for ${props.node.label}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    spatialMap.openContextPreview(props.node.id);
-                  }}
-                >
-                  <FileText size={14} aria-hidden="true" />
-                </GridButton>
-              )}
-            />
-            <Portal>
-              <HoverCard.Positioner>
-                <HoverCard.Content
-                  w="min(360px, calc(100vw - 32px))"
-                  maxH="260px"
-                  gap="8px"
-                  p="12px"
-                  border="1px solid rgba(44, 52, 46, 0.2)"
-                  borderRadius="4px"
-                  background="rgba(250, 252, 249, 0.98)"
-                  color="var(--spatial-map-copy)"
-                  boxShadow="0 16px 36px rgba(24, 29, 26, 0.16)"
-                >
-                  <HoverCard.Arrow>
-                    <HoverCard.ArrowTip />
-                  </HoverCard.Arrow>
-                  <Box color="#141816" fontSize="11px" fontWeight="760" lineHeight="1.2">
-                    {props.node.label}
-                  </Box>
-                  <Box maxH="198px" overflow="hidden" color="var(--spatial-map-copy-muted)" fontSize="11px" lineHeight="1.45" whiteSpace="pre-wrap">
-                    {context()}
-                  </Box>
-                </HoverCard.Content>
-              </HoverCard.Positioner>
-            </Portal>
-          </HoverCard.Root>
+            <FileText size={14} aria-hidden="true" />
+          </GridButton>
         </Show>
       </Box>
     </Box>

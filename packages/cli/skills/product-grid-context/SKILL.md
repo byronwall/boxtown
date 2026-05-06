@@ -1,11 +1,38 @@
 ---
 name: product-grid-context
-description: Use when working in or around a Product Grid Management project and you need project, node, task, image, or graph context through the pgm CLI. This skill helps agents query context from a running Product Grid server without scraping the UI.
+description: Use when working in or around a Product Grid Management project and you need project, node, image, or graph context through the pgm CLI. This skill helps agents query context from a running Product Grid server without scraping the UI.
 ---
 
 # Product Grid Context
 
 Use the `pgm` CLI to inspect and update Product Grid projects before changing code or answering project-specific questions.
+
+## Install
+
+Install the CLI from npm when `pgm` is not already available:
+
+```bash
+npm install -g @byronwallrus/product-grid-cli
+```
+
+Install this skill for Codex globally:
+
+```bash
+pgm skill install --agent codex --global
+```
+
+Install this skill into the current project:
+
+```bash
+pgm skill install --agent codex
+```
+
+Inspect the bundled skill:
+
+```bash
+pgm skill path
+pgm skill print
+```
 
 ## First Checks
 
@@ -36,6 +63,12 @@ pgm project create "Product Site" --link --json
 
 Use `projectId` or `project.id` from the JSON response in subsequent commands.
 
+After selecting a project, inspect the compact schema early so you know the available statuses, node types, and metadata fields:
+
+```bash
+pgm project schema --json
+```
+
 ## Gather Context
 
 Start small. Do not begin by dumping the full project into context.
@@ -43,58 +76,58 @@ Start small. Do not begin by dumping the full project into context.
 Recommended first pass:
 
 ```bash
-pgm task list --search "checkout" --with-ancestors --json
-pgm task list --status planned --with-ancestors --json
+pgm project schema --json
+pgm node list --roots --compact --json
+pgm node list --status planned --type task --with-ancestors --json
 pgm node list --search "checkout" --json
 ```
 
-Use `--with-ancestors` when the task title is terse; it returns the root-to-leaf path without pulling every node's full body.
+Use `--with-ancestors` when a node title is terse; it returns the root-to-leaf path without pulling every node's full body.
 
-When a specific node or task looks relevant, pull the inherited context projection:
+When a specific node looks relevant, pull the inherited context projection:
 
 ```bash
-pgm task view <node-id> --json
 pgm node view <node-id> --with-context --json
 ```
 
-For implementation handoff or deeper work, export only that task/node context:
+For implementation handoff or deeper work, export only that node context:
 
 ```bash
-pgm task export-context <node-id> --output ./tmp/task-context.md
+pgm node export-context <node-id> --output ./tmp/node-context.md
 ```
 
 Use filters before expanding context:
 
 ```bash
-pgm task list --status working --with-ancestors --json
-pgm task list --type task --search "layout" --with-context --json
+pgm node list --status working --with-ancestors --json
+pgm node list --type task --search "layout" --with-context --json
 pgm node list --status blocked --json
 pgm node list --type page --json
 ```
 
 Avoid `pgm project view --json` as a default first step. It returns the full graph, all links, metadata, context, and images, which can be very large and usually wastes context. Use it only when you explicitly need the complete project record.
 
-Use `pgm project export-markdown` when another process needs broad project context, but prefer task/node context exports for ordinary implementation work.
+Use `pgm project export-markdown` when another process needs broad project context, but prefer node context exports for ordinary implementation work.
 
-## Hierarchical Task Context
+## Hierarchical Node Context
 
-Product Grid hierarchy carries requirements. Parent nodes often contain the product area, constraints, and shared intent; leaf task nodes may intentionally be short.
+Product Grid hierarchy carries requirements. Parent nodes often contain the product area, constraints, and shared intent; leaf nodes may intentionally be short.
 
 Prefer commands that preserve this hierarchy:
 
 ```bash
-pgm task list --with-ancestors --json
-pgm task list --with-context --json
-pgm task view <node-id> --json
-pgm task export-context <node-id> --output ./tmp/task-context.md
+pgm node list --with-ancestors --json
+pgm node list --with-context --json
+pgm node view <node-id> --with-context --json
+pgm node export-context <node-id> --output ./tmp/node-context.md
 ```
 
-When reading task context, respect provenance:
+When reading node context, respect provenance:
 
-- Use `path` / `titlePath` to understand the task's product area.
-- Treat parent metadata/context/images as inherited requirements, not as text owned by the leaf task.
+- Use `path` / `titlePath` to understand the node's product area.
+- Treat parent metadata/context/images as inherited requirements, not as text owned by the leaf node.
 - Check `inheritedContext.hasDirectContext`, `hasInheritedContext`, and `missingContext` before deciding whether to implement or ask for clarification.
-- If `missingContext` is true, inspect nearby siblings with `pgm task list --search ... --with-ancestors --json` instead of falling back to full project JSON.
+- If `missingContext` is true, inspect nearby siblings with `pgm node list --search ... --with-ancestors --json` instead of falling back to full project JSON.
 
 ## Create Context Nodes From Markdown
 
@@ -143,6 +176,7 @@ Update existing nodes when the agent learns more:
 
 ```bash
 pgm node update <node-id> --title "Checkout" --status working --type page --json
+pgm node complete <node-id> --note "Implemented the requested change." --json
 pgm node context set <node-id> --file ./context.md --json
 pgm node metadata set <node-id> purpose "Checkout entry point" --json
 pgm node metadata unset <node-id> purpose --json
@@ -164,11 +198,11 @@ The JSON response includes the stored image IDs and URLs. Prefer attaching scree
 
 ## Export Project Markdown
 
-Use `project export-markdown` only before broad edits or when another LLM process needs compact whole-project context. For scoped work, prefer `task export-context`.
+Use `project export-markdown` only before broad edits or when another LLM process needs compact whole-project context. For scoped work, prefer `node export-context`.
 
 ```bash
 pgm project export-markdown --output ./project-context.md
-pgm task export-context <node-id> --output ./task-context.md
+pgm node export-context <node-id> --output ./node-context.md
 ```
 
 ## Rules
@@ -193,10 +227,13 @@ pgm task export-context <node-id> --output ./task-context.md
 pgm project list --json
 pgm project create "Product Site" --link --json
 pgm project link <project-id>
+pgm project schema --project <project-id> --json
 pgm node list --project <project-id> --json
+pgm node list --project <project-id> --roots --compact --json
 pgm node view <node-id> --project <project-id> --with-context --json
 pgm node create --project <project-id> --title "Checkout" --type page --json
 pgm node update <node-id> --project <project-id> --status working --json
+pgm node complete <node-id> --project <project-id> --note "Implemented the requested change." --json
 pgm node context set <node-id> --project <project-id> --file ./context.md --json
 pgm node metadata set <node-id> purpose "Purpose text" --project <project-id> --json
 pgm node move <node-id> --project <project-id> --parent <parent-node-id> --json
@@ -204,8 +241,7 @@ pgm node import-markdown --project <project-id> --file ./brief.md --title "Brief
 pgm image add <node-id> ./screenshot.png --project <project-id> --json
 pgm image list <node-id> --project <project-id> --json
 pgm image remove <node-id> <image-id> --project <project-id> --json
-pgm task list --project <project-id> --search "checkout" --with-ancestors --json
-pgm task view <node-id> --project <project-id> --json
-pgm task export-context <node-id> --project <project-id> --output ./task-context.md
+pgm node list --project <project-id> --search "checkout" --with-ancestors --json
+pgm node export-context <node-id> --project <project-id> --output ./node-context.md
 pgm project export-markdown --project <project-id> --output ./project-context.md
 ```

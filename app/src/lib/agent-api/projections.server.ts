@@ -1,14 +1,17 @@
 import type { ProjectRecord, ProjectSummary } from "~/lib/projects/types";
 import type { MapLink, MapNode } from "~/lib/spatial-map/types";
 import type {
+  AgentNodeContext,
   AgentNodeContextTree,
   AgentMapNode,
+  AgentNodeSummary,
   AgentPathNode,
   AgentProjectDetail,
+  AgentProjectSchema,
   AgentProjectSummary,
-  AgentTaskContext,
-  AgentTaskSummary,
 } from "./types";
+import { mapNodeStatusLabels } from "~/lib/spatial-map/node-status";
+import { mapNodeStatuses } from "~/lib/spatial-map/types";
 
 export function toAgentProjectSummary(project: ProjectSummary): AgentProjectSummary {
   return {
@@ -40,6 +43,19 @@ export function toAgentProjectDetail(project: ProjectRecord): AgentProjectDetail
   };
 }
 
+export function toAgentProjectSchema(project: ProjectRecord): AgentProjectSchema {
+  return {
+    projectId: project.id,
+    name: project.name,
+    statuses: mapNodeStatuses.map((status) => ({
+      value: status,
+      label: mapNodeStatusLabels[status],
+    })),
+    nodeTypes: project.nodeTypeSchema,
+    metadataFields: project.nodeMetadataSchema,
+  };
+}
+
 export function toAgentMapNode(node: MapNode): AgentMapNode {
   return {
     id: node.id,
@@ -53,39 +69,39 @@ export function toAgentMapNode(node: MapNode): AgentMapNode {
   };
 }
 
-export function toAgentTaskSummaries(
+export function toAgentNodeSummaries(
   project: ProjectRecord,
   options: { withAncestors?: boolean } = {},
-): AgentTaskSummary[] {
+): AgentNodeSummary[] {
   return project.spatialMap.nodes
     .map((node) => {
       const path = options.withAncestors ? getNodePath(project, node.id) : [];
-      return toAgentTaskSummary(project, node, path);
+      return toAgentNodeSummary(project, node, path);
     })
-    .sort((left, right) => left.title.localeCompare(right.title));
+    .sort((left, right) => left.label.localeCompare(right.label));
 }
 
-export function toAgentTaskContexts(project: ProjectRecord): AgentTaskContext[] {
+export function toAgentNodeContexts(project: ProjectRecord): AgentNodeContext[] {
   return project.spatialMap.nodes
-    .map((node) => toAgentTaskContext(project, node.id))
-    .filter((item): item is AgentTaskContext => item !== null)
-    .sort((left, right) => left.task.title.localeCompare(right.task.title));
+    .map((node) => toAgentNodeContext(project, node.id))
+    .filter((item): item is AgentNodeContext => item !== null)
+    .sort((left, right) => left.node.label.localeCompare(right.node.label));
 }
 
-export function toAgentTaskContext(
+export function toAgentNodeContext(
   project: ProjectRecord,
   nodeId: string,
-): AgentTaskContext | null {
+): AgentNodeContext | null {
   const node = project.spatialMap.nodes.find((item) => item.id === nodeId);
   if (!node) {
     return null;
   }
 
   const path = getNodePath(project, nodeId);
-  const summary = toAgentTaskSummary(project, node, path);
+  const summary = toAgentNodeSummary(project, node, path);
 
   return {
-    task: summary,
+    node: summary,
     path,
     inheritedContext: getInheritedContext(path),
   };
@@ -108,11 +124,11 @@ export function toAgentNodeContextTree(
   };
 }
 
-function toAgentTaskSummary(
+function toAgentNodeSummary(
   project: ProjectRecord,
   node: MapNode,
   path: AgentPathNode[] = [],
-): AgentTaskSummary {
+): AgentNodeSummary {
   const parentNodeId = getParentNodeId(project.spatialMap.links, node.id);
   const childCount = project.spatialMap.links.filter(
     (link) => link.parentChild && link.source === node.id,
@@ -121,6 +137,7 @@ function toAgentTaskSummary(
 
   return {
     id: node.id,
+    label: node.label,
     title: node.label,
     status: node.status,
     type: node.type,

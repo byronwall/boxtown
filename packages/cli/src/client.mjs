@@ -30,6 +30,12 @@ export class ProductGridClient {
     );
   }
 
+  getProjectSchema(projectId) {
+    return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/schema`).then(
+      (body) => body.schema,
+    );
+  }
+
   listNodes(projectId, filters = {}) {
     const searchParams = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {
@@ -183,34 +189,6 @@ export class ProductGridClient {
   exportProjectMarkdown(projectId) {
     return this.requestText(
       `/api/v1/projects/${encodeURIComponent(projectId)}/exports/markdown`,
-    );
-  }
-
-  listTasks(projectId, filters = {}) {
-    const searchParams = new URLSearchParams();
-    for (const [key, value] of Object.entries(filters)) {
-      if (value !== undefined && value !== null && value !== "") {
-        searchParams.set(key, value);
-      }
-    }
-
-    const suffix = searchParams.size > 0 ? `?${searchParams}` : "";
-    return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/tasks${suffix}`).then(
-      (body) => body.tasks ?? [],
-    );
-  }
-
-  getTask(projectId, nodeId, options = {}) {
-    const searchParams = new URLSearchParams();
-    for (const [key, value] of Object.entries(options)) {
-      if (value !== undefined && value !== null && value !== "") {
-        searchParams.set(key, value);
-      }
-    }
-
-    const suffix = searchParams.size > 0 ? `?${searchParams}` : "";
-    return this.request(
-      `/api/v1/projects/${encodeURIComponent(projectId)}/tasks/${encodeURIComponent(nodeId)}${suffix}`,
     );
   }
 

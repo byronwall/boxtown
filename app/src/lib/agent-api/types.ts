@@ -30,6 +30,17 @@ export interface AgentProjectDetail extends ProjectSummary {
   };
 }
 
+export interface AgentProjectSchema {
+  projectId: string;
+  name: string;
+  statuses: Array<{
+    value: MapNodeStatus;
+    label: string;
+  }>;
+  nodeTypes: ProjectRecord["nodeTypeSchema"];
+  metadataFields: ProjectRecord["nodeMetadataSchema"];
+}
+
 export interface AgentProjectCreateResponse {
   project: AgentProjectDetail;
 }
@@ -63,8 +74,9 @@ export interface AgentNodeMetadataResponse {
   metadata: Record<string, string>;
 }
 
-export interface AgentTaskSummary {
+export interface AgentNodeSummary {
   id: string;
+  label: string;
   title: string;
   status: MapNodeStatus;
   type: string;
@@ -115,8 +127,8 @@ export interface AgentNodeContextTree {
   inheritedContext: AgentInheritedContext;
 }
 
-export interface AgentTaskContext {
-  task: AgentTaskSummary;
+export interface AgentNodeContext {
+  node: AgentNodeSummary;
   path: AgentPathNode[];
   inheritedContext: AgentInheritedContext;
 }

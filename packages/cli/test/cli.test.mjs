@@ -7,6 +7,7 @@ import { ProductGridClient } from "../src/client.mjs";
 import { defaultServer, resolveProjectId, resolveServer, resolveToken } from "../src/config.mjs";
 import { main, parseArgs } from "../src/main.mjs";
 import { getBundledSkillPath, resolveSkillInstallTarget } from "../src/skill.mjs";
+import { isNewerVersion, notifyIfUpdateAvailable } from "../src/update-check.mjs";
 import { packageVersion } from "../src/version.mjs";
 
 test("parseArgs handles command positionals and global flags", () => {
@@ -88,6 +89,47 @@ test("main prints config path without reading config", async () => {
   assert.equal(stdout.value, `${configPath}\n`);
 });
 
+test("update check prints an encouraging update note to stderr", async () => {
+  const stderr = createWritableBuffer();
+
+  await notifyIfUpdateAvailable({
+    stderr,
+    env: {},
+  }, {
+    fetch: async () => new Response(JSON.stringify({ version: "99.0.0" }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    }),
+  });
+
+  assert.match(stderr.value, /A fresh pgm update is ready:/);
+  assert.match(stderr.value, /npm install -g @byronwallrus\/product-grid-cli/);
+});
+
+test("update check can be disabled and compares semver versions", async () => {
+  const stderr = createWritableBuffer();
+  let called = false;
+
+  await notifyIfUpdateAvailable({
+    stderr,
+    env: { PGM_NO_UPDATE_CHECK: "1" },
+  }, {
+    fetch: async () => {
+      called = true;
+      return new Response(JSON.stringify({ version: "99.0.0" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    },
+  });
+
+  assert.equal(called, false);
+  assert.equal(stderr.value, "");
+  assert.equal(isNewerVersion("1.2.4", "1.2.3"), true);
+  assert.equal(isNewerVersion("1.2.3", "1.2.3"), false);
+  assert.equal(isNewerVersion("1.2.2", "1.2.3"), false);
+});
+
 test("parseArgs handles markdown import and image add positionals", () => {
   const markdown = parseArgs([
     "node",
@@ -138,24 +180,37 @@ test("parseArgs handles node mutation and export commands", () => {
   assert.equal(exportMarkdown.options.output, "project.md");
 });
 
-test("parseArgs handles targeted context flags", () => {
-  const taskList = parseArgs([
-    "task",
+test("parseArgs handles targeted node context flags", () => {
+  const nodeList = parseArgs([
+    "node",
     "list",
     "--search",
     "layout",
+    "--roots",
+    "--compact",
     "--with-ancestors",
     "--json",
   ]);
-  assert.deepEqual(taskList.command, ["task", "list"]);
-  assert.equal(taskList.options.search, "layout");
-  assert.equal(taskList.options.withAncestors, true);
-  assert.equal(taskList.options.json, true);
+  assert.deepEqual(nodeList.command, ["node", "list"]);
+  assert.equal(nodeList.options.search, "layout");
+  assert.equal(nodeList.options.roots, true);
+  assert.equal(nodeList.options.compact, true);
+  assert.equal(nodeList.options.withAncestors, true);
+  assert.equal(nodeList.options.json, true);
 
   const nodeView = parseArgs(["node", "view", "node-1", "--with-context"]);
   assert.deepEqual(nodeView.command, ["node", "view"]);
   assert.deepEqual(nodeView.positionals, ["node-1"]);
   assert.equal(nodeView.options.withContext, true);
+
+  const nodeExport = parseArgs(["node", "export-context", "node-1", "--output", "node-context.md"]);
+  assert.deepEqual(nodeExport.command, ["node", "export-context"]);
+  assert.deepEqual(nodeExport.positionals, ["node-1"]);
+  assert.equal(nodeExport.options.output, "node-context.md");
+
+  const projectSchema = parseArgs(["project", "schema", "--json"]);
+  assert.deepEqual(projectSchema.command, ["project", "schema"]);
+  assert.equal(projectSchema.options.json, true);
 });
 
 test("config resolution prefers flags then environment then config", () => {
@@ -342,14 +397,14 @@ test("client sends node mutation requests", async () => {
   }
 });
 
-test("client requests compact hierarchy context projections", async () => {
+test("client requests schema and compact hierarchy context projections", async () => {
   const calls = [];
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url, init = {}) => {
     calls.push({ url, init });
     return new Response(JSON.stringify({
-      tasks: [],
-      task: { id: "node-1", title: "Node 1" },
+      schema: { projectId: "demo", statuses: [], nodeTypes: [], metadataFields: [] },
+      nodes: [],
       node: { id: "node-1", title: "Node 1" },
       path: [],
       inheritedContext: { titlePath: "Node 1" },
@@ -365,26 +420,101 @@ test("client requests compact hierarchy context projections", async () => {
       token: "secret-token",
     });
 
-    await client.listTasks("demo", {
+    await client.getProjectSchema("demo");
+    await client.listNodes("demo", {
       status: "planned",
       search: "layout",
+      roots: true,
+      compact: true,
+      fields: "id,label,status,type,parentNodeId,childCount,imageCount",
       include: "ancestors",
     });
-    await client.getTask("demo", "node-1", { include: "context" });
     await client.getNodeContextTree("demo", "node-1");
 
     assert.equal(
       calls[0].url,
-      "http://localhost:3000/api/v1/projects/demo/tasks?status=planned&search=layout&include=ancestors",
+      "http://localhost:3000/api/v1/projects/demo/schema",
     );
     assert.equal(
       calls[1].url,
-      "http://localhost:3000/api/v1/projects/demo/tasks/node-1?include=context",
+      "http://localhost:3000/api/v1/projects/demo/nodes?status=planned&search=layout&roots=true&compact=true&fields=id%2Clabel%2Cstatus%2Ctype%2CparentNodeId%2CchildCount%2CimageCount&include=ancestors",
     );
     assert.equal(
       calls[2].url,
       "http://localhost:3000/api/v1/projects/demo/nodes/node-1/context-tree",
     );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("node complete writes compact mutation JSON and appends a note", async () => {
+  const calls = [];
+  const stdout = createWritableBuffer();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    calls.push({ url, init });
+    if (url.endsWith("/context") && (!init.method || init.method === "GET")) {
+      return new Response(JSON.stringify({
+        nodeId: "node-1",
+        context: "Existing context",
+        rawContext: "",
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({
+      node: {
+        id: "node-1",
+        label: "Node 1",
+        type: "task",
+        status: "implemented",
+        metadata: {},
+        context: "",
+        rawContext: "",
+        images: [],
+      },
+    }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+
+  try {
+    await main([
+      "node",
+      "pgm",
+      "node",
+      "complete",
+      "node-1",
+      "--project",
+      "demo",
+      "--note",
+      "Done",
+      "--json",
+    ], {
+      stdout,
+      stderr: createWritableBuffer(),
+      env: {
+        PRODUCT_GRID_SERVER: "http://localhost:3000",
+      },
+      cwd: "/tmp",
+    });
+
+    assert.equal(calls[0].url, "http://localhost:3000/api/v1/projects/demo/nodes/node-1");
+    assert.deepEqual(JSON.parse(calls[0].init.body), { status: "implemented" });
+    assert.equal(calls[1].url, "http://localhost:3000/api/v1/projects/demo/nodes/node-1/context");
+    assert.equal(calls[2].init.method, "PUT");
+    assert.deepEqual(JSON.parse(calls[2].init.body), {
+      context: "Existing context\n\nResolution note:\n\nDone",
+    });
+    assert.deepEqual(JSON.parse(stdout.value), {
+      nodeId: "node-1",
+      status: "implemented",
+      updatedFields: ["status", "context"],
+    });
   } finally {
     globalThis.fetch = originalFetch;
   }

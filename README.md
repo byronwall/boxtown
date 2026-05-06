@@ -238,12 +238,14 @@ The current app supports several complementary working modes:
 
 ### Agent API and CLI
 
-- Provides `/api/v1` endpoints for agent-oriented project, node, task, import, export, metadata, context, image, and move operations.
+- Provides `/api/v1` endpoints for agent-oriented project, schema, node, import, export, metadata, context, image, and move operations.
 - Supports token-based API scopes for read and write access.
 - Allows local development read access when token auth is not configured outside production.
-- Ships a `pgm` CLI under `packages/cli/`.
+- Ships a `pgm` CLI under `packages/cli/`, published as [`@byronwallrus/product-grid-cli`](https://www.npmjs.com/package/@byronwallrus/product-grid-cli).
+- Installs the published CLI with `npm install -g @byronwallrus/product-grid-cli`.
 - Lists, creates, links, views, and exports projects from the CLI.
 - Lists, searches, filters, creates, updates, moves, and imports nodes from the CLI.
+- Exposes compact project schema early so agents can discover available statuses, node types, and metadata fields.
 - Sets node context and metadata from CLI commands.
 - Adds, lists, and removes node images from the CLI.
 - Exports project context as LLM-ready markdown.

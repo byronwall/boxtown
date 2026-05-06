@@ -2,7 +2,11 @@ import type { APIEvent } from "@solidjs/start/server";
 import { AgentApiError } from "~/lib/agent-api/errors.server";
 import { withAgentApi } from "~/lib/agent-api/handler.server";
 import { toAgentOperationActor } from "~/lib/agent-api/operation-actor";
-import { toAgentMapNode } from "~/lib/agent-api/projections.server";
+import {
+  toAgentMapNode,
+  toAgentNodeContexts,
+  toAgentNodeSummaries,
+} from "~/lib/agent-api/projections.server";
 import { agentJson } from "~/lib/agent-api/response.server";
 import {
   createChildNodeOnDisk,
@@ -24,6 +28,10 @@ export async function GET(event: APIEvent) {
     const status = url.searchParams.get("status");
     const type = url.searchParams.get("type");
     const search = url.searchParams.get("search");
+    const include = url.searchParams.get("include");
+    const roots = parseBooleanSearchParam(url.searchParams.get("roots"));
+    const compact = parseBooleanSearchParam(url.searchParams.get("compact"));
+    const fields = parseFields(url.searchParams.get("fields"));
 
     if (status !== null && !isMapNodeStatus(status)) {
       throw new AgentApiError("invalid_status", "A valid node status is required.", 400, {
@@ -31,10 +39,45 @@ export async function GET(event: APIEvent) {
       });
     }
 
+    const parentNodeIds = new Map(
+      project.spatialMap.links
+        .filter((link) => link.parentChild)
+        .map((link) => [link.target, link.source]),
+    );
+
+    if (include === "context") {
+      const nodes = toAgentNodeContexts(project)
+        .filter((item) => matchesNodeFilters(item.node, {
+          status,
+          type,
+          search,
+          roots,
+          parentNodeIds,
+        }))
+        .map((item) => projectFields(item, fields));
+
+      return agentJson({ nodes });
+    }
+
+    if (include === "ancestors" || compact || fields) {
+      const nodes = toAgentNodeSummaries(project, { withAncestors: include === "ancestors" })
+        .filter((node) => matchesNodeFilters(node, {
+          status,
+          type,
+          search,
+          roots,
+          parentNodeIds,
+        }))
+        .map((node) => projectFields(node, fields));
+
+      return agentJson({ nodes });
+    }
+
     const nodes = project.spatialMap.nodes
-      .filter((node) => matchesNodeFilters(node, { status, type, search }))
+      .filter((node) => matchesNodeFilters(node, { status, type, search, roots, parentNodeIds }))
       .map(toAgentMapNode)
-      .sort((left, right) => left.label.localeCompare(right.label));
+      .sort((left, right) => left.label.localeCompare(right.label))
+      .map((node) => projectFields(node, fields));
 
     return agentJson({ nodes });
   });
@@ -100,8 +143,19 @@ export async function POST(event: APIEvent) {
 }
 
 function matchesNodeFilters(
-  node: MapNode,
-  filters: { status: string | null; type: string | null; search: string | null },
+  node: Pick<MapNode, "id" | "label" | "type" | "status"> & {
+    titlePath?: string;
+    context?: string;
+    rawContext?: string;
+    metadata?: Record<string, string>;
+  },
+  filters: {
+    status: string | null;
+    type: string | null;
+    search: string | null;
+    roots: boolean;
+    parentNodeIds: Map<string, string>;
+  },
 ) {
   if (filters.status !== null && node.status !== filters.status) {
     return false;
@@ -111,19 +165,54 @@ function matchesNodeFilters(
     return false;
   }
 
+  if (filters.roots && filters.parentNodeIds.has(node.id)) {
+    return false;
+  }
+
   if (filters.search !== null && filters.search.trim().length > 0) {
     const needle = filters.search.trim().toLowerCase();
     return [
       node.id,
       node.label,
+      node.titlePath ?? "",
       node.type,
-      node.context,
-      node.rawContext,
-      ...Object.values(node.metadata),
+      node.context ?? "",
+      node.rawContext ?? "",
+      ...Object.values(node.metadata ?? {}),
     ].some((value) => value.toLowerCase().includes(needle));
   }
 
   return true;
+}
+
+function parseBooleanSearchParam(value: string | null) {
+  if (value === null) {
+    return false;
+  }
+
+  const normalized = value.trim().toLowerCase();
+  return !(normalized === "false" || normalized === "0" || normalized === "no");
+}
+
+function parseFields(value: string | null) {
+  if (!value?.trim()) {
+    return null;
+  }
+
+  return value.split(",").map((field) => field.trim()).filter(Boolean);
+}
+
+function projectFields<T extends object>(value: T, fields: string[] | null) {
+  if (!fields) {
+    return value;
+  }
+
+  const record = value as Record<string, unknown>;
+  return Object.fromEntries(
+    fields
+      .filter((field) => Object.prototype.hasOwnProperty.call(record, field))
+      .map((field) => [field, record[field]]),
+  );
 }
 
 function getString(value: unknown) {
