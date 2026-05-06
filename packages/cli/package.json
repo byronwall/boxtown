@@ -1,6 +1,6 @@
 {
   "name": "@byronwallrus/product-grid-cli",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "CLI for Product Grid Management.",
   "type": "module",
   "bin": {
