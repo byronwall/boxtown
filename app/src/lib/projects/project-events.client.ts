@@ -105,7 +105,7 @@ export function connectProjectEvents(input: ConnectProjectEventsInput): ProjectE
 
       console.info("project-events:received", event);
       if (event.type === "project:changed" && event.projectId === input.projectId) {
-        refreshProject(event, true);
+        refreshProject(event);
       }
       if (event.type === "project:deleted" && event.projectId === input.projectId) {
         input.onProjectDeleted();

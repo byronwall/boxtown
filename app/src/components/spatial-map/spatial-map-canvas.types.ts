@@ -89,6 +89,7 @@ export interface SpatialMapCanvasController {
   selectedNode: Accessor<MapNode | null>;
   showEdges: Accessor<boolean>;
   showLinkedInIsolation: Accessor<boolean>;
+  sourceData: Accessor<SpatialMapData>;
   sourceNodesById: Accessor<Map<string, MapNode>>;
   sourceDecompositionOpen: Accessor<boolean>;
   childNodeDraft: Accessor<ChildNodeDraft | null>;

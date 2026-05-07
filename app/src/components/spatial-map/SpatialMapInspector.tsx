@@ -32,7 +32,6 @@ import {
   updateProjectNodeTitle,
   updateProjectNodeType,
 } from "~/lib/projects/data";
-import { updateProjectNode } from "~/lib/projects/optimistic";
 import type { ProjectOperationLogEntry, ProjectRecord } from "~/lib/projects/types";
 import { Text } from "~/components/ui/text";
 import { getMapNodeStatusLabel } from "~/lib/spatial-map/node-status";
@@ -105,21 +104,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const [typePending, setTypePending] = createSignal(false);
   const [contextPending, setContextPending] = createSignal(false);
   const [metadataPending, setMetadataPending] = createSignal(false);
-  const [optimisticTitle, setOptimisticTitle] = createSignal<{
-    nodeId: string;
-    previousTitle: string;
-    title: string;
-  } | null>(null);
-  const [optimisticStatus, setOptimisticStatus] = createSignal<{
-    nodeId: string;
-    previousStatus: MapNodeStatus;
-    status: MapNodeStatus;
-  } | null>(null);
-  const [optimisticType, setOptimisticType] = createSignal<{
-    nodeId: string;
-    previousType: string;
-    type: string;
-  } | null>(null);
   const contextFormId = "spatial-map-context-form";
   const metadataFormId = "spatial-map-metadata-form";
   const selectedNodeActivity = createMemo(() => {
@@ -131,28 +115,13 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const globalProjectActivity = createMemo(() => props.project.operationLog);
   const selectedNodeTitle = createMemo(() => {
     const node = selectedNode();
-    if (!node) return "Select an item";
-
-    const optimistic = optimisticTitle();
-    return optimistic?.nodeId === node.id ? optimistic.title : node.label;
+    return node?.label ?? "Select an item";
   });
-  const selectedNodeWithOptimisticStatus = createMemo(() => {
-    const node = selectedNode();
-    if (!node) return null;
-
-    const optimistic = optimisticStatus();
-    return optimistic?.nodeId === node.id
-      ? { ...node, status: optimistic.status }
-      : node;
+  const selectedNodeForStatus = createMemo(() => {
+    return selectedNode();
   });
-  const selectedNodeWithOptimisticType = createMemo(() => {
-    const node = selectedNode();
-    if (!node) return null;
-
-    const optimistic = optimisticType();
-    return optimistic?.nodeId === node.id
-      ? { ...node, type: optimistic.type }
-      : node;
+  const selectedNodeForType = createMemo(() => {
+    return selectedNode();
   });
   const metadataIsDirty = createMemo(() => {
     const node = selectedNode();
@@ -244,72 +213,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     }
   };
 
-  const rollBackTitle = (error: unknown) => {
-    const optimistic = optimisticTitle();
-    if (!optimistic) {
-      return;
-    }
-
-    props.onProjectUpdated?.(
-      updateProjectNode(props.project, optimistic.nodeId, (projectNode) => ({
-        ...projectNode,
-        label: optimistic.previousTitle,
-      })),
-    );
-    setOptimisticTitle(null);
-    toaster.error({
-      title: "Rename failed",
-      description:
-        error instanceof Error
-          ? error.message
-          : "The selected node title could not be updated.",
-    });
-  };
-
-  const rollBackStatus = (error: unknown) => {
-    const optimistic = optimisticStatus();
-    if (!optimistic) {
-      return;
-    }
-
-    props.onProjectUpdated?.(
-      updateProjectNode(props.project, optimistic.nodeId, (projectNode) => ({
-        ...projectNode,
-        status: optimistic.previousStatus,
-      })),
-    );
-    setOptimisticStatus(null);
-    toaster.error({
-      title: "Status update failed",
-      description:
-        error instanceof Error
-          ? error.message
-          : "The selected node status could not be updated.",
-    });
-  };
-
-  const rollBackType = (error: unknown) => {
-    const optimistic = optimisticType();
-    if (!optimistic) {
-      return;
-    }
-
-    props.onProjectUpdated?.(
-      updateProjectNode(props.project, optimistic.nodeId, (projectNode) => ({
-        ...projectNode,
-        type: optimistic.previousType,
-      })),
-    );
-    setOptimisticType(null);
-    toaster.error({
-      title: "Type update failed",
-      description:
-        error instanceof Error
-          ? error.message
-          : "The selected node type could not be updated.",
-    });
-  };
-
   const submitTitle = async (value: string) => {
     const node = selectedNode();
     if (!node || titlePending()) return;
@@ -318,14 +221,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     if (!title || title === node.label) return;
 
     setTitlePending(true);
-    setOptimisticTitle({ nodeId: node.id, previousTitle: node.label, title });
-    props.onProjectUpdated?.(
-      updateProjectNode(props.project, node.id, (projectNode) => ({
-        ...projectNode,
-        label: title,
-      })),
-    );
-
     try {
       const formData = new FormData();
       formData.set("projectId", props.project.id);
@@ -338,9 +233,14 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         title: "Node renamed",
         description: `${label ?? "This node"} is now the selected node title.`,
       });
-      setOptimisticTitle(null);
     } catch (error) {
-      rollBackTitle(error);
+      toaster.error({
+        title: "Rename failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "The selected node title could not be updated.",
+      });
     } finally {
       setTitlePending(false);
     }
@@ -351,18 +251,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     if (!node || statusPending() || status === node.status) return;
 
     setStatusPending(true);
-    setOptimisticStatus({
-      nodeId: node.id,
-      previousStatus: node.status,
-      status,
-    });
-    props.onProjectUpdated?.(
-      updateProjectNode(props.project, node.id, (projectNode) => ({
-        ...projectNode,
-        status,
-      })),
-    );
-
     try {
       const formData = new FormData();
       formData.set("projectId", props.project.id);
@@ -375,9 +263,14 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         title: "Status updated",
         description: `${updatedNode?.label ?? "This node"} is now ${getMapNodeStatusLabel(updatedNode?.status ?? status)}.`,
       });
-      setOptimisticStatus(null);
     } catch (error) {
-      rollBackStatus(error);
+      toaster.error({
+        title: "Status update failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "The selected node status could not be updated.",
+      });
     } finally {
       setStatusPending(false);
     }
@@ -388,18 +281,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     if (!node || typePending() || type === node.type) return;
 
     setTypePending(true);
-    setOptimisticType({
-      nodeId: node.id,
-      previousType: node.type,
-      type,
-    });
-    props.onProjectUpdated?.(
-      updateProjectNode(props.project, node.id, (projectNode) => ({
-        ...projectNode,
-        type,
-      })),
-    );
-
     try {
       const formData = new FormData();
       formData.set("projectId", props.project.id);
@@ -411,9 +292,14 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         title: "Type updated",
         description: `${node.label} is now a ${type} node.`,
       });
-      setOptimisticType(null);
     } catch (error) {
-      rollBackType(error);
+      toaster.error({
+        title: "Type update failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "The selected node type could not be updated.",
+      });
     } finally {
       setTypePending(false);
     }
@@ -551,7 +437,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
           <Show when={inspectorView() === "details"}>
           <SpatialMapInspectorSection>
             <HStack gap="1.5" flexWrap="wrap">
-              <Show when={selectedNodeWithOptimisticStatus()}>
+              <Show when={selectedNodeForStatus()}>
                 {(node) => (
                   <SpatialMapNodeStatusMenu
                     node={node()}
@@ -565,7 +451,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                 )}
               </Show>
               <InspectorChip label="ID" value={spatialMap.selectedNode()?.id ?? "None"} />
-              <Show when={selectedNodeWithOptimisticType()}>
+              <Show when={selectedNodeForType()}>
                 {(node) => (
                   <SpatialMapNodeTypePicker
                     project={props.project}

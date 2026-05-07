@@ -830,6 +830,7 @@ export function useSpatialMapCanvasController(
     selectedNode,
     showEdges,
     showLinkedInIsolation,
+    sourceData: data,
     sourceNodesById,
     availableDepthLevels,
     visibleData,

@@ -7,8 +7,6 @@ import { toaster } from "~/components/ui/toast";
 import { createProjectChildNode } from "~/lib/projects/data";
 import { ensureProjectNodeTypeOptions } from "~/lib/projects/node-types";
 import type { ProjectRecord } from "~/lib/projects/types";
-import { createParentChildLink } from "~/lib/spatial-map/links";
-import { DEFAULT_MAP_NODE_STATUS } from "~/lib/spatial-map/node-status";
 import { useSpatialMap } from "./SpatialMapContext";
 import type { ChildNodeDraft, NodeVisualState } from "./spatial-map-canvas.types";
 
@@ -72,42 +70,6 @@ export function SpatialMapChildNodePlaceholder(props: {
     }, 0);
   };
 
-  const applyOptimisticChild = (nextTitle: string, nextType: string, nextContext: string) => {
-    const nodeId = createUniqueNodeId(
-      nextTitle,
-      nextType,
-      new Set(props.project.spatialMap.nodes.map((node) => node.id)),
-    );
-
-    props.onProjectUpdated?.({
-      ...props.project,
-      updatedAt: new Date().toISOString(),
-      spatialMap: {
-        ...props.project.spatialMap,
-        nodes: [
-          ...props.project.spatialMap.nodes,
-          {
-            id: nodeId,
-            label: nextTitle,
-            type: nextType,
-            status: DEFAULT_MAP_NODE_STATUS,
-            metadata: {},
-            context: nextContext,
-            rawContext: nextContext,
-          },
-        ],
-        links: props.parentNode
-          ? [
-              ...props.project.spatialMap.links,
-              createParentChildLink({ source: props.parentNode.id, target: nodeId }),
-            ]
-          : props.project.spatialMap.links,
-      },
-    });
-    controller.clearChildNodeDraft();
-    queueMicrotask(() => controller.setSelectedNodeId(nodeId));
-  };
-
   const createChildNode = async (
     nextTitle: string,
     nextType: string,
@@ -127,10 +89,10 @@ export function SpatialMapChildNodePlaceholder(props: {
     formData.set("context", nextContext);
 
     setPending(true);
-    applyOptimisticChild(nextTitle, nextType, nextContext);
     try {
       const result = await submitCreateProjectChildNode(formData);
       props.onProjectUpdated?.(result.project);
+      controller.clearChildNodeDraft();
       queueMicrotask(() => controller.setSelectedNodeId(result.nodeId));
     } catch (error) {
       toaster.error({
@@ -307,27 +269,4 @@ export function SpatialMapChildNodePlaceholder(props: {
       </Box>
     </SpatialMapForm>
   );
-}
-
-function createUniqueNodeId(label: string, type: string, existingIds: Set<string>) {
-  const baseId = slugifyProjectName(`${type}-${label}`);
-  if (!existingIds.has(baseId)) {
-    return baseId;
-  }
-
-  let suffix = 2;
-  while (existingIds.has(`${baseId}-${suffix}`)) {
-    suffix += 1;
-  }
-
-  return `${baseId}-${suffix}`;
-}
-
-function slugifyProjectName(name: string) {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return slug || "project";
 }

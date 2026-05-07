@@ -16,7 +16,8 @@ import { Badge } from "~/components/ui/badge";
 import { Input } from "~/components/ui/input";
 import { Kbd } from "~/components/ui/kbd";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
-import type { MapNode } from "~/lib/spatial-map/types";
+import { calculateNodeDepths } from "~/lib/spatial-map/depth";
+import type { MapNode, SpatialMapData } from "~/lib/spatial-map/types";
 
 import { isEditableTarget } from "./spatial-map-dom";
 import { useSpatialMap } from "./SpatialMapContext";
@@ -44,6 +45,8 @@ const commandMenuDialogClass = css({
 interface SearchResult {
   node: MapNode;
   score: number;
+  depth: number;
+  sortOrder: number;
   fieldLabel: string;
   matchedText: string;
   matchStart: number;
@@ -56,13 +59,14 @@ export function SpatialMapCommandMenu() {
   const [activeIndex, setActiveIndex] = createSignal(0);
   let inputRef: HTMLInputElement | undefined;
 
+  const hierarchy = createMemo(() => createSearchHierarchy(controller.sourceData()));
   const nodes = createMemo(() =>
     [...controller.sourceNodesById().values()].sort((a, b) =>
-      a.label.localeCompare(b.label),
+      compareNodesByHierarchy(a, b, hierarchy()),
     ),
   );
   const results = createMemo(() =>
-    searchNodes(nodes(), query()).slice(0, RESULT_LIMIT),
+    searchNodes(nodes(), query(), hierarchy()).slice(0, RESULT_LIMIT),
   );
 
   createEffect(() => {
@@ -228,6 +232,17 @@ export function SpatialMapCommandMenu() {
                       >
                         {result.node.type}
                       </Badge>
+                      <Box
+                        as="span"
+                        flex="0 0 auto"
+                        color="var(--spatial-map-copy-dim)"
+                        fontSize="11px"
+                        fontWeight="760"
+                        lineHeight="1"
+                        whiteSpace="nowrap"
+                      >
+                        D{result.depth} / #{result.sortOrder + 1}
+                      </Box>
                     </HStack>
                   </CommandResultButton>
                 )}
@@ -246,12 +261,79 @@ export function SpatialMapCommandMenu() {
   );
 }
 
-function searchNodes(nodes: MapNode[], rawQuery: string): SearchResult[] {
+interface SearchHierarchy {
+  depthsByNodeId: Map<string, number>;
+  sortOrderByNodeId: Map<string, number>;
+}
+
+function createSearchHierarchy(data: SpatialMapData): SearchHierarchy {
+  const nodeIndexById = new Map(data.nodes.map((node, index) => [node.id, index]));
+  const sortOrderByNodeId = new Map<string, number>();
+  const childIdsByParentId = new Map<string, string[]>();
+
+  for (const link of data.links) {
+    if (
+      !link.parentChild ||
+      !nodeIndexById.has(link.source) ||
+      !nodeIndexById.has(link.target)
+    ) {
+      continue;
+    }
+
+    const childIds = childIdsByParentId.get(link.source) ?? [];
+    childIds.push(link.target);
+    childIdsByParentId.set(link.source, childIds);
+  }
+
+  for (const node of data.nodes) {
+    sortOrderByNodeId.set(node.id, nodeIndexById.get(node.id) ?? 0);
+  }
+
+  for (const childIds of childIdsByParentId.values()) {
+    childIds
+      .sort(
+        (left, right) =>
+          (nodeIndexById.get(left) ?? 0) - (nodeIndexById.get(right) ?? 0),
+      )
+      .forEach((childId, index) => sortOrderByNodeId.set(childId, index));
+  }
+
+  return {
+    depthsByNodeId: calculateNodeDepths(data),
+    sortOrderByNodeId,
+  };
+}
+
+function compareNodesByHierarchy(
+  left: MapNode,
+  right: MapNode,
+  hierarchy: SearchHierarchy,
+) {
+  const depthDiff =
+    (hierarchy.depthsByNodeId.get(left.id) ?? 0) -
+    (hierarchy.depthsByNodeId.get(right.id) ?? 0);
+  if (depthDiff !== 0) return depthDiff;
+
+  const sortDiff =
+    (hierarchy.sortOrderByNodeId.get(left.id) ?? 0) -
+    (hierarchy.sortOrderByNodeId.get(right.id) ?? 0);
+  if (sortDiff !== 0) return sortDiff;
+
+  return left.label.localeCompare(right.label);
+}
+
+function searchNodes(
+  nodes: MapNode[],
+  rawQuery: string,
+  hierarchy: SearchHierarchy,
+): SearchResult[] {
   const query = rawQuery.trim().toLowerCase();
   if (!query) {
     return nodes.slice(0, RESULT_LIMIT).map((node, index) => ({
       node,
       score: 100 - index,
+      depth: hierarchy.depthsByNodeId.get(node.id) ?? 0,
+      sortOrder: hierarchy.sortOrderByNodeId.get(node.id) ?? index,
       fieldLabel: "Title",
       matchedText: node.label,
       matchStart: -1,
@@ -259,12 +341,24 @@ function searchNodes(nodes: MapNode[], rawQuery: string): SearchResult[] {
   }
 
   return nodes
-    .map((node) => matchNode(node, query))
+    .map((node) => matchNode(node, query, hierarchy))
     .filter((result): result is SearchResult => result !== null)
-    .sort((a, b) => b.score - a.score || a.node.label.localeCompare(b.node.label));
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.depth - b.depth ||
+        a.sortOrder - b.sortOrder ||
+        a.node.label.localeCompare(b.node.label),
+    );
 }
 
-function matchNode(node: MapNode, query: string): SearchResult | null {
+function matchNode(
+  node: MapNode,
+  query: string,
+  hierarchy: SearchHierarchy,
+): SearchResult | null {
+  const depth = hierarchy.depthsByNodeId.get(node.id) ?? 0;
+  const sortOrder = hierarchy.sortOrderByNodeId.get(node.id) ?? 0;
   const fields = [
     { label: "Title", text: node.label, weight: 70 },
     { label: "ID", text: node.id, weight: 46 },
@@ -286,10 +380,16 @@ function matchNode(node: MapNode, query: string): SearchResult | null {
       continue;
     }
 
-    const score = field.weight + (matchStart === 0 ? 20 : 0);
+    const score =
+      field.weight +
+      (matchStart === 0 ? 20 : 0) +
+      Math.max(0, 8 - depth * 2) +
+      Math.max(0, 4 - sortOrder * 0.25);
     const result = {
       node,
       score,
+      depth,
+      sortOrder,
       fieldLabel: field.label,
       matchedText: createMatchSnippet(field.text, matchStart, query.length),
       matchStart: Math.min(matchStart, 24),
