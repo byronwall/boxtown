@@ -1,10 +1,10 @@
 export function writeJson(value, stdout = process.stdout) {
-  stdout.write(`${JSON.stringify(value, null, 2)}\n`);
+  writeStdout(stdout, `${JSON.stringify(value, null, 2)}\n`);
 }
 
 export function writeTable(rows, columns, stdout = process.stdout) {
   if (rows.length === 0) {
-    stdout.write("No results.\n");
+    writeStdout(stdout, "No results.\n");
     return;
   }
 
@@ -13,11 +13,11 @@ export function writeTable(rows, columns, stdout = process.stdout) {
     return Math.max(column.header.length, ...values.map((value) => value.length));
   });
 
-  stdout.write(`${columns.map((column, index) => column.header.padEnd(widths[index])).join("  ")}\n`);
-  stdout.write(`${widths.map((width) => "-".repeat(width)).join("  ")}\n`);
+  writeStdout(stdout, `${columns.map((column, index) => column.header.padEnd(widths[index])).join("  ")}\n`);
+  writeStdout(stdout, `${widths.map((width) => "-".repeat(width)).join("  ")}\n`);
 
   for (const row of rows) {
-    stdout.write(
+    writeStdout(stdout,
       `${columns
         .map((column, index) => String(column.value(row) ?? "").padEnd(widths[index]))
         .join("  ")}\n`,
@@ -45,4 +45,15 @@ export function pickNodeColumns() {
 
 function formatDate(value) {
   return typeof value === "string" && value.length >= 10 ? value.slice(0, 10) : "";
+}
+
+export function writeStdout(stdout, chunk) {
+  try {
+    stdout.write(chunk);
+  } catch (error) {
+    if (error?.code === "EPIPE") {
+      return;
+    }
+    throw error;
+  }
 }

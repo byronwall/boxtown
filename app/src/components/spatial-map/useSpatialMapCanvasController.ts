@@ -16,13 +16,14 @@ import {
   VIEWPORT_WIDTH,
 } from "~/lib/spatial-map/layout";
 import { calculateNodeDepths } from "~/lib/spatial-map/depth";
-import type { PositionedMapNode, SpatialMapData } from "~/lib/spatial-map/types";
+import type { MapNodeStatus, PositionedMapNode, SpatialMapData } from "~/lib/spatial-map/types";
 
 import type {
   ChildNodeDraft,
   CameraState,
   SpatialMapCanvasController,
   SpatialMapDepthLevel,
+  SpatialMapGlobalFilterState,
   SpatialMapViewMode,
 } from "./spatial-map-canvas.types";
 import {
@@ -84,6 +85,12 @@ export function useSpatialMapCanvasController(
   const [hoveredNodeId, setHoveredNodeId] = createSignal<string | null>(null);
   const [isolatedNodeId, setIsolatedNodeId] = createSignal<string | null>(null);
   const [showLinkedInIsolation, setShowLinkedInIsolation] = createSignal(false);
+  const [globalFilter, setGlobalFilter] = createSignal<SpatialMapGlobalFilterState>({
+    enabled: false,
+    includeParents: true,
+    selectedTypes: [],
+    selectedStatuses: [],
+  });
   const [showEdges, setShowEdges] = createSignal(false);
   const [inspectorOpen, setInspectorOpen] = createSignal(true);
   const [addNodesOpen, setAddNodesOpen] = createSignal(false);
@@ -118,14 +125,25 @@ export function useSpatialMapCanvasController(
       includeLinked: showLinkedInIsolation(),
     }),
   );
+  const globalFilteredData = createMemo(() =>
+    filterSpatialMapDataByGlobalFilter(isolatedData(), globalFilter()),
+  );
+  const globalFilterActive = createMemo(() => isGlobalFilterActive(globalFilter()));
+  const globalFilterMatchedCount = createMemo(() => globalFilteredData().nodes.length);
+  const availableNodeTypes = createMemo(() =>
+    Array.from(new Set(data().nodes.map((node) => node.type).filter(Boolean))).sort(),
+  );
+  const availableNodeStatuses = createMemo(() =>
+    Array.from(new Set(data().nodes.map((node) => node.status))).sort(),
+  );
   const availableDepthLevels = createMemo(() =>
-    Array.from({ length: getDepthLevelCount(isolatedData()) }, (_, index) => index + 1),
+    Array.from({ length: getDepthLevelCount(globalFilteredData()) }, (_, index) => index + 1),
   );
   const visibleDepthLevel = createMemo(() =>
     resolveVisibleDepthLevel(visibleDepthSelection(), availableDepthLevels()),
   );
   const visibleData = createMemo(() =>
-    filterSpatialMapDataByDepthLevel(isolatedData(), visibleDepthLevel()),
+    filterSpatialMapDataByDepthLevel(globalFilteredData(), visibleDepthLevel()),
   );
 
   let viewportRef: HTMLDivElement | undefined;
@@ -744,6 +762,62 @@ export function useSpatialMapCanvasController(
     setShowLinkedInIsolation((current) => !current);
   };
 
+  const setGlobalFilterEnabled = (
+    value: boolean | ((current: boolean) => boolean),
+  ) => {
+    pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
+    setGlobalFilter((current) => ({
+      ...current,
+      enabled: resolveBooleanSetter(value, current.enabled),
+    }));
+  };
+
+  const setGlobalFilterIncludeParents = (
+    value: boolean | ((current: boolean) => boolean),
+  ) => {
+    pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
+    setGlobalFilter((current) => ({
+      ...current,
+      includeParents: resolveBooleanSetter(value, current.includeParents),
+    }));
+  };
+
+  const toggleGlobalFilterType = (type: string) => {
+    pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
+    setGlobalFilter((current) => {
+      const selectedTypes = current.selectedTypes.includes(type)
+        ? current.selectedTypes.filter((item) => item !== type)
+        : [...current.selectedTypes, type];
+
+      return {
+        ...current,
+        enabled: hasAnyGlobalFilterSelection({
+          ...current,
+          selectedTypes,
+        }),
+        selectedTypes,
+      };
+    });
+  };
+
+  const toggleGlobalFilterStatus = (status: MapNodeStatus) => {
+    pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
+    setGlobalFilter((current) => {
+      const selectedStatuses = current.selectedStatuses.includes(status)
+        ? current.selectedStatuses.filter((item) => item !== status)
+        : [...current.selectedStatuses, status];
+
+      return {
+        ...current,
+        enabled: hasAnyGlobalFilterSelection({
+          ...current,
+          selectedStatuses,
+        }),
+        selectedStatuses,
+      };
+    });
+  };
+
   const handleBackgroundClick: SpatialMapCanvasController["sceneHandlers"]["onBackgroundClick"] = (event) => {
     if (suppressNodeClick) {
       return;
@@ -830,6 +904,11 @@ export function useSpatialMapCanvasController(
     selectedNode,
     showEdges,
     showLinkedInIsolation,
+    globalFilter,
+    globalFilterActive,
+    globalFilterMatchedCount,
+    availableNodeTypes,
+    availableNodeStatuses,
     sourceData: data,
     sourceNodesById,
     availableDepthLevels,
@@ -878,6 +957,10 @@ export function useSpatialMapCanvasController(
     setSelectedNodeId,
     setShowEdges,
     setShowLinkedInIsolation,
+    setGlobalFilterEnabled,
+    setGlobalFilterIncludeParents,
+    toggleGlobalFilterType,
+    toggleGlobalFilterStatus,
     setViewMode: (value) => {
       setViewMode(value);
       if (value === "canvas") {
@@ -1015,6 +1098,77 @@ function filterSpatialMapDataByDepthLevel(
       (link) => visibleNodeIds.has(link.source) && visibleNodeIds.has(link.target),
     ),
   };
+}
+
+function filterSpatialMapDataByGlobalFilter(
+  data: SpatialMapData,
+  filter: SpatialMapGlobalFilterState,
+): SpatialMapData {
+  if (!isGlobalFilterActive(filter)) {
+    return data;
+  }
+
+  const visibleNodeIds = new Set(
+    data.nodes
+      .filter((node) => {
+        if (filter.selectedTypes.includes(node.type)) {
+          return true;
+        }
+
+        if (filter.selectedStatuses.includes(node.status)) {
+          return true;
+        }
+
+        return false;
+      })
+      .map((node) => node.id),
+  );
+
+  if (filter.includeParents) {
+    includeAncestorNodes(data, visibleNodeIds);
+  }
+
+  return {
+    nodes: data.nodes.filter((node) => visibleNodeIds.has(node.id)),
+    links: data.links.filter(
+      (link) => visibleNodeIds.has(link.source) && visibleNodeIds.has(link.target),
+    ),
+  };
+}
+
+function isGlobalFilterActive(filter: SpatialMapGlobalFilterState) {
+  return filter.enabled && hasAnyGlobalFilterSelection(filter);
+}
+
+function hasAnyGlobalFilterSelection(filter: SpatialMapGlobalFilterState) {
+  return (
+    filter.selectedTypes.length > 0 ||
+    filter.selectedStatuses.length > 0
+  );
+}
+
+function includeAncestorNodes(data: SpatialMapData, visibleNodeIds: Set<string>) {
+  let added = true;
+
+  while (added) {
+    added = false;
+
+    for (const link of data.links) {
+      if (!link.parentChild || !visibleNodeIds.has(link.target) || visibleNodeIds.has(link.source)) {
+        continue;
+      }
+
+      visibleNodeIds.add(link.source);
+      added = true;
+    }
+  }
+}
+
+function resolveBooleanSetter(
+  value: boolean | ((current: boolean) => boolean),
+  current: boolean,
+) {
+  return typeof value === "function" ? value(current) : value;
 }
 
 function clampInteger(value: number, min: number, max: number) {

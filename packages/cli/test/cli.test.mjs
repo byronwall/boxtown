@@ -6,6 +6,7 @@ import path from "node:path";
 import { ProductGridClient } from "../src/client.mjs";
 import { defaultServer, resolveProjectId, resolveServer, resolveToken } from "../src/config.mjs";
 import { main, parseArgs } from "../src/main.mjs";
+import { writeJson } from "../src/output.mjs";
 import { getBundledSkillPath, resolveSkillInstallTarget } from "../src/skill.mjs";
 import { isNewerVersion, notifyIfUpdateAvailable } from "../src/update-check.mjs";
 import { packageVersion } from "../src/version.mjs";
@@ -211,6 +212,33 @@ test("parseArgs handles targeted node context flags", () => {
   const projectSchema = parseArgs(["project", "schema", "--json"]);
   assert.deepEqual(projectSchema.command, ["project", "schema"]);
   assert.equal(projectSchema.options.json, true);
+});
+
+test("parseArgs handles compact agent workflow commands", () => {
+  const status = parseArgs(["node", "status", "node-1", "node-2", "--fields", "id,status"]);
+  assert.deepEqual(status.command, ["node", "status"]);
+  assert.deepEqual(status.positionals, ["node-1", "node-2"]);
+  assert.equal(status.options.fields, "id,status");
+
+  const subtree = parseArgs([
+    "node",
+    "list",
+    "--subtree",
+    "root",
+    "--depth",
+    "2",
+    "--include-self",
+    "--preset",
+    "tree",
+  ]);
+  assert.equal(subtree.options.subtree, "root");
+  assert.equal(subtree.options.depth, "2");
+  assert.equal(subtree.options.includeSelf, true);
+  assert.equal(subtree.options.preset, "tree");
+
+  const issue = parseArgs(["issue", "view", "https://example.test?project=demo&node=node-1", "--json"]);
+  assert.deepEqual(issue.command, ["issue", "view"]);
+  assert.deepEqual(issue.positionals, ["https://example.test?project=demo&node=node-1"]);
 });
 
 test("config resolution prefers flags then environment then config", () => {
@@ -427,9 +455,16 @@ test("client requests schema and compact hierarchy context projections", async (
       roots: true,
       compact: true,
       fields: "id,label,status,type,parentNodeId,childCount,imageCount",
+      subtree: "root",
+      depth: "2",
+      includeSelf: true,
       include: "ancestors",
     });
-    await client.getNodeContextTree("demo", "node-1");
+    await client.getNode("demo", "node-1", { fields: "id,status,metadata.implementation" });
+    await client.getNodeContextTree("demo", "node-1", {
+      compact: true,
+      fields: "id,status",
+    });
 
     assert.equal(
       calls[0].url,
@@ -437,15 +472,85 @@ test("client requests schema and compact hierarchy context projections", async (
     );
     assert.equal(
       calls[1].url,
-      "http://localhost:3000/api/v1/projects/demo/nodes?status=planned&search=layout&roots=true&compact=true&fields=id%2Clabel%2Cstatus%2Ctype%2CparentNodeId%2CchildCount%2CimageCount&include=ancestors",
+      "http://localhost:3000/api/v1/projects/demo/nodes?status=planned&search=layout&roots=true&compact=true&fields=id%2Clabel%2Cstatus%2Ctype%2CparentNodeId%2CchildCount%2CimageCount&subtree=root&depth=2&includeSelf=true&include=ancestors",
     );
     assert.equal(
       calls[2].url,
-      "http://localhost:3000/api/v1/projects/demo/nodes/node-1/context-tree",
+      "http://localhost:3000/api/v1/projects/demo/nodes/node-1?fields=id%2Cstatus%2Cmetadata.implementation",
+    );
+    assert.equal(
+      calls[3].url,
+      "http://localhost:3000/api/v1/projects/demo/nodes/node-1/context-tree?fields=id%2Cstatus&compact=true",
     );
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("issue view resolves a Product Grid URL to compact context", async () => {
+  const calls = [];
+  const stdout = createWritableBuffer();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    calls.push({ url, init });
+    return new Response(JSON.stringify({
+      node: { id: "node-1", title: "Node 1", status: "planned", type: "task" },
+      titlePath: "Root > Node 1",
+      inheritedContext: {
+        metadata: [],
+        contextBlocks: [],
+        rawContextBlocks: [],
+        images: [],
+        hasDirectContext: false,
+        hasInheritedContext: false,
+        missingContext: true,
+      },
+    }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+
+  try {
+    await main([
+      "node",
+      "pgm",
+      "issue",
+      "view",
+      "https://prod-mgmt.apps.byroni.us/projects/project-mgmt-grid?node=node-1&project=demo",
+      "--json",
+    ], {
+      stdout,
+      stderr: createWritableBuffer(),
+      env: {
+        PRODUCT_GRID_SERVER: "http://localhost:3000",
+      },
+      cwd: "/tmp",
+    });
+
+    assert.equal(
+      calls[0].url,
+      "http://localhost:3000/api/v1/projects/demo/nodes/node-1/context-tree?compact=true",
+    );
+    const body = JSON.parse(stdout.value);
+    assert.equal(body.projectId, "demo");
+    assert.equal(body.nodeId, "node-1");
+    assert.match(body.suggestedCommands.close, /pgm node resolve node-1/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("writeJson ignores EPIPE from closed stdout consumers", () => {
+  assert.doesNotThrow(() => {
+    writeJson({ ok: true }, {
+      write() {
+        const error = new Error("write EPIPE");
+        error.code = "EPIPE";
+        throw error;
+      },
+    });
+  });
 });
 
 test("node complete writes compact mutation JSON and appends a note", async () => {

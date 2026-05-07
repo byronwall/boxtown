@@ -50,15 +50,28 @@ export class ProductGridClient {
     );
   }
 
-  getNode(projectId, nodeId) {
+  getNode(projectId, nodeId, options = {}) {
+    const searchParams = new URLSearchParams();
+    if (options.fields) {
+      searchParams.set("fields", options.fields);
+    }
+    const suffix = searchParams.size > 0 ? `?${searchParams}` : "";
     return this.request(
-      `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}`,
+      `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}${suffix}`,
     ).then((body) => body.node);
   }
 
-  getNodeContextTree(projectId, nodeId) {
+  getNodeContextTree(projectId, nodeId, options = {}) {
+    const searchParams = new URLSearchParams();
+    if (options.fields) {
+      searchParams.set("fields", options.fields);
+    }
+    if (options.compact) {
+      searchParams.set("compact", "true");
+    }
+    const suffix = searchParams.size > 0 ? `?${searchParams}` : "";
     return this.request(
-      `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}/context-tree`,
+      `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}/context-tree${suffix}`,
     );
   }
 

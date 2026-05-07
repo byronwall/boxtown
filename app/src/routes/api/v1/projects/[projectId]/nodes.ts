@@ -13,6 +13,7 @@ import {
   readProjectByIdFromDisk,
 } from "~/lib/projects/data.server";
 import { isMapNodeStatus } from "~/lib/spatial-map/node-status";
+import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode } from "~/lib/spatial-map/types";
 
 export async function GET(event: APIEvent) {
@@ -32,6 +33,10 @@ export async function GET(event: APIEvent) {
     const roots = parseBooleanSearchParam(url.searchParams.get("roots"));
     const compact = parseBooleanSearchParam(url.searchParams.get("compact"));
     const fields = parseFields(url.searchParams.get("fields"));
+    const children = url.searchParams.get("children");
+    const subtree = url.searchParams.get("subtree");
+    const includeSelf = parseBooleanSearchParam(url.searchParams.get("includeSelf"));
+    const depth = parsePositiveInteger(url.searchParams.get("depth"));
 
     if (status !== null && !isMapNodeStatus(status)) {
       throw new AgentApiError("invalid_status", "A valid node status is required.", 400, {
@@ -52,6 +57,11 @@ export async function GET(event: APIEvent) {
           type,
           search,
           roots,
+          children,
+          subtree,
+          depth,
+          includeSelf,
+          links: project.spatialMap.links,
           parentNodeIds,
         }))
         .map((item) => projectFields(item, fields));
@@ -66,6 +76,11 @@ export async function GET(event: APIEvent) {
           type,
           search,
           roots,
+          children,
+          subtree,
+          depth,
+          includeSelf,
+          links: project.spatialMap.links,
           parentNodeIds,
         }))
         .map((node) => projectFields(node, fields));
@@ -74,7 +89,18 @@ export async function GET(event: APIEvent) {
     }
 
     const nodes = project.spatialMap.nodes
-      .filter((node) => matchesNodeFilters(node, { status, type, search, roots, parentNodeIds }))
+      .filter((node) => matchesNodeFilters(node, {
+        status,
+        type,
+        search,
+        roots,
+        children,
+        subtree,
+        depth,
+        includeSelf,
+        links: project.spatialMap.links,
+        parentNodeIds,
+      }))
       .map(toAgentMapNode)
       .sort((left, right) => left.label.localeCompare(right.label))
       .map((node) => projectFields(node, fields));
@@ -154,6 +180,11 @@ function matchesNodeFilters(
     type: string | null;
     search: string | null;
     roots: boolean;
+    children: string | null;
+    subtree: string | null;
+    depth: number | null;
+    includeSelf: boolean;
+    links: ProjectRecord["spatialMap"]["links"];
     parentNodeIds: Map<string, string>;
   },
 ) {
@@ -167,6 +198,23 @@ function matchesNodeFilters(
 
   if (filters.roots && filters.parentNodeIds.has(node.id)) {
     return false;
+  }
+
+  if (filters.children !== null && filters.parentNodeIds.get(node.id) !== filters.children) {
+    return false;
+  }
+
+  if (filters.subtree !== null) {
+    const distance = getSubtreeDistance(filters.links, filters.subtree, node.id);
+    if (distance === null) {
+      return false;
+    }
+    if (!filters.includeSelf && distance === 0) {
+      return false;
+    }
+    if (filters.depth !== null && distance > filters.depth) {
+      return false;
+    }
   }
 
   if (filters.search !== null && filters.search.trim().length > 0) {
@@ -207,12 +255,67 @@ function projectFields<T extends object>(value: T, fields: string[] | null) {
     return value;
   }
 
-  const record = value as Record<string, unknown>;
   return Object.fromEntries(
     fields
-      .filter((field) => Object.prototype.hasOwnProperty.call(record, field))
-      .map((field) => [field, record[field]]),
+      .map((field) => [field, getByPath(value, field)] as const)
+      .filter(([, fieldValue]) => fieldValue !== undefined),
   );
+}
+
+function getByPath(value: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>((current, part) => {
+    if (!current || typeof current !== "object") {
+      return undefined;
+    }
+    return (current as Record<string, unknown>)[part];
+  }, value);
+}
+
+function parsePositiveInteger(value: string | null) {
+  if (!value?.trim()) {
+    return null;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function getSubtreeDistance(
+  links: ProjectRecord["spatialMap"]["links"],
+  rootNodeId: string,
+  nodeId: string,
+) {
+  if (nodeId === rootNodeId) {
+    return 0;
+  }
+
+  const childrenByParent = new Map<string, string[]>();
+  for (const link of links) {
+    if (!link.parentChild) {
+      continue;
+    }
+    const children = childrenByParent.get(link.source) ?? [];
+    children.push(link.target);
+    childrenByParent.set(link.source, children);
+  }
+
+  const queue: Array<{ id: string; distance: number }> = [{ id: rootNodeId, distance: 0 }];
+  const seen = new Set<string>();
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    if (seen.has(current.id)) {
+      continue;
+    }
+    seen.add(current.id);
+    for (const childId of childrenByParent.get(current.id) ?? []) {
+      const distance = current.distance + 1;
+      if (childId === nodeId) {
+        return distance;
+      }
+      queue.push({ id: childId, distance });
+    }
+  }
+
+  return null;
 }
 
 function getString(value: unknown) {

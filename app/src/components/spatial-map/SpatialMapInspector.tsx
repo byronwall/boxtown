@@ -85,6 +85,10 @@ interface SpatialMapInspectorProps {
 
 type SpatialMapInspectorView = "details" | "activity";
 type ActivityTone = "create" | "edit" | "image" | "delete" | "system" | "link";
+type OptimisticNodeValue = {
+  nodeId: string;
+  value: string;
+};
 
 export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const spatialMap = useSpatialMap();
@@ -95,17 +99,17 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const submitSaveType = useAction(updateProjectNodeType);
   const selectedNode = createMemo(() => spatialMap.selectedNode());
   const [contextDraft, setContextDraft] = createSignal("");
-  const [metadataDraft, setMetadataDraft] = createSignal<Record<string, string>>({});
   const [editingContext, setEditingContext] = createSignal(false);
   const [contextDialogOpen, setContextDialogOpen] = createSignal(false);
   const [inspectorView, setInspectorView] = createSignal<SpatialMapInspectorView>("details");
+  const [optimisticTitle, setOptimisticTitle] = createSignal<OptimisticNodeValue | null>(null);
+  const [optimisticMetadata, setOptimisticMetadata] = createSignal<Record<string, string>>({});
   const [titlePending, setTitlePending] = createSignal(false);
   const [statusPending, setStatusPending] = createSignal(false);
   const [typePending, setTypePending] = createSignal(false);
   const [contextPending, setContextPending] = createSignal(false);
   const [metadataPending, setMetadataPending] = createSignal(false);
   const contextFormId = "spatial-map-context-form";
-  const metadataFormId = "spatial-map-metadata-form";
   const selectedNodeActivity = createMemo(() => {
     const nodeId = selectedNode()?.id;
     if (!nodeId) return [];
@@ -115,6 +119,11 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const globalProjectActivity = createMemo(() => props.project.operationLog);
   const selectedNodeTitle = createMemo(() => {
     const node = selectedNode();
+    const optimistic = optimisticTitle();
+    if (node && optimistic?.nodeId === node.id) {
+      return optimistic.value;
+    }
+
     return node?.label ?? "Select an item";
   });
   const selectedNodeForStatus = createMemo(() => {
@@ -123,17 +132,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const selectedNodeForType = createMemo(() => {
     return selectedNode();
   });
-  const metadataIsDirty = createMemo(() => {
-    const node = selectedNode();
-    if (!node) {
-      return false;
-    }
-
-    return props.project.nodeMetadataSchema.some((field) => {
-      return (metadataDraft()[field.key] ?? "") !== (node.metadata[field.key] ?? "");
-    });
-  });
-
   const selectActivityNode = (nodeId: string) => {
     spatialMap.setSelectedNodeId(nodeId);
     spatialMap.setInspectorOpen(true);
@@ -141,9 +139,37 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
 
   createEffect(() => {
     setContextDraft(selectedNode()?.context ?? "");
-    setMetadataDraft(selectedNode()?.metadata ?? {});
     setEditingContext(false);
     setContextDialogOpen(false);
+  });
+
+  createEffect(() => {
+    const node = selectedNode();
+    const optimistic = optimisticTitle();
+    if (node && optimistic?.nodeId === node.id && optimistic.value === node.label) {
+      setOptimisticTitle(null);
+    }
+  });
+
+  createEffect(() => {
+    const node = selectedNode();
+    const currentOptimisticMetadata = optimisticMetadata();
+    if (!node || Object.keys(currentOptimisticMetadata).length === 0) return;
+
+    const nextOptimisticMetadata = { ...currentOptimisticMetadata };
+    let didChange = false;
+    for (const field of props.project.nodeMetadataSchema) {
+      const optimisticKey = `${node.id}:${field.key}`;
+      const optimisticValue = nextOptimisticMetadata[optimisticKey];
+      if (optimisticValue !== undefined && optimisticValue === (node.metadata[field.key] ?? "")) {
+        delete nextOptimisticMetadata[optimisticKey];
+        didChange = true;
+      }
+    }
+
+    if (didChange) {
+      setOptimisticMetadata(nextOptimisticMetadata);
+    }
   });
 
   createEffect(() => {
@@ -190,7 +216,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
 
   const saveMetadata = async (formData: FormData) => {
     if (metadataPending()) {
-      return;
+      return false;
     }
 
     setMetadataPending(true);
@@ -202,14 +228,45 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         title: "Metadata updated",
         description: `${label ?? "This node"} now uses the current project metadata values.`,
       });
+      return true;
     } catch (error) {
       toaster.error({
         title: "Metadata was not saved",
         description:
           error instanceof Error ? error.message : "The selected node metadata could not be saved.",
       });
+      return false;
     } finally {
       setMetadataPending(false);
+    }
+  };
+
+  const submitMetadataField = async (fieldKey: string, value: string) => {
+    const node = selectedNode();
+    if (!node || metadataPending()) return;
+
+    const nextValue = value.trim();
+    if (nextValue === (node.metadata[fieldKey] ?? "")) return;
+
+    const optimisticKey = `${node.id}:${fieldKey}`;
+    setOptimisticMetadata((current) => ({ ...current, [optimisticKey]: nextValue }));
+
+    const formData = new FormData();
+    formData.set("projectId", props.project.id);
+    formData.set("nodeId", node.id);
+    for (const field of props.project.nodeMetadataSchema) {
+      formData.set(
+        `metadata.${field.key}`,
+        field.key === fieldKey ? nextValue : (node.metadata[field.key] ?? ""),
+      );
+    }
+
+    const saved = await saveMetadata(formData);
+    if (!saved) {
+      setOptimisticMetadata((current) => {
+        const { [optimisticKey]: _acceptedValue, ...rest } = current;
+        return rest;
+      });
     }
   };
 
@@ -220,6 +277,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     const title = value.trim();
     if (!title || title === node.label) return;
 
+    setOptimisticTitle({ nodeId: node.id, value: title });
     setTitlePending(true);
     try {
       const formData = new FormData();
@@ -234,6 +292,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         description: `${label ?? "This node"} is now the selected node title.`,
       });
     } catch (error) {
+      setOptimisticTitle((current) => (current?.nodeId === node.id ? null : current));
       toaster.error({
         title: "Rename failed",
         description:
@@ -534,33 +593,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
               >
                 Metadata
               </Text>
-              <Show when={selectedNode()}>
-                {(node) => (
-                  <HStack gap="2">
-                    <Show when={metadataIsDirty()}>
-                      <Button
-                        type="button"
-                        size="xs"
-                        variant="outline"
-                        onClick={() => setMetadataDraft(node().metadata)}
-                      >
-                        Reset
-                      </Button>
-                    </Show>
-                    <Button
-                      type="submit"
-                      form={metadataFormId}
-                      size="xs"
-                      colorPalette="green"
-                      variant="surface"
-                      loading={metadataPending()}
-                      disabled={!metadataIsDirty()}
-                    >
-                      Save Metadata
-                    </Button>
-                  </HStack>
-                )}
-              </Show>
             </HStack>
             <Show
               when={selectedNode()}
@@ -571,42 +603,38 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
               }
             >
               {(node) => (
-                <form
-                  id={metadataFormId}
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    void saveMetadata(new FormData(event.currentTarget));
-                  }}
-                >
-                  <VStack alignItems="stretch" gap="3">
-                    <input type="hidden" name="projectId" value={props.project.id} />
-                    <input type="hidden" name="nodeId" value={node().id} />
-                    <For each={props.project.nodeMetadataSchema}>
-                      {(field) => (
+                <VStack alignItems="stretch" gap="3">
+                  <For each={props.project.nodeMetadataSchema}>
+                    {(field) => {
+                      const metadataValue = createMemo(() => {
+                        const item = node();
+                        return optimisticMetadata()[`${item.id}:${field.key}`] ?? item.metadata[field.key] ?? "";
+                      });
+
+                      return (
                         <Field.Root>
                           <Field.Label>{field.label}</Field.Label>
-                          <Textarea
-                            name={`metadata.${field.key}`}
-                            rows={1}
-                            value={metadataDraft()[field.key] ?? ""}
-                            onInput={(event) =>
-                              setMetadataDraft((current) => ({
-                                ...current,
-                                [field.key]: event.currentTarget.value,
-                              }))
-                            }
-                            placeholder={field.defaultValue}
+                          <EditInPlace
+                            value={metadataValue()}
+                            aria-label={`${field.label} metadata`}
+                            placeholder={field.defaultValue || "Add metadata"}
+                            class="spatial-map-metadata-edit"
+                            disabled={metadataPending()}
+                            shouldAllowMultiline
+                            onConfirm={(value) => {
+                              void submitMetadataField(field.key, value);
+                            }}
                           />
                         </Field.Root>
-                      )}
-                    </For>
-                    <Show when={props.project.nodeMetadataSchema.length === 0}>
-                      <SpatialMapEmptyState>
-                        This project does not define any metadata keys yet.
-                      </SpatialMapEmptyState>
-                    </Show>
-                  </VStack>
-                </form>
+                      );
+                    }}
+                  </For>
+                  <Show when={props.project.nodeMetadataSchema.length === 0}>
+                    <SpatialMapEmptyState>
+                      This project does not define any metadata keys yet.
+                    </SpatialMapEmptyState>
+                  </Show>
+                </VStack>
               )}
             </Show>
           </SpatialMapInspectorSection>

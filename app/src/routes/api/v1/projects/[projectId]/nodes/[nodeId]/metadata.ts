@@ -60,7 +60,23 @@ export async function PATCH(event: APIEvent) {
     const nextMetadata = getMetadata(input.metadata) ?? { ...node.metadata };
     const setValues = getMetadata(input.set);
     if (setValues) {
+      const unknownKeys = Object.keys(setValues).filter(
+        (key) => !project.nodeMetadataSchema.some((field) => field.key === key),
+      );
+      if (unknownKeys.length > 0) {
+        throw new AgentApiError("invalid_metadata_key", "Metadata key is not defined in project schema.", 400, {
+          keys: unknownKeys,
+        });
+      }
       Object.assign(nextMetadata, setValues);
+    }
+    const replacementUnknownKeys = Object.keys(nextMetadata).filter(
+      (key) => !project.nodeMetadataSchema.some((field) => field.key === key),
+    );
+    if (replacementUnknownKeys.length > 0) {
+      throw new AgentApiError("invalid_metadata_key", "Metadata key is not defined in project schema.", 400, {
+        keys: replacementUnknownKeys,
+      });
     }
     for (const key of getUnsetKeys(input.unset)) {
       delete nextMetadata[key];

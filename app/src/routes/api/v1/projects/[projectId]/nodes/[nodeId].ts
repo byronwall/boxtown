@@ -28,8 +28,14 @@ export async function GET(event: APIEvent) {
       });
     }
 
+    const fields = parseFields(new URL(event.request.url).searchParams.get("fields"));
+    const projectedNode = {
+      ...toAgentMapNode(node),
+      title: node.label,
+      updatedAt: project.updatedAt,
+    };
     return agentJson({
-      node: toAgentMapNode(node),
+      node: projectFields(projectedNode, fields),
     });
   });
 }
@@ -115,4 +121,33 @@ export async function PATCH(event: APIEvent) {
 
     return agentJson({ node: toAgentMapNode(node) });
   });
+}
+
+function parseFields(value: string | null) {
+  if (!value?.trim()) {
+    return null;
+  }
+
+  return value.split(",").map((field) => field.trim()).filter(Boolean);
+}
+
+function projectFields<T extends object>(value: T, fields: string[] | null) {
+  if (!fields) {
+    return value;
+  }
+
+  return Object.fromEntries(
+    fields
+      .map((field) => [field, getByPath(value, field)] as const)
+      .filter(([, fieldValue]) => fieldValue !== undefined),
+  );
+}
+
+function getByPath(value: unknown, path: string): unknown {
+  return path.split(".").reduce<unknown>((current, part) => {
+    if (!current || typeof current !== "object") {
+      return undefined;
+    }
+    return (current as Record<string, unknown>)[part];
+  }, value);
 }

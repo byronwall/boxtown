@@ -27,6 +27,19 @@ const rootClass = css({
     bg: "blue.9",
     color: "white",
   },
+  "&[data-empty=true]:not([data-state=editing])::after": {
+    boxSizing: "border-box",
+    color: "fg.muted",
+    content: "attr(data-placeholder)",
+    display: "block",
+    fontStyle: "italic",
+    maxW: "100%",
+    overflow: "hidden",
+    opacity: "0.72",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    w: "100%",
+  },
   _hover: {
     cursor: "default",
     _before: { bg: "black/5" },
@@ -54,6 +67,7 @@ export type EditInPlaceProps =
     value: string;
     disabled?: boolean;
     isEditing?: boolean;
+    placeholder?: string;
     shouldAllowMultiline?: boolean;
     onConfirm?: (value: string) => void;
     onBlur?: (value: string) => void;
@@ -64,6 +78,7 @@ export function EditInPlace(props: EditInPlaceProps) {
     "value",
     "disabled",
     "isEditing",
+    "placeholder",
     "shouldAllowMultiline",
     "onConfirm",
     "onBlur",
@@ -102,6 +117,8 @@ export function EditInPlace(props: EditInPlaceProps) {
       ref={el}
       data-scope="edit-in-place"
       data-part="root"
+      data-empty={local.value.trim().length === 0 ? true : undefined}
+      data-placeholder={local.placeholder}
       {...machine.dom.props()}
       {...rest}
       class={[rootClass, local.class].filter(Boolean).join(" ")}

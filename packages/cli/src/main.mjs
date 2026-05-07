@@ -66,6 +66,10 @@ async function dispatch(context) {
     return dispatchImage(context, action);
   }
 
+  if (scope === "issue") {
+    return dispatchIssue(context, action);
+  }
+
   if (scope === "skill") {
     return dispatchSkill(context, action);
   }
@@ -262,9 +266,13 @@ async function dispatchNode(context, action) {
   const handlers = {
     list: dispatchNodeList,
     view: dispatchNodeView,
+    status: dispatchNodeStatus,
     create: dispatchNodeCreate,
     update: dispatchNodeUpdate,
     complete: dispatchNodeComplete,
+    resolve: dispatchNodeResolve,
+    "batch-update": dispatchNodeBatchUpdate,
+    "agent-update": dispatchNodeAgentUpdate,
     move: dispatchNodeMove,
     context: dispatchNodeContext,
     metadata: dispatchNodeMetadata,
@@ -273,7 +281,7 @@ async function dispatchNode(context, action) {
   };
   const handler = handlers[action];
   if (!handler) {
-    throw new CliError("Usage: pgm node <list|view|create|update|complete|move|context|metadata|export-context|import-markdown>", exitCodes.usage);
+    throw new CliError("Usage: pgm node <list|view|status|create|update|complete|resolve|batch-update|agent-update|move|context|metadata|export-context|import-markdown>", exitCodes.usage);
   }
 
   await handler(context, projectId);
@@ -286,7 +294,11 @@ async function dispatchNodeList(context, projectId) {
     search: context.parsed.options.search,
     roots: context.parsed.options.roots,
     compact: context.parsed.options.compact,
-    fields: context.parsed.options.fields,
+    fields: resolveFieldsOption(context.parsed.options),
+    children: context.parsed.options.children,
+    subtree: context.parsed.options.subtree,
+    depth: context.parsed.options.depth,
+    includeSelf: context.parsed.options.includeSelf,
     include: getNodeIncludeOption(context.parsed.options),
   });
   if (context.parsed.options.json) {
@@ -301,7 +313,10 @@ async function dispatchNodeList(context, projectId) {
 async function dispatchNodeView(context, projectId) {
   const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
   if (context.parsed.options.withAncestors || context.parsed.options.withContext) {
-    const contextTree = await context.client.getNodeContextTree(projectId, nodeId);
+    const contextTree = await context.client.getNodeContextTree(projectId, nodeId, {
+      compact: context.parsed.options.compact,
+      fields: resolveFieldsOption(context.parsed.options),
+    });
     if (context.parsed.options.json) {
       writeJson(contextTree, context.io.stdout);
     } else {
@@ -310,7 +325,9 @@ async function dispatchNodeView(context, projectId) {
     return;
   }
 
-  const node = await context.client.getNode(projectId, nodeId);
+  const node = await context.client.getNode(projectId, nodeId, {
+    fields: resolveFieldsOption(context.parsed.options),
+  });
   if (context.parsed.options.json) {
     writeJson({ node }, context.io.stdout);
     return;
@@ -320,6 +337,25 @@ async function dispatchNodeView(context, projectId) {
   context.io.stdout.write(`Status: ${node.status}\nType: ${node.type}\nImages: ${node.images.length}\n`);
   if (node.context) {
     context.io.stdout.write(`\n${node.context}\n`);
+  }
+}
+
+async function dispatchNodeStatus(context, projectId) {
+  const nodeIds = context.parsed.positionals;
+  if (nodeIds.length === 0) {
+    throw new CliError("At least one node id is required.", exitCodes.usage);
+  }
+
+  const fields = resolveFieldsOption(context.parsed.options) ?? "id,label,title,status,type,metadata.implementation,updatedAt";
+  const nodes = [];
+  for (const nodeId of nodeIds) {
+    nodes.push(await context.client.getNode(projectId, nodeId, { fields }));
+  }
+
+  if (context.parsed.options.json) {
+    writeJson({ nodes }, context.io.stdout);
+  } else {
+    writeTable(nodes, pickNodeColumns(), context.io.stdout);
   }
 }
 
@@ -385,6 +421,82 @@ async function dispatchNodeComplete(context, projectId) {
   }
 
   writeNodeMutationResult(context, result, "Completed", updatedFields);
+}
+
+async function dispatchNodeResolve(context, projectId) {
+  const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
+  const status = context.parsed.options.status ?? "implemented";
+  const note = context.parsed.options.note;
+  const deferred = parseRepeatedOption(context.parsed.options.deferred);
+  const metadata = {};
+  if (typeof note === "string" && note.trim().length > 0) {
+    metadata.implementation = note.trim();
+  }
+  if (deferred.length > 0) {
+    metadata.deferred = deferred.join("\n");
+  }
+
+  const updatedFields = [];
+  let result = await context.client.updateNode(projectId, nodeId, { status });
+  updatedFields.push("status");
+  if (Object.keys(metadata).length > 0) {
+    result = await context.client.patchNodeMetadata(projectId, nodeId, { set: metadata });
+    updatedFields.push(...Object.keys(metadata).map((key) => `metadata.${key}`));
+  }
+
+  writeNodeMutationResult(context, result, "Resolved", updatedFields);
+}
+
+async function dispatchNodeBatchUpdate(context, projectId) {
+  const file = requireOption(
+    context.parsed.options.jsonInput ?? context.parsed.options.file,
+    "--json-input <path> is required.",
+  );
+  const input = await readJsonInput(file, context.io.cwd);
+  const updates = Array.isArray(input) ? input : input.updates;
+  if (!Array.isArray(updates)) {
+    throw new CliError("Batch update input must be an array or an object with an updates array.", exitCodes.usage);
+  }
+
+  const result = await applyNodeUpdates(context, projectId, updates);
+  writeMaybeJson(
+    context,
+    result,
+    `Updated ${result.updated.length} node${result.updated.length === 1 ? "" : "s"}; ${result.failed.length} failed.\n`,
+  );
+}
+
+async function dispatchNodeAgentUpdate(context, projectId) {
+  const file = requireOption(context.parsed.options.file, "--file <path> is required.");
+  const input = await readJsonInput(file, context.io.cwd);
+  const updates = Array.isArray(input) ? input : input.updates;
+  if (!Array.isArray(updates)) {
+    throw new CliError("Agent update input must be an array or an object with an updates array.", exitCodes.usage);
+  }
+
+  const normalized = updates.map((update) => {
+    const summary = update.summary ?? update.note ?? update.implementation;
+    const metadata = {
+      ...(typeof summary === "string" && summary.trim().length > 0 ? { implementation: summary.trim() } : {}),
+      ...(Array.isArray(update.completed) ? { completed: update.completed.join("\n") } : {}),
+      ...(Array.isArray(update.deferred) ? { deferred: update.deferred.join("\n") } : {}),
+      ...(Array.isArray(update.blockedBy) ? { blockedBy: update.blockedBy.join("\n") } : {}),
+      ...(Array.isArray(update.verification) ? { verification: update.verification.join("\n") } : {}),
+      ...(Array.isArray(update.filesChanged) ? { filesChanged: update.filesChanged.join("\n") } : {}),
+    };
+    return {
+      id: update.id ?? update.nodeId,
+      status: update.status,
+      metadata,
+    };
+  });
+
+  const result = await applyNodeUpdates(context, projectId, normalized);
+  writeMaybeJson(
+    context,
+    result,
+    `Applied ${result.updated.length} agent update${result.updated.length === 1 ? "" : "s"}; ${result.failed.length} failed.\n`,
+  );
 }
 
 async function dispatchNodeMove(context, projectId) {
@@ -565,6 +677,58 @@ async function dispatchImage(context, action) {
   throw new CliError("Usage: pgm image <add|list|remove>", exitCodes.usage);
 }
 
+async function dispatchIssue(context, action) {
+  if (action !== "view") {
+    throw new CliError("Usage: pgm issue view <product-grid-url> [--json]", exitCodes.usage);
+  }
+
+  const urlValue = requireOption(context.parsed.positionals[0], "A Product Grid URL is required.");
+  const target = parseProductGridUrl(urlValue);
+  const projectId = target.projectId ?? context.projectId;
+  requireOption(projectId, "A project id is required in the URL or via --project.");
+  const nodeId = requireOption(target.nodeId, "A node id is required in the URL.");
+  const contextTree = await context.client.getNodeContextTree(projectId, nodeId, {
+    compact: true,
+    fields: resolveFieldsOption(context.parsed.options),
+  });
+  const result = {
+    projectId,
+    nodeId,
+    ...contextTree,
+    suggestedCommands: {
+      view: `pgm node view ${nodeId} --project ${projectId} --with-context --compact --json`,
+      close: `pgm node resolve ${nodeId} --project ${projectId} --status implemented --note "..." --json`,
+    },
+  };
+
+  if (context.parsed.options.json) {
+    writeJson(result, context.io.stdout);
+  } else {
+    writeContextTreeSummary({
+      node: result.node,
+      inheritedContext: {
+        ...result.inheritedContext,
+        titlePath: result.titlePath ?? result.inheritedContext?.titlePath ?? "",
+      },
+    }, context.io.stdout);
+  }
+}
+
+function parseProductGridUrl(value) {
+  try {
+    const url = new URL(value);
+    return {
+      projectId: url.searchParams.get("project"),
+      nodeId: url.searchParams.get("node"),
+    };
+  } catch {
+    return {
+      projectId: null,
+      nodeId: value,
+    };
+  }
+}
+
 async function dispatchSkill(context, action) {
   const {
     getBundledSkillPath,
@@ -654,6 +818,7 @@ const booleanOptionNames = new Set([
   "link",
   "roots",
   "root",
+  "include-self",
   "split-by-heading-level",
   "split-headings",
   "with-ancestors",
@@ -729,6 +894,66 @@ async function readOptionalTextInput(file, cwd) {
   return readFile(resolveInputPath(file, cwd), "utf8");
 }
 
+async function readJsonInput(file, cwd) {
+  const raw = await readFile(resolveInputPath(file, cwd), "utf8");
+  try {
+    if (file.endsWith(".jsonl")) {
+      return raw
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
+    }
+    return JSON.parse(raw);
+  } catch (error) {
+    throw new CliError(
+      `Could not parse JSON input. ${error instanceof Error ? error.message : ""}`.trim(),
+      exitCodes.usage,
+    );
+  }
+}
+
+async function applyNodeUpdates(context, projectId, updates) {
+  const updated = [];
+  const failed = [];
+
+  for (const update of updates) {
+    const nodeId = update.id ?? update.nodeId;
+    if (typeof nodeId !== "string" || nodeId.trim().length === 0) {
+      failed.push({ id: null, error: "Missing node id." });
+      continue;
+    }
+
+    try {
+      let result = null;
+      const updatedFields = [];
+      if (typeof update.status === "string" && update.status.trim().length > 0) {
+        result = await context.client.updateNode(projectId, nodeId, { status: update.status });
+        updatedFields.push("status");
+      }
+      if (update.metadata && typeof update.metadata === "object" && !Array.isArray(update.metadata)) {
+        result = await context.client.patchNodeMetadata(projectId, nodeId, { set: update.metadata });
+        updatedFields.push(...Object.keys(update.metadata).map((key) => `metadata.${key}`));
+      }
+      if (!result) {
+        throw new Error("No supported fields to update.");
+      }
+      updated.push({
+        id: result.node.id,
+        status: result.node.status,
+        updatedFields,
+      });
+    } catch (error) {
+      failed.push({
+        id: nodeId,
+        error: error instanceof Error ? error.message : "Update failed.",
+      });
+    }
+  }
+
+  return { updated, failed };
+}
+
 function writeNodeMutationResult(context, result, verb, updatedFields = []) {
   if (context.parsed.options.json) {
     if (context.parsed.options.full) {
@@ -759,6 +984,36 @@ function parseOptionalInteger(value, flagName) {
   return parsed;
 }
 
+function resolveFieldsOption(options) {
+  if (typeof options.fields === "string" && options.fields.trim().length > 0) {
+    return options.fields;
+  }
+
+  if (typeof options.preset !== "string") {
+    return undefined;
+  }
+
+  const presets = {
+    status: "id,label,title,status,type,parentNodeId,metadata.implementation,updatedAt",
+    compact: "id,label,title,status,type,parentNodeId,childCount,imageCount",
+    handoff: "id,label,title,status,context,metadata.implementation,images",
+    images: "id,label,title,images",
+    tree: "id,label,title,status,type,parentNodeId,childCount",
+  };
+
+  return presets[options.preset] ?? undefined;
+}
+
+function parseRepeatedOption(value) {
+  if (Array.isArray(value)) {
+    return value.filter((item) => typeof item === "string" && item.trim().length > 0);
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    return [value.trim()];
+  }
+  return [];
+}
+
 function getNodeIncludeOption(options) {
   if (options.withContext) {
     return "context";
@@ -772,7 +1027,7 @@ function getNodeIncludeOption(options) {
 function writeContextTreeSummary(value, stdout) {
   const item = value.node;
   stdout.write(`${item.title ?? item.label} (${item.id})\n`);
-  stdout.write(`Path: ${value.inheritedContext.titlePath || "(none)"}\n`);
+  stdout.write(`Path: ${value.inheritedContext.titlePath ?? value.titlePath ?? "(none)"}\n`);
   stdout.write(`Status: ${item.status}\nType: ${item.type}\n`);
   stdout.write(`Context blocks: ${value.inheritedContext.contextBlocks.length}\n`);
   stdout.write(`Metadata blocks: ${value.inheritedContext.metadata.length}\n`);
@@ -924,11 +1179,15 @@ Usage:
   pgm project schema [project-id] [--json]
   pgm project export-markdown [project-id] [--output ./project.md] [--json]
   pgm project link <project-id>
-  pgm node list [--project <project-id>] [--roots] [--compact] [--fields id,label,status,type] [--status blocked] [--type feature] [--search text] [--with-ancestors|--with-context] [--json]
-  pgm node view <node-id> [--project <project-id>] [--with-ancestors|--with-context] [--json]
+  pgm node list [--project <project-id>] [--roots] [--children <node-id>] [--subtree <node-id>] [--depth N] [--compact] [--fields id,label,status,type] [--preset status] [--status blocked] [--type feature] [--search text] [--with-ancestors|--with-context] [--json]
+  pgm node view <node-id> [--project <project-id>] [--with-ancestors|--with-context] [--compact] [--fields id,status,metadata.implementation] [--json]
+  pgm node status <node-id...> [--project <project-id>] [--json]
   pgm node create --title "Checkout" [--type page] [--parent <node-id>] [--context-file ./context.md] [--metadata-json '{"purpose":"..."}'] [--json]
   pgm node update <node-id> [--title "Checkout"] [--status working] [--type page] [--json] [--full]
   pgm node complete <node-id> [--note "Resolution note"] [--json] [--full]
+  pgm node resolve <node-id> [--status implemented] [--note "Implementation note"] [--json] [--full]
+  pgm node batch-update --json-input ./updates.json [--json]
+  pgm node agent-update --file ./agent-status.json [--json]
   pgm node move <node-id> (--parent <node-id> | --root) [--json]
   pgm node context get <node-id> [--json]
   pgm node context set <node-id> --file ./context.md [--json] [--full]
@@ -940,6 +1199,7 @@ Usage:
   pgm image add <node-id> <image-path...> [--project <project-id>] [--json]
   pgm image list <node-id> [--project <project-id>] [--json]
   pgm image remove <node-id> <image-id> [--project <project-id>] [--json]
+  pgm issue view <product-grid-url> [--json]
   pgm skill install [--agent codex] [--global] [--force]
   pgm skill path
   pgm skill print

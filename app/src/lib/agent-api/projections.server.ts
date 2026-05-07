@@ -141,6 +141,7 @@ function toAgentNodeSummary(
     title: node.label,
     status: node.status,
     type: node.type,
+    metadata: node.metadata,
     parentNodeId,
     childCount,
     imageCount: node.images?.length ?? 0,

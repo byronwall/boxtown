@@ -17,6 +17,7 @@ import { ProjectMetadataSettingsDialog } from "./ProjectMetadataSettingsDialog";
 import { buildVisibleNodesMarkdown } from "./spatial-map-markdown-export";
 import { SpatialMapCreateContextNodeDialog } from "./SpatialMapCreateContextNodeDialog";
 import { useSpatialMap } from "./SpatialMapContext";
+import { SpatialMapGlobalFilterMenu } from "./SpatialMapGlobalFilterMenu";
 import { InspectorToggle } from "./SpatialMapInspectorHeader";
 
 interface SpatialMapToolbarProps {
@@ -237,6 +238,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
           onOpenChange={setContextNodeDialogOpen}
           trigger={() => null}
         />
+        <SpatialMapGlobalFilterMenu />
         <HStack
           gap="0"
           class="spatial-map-toggle-group"

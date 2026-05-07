@@ -1,5 +1,6 @@
 import type { Accessor, JSX } from "solid-js";
 import type {
+  MapNodeStatus,
   MapNode,
   PositionedMapNode,
   SpatialMapData,
@@ -8,6 +9,13 @@ import type {
 export type SpatialMapViewMode = "canvas" | "tree" | "grid";
 export type SpatialMapDepthLevel = number | "max";
 export type SpatialMapNodeColorMode = "type" | "status";
+
+export interface SpatialMapGlobalFilterState {
+  enabled: boolean;
+  includeParents: boolean;
+  selectedTypes: string[];
+  selectedStatuses: MapNodeStatus[];
+}
 
 export interface CameraState {
   x: number;
@@ -89,6 +97,11 @@ export interface SpatialMapCanvasController {
   selectedNode: Accessor<MapNode | null>;
   showEdges: Accessor<boolean>;
   showLinkedInIsolation: Accessor<boolean>;
+  globalFilter: Accessor<SpatialMapGlobalFilterState>;
+  globalFilterActive: Accessor<boolean>;
+  globalFilterMatchedCount: Accessor<number>;
+  availableNodeTypes: Accessor<string[]>;
+  availableNodeStatuses: Accessor<MapNodeStatus[]>;
   sourceData: Accessor<SpatialMapData>;
   sourceNodesById: Accessor<Map<string, MapNode>>;
   sourceDecompositionOpen: Accessor<boolean>;
@@ -119,6 +132,12 @@ export interface SpatialMapCanvasController {
   setShowLinkedInIsolation: (
     value: boolean | ((current: boolean) => boolean),
   ) => void;
+  setGlobalFilterEnabled: (value: boolean | ((current: boolean) => boolean)) => void;
+  setGlobalFilterIncludeParents: (
+    value: boolean | ((current: boolean) => boolean),
+  ) => void;
+  toggleGlobalFilterType: (type: string) => void;
+  toggleGlobalFilterStatus: (status: MapNodeStatus) => void;
   setViewMode: (value: SpatialMapViewMode) => void;
   setVisibleDepthLevel: (value: SpatialMapDepthLevel) => void;
   toggleLinkedInIsolation: () => void;

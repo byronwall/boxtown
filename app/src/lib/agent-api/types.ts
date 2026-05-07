@@ -80,6 +80,7 @@ export interface AgentNodeSummary {
   title: string;
   status: MapNodeStatus;
   type: string;
+  metadata: Record<string, string>;
   parentNodeId: string | null;
   childCount: number;
   imageCount: number;
