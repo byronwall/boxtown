@@ -205,6 +205,10 @@ export class ProductGridClient {
     );
   }
 
+  downloadAsset(assetPath) {
+    return this.requestBytes(assetPath);
+  }
+
   async request(pathname, init = {}) {
     const headers = new Headers(init.headers);
     headers.set("accept", "application/json");
@@ -269,6 +273,40 @@ export class ProductGridClient {
 
     return text;
   }
+
+  async requestBytes(pathname, init = {}) {
+    const headers = new Headers(init.headers);
+    headers.set("user-agent", this.userAgent);
+    if (this.token) {
+      headers.set("authorization", `Bearer ${this.token}`);
+    }
+
+    let response;
+    try {
+      response = await fetch(resolveRequestUrl(this.server, pathname), {
+        ...init,
+        headers,
+      });
+    } catch (error) {
+      throw new CliError(
+        `Could not reach ${this.server}. Is the dev server running? ${formatCause(error)}`,
+        1,
+      );
+    }
+
+    if (!response.ok) {
+      throw new CliError(`Asset download failed with HTTP ${response.status}.`, apiErrorToExitCode(undefined, response.status));
+    }
+
+    return Buffer.from(await response.arrayBuffer());
+  }
+}
+
+function resolveRequestUrl(server, pathname) {
+  if (/^https?:\/\//i.test(pathname)) {
+    return pathname;
+  }
+  return `${server}${pathname}`;
 }
 
 function getMimeType(filename) {

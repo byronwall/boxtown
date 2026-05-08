@@ -1100,7 +1100,7 @@ function filterSpatialMapDataByDepthLevel(
   };
 }
 
-function filterSpatialMapDataByGlobalFilter(
+export function filterSpatialMapDataByGlobalFilter(
   data: SpatialMapData,
   filter: SpatialMapGlobalFilterState,
 ): SpatialMapData {
@@ -1111,15 +1111,13 @@ function filterSpatialMapDataByGlobalFilter(
   const visibleNodeIds = new Set(
     data.nodes
       .filter((node) => {
-        if (filter.selectedTypes.includes(node.type)) {
-          return true;
-        }
+        const typeMatches =
+          filter.selectedTypes.length === 0 || filter.selectedTypes.includes(node.type);
+        const statusMatches =
+          filter.selectedStatuses.length === 0 ||
+          filter.selectedStatuses.includes(node.status);
 
-        if (filter.selectedStatuses.includes(node.status)) {
-          return true;
-        }
-
-        return false;
+        return typeMatches && statusMatches;
       })
       .map((node) => node.id),
   );

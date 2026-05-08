@@ -116,6 +116,12 @@ For implementation handoff or deeper work, export only that node context:
 pgm node export-context <node-id> --output ./tmp/node-context.md
 ```
 
+When you need a parent node plus all descendant context, metadata, and image files in one local bundle, export a context pack:
+
+```bash
+pgm node context-pack <parent-node-id> --output ./tmp/context-pack --json
+```
+
 Use filters before expanding context:
 
 ```bash
@@ -140,6 +146,7 @@ pgm node list --with-ancestors --preset status --json
 pgm node list --with-context --compact --json
 pgm node view <node-id> --with-context --compact --json
 pgm node export-context <node-id> --output ./tmp/node-context.md
+pgm node context-pack <parent-node-id> --output ./tmp/context-pack --json
 ```
 
 When reading node context, respect provenance:
@@ -223,6 +230,7 @@ Use `project export-markdown` only before broad edits or when another LLM proces
 ```bash
 pgm project export-markdown --output ./project-context.md
 pgm node export-context <node-id> --output ./node-context.md
+pgm node context-pack <parent-node-id> --output ./context-pack-dir --json
 ```
 
 ## Rules

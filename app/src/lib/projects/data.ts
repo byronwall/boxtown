@@ -2,6 +2,8 @@ import { action, query, redirect } from "@solidjs/router";
 import { getRequestEvent } from "solid-js/web";
 import type { ProjectRecord, ProjectSummary } from "./types";
 
+const CLIENT_MUTATION_ID_FIELD = "clientMutationId";
+
 async function fetchJson<T>(pathname: string): Promise<T> {
   const requestEvent = getRequestEvent();
   const requestUrl = requestEvent?.request.url;
@@ -50,6 +52,11 @@ function getMetadataFromFormData(formData: FormData) {
       .filter(([key, value]) => key.startsWith("metadata.") && typeof value === "string")
       .map(([key, value]) => [key.slice("metadata.".length), value]),
   );
+}
+
+function getClientMutationIdFromFormData(formData: FormData) {
+  const value = formData.get(CLIENT_MUTATION_ID_FIELD);
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
 
 export const deleteProject = action(
@@ -110,6 +117,7 @@ export const updateProjectNodeContext = action(
       projectId,
       nodeId,
       context: typeof context === "string" ? context : "",
+      clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },
   "update-project-node-context",
@@ -135,6 +143,7 @@ export const updateProjectNodeTitle = action(
       projectId,
       nodeId,
       title: typeof title === "string" ? title : "",
+      clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },
   "update-project-node-title",
@@ -164,6 +173,7 @@ export const updateProjectNodeStatus = action(
       projectId,
       nodeId,
       status,
+      clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },
   "update-project-node-status",
@@ -192,6 +202,7 @@ export const updateProjectNodeType = action(
       projectId,
       nodeId,
       type,
+      clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },
   "update-project-node-type",
@@ -219,6 +230,7 @@ export const addProjectNodeImages = action(
       projectId,
       nodeId,
       images,
+      clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },
   "add-project-node-images",
@@ -247,6 +259,7 @@ export const deleteProjectNodeImage = action(
       projectId,
       nodeId,
       imageId,
+      clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },
   "delete-project-node-image",
@@ -282,6 +295,7 @@ export const createProjectContextNode = action(
       splitNestedListItems: splitNestedListItems === "true",
       maxHeadingDepth:
         typeof maxHeadingDepth === "string" ? Number.parseInt(maxHeadingDepth, 10) : undefined,
+      clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },
   "create-project-context-node",
@@ -315,6 +329,7 @@ export const createProjectChildNode = action(
         ? type
         : undefined,
       context: typeof context === "string" ? context : "",
+      clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },
   "create-project-child-node",
@@ -339,6 +354,7 @@ export const updateProjectNodeMetadata = action(
       projectId,
       nodeId,
       metadata: getMetadataFromFormData(formData),
+      clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },
   "update-project-node-metadata",
@@ -385,6 +401,7 @@ export const updateProjectMetadataSchema = action(
         name: typeof name === "string" ? name : "",
         color: typeof nodeTypeColors[index] === "string" ? nodeTypeColors[index] : "",
       })),
+      clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },
   "update-project-metadata-schema",
@@ -405,7 +422,11 @@ export const deleteProjectNode = action(
       throw new Error("A node id is required.");
     }
 
-    return deleteProjectNodeOnDisk({ projectId, nodeId });
+    return deleteProjectNodeOnDisk({
+      projectId,
+      nodeId,
+      clientMutationId: getClientMutationIdFromFormData(formData),
+    });
   },
   "delete-project-node",
 );
@@ -435,6 +456,7 @@ export const deleteProjectLink = action(
       source,
       target,
       relationship: typeof relationship === "string" ? relationship : "related",
+      clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },
   "delete-project-link",
@@ -462,6 +484,7 @@ export const moveProjectNode = action(
       parentNodeId: typeof parentNodeId === "string" && parentNodeId.trim().length > 0
         ? parentNodeId
         : null,
+      clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },
   "move-project-node",

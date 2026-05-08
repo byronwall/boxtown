@@ -15,7 +15,11 @@ import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
 import { updateProjectNodeStatus, updateProjectNodeType } from "~/lib/projects/data";
 import { getNodeMetadataEntries } from "~/lib/projects/node-metadata";
-import { updateProjectNode } from "~/lib/projects/optimistic";
+import {
+  appendClientMutationId,
+  createClientMutationId,
+  updateProjectNode,
+} from "~/lib/projects/optimistic";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode, MapNodeStatus } from "~/lib/spatial-map/types";
 import {
@@ -103,7 +107,7 @@ const treeContextDialogClass = css({
 
 export function SpatialMapTreeView(props: {
   project: ProjectRecord;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
   const spatialMap = useSpatialMap();
   const submitSaveStatus = useAction(updateProjectNodeStatus);
@@ -113,11 +117,13 @@ export function SpatialMapTreeView(props: {
   const [statusPending, setStatusPending] = createSignal(false);
   const [typePending, setTypePending] = createSignal(false);
   const [optimisticStatus, setOptimisticStatus] = createSignal<{
+    clientMutationId: string;
     nodeId: string;
     previousStatus: MapNodeStatus;
     status: MapNodeStatus;
   } | null>(null);
   const [optimisticType, setOptimisticType] = createSignal<{
+    clientMutationId: string;
     nodeId: string;
     previousType: string;
     type: string;
@@ -134,6 +140,7 @@ export function SpatialMapTreeView(props: {
         ...projectNode,
         status: optimistic.previousStatus,
       })),
+      { clientMutationId: optimistic.clientMutationId, phase: "server" },
     );
     setOptimisticStatus(null);
     toaster.error({
@@ -156,6 +163,7 @@ export function SpatialMapTreeView(props: {
         ...projectNode,
         type: optimistic.previousType,
       })),
+      { clientMutationId: optimistic.clientMutationId, phase: "server" },
     );
     setOptimisticType(null);
     toaster.error({
@@ -184,7 +192,9 @@ export function SpatialMapTreeView(props: {
     if (!node || statusPending() || node.status === status) return;
 
     setStatusPending(true);
+    const clientMutationId = createClientMutationId();
     setOptimisticStatus({
+      clientMutationId,
       nodeId,
       previousStatus: node.status,
       status,
@@ -194,6 +204,7 @@ export function SpatialMapTreeView(props: {
         ...projectNode,
         status,
       })),
+      { clientMutationId, phase: "optimistic" },
     );
 
     try {
@@ -201,8 +212,8 @@ export function SpatialMapTreeView(props: {
       formData.set("projectId", props.project.id);
       formData.set("nodeId", nodeId);
       formData.set("status", status);
-      const result = await submitSaveStatus(formData);
-      props.onProjectUpdated?.(result);
+      const result = await submitSaveStatus(appendClientMutationId(formData, clientMutationId));
+      props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       setOptimisticStatus(null);
     } catch (error) {
       rollBackStatus(error);
@@ -216,7 +227,9 @@ export function SpatialMapTreeView(props: {
     if (!node || typePending() || node.type === type) return;
 
     setTypePending(true);
+    const clientMutationId = createClientMutationId();
     setOptimisticType({
+      clientMutationId,
       nodeId,
       previousType: node.type,
       type,
@@ -226,6 +239,7 @@ export function SpatialMapTreeView(props: {
         ...projectNode,
         type,
       })),
+      { clientMutationId, phase: "optimistic" },
     );
 
     try {
@@ -233,8 +247,8 @@ export function SpatialMapTreeView(props: {
       formData.set("projectId", props.project.id);
       formData.set("nodeId", nodeId);
       formData.set("type", type);
-      const result = await submitSaveType(formData);
-      props.onProjectUpdated?.(result);
+      const result = await submitSaveType(appendClientMutationId(formData, clientMutationId));
+      props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       setOptimisticType(null);
     } catch (error) {
       rollBackType(error);

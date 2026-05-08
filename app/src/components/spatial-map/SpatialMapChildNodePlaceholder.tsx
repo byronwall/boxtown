@@ -6,6 +6,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
 import { createProjectChildNode } from "~/lib/projects/data";
 import { ensureProjectNodeTypeOptions } from "~/lib/projects/node-types";
+import { appendClientMutationId, createClientMutationId } from "~/lib/projects/optimistic";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { useSpatialMap } from "./SpatialMapContext";
 import type { ChildNodeDraft, NodeVisualState } from "./spatial-map-canvas.types";
@@ -17,7 +18,7 @@ export function SpatialMapChildNodePlaceholder(props: {
   draft: ChildNodeDraft;
   parentNode?: NodeVisualState["node"];
   project: ProjectRecord;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
   const controller = useSpatialMap();
   const submitCreateProjectChildNode = useAction(createProjectChildNode);
@@ -87,11 +88,12 @@ export function SpatialMapChildNodePlaceholder(props: {
     formData.set("type", nextType);
     formData.set("title", nextTitle);
     formData.set("context", nextContext);
+    const clientMutationId = createClientMutationId();
 
     setPending(true);
     try {
-      const result = await submitCreateProjectChildNode(formData);
-      props.onProjectUpdated?.(result.project);
+      const result = await submitCreateProjectChildNode(appendClientMutationId(formData, clientMutationId));
+      props.onProjectUpdated?.(result.project, { clientMutationId, phase: "server" });
       controller.clearChildNodeDraft();
       queueMicrotask(() => controller.setSelectedNodeId(result.nodeId));
     } catch (error) {

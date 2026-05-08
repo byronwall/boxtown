@@ -48,6 +48,7 @@ interface UpdateProjectNodeContextInput {
   nodeId: string;
   context: string;
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface UpdateProjectNodeTitleInput {
@@ -55,6 +56,7 @@ interface UpdateProjectNodeTitleInput {
   nodeId: string;
   title: string;
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface UpdateProjectNodeStatusInput {
@@ -62,6 +64,7 @@ interface UpdateProjectNodeStatusInput {
   nodeId: string;
   status: MapNodeStatus;
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface UpdateProjectNodeTypeInput {
@@ -69,6 +72,7 @@ interface UpdateProjectNodeTypeInput {
   nodeId: string;
   type: string;
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface CreateContextNodeInput {
@@ -81,6 +85,7 @@ interface CreateContextNodeInput {
   splitNestedListItems?: boolean;
   maxHeadingDepth?: number;
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface CreateChildNodeInput {
@@ -92,6 +97,7 @@ interface CreateChildNodeInput {
   context?: string;
   metadata?: Record<string, unknown>;
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface UpdateProjectNodeMetadataInput {
@@ -99,6 +105,7 @@ interface UpdateProjectNodeMetadataInput {
   nodeId: string;
   metadata: Record<string, unknown>;
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface UpdateProjectMetadataSchemaInput {
@@ -108,6 +115,7 @@ interface UpdateProjectMetadataSchemaInput {
   fields: ProjectMetadataSchemaRowInput[];
   nodeTypes: ProjectNodeTypeRowInput[];
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface ProjectMetadataSchemaRowInput {
@@ -126,6 +134,7 @@ interface DeleteProjectNodeInput {
   projectId: string;
   nodeId: string;
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface DeleteProjectLinkInput {
@@ -134,6 +143,7 @@ interface DeleteProjectLinkInput {
   target: string;
   relationship: string;
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface MoveProjectNodeInput {
@@ -141,6 +151,7 @@ interface MoveProjectNodeInput {
   nodeId: string;
   parentNodeId: string | null;
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface AddProjectNodeImagesInput {
@@ -148,6 +159,7 @@ interface AddProjectNodeImagesInput {
   nodeId: string;
   images: File[];
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface DeleteProjectNodeImageInput {
@@ -155,6 +167,7 @@ interface DeleteProjectNodeImageInput {
   nodeId: string;
   imageId: string;
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 interface ProjectNodeImageSource {
@@ -169,6 +182,7 @@ interface AddProjectNodeImageSourcesInput {
   nodeIds: string[];
   images: ProjectNodeImageSource[];
   actor?: ProjectOperationActor;
+  clientMutationId?: string;
 }
 
 export function createBlankSpatialMapData(): SpatialMapData {
@@ -225,6 +239,18 @@ function appendProjectOperation(
       ...(record.operationLog ?? []),
     ].slice(0, 250),
   };
+}
+
+function getMutationMetadata(input: { clientMutationId?: string }) {
+  return input.clientMutationId ? { clientMutationId: input.clientMutationId } : undefined;
+}
+
+function mergeMutationMetadata(
+  input: { clientMutationId?: string },
+  metadata?: Record<string, string>,
+) {
+  const mutationMetadata = getMutationMetadata(input);
+  return mutationMetadata || metadata ? { ...metadata, ...mutationMetadata } : undefined;
 }
 
 async function writeProjectRecordsAndPublishProject(
@@ -448,6 +474,7 @@ export async function updateProjectNodeContextOnDisk(
     actor: input.actor,
     summary: `Updated context for "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}".`,
     nodeIds: [input.nodeId],
+    metadata: getMutationMetadata(input),
   });
 
   records[recordIndex] = nextRecord;
@@ -489,6 +516,7 @@ export async function updateProjectNodeTitleOnDisk(
     actor: input.actor,
     summary: `Renamed "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}" to "${title}".`,
     nodeIds: [input.nodeId],
+    metadata: getMutationMetadata(input),
   });
 
   records[recordIndex] = nextRecord;
@@ -533,6 +561,7 @@ export async function updateProjectNodeStatusOnDisk(
     actor: input.actor,
     summary: `Changed "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}" status to ${input.status}.`,
     nodeIds: [input.nodeId],
+    metadata: getMutationMetadata(input),
   });
 
   records[recordIndex] = nextRecord;
@@ -582,6 +611,7 @@ export async function updateProjectNodeTypeOnDisk(
     actor: input.actor,
     summary: `Changed "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}" type to ${nextType}.`,
     nodeIds: [input.nodeId],
+    metadata: getMutationMetadata(input),
   });
 
   records[recordIndex] = nextRecord;
@@ -629,6 +659,7 @@ export async function updateProjectNodeMetadataOnDisk(
     actor: input.actor,
     summary: `Updated metadata for "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}".`,
     nodeIds: [input.nodeId],
+    metadata: getMutationMetadata(input),
   });
 
   records[recordIndex] = nextRecord;
@@ -669,6 +700,7 @@ export async function updateProjectMetadataSchemaOnDisk(
     kind: "project.schema.updated",
     actor: input.actor,
     summary: "Updated project metadata and node type schema.",
+    metadata: getMutationMetadata(input),
   });
 
   records[recordIndex] = nextRecord;
@@ -737,7 +769,7 @@ export async function addProjectNodeImagesOnDisk(
     actor: input.actor,
     summary: `Added ${storedImages.length} images to "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}".`,
     nodeIds: [input.nodeId],
-    metadata: { imageCount: String(storedImages.length) },
+    metadata: mergeMutationMetadata(input, { imageCount: String(storedImages.length) }),
   });
 
   records[recordIndex] = nextRecord;
@@ -787,7 +819,7 @@ export async function deleteProjectNodeImageOnDisk(
     actor: input.actor,
     summary: `Deleted image "${image.originalName}" from "${node.label}".`,
     nodeIds: [input.nodeId],
-    metadata: { imageId: input.imageId },
+    metadata: mergeMutationMetadata(input, { imageId: input.imageId }),
   });
 
   records[recordIndex] = nextRecord;
@@ -876,7 +908,7 @@ export async function addProjectNodeImageSourcesOnDisk(
     actor: input.actor,
     summary: `Attached ${input.images.length} source images to ${input.nodeIds.length} nodes.`,
     nodeIds: input.nodeIds,
-    metadata: { imageCount: String(input.images.length) },
+    metadata: mergeMutationMetadata(input, { imageCount: String(input.images.length) }),
   });
 
   records[recordIndex] = nextRecord;
@@ -937,6 +969,7 @@ export async function createContextNodeOnDisk(
     summary: `Imported ${createdNodes.nodes.length} context nodes from "${baseLabel}".`,
     nodeIds: createdNodes.nodes.map((node) => node.id),
     linkKeys: createdNodes.links.map(getLinkKey),
+    metadata: getMutationMetadata(input),
   });
 
   records[recordIndex] = nextRecord;
@@ -1012,6 +1045,7 @@ export async function createChildNodeOnDisk(
     actor: input.actor,
     summary: `Created "${label}"${parentNode ? ` under "${parentNode.label}"` : ""}.`,
     nodeIds: [node.id, ...(parentNode ? [parentNode.id] : [])],
+    metadata: getMutationMetadata(input),
   });
 
   records[recordIndex] = nextRecord;
@@ -1151,6 +1185,7 @@ export async function deleteProjectNodeOnDisk(
     actor: input.actor,
     summary: `Deleted "${removedNode?.label ?? input.nodeId}".`,
     nodeIds: [input.nodeId],
+    metadata: getMutationMetadata(input),
   });
 
   records[recordIndex] = nextRecord;
@@ -1194,6 +1229,7 @@ export async function deleteProjectLinkOnDisk(
     actor: input.actor,
     summary: `Deleted ${relationship} link from ${input.source} to ${input.target}.`,
     nodeIds: [input.source, input.target],
+    metadata: getMutationMetadata(input),
   });
 
   records[recordIndex] = nextRecord;
@@ -1258,6 +1294,7 @@ export async function moveProjectNodeOnDisk(
       ? `Moved "${movedNode?.label ?? input.nodeId}" under "${parentNode.label}".`
       : `Moved "${movedNode?.label ?? input.nodeId}" to the root.`,
     nodeIds: [input.nodeId, ...(input.parentNodeId ? [input.parentNodeId] : [])],
+    metadata: getMutationMetadata(input),
   });
 
   records[recordIndex] = nextRecord;

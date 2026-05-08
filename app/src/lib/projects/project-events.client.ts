@@ -16,6 +16,8 @@ const RECONNECT_BASE_DELAY_MS = 500;
 const RECONNECT_MAX_DELAY_MS = 5000;
 const PROJECT_RECONCILE_INTERVAL_MS = 2000;
 const PROJECT_EVENTS_CHANNEL_NAME = "pgm:project-events";
+const JOBS_SOCKET_PROBE_HEADER = "x-pgm-websocket-route";
+const JOBS_SOCKET_PROBE_VALUE = "jobs";
 
 type ProjectBroadcastMessage =
   | {
@@ -34,6 +36,8 @@ export function connectProjectEvents(input: ConnectProjectEventsInput): ProjectE
   let reconnectTimer: number | undefined;
   let reconnectAttempt = 0;
   let stopped = false;
+  let socketAvailable: boolean | null = null;
+  let socketProbeInFlight: Promise<boolean> | null = null;
   let refreshInFlight: Promise<void> | null = null;
   let refreshAgain = false;
   let latestProjectUpdatedAt = "";
@@ -77,7 +81,7 @@ export function connectProjectEvents(input: ConnectProjectEventsInput): ProjectE
   };
 
   const scheduleReconnect = () => {
-    if (stopped || reconnectTimer !== undefined) return;
+    if (stopped || reconnectTimer !== undefined || socketAvailable === false) return;
 
     const delay = Math.min(
       RECONNECT_BASE_DELAY_MS * 2 ** reconnectAttempt,
@@ -93,8 +97,25 @@ export function connectProjectEvents(input: ConnectProjectEventsInput): ProjectE
   const connect = () => {
     if (stopped) return;
 
+    if (socketAvailable !== true) {
+      socketProbeInFlight ??= probeProjectEventsSocket();
+      socketProbeInFlight
+        .then((available) => {
+          socketAvailable = available;
+          if (available && !stopped) {
+            connect();
+          }
+        })
+        .finally(() => {
+          socketProbeInFlight = null;
+        });
+      return;
+    }
+
+    let opened = false;
     socket = new WebSocket(getProjectEventsSocketUrl());
     socket.addEventListener("open", () => {
+      opened = true;
       reconnectAttempt = 0;
       socket?.send(JSON.stringify({ type: "jobs:ping" }));
       refreshProject(createClientReconcileEvent(input.projectId), true);
@@ -113,6 +134,9 @@ export function connectProjectEvents(input: ConnectProjectEventsInput): ProjectE
     });
     socket.addEventListener("close", scheduleReconnect);
     socket.addEventListener("error", () => {
+      if (!opened) {
+        socketAvailable = false;
+      }
       socket?.close();
     });
   };
@@ -175,6 +199,17 @@ function getProjectEventsSocketUrl() {
   const url = new URL(getAppUrl("/ws/jobs"));
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   return url;
+}
+
+async function probeProjectEventsSocket() {
+  try {
+    const response = await fetch(getAppUrl("/ws/jobs"), {
+      cache: "no-store",
+    });
+    return response.headers.get(JOBS_SOCKET_PROBE_HEADER) === JOBS_SOCKET_PROBE_VALUE;
+  } catch {
+    return false;
+  }
 }
 
 function getAppUrl(pathname: string) {

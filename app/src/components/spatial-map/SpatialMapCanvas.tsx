@@ -74,7 +74,7 @@ interface SpatialMapHeaderProps {
 interface SpatialMapCanvasProps {
   project: ProjectRecord;
   header?: SpatialMapHeaderProps;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }
 
 export function SpatialMapCanvas(props: SpatialMapCanvasProps) {
@@ -94,7 +94,7 @@ function SpatialMapCanvasLayout(props: {
   header?: SpatialMapHeaderProps;
   project: ProjectRecord;
   hasNodes: boolean;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
   const controller = useSpatialMap();
   const [nodeColorMode, setNodeColorMode] =
@@ -102,9 +102,7 @@ function SpatialMapCanvasLayout(props: {
 
   return (
     <SpatialMapImageProvider
-      projectId={props.project.id}
-      projectName={props.project.name}
-      spatialMap={props.project.spatialMap}
+      project={props.project}
       onProjectUpdated={props.onProjectUpdated}
     >
       <SpatialMapUrlSync />
@@ -241,7 +239,7 @@ function SpatialMapCanvasLayout(props: {
             <Show when={controller.selectedNode()}>
               {(node) => (
                 <SpatialMapDeleteNodeControl
-                  projectId={props.project.id}
+                  project={props.project}
                   node={node()}
                   onProjectUpdated={props.onProjectUpdated}
                   hideTrigger

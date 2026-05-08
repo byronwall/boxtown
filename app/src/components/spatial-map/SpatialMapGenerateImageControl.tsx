@@ -12,7 +12,7 @@ import { useNodeImageGenerationFlow } from "./useNodeImageGenerationFlow";
 interface SpatialMapGenerateImageControlProps {
   projectId: string;
   node: MapNode;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
   compact?: boolean;
 }
 

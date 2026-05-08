@@ -6,6 +6,7 @@ import { Button } from "~/components/ui/button";
 import { toaster } from "~/components/ui/toast";
 import { moveProjectNode } from "~/lib/projects/data";
 import { getProjectNodeType } from "~/lib/projects/node-types";
+import { appendClientMutationId, createClientMutationId } from "~/lib/projects/optimistic";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { createParentChildLink } from "~/lib/spatial-map/links";
 import { VIEWPORT_HEIGHT, VIEWPORT_WIDTH } from "~/lib/spatial-map/layout";
@@ -154,7 +155,7 @@ interface SpatialMapSceneProps {
   project: ProjectRecord;
   nodeColorMode: SpatialMapNodeColorMode;
   onNodeColorModeChange: (mode: SpatialMapNodeColorMode) => void;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }
 
 export function SpatialMapScene(props: SpatialMapSceneProps) {
@@ -204,7 +205,12 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       return;
     }
 
-    props.onProjectUpdated?.(moveProjectNodeOptimistically(props.project, nodeId, parentNodeId));
+    const clientMutationId = createClientMutationId();
+    const previousProject = props.project;
+    props.onProjectUpdated?.(
+      moveProjectNodeOptimistically(props.project, nodeId, parentNodeId),
+      { clientMutationId, phase: "optimistic" },
+    );
     controller.clearReparentingNode();
     const formData = new FormData();
     formData.set("projectId", props.project.id);
@@ -213,10 +219,11 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
 
     setMovePending(true);
     try {
-      const result = await submitMoveProjectNode(formData);
-      props.onProjectUpdated?.(result);
+      const result = await submitMoveProjectNode(appendClientMutationId(formData, clientMutationId));
+      props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       toaster.success({ title: "Node moved" });
     } catch (error) {
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
       toaster.error({
         title: "Node was not moved",
         description:

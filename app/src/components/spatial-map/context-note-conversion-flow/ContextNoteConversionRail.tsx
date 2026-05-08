@@ -29,7 +29,7 @@ import { useContextNoteConversionFlow } from "./useContextNoteConversionFlow";
 
 interface ContextNoteConversionRailProps {
   project: ProjectRecord;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }
 
 export function ContextNoteConversionRail(props: ContextNoteConversionRailProps) {

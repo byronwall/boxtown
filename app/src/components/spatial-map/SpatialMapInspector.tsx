@@ -1,5 +1,5 @@
 import { useAction } from "@solidjs/router";
-import { For, Show, createEffect, createMemo, createSignal } from "solid-js";
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import {
   BotIcon,
   DatabaseBackupIcon,
@@ -26,6 +26,11 @@ import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
 import {
+  appendClientMutationId,
+  createClientMutationId,
+  updateProjectNode,
+} from "~/lib/projects/optimistic";
+import {
   updateProjectNodeContext,
   updateProjectNodeMetadata,
   updateProjectNodeStatus,
@@ -49,6 +54,12 @@ import {
 } from "./SpatialMapPanelPrimitives";
 
 const InspectorToggleButton = styled("button");
+const InspectorResizeHandle = styled("button");
+
+const INSPECTOR_WIDTH_STORAGE_KEY = "spatial-map:inspector-width";
+const DEFAULT_INSPECTOR_WIDTH = 348;
+const MIN_INSPECTOR_WIDTH = 280;
+const MAX_INSPECTOR_WIDTH = 600;
 
 // MarkdownRenderer owns its descendant tags, so markdown spacing remains a
 // component-local selector escape hatch rather than a global stylesheet rule.
@@ -80,7 +91,7 @@ import { SpatialMapInspectorHeader } from "./SpatialMapInspectorHeader";
 
 interface SpatialMapInspectorProps {
   project: ProjectRecord;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }
 
 type SpatialMapInspectorView = "details" | "activity";
@@ -109,7 +120,81 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   const [typePending, setTypePending] = createSignal(false);
   const [contextPending, setContextPending] = createSignal(false);
   const [metadataPending, setMetadataPending] = createSignal(false);
+  const [inspectorWidth, setInspectorWidth] = createSignal(DEFAULT_INSPECTOR_WIDTH);
+  const [resizingInspector, setResizingInspector] = createSignal(false);
   const contextFormId = "spatial-map-context-form";
+  let resizeStartX = 0;
+  let resizeStartWidth = DEFAULT_INSPECTOR_WIDTH;
+
+  const inspectorWidthCss = createMemo(() =>
+    spatialMap.inspectorOpen() ? `min(90vw, ${inspectorWidth()}px, max(50vw, ${MAX_INSPECTOR_WIDTH}px))` : "0px",
+  );
+
+  const getMaxInspectorWidth = () =>
+    typeof window === "undefined"
+      ? MAX_INSPECTOR_WIDTH
+      : Math.max(window.innerWidth * 0.5, MAX_INSPECTOR_WIDTH);
+
+  const clampInspectorWidth = (width: number) =>
+    Math.min(getMaxInspectorWidth(), Math.max(MIN_INSPECTOR_WIDTH, Math.round(width)));
+
+  const setPersistedInspectorWidth = (width: number) => {
+    const nextWidth = clampInspectorWidth(width);
+    setInspectorWidth(nextWidth);
+    window.localStorage.setItem(INSPECTOR_WIDTH_STORAGE_KEY, String(nextWidth));
+  };
+
+  const handleInspectorResizeMove = (event: PointerEvent) => {
+    setPersistedInspectorWidth(resizeStartWidth + resizeStartX - event.clientX);
+  };
+
+  const handleInspectorMouseResizeMove = (event: MouseEvent) => {
+    setPersistedInspectorWidth(resizeStartWidth + resizeStartX - event.clientX);
+  };
+
+  const stopInspectorResize = () => {
+    setResizingInspector(false);
+    if (typeof window === "undefined") return;
+    window.removeEventListener("pointermove", handleInspectorResizeMove);
+    window.removeEventListener("pointerup", stopInspectorResize);
+    window.removeEventListener("pointercancel", stopInspectorResize);
+    window.removeEventListener("mousemove", handleInspectorMouseResizeMove);
+    window.removeEventListener("mouseup", stopInspectorResize);
+  };
+
+  const startInspectorResize = (event: PointerEvent) => {
+    if (!spatialMap.inspectorOpen()) return;
+    event.preventDefault();
+    resizeStartX = event.clientX;
+    resizeStartWidth = inspectorWidth();
+    setResizingInspector(true);
+    window.addEventListener("pointermove", handleInspectorResizeMove);
+    window.addEventListener("pointerup", stopInspectorResize);
+    window.addEventListener("pointercancel", stopInspectorResize);
+  };
+
+  const startInspectorMouseResize = (event: MouseEvent) => {
+    if (!spatialMap.inspectorOpen()) return;
+    event.preventDefault();
+    resizeStartX = event.clientX;
+    resizeStartWidth = inspectorWidth();
+    setResizingInspector(true);
+    window.addEventListener("mousemove", handleInspectorMouseResizeMove);
+    window.addEventListener("mouseup", stopInspectorResize);
+  };
+
+  onMount(() => {
+    const storedWidth = window.localStorage.getItem(INSPECTOR_WIDTH_STORAGE_KEY);
+    if (storedWidth !== null) {
+      const parsedWidth = Number(storedWidth);
+      if (Number.isFinite(parsedWidth)) {
+        setInspectorWidth(clampInspectorWidth(parsedWidth));
+      }
+    }
+  });
+
+  onCleanup(stopInspectorResize);
+
   const selectedNodeActivity = createMemo(() => {
     const nodeId = selectedNode()?.id;
     if (!nodeId) return [];
@@ -194,16 +279,30 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     }
 
     setContextPending(true);
+    const previousProject = props.project;
+    const nodeId = formData.get("nodeId");
+    const nextContext = formData.get("context");
+    const clientMutationId = createClientMutationId();
+    if (typeof nodeId === "string" && typeof nextContext === "string") {
+      props.onProjectUpdated?.(
+        updateProjectNode(props.project, nodeId, (projectNode) => ({
+          ...projectNode,
+          context: nextContext,
+        })),
+        { clientMutationId, phase: "optimistic" },
+      );
+    }
     try {
-      const result = await submitSaveContext(formData);
+      const result = await submitSaveContext(appendClientMutationId(formData, clientMutationId));
       const label = result.spatialMap.nodes.find((node) => node.id === spatialMap.selectedNodeId())?.label;
-      props.onProjectUpdated?.(result);
+      props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       setEditingContext(false);
       toaster.success({
         title: "Context updated",
         description: `${label ?? "This node"} now includes the latest markdown context.`,
       });
     } catch (error) {
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
       toaster.error({
         title: "Context was not saved",
         description:
@@ -220,16 +319,34 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     }
 
     setMetadataPending(true);
+    const previousProject = props.project;
+    const nodeId = formData.get("nodeId");
+    const clientMutationId = createClientMutationId();
+    if (typeof nodeId === "string") {
+      const metadata = Object.fromEntries(
+        [...formData.entries()]
+          .filter(([key, value]) => key.startsWith("metadata.") && typeof value === "string")
+          .map(([key, value]) => [key.slice("metadata.".length), value as string]),
+      );
+      props.onProjectUpdated?.(
+        updateProjectNode(props.project, nodeId, (projectNode) => ({
+          ...projectNode,
+          metadata,
+        })),
+        { clientMutationId, phase: "optimistic" },
+      );
+    }
     try {
-      const result = await submitSaveMetadata(formData);
+      const result = await submitSaveMetadata(appendClientMutationId(formData, clientMutationId));
       const label = result.spatialMap.nodes.find((node) => node.id === spatialMap.selectedNodeId())?.label;
-      props.onProjectUpdated?.(result);
+      props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       toaster.success({
         title: "Metadata updated",
         description: `${label ?? "This node"} now uses the current project metadata values.`,
       });
       return true;
     } catch (error) {
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
       toaster.error({
         title: "Metadata was not saved",
         description:
@@ -279,19 +396,29 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
 
     setOptimisticTitle({ nodeId: node.id, value: title });
     setTitlePending(true);
+    const previousProject = props.project;
+    const clientMutationId = createClientMutationId();
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, node.id, (projectNode) => ({
+        ...projectNode,
+        label: title,
+      })),
+      { clientMutationId, phase: "optimistic" },
+    );
     try {
       const formData = new FormData();
       formData.set("projectId", props.project.id);
       formData.set("nodeId", node.id);
       formData.set("title", title);
-      const result = await submitSaveTitle(formData);
+      const result = await submitSaveTitle(appendClientMutationId(formData, clientMutationId));
       const label = result.spatialMap.nodes.find((item) => item.id === node.id)?.label;
-      props.onProjectUpdated?.(result);
+      props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       toaster.success({
         title: "Node renamed",
         description: `${label ?? "This node"} is now the selected node title.`,
       });
     } catch (error) {
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
       setOptimisticTitle((current) => (current?.nodeId === node.id ? null : current));
       toaster.error({
         title: "Rename failed",
@@ -310,19 +437,29 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     if (!node || statusPending() || status === node.status) return;
 
     setStatusPending(true);
+    const previousProject = props.project;
+    const clientMutationId = createClientMutationId();
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, node.id, (projectNode) => ({
+        ...projectNode,
+        status,
+      })),
+      { clientMutationId, phase: "optimistic" },
+    );
     try {
       const formData = new FormData();
       formData.set("projectId", props.project.id);
       formData.set("nodeId", node.id);
       formData.set("status", status);
-      const result = await submitSaveStatus(formData);
+      const result = await submitSaveStatus(appendClientMutationId(formData, clientMutationId));
       const updatedNode = result.spatialMap.nodes.find((item) => item.id === node.id);
-      props.onProjectUpdated?.(result);
+      props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       toaster.success({
         title: "Status updated",
         description: `${updatedNode?.label ?? "This node"} is now ${getMapNodeStatusLabel(updatedNode?.status ?? status)}.`,
       });
     } catch (error) {
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
       toaster.error({
         title: "Status update failed",
         description:
@@ -340,18 +477,28 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     if (!node || typePending() || type === node.type) return;
 
     setTypePending(true);
+    const previousProject = props.project;
+    const clientMutationId = createClientMutationId();
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, node.id, (projectNode) => ({
+        ...projectNode,
+        type,
+      })),
+      { clientMutationId, phase: "optimistic" },
+    );
     try {
       const formData = new FormData();
       formData.set("projectId", props.project.id);
       formData.set("nodeId", node.id);
       formData.set("type", type);
-      const result = await submitSaveType(formData);
-      props.onProjectUpdated?.(result);
+      const result = await submitSaveType(appendClientMutationId(formData, clientMutationId));
+      props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       toaster.success({
         title: "Type updated",
         description: `${node.label} is now a ${type} node.`,
       });
     } catch (error) {
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
       toaster.error({
         title: "Type update failed",
         description:
@@ -440,12 +587,13 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         as="aside"
         id="spatial-map-inspector"
         class={`spatial-map-inspector${spatialMap.inspectorOpen() ? "" : " is-collapsed"}`}
-        position={{ base: "absolute", md: "static" }}
+        position={{ base: "absolute", md: "relative" }}
         right={{ base: "0", md: undefined }}
         top={{ base: "0", md: undefined }}
         bottom={{ base: "0", md: undefined }}
         zIndex={{ base: "2", md: undefined }}
-        w={spatialMap.inspectorOpen() ? { base: "min(90vw, 360px)", md: "348px" } : "0"}
+        w="auto"
+        flexShrink="0"
         h="100%"
         minH="0"
         overflow={spatialMap.inspectorOpen() ? "auto" : "hidden"}
@@ -459,9 +607,47 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
           base: "-12px 0 0 rgba(17, 22, 19, 0.08)",
           md: "inset 1px 0 0 rgba(255, 255, 255, 0.64), -12px 0 30px rgba(29, 33, 28, 0.04)",
         }}
-        transition="width 160ms ease, padding 160ms ease, opacity 120ms ease"
+        transition={resizingInspector() ? "padding 160ms ease, opacity 120ms ease" : "width 160ms ease, padding 160ms ease, opacity 120ms ease"}
         overscrollBehavior="contain"
+        style={{
+          width: inspectorWidthCss(),
+          "flex-basis": inspectorWidthCss(),
+          "min-width": inspectorWidthCss(),
+        }}
       >
+        <InspectorResizeHandle
+          type="button"
+          aria-label="Resize inspector"
+          display={spatialMap.inspectorOpen() ? "flex" : "none"}
+          position="absolute"
+          left="-7px"
+          top="50%"
+          transform="translateY(-50%)"
+          zIndex="3"
+          alignItems="center"
+          justifyContent="center"
+          w="14px"
+          h="56px"
+          border="0"
+          borderRadius="999px"
+          background={resizingInspector() ? "rgba(45, 111, 72, 0.18)" : "rgba(248, 250, 248, 0.72)"}
+          boxShadow="inset 0 0 0 1px rgba(96, 101, 95, 0.34), 0 2px 8px rgba(29, 33, 28, 0.08)"
+          cursor="col-resize"
+          p="0"
+          _before={{
+            content: '""',
+            display: "block",
+            w: "2px",
+            h: "24px",
+            borderRadius: "999px",
+            background: resizingInspector() ? "rgba(45, 111, 72, 0.82)" : "rgba(96, 101, 95, 0.62)",
+          }}
+          _hover={{
+            background: "rgba(229, 239, 229, 0.96)",
+          }}
+          onPointerDown={startInspectorResize}
+          onMouseDown={startInspectorMouseResize}
+        />
         <VStack alignItems="start" gap="2" h="full">
           <SpatialMapInspectorHeader
             title={selectedNodeTitle()}
@@ -537,7 +723,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                     Generate From Context
                   </Button>
                   <SpatialMapDeleteNodeControl
-                    projectId={props.project.id}
+                    project={props.project}
                     node={node()}
                     onProjectUpdated={props.onProjectUpdated}
                     compact

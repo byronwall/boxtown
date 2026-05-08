@@ -8,14 +8,15 @@ import { Text } from "~/components/ui/text";
 import { Tooltip } from "~/components/ui/tooltip";
 import { toaster } from "~/components/ui/toast";
 import { deleteProjectNode } from "~/lib/projects/data";
+import { appendClientMutationId, createClientMutationId } from "~/lib/projects/optimistic";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode } from "~/lib/spatial-map/types";
 import { useSpatialMap } from "./SpatialMapContext";
 
 interface SpatialMapDeleteNodeControlProps {
-  projectId: string;
+  project: ProjectRecord;
   node: MapNode;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
   compact?: boolean;
   hideTrigger?: boolean;
 }
@@ -33,33 +34,50 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
     }
 
     const formData = new FormData();
-    formData.set("projectId", props.projectId);
-    formData.set("nodeId", props.node.id);
+    const nodeId = props.node.id;
+    const nodeLabel = props.node.label;
+    formData.set("projectId", props.project.id);
+    formData.set("nodeId", nodeId);
+    const clientMutationId = createClientMutationId();
+    const previousProject = props.project;
+    const optimisticProject = {
+      ...props.project,
+      updatedAt: new Date().toISOString(),
+      spatialMap: {
+        nodes: props.project.spatialMap.nodes.filter((node) => node.id !== nodeId),
+        links: props.project.spatialMap.links.filter(
+          (link) => link.source !== nodeId && link.target !== nodeId,
+        ),
+      },
+    };
 
     setPending(true);
+    setOpen(false);
+    if (spatialMap.deleteNodeConfirmId() === nodeId) {
+      spatialMap.clearDeleteNodeConfirm();
+    }
+    spatialMap.clearUnsafeDeleteNodeRequest();
+    props.onProjectUpdated?.(optimisticProject, { clientMutationId, phase: "optimistic" });
+
+    let result: ProjectRecord;
     try {
-      const result = await submitDeleteNode(formData);
-      props.onProjectUpdated?.(result);
-      setOpen(false);
-      if (spatialMap.deleteNodeConfirmId() === props.node.id) {
-        spatialMap.clearDeleteNodeConfirm();
-      }
-      queueMicrotask(() => {
-        spatialMap.setSelectedNodeId(result.spatialMap.nodes[0]?.id ?? null);
-        spatialMap.setInspectorOpen(true);
-      });
-      toaster.success({
-        title: "Node deleted",
-        description: `${props.node.label} was removed from the project map.`,
-      });
+      result = await submitDeleteNode(appendClientMutationId(formData, clientMutationId));
     } catch (error) {
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
       toaster.error({
         title: "Delete failed",
         description: error instanceof Error ? error.message : "The node could not be deleted.",
       });
-    } finally {
       setPending(false);
+      return;
     }
+
+    props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
+    toaster.success({
+      title: "Node deleted",
+      description: `${nodeLabel} was removed from the project map.`,
+    });
+    setPending(false);
   };
 
   createEffect(() => {

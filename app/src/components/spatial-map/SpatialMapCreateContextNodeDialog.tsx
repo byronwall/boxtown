@@ -3,6 +3,7 @@ import { For, Show, createEffect, createMemo, createSignal, type JSX } from "sol
 import { Box, HStack, VStack } from "styled-system/jsx";
 import { createProjectContextNode } from "~/lib/projects/data";
 import { detectMarkdownMaxHeadingDepth } from "~/lib/projects/context-node-markdown";
+import { appendClientMutationId, createClientMutationId } from "~/lib/projects/optimistic";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { Button } from "~/components/ui/button";
 import * as Checkbox from "~/components/ui/checkbox";
@@ -15,7 +16,7 @@ import { useSpatialMap } from "./SpatialMapContext";
 
 interface SpatialMapCreateContextNodeDialogProps {
   project: ProjectRecord;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   trigger?: (open: () => void) => JSX.Element;
@@ -89,9 +90,10 @@ export function SpatialMapCreateContextNodeDialog(
     }
 
     setPending(true);
+    const clientMutationId = createClientMutationId();
     try {
-      const result = await submitCreateContextNode(formData);
-      props.onProjectUpdated?.(result.project);
+      const result = await submitCreateContextNode(appendClientMutationId(formData, clientMutationId));
+      props.onProjectUpdated?.(result.project, { clientMutationId, phase: "server" });
       handleOpenChange(false);
       setLabel("");
       setContext("");

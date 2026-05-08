@@ -12,6 +12,7 @@ import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
 import { updateProjectMetadataSchema } from "~/lib/projects/data";
 import { createNodeTypeColor } from "~/lib/projects/node-types";
+import { appendClientMutationId, createClientMutationId } from "~/lib/projects/optimistic";
 import type {
   ProjectNodeMetadataField,
   ProjectNodeTypeDefinition,
@@ -20,7 +21,7 @@ import type {
 
 interface ProjectMetadataSettingsDialogProps {
   project: ProjectRecord;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
   trigger?: (open: () => void) => JSX.Element;
 }
 
@@ -94,15 +95,29 @@ export function ProjectMetadataSettingsDialog(
     }
 
     setPending(true);
+    const clientMutationId = createClientMutationId();
+    const previousProject = props.project;
+    props.onProjectUpdated?.(
+      {
+        ...props.project,
+        name: name().trim() || props.project.name,
+        description: description().trim() || props.project.description,
+        updatedAt: new Date().toISOString(),
+        nodeMetadataSchema: rows().map(({ originalKey: _originalKey, ...row }) => row),
+        nodeTypeSchema: typeRows(),
+      },
+      { clientMutationId, phase: "optimistic" },
+    );
     try {
-      const result = await submitUpdateSettings(formData);
-      props.onProjectUpdated?.(result);
+      const result = await submitUpdateSettings(appendClientMutationId(formData, clientMutationId));
+      props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       setOpen(false);
       toaster.success({
         title: "Project settings updated",
         description: "Project details and metadata settings were saved.",
       });
     } catch (error) {
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
       toaster.error({
         title: "Settings were not saved",
         description:

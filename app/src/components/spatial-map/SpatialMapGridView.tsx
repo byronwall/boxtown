@@ -19,6 +19,7 @@ import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
 import { Tooltip } from "~/components/ui/tooltip";
 import { deleteProjectLink } from "~/lib/projects/data";
+import { appendClientMutationId, createClientMutationId } from "~/lib/projects/optimistic";
 import type {
   ProjectNodeMetadataField,
   ProjectRecord,
@@ -145,7 +146,7 @@ const GridImage = styled("img");
 
 export function SpatialMapGridView(props: {
   project: ProjectRecord;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
   const spatialMap = useSpatialMap();
   const [mode, setMode] = createSignal<SpatialMapGridMode>("nodes");
@@ -353,7 +354,7 @@ function NodesGrid(props: {
   metadataFields: ProjectNodeMetadataField[];
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string) => void;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
   let gridWrapRef: HTMLDivElement | undefined;
   const rowElements = new Map<string, HTMLTableRowElement>();
@@ -615,7 +616,7 @@ function NodesGrid(props: {
 function LinksGrid(props: {
   links: Array<{ link: MapLink; source: MapNode; target: MapNode }>;
   project?: ProjectRecord;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
   const spatialMap = useSpatialMap();
 
@@ -781,12 +782,12 @@ function MetadataKeyPicker(props: {
 function NodeActionsCell(props: {
   project: ProjectRecord;
   node: MapNode;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
   return (
     <Box display="flex" alignItems="center" gap="4px" onClick={(event) => event.stopPropagation()}>
       <SpatialMapDeleteNodeControl
-        projectId={props.project.id}
+        project={props.project}
         node={props.node}
         compact
         onProjectUpdated={props.onProjectUpdated}
@@ -800,7 +801,7 @@ function LinkActionsCell(props: {
   link: MapLink;
   source: MapNode;
   target: MapNode;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
   const submitDeleteLink = useAction(deleteProjectLink);
   const [open, setOpen] = createSignal(false);
@@ -815,17 +816,29 @@ function LinkActionsCell(props: {
     formData.set("source", props.link.source);
     formData.set("target", props.link.target);
     formData.set("relationship", formatLinkRelationship(props.link));
+    const clientMutationId = createClientMutationId();
+    const previousProject = props.project;
+    const optimisticProject = {
+      ...props.project,
+      updatedAt: new Date().toISOString(),
+      spatialMap: {
+        ...props.project.spatialMap,
+        links: props.project.spatialMap.links.filter((link) => link !== props.link),
+      },
+    };
 
     setPending(true);
+    props.onProjectUpdated?.(optimisticProject, { clientMutationId, phase: "optimistic" });
     try {
-      const result = await submitDeleteLink(formData);
-      props.onProjectUpdated?.(result);
+      const result = await submitDeleteLink(appendClientMutationId(formData, clientMutationId));
+      props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       setOpen(false);
       toaster.success({
         title: "Link deleted",
         description: `${props.source.label} -> ${props.target.label} was removed.`,
       });
     } catch (error) {
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
       toaster.error({
         title: "Delete failed",
         description:

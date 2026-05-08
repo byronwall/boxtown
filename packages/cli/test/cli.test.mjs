@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { EventEmitter } from "node:events";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { ProductGridClient } from "../src/client.mjs";
 import { defaultServer, resolveProjectId, resolveServer, resolveToken } from "../src/config.mjs";
-import { main, parseArgs } from "../src/main.mjs";
+import { getUpdateCommand, main, parseArgs } from "../src/main.mjs";
 import { writeJson } from "../src/output.mjs";
 import { getBundledSkillPath, resolveSkillInstallTarget } from "../src/skill.mjs";
 import { isNewerVersion, notifyIfUpdateAvailable } from "../src/update-check.mjs";
@@ -104,7 +105,49 @@ test("update check prints an encouraging update note to stderr", async () => {
   });
 
   assert.match(stderr.value, /A fresh pgm update is ready:/);
-  assert.match(stderr.value, /npm install -g @byronwallrus\/product-grid-cli/);
+  assert.match(stderr.value, /pgm update/);
+});
+
+test("pgm update exposes dry-run JSON and spawns npm for real updates", async () => {
+  const dryRunStdout = createWritableBuffer();
+
+  await main(["node", "pgm", "update", "--dry-run", "--json"], {
+    stdout: dryRunStdout,
+    stderr: createWritableBuffer(),
+    env: {},
+    cwd: "/tmp",
+  });
+
+  const dryRun = JSON.parse(dryRunStdout.value);
+  assert.equal(dryRun.packageName, "@byronwallrus/product-grid-cli");
+  assert.equal(dryRun.dryRun, true);
+  assert.deepEqual(getUpdateCommand(), ["npm", "install", "-g", "@byronwallrus/product-grid-cli@latest"]);
+
+  const calls = [];
+  const stdout = createWritableBuffer();
+  await main(["node", "pgm", "update", "--json"], {
+    stdout,
+    stderr: createWritableBuffer(),
+    env: { PGM_NO_UPDATE_CHECK: "1" },
+    cwd: "/tmp",
+    spawn(command, args, options) {
+      calls.push({ command, args, options });
+      const child = new EventEmitter();
+      queueMicrotask(() => child.emit("close", 0));
+      return child;
+    },
+  });
+
+  assert.deepEqual(calls[0], {
+    command: "npm",
+    args: ["install", "-g", "@byronwallrus/product-grid-cli@latest"],
+    options: {
+      cwd: "/tmp",
+      env: { PGM_NO_UPDATE_CHECK: "1" },
+      stdio: "inherit",
+    },
+  });
+  assert.equal(JSON.parse(stdout.value).exitCode, 0);
 });
 
 test("update check can be disabled and compares semver versions", async () => {
@@ -208,6 +251,12 @@ test("parseArgs handles targeted node context flags", () => {
   assert.deepEqual(nodeExport.command, ["node", "export-context"]);
   assert.deepEqual(nodeExport.positionals, ["node-1"]);
   assert.equal(nodeExport.options.output, "node-context.md");
+
+  const contextPack = parseArgs(["node", "context-pack", "parent-1", "--output", "pack", "--depth", "2"]);
+  assert.deepEqual(contextPack.command, ["node", "context-pack"]);
+  assert.deepEqual(contextPack.positionals, ["parent-1"]);
+  assert.equal(contextPack.options.output, "pack");
+  assert.equal(contextPack.options.depth, "2");
 
   const projectSchema = parseArgs(["project", "schema", "--json"]);
   assert.deepEqual(projectSchema.command, ["project", "schema"]);
@@ -705,6 +754,116 @@ test("client lists and removes images and exports markdown", async () => {
     assert.equal(calls[1].init.method, "DELETE");
     assert.deepEqual(JSON.parse(calls[1].init.body), { imageId: "image-1" });
     assert.equal(calls[2].url, "http://localhost:3000/api/v1/projects/demo/exports/markdown");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("node context-pack exports subtree context and images", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "pgm-context-pack-"));
+  const outputDir = path.join(tempDir, "pack");
+  const calls = [];
+  const stdout = createWritableBuffer();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    calls.push({ url, init });
+    if (url.includes("/nodes?")) {
+      return new Response(JSON.stringify({
+        nodes: [{ id: "parent-1" }, { id: "child-1" }],
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (url.endsWith("/asset.png")) {
+      return new Response(Buffer.from([0x89, 0x50, 0x4e, 0x47]), { status: 200 });
+    }
+    const nodeId = url.includes("child-1") ? "child-1" : "parent-1";
+    return new Response(JSON.stringify({
+      node: {
+        id: nodeId,
+        title: nodeId === "parent-1" ? "Parent" : "Child",
+        label: nodeId === "parent-1" ? "Parent" : "Child",
+        status: "planned",
+        type: nodeId === "parent-1" ? "page" : "task",
+        parentNodeId: nodeId === "child-1" ? "parent-1" : null,
+        metadata: nodeId === "child-1" ? { implementation: "Do work" } : {},
+      },
+      path: [
+        {
+          id: "parent-1",
+          title: "Parent",
+          label: "Parent",
+          status: "planned",
+          type: "page",
+          metadata: {},
+          context: "Parent context",
+          rawContext: "",
+          images: [{
+            id: "image-1",
+            src: "/asset.png",
+            filename: "asset.png",
+            originalName: "asset.png",
+            mimeType: "image/png",
+          }],
+        },
+        ...(nodeId === "child-1"
+          ? [{
+            id: "child-1",
+            title: "Child",
+            label: "Child",
+            status: "planned",
+            type: "task",
+            metadata: { implementation: "Do work" },
+            context: "Child context",
+            rawContext: "",
+            images: [],
+          }]
+          : []),
+      ],
+      inheritedContext: {
+        titlePath: nodeId === "child-1" ? "Parent > Child" : "Parent",
+        metadata: [],
+        contextBlocks: [],
+        rawContextBlocks: [],
+        images: [],
+        hasDirectContext: true,
+        hasInheritedContext: nodeId === "child-1",
+        missingContext: false,
+      },
+    }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+
+  try {
+    await main([
+      "node",
+      "pgm",
+      "node",
+      "context-pack",
+      "parent-1",
+      "--project",
+      "demo",
+      "--output",
+      outputDir,
+      "--json",
+    ], {
+      stdout,
+      stderr: createWritableBuffer(),
+      env: {
+        PRODUCT_GRID_SERVER: "http://localhost:3000",
+      },
+      cwd: tempDir,
+    });
+
+    const result = JSON.parse(stdout.value);
+    assert.equal(result.nodeCount, 2);
+    assert.equal(result.imageCount, 1);
+    assert.equal(result.downloaded[0].path, path.join(outputDir, "images", "parent-1-image-1.png"));
+    assert.equal(calls[0].url, "http://localhost:3000/api/v1/projects/demo/nodes?subtree=parent-1&includeSelf=true&fields=id");
+    assert.ok(calls.some((call) => call.url === "http://localhost:3000/asset.png"));
   } finally {
     globalThis.fetch = originalFetch;
   }

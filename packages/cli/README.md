@@ -18,6 +18,11 @@ pgm project list --server http://localhost:3000
 ```
 
 The CLI defaults to `http://localhost:3000`, so `--server` is optional when your dev server runs there.
+When `pgm` reports that a newer CLI version is available, run:
+
+```bash
+pgm update
+```
 
 ## Local Dev Server
 
@@ -60,6 +65,7 @@ pgm node list --type task --status planned --with-ancestors --json
 pgm node list --search "checkout" --json
 pgm node view <node-id> --with-context --json
 pgm node export-context <node-id> --output ./node-context.md
+pgm node context-pack <parent-node-id> --output ./context-pack-dir --json
 pgm node create --title "Checkout" --type page --json
 pgm node update <node-id> --status working --json
 pgm node complete <node-id> --note "Implemented the requested change." --json
@@ -68,6 +74,7 @@ pgm node import-markdown --file ./brief.md --title "Product Brief" --split-headi
 pgm image add <node-id> ./screenshot.png --json
 pgm image list <node-id> --json
 pgm project export-markdown --output ./project-context.md
+pgm update --dry-run
 ```
 
 Avoid starting with `pgm project view --json` for agent work; it returns the full graph and can be much larger than the schema and node context needed for a scoped change.

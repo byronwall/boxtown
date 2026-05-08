@@ -53,6 +53,10 @@ export interface ProjectOperationLogEntry {
   payload?: ProjectOperationPayload;
 }
 
+export interface ProjectMutationMeta {
+  clientMutationId?: string;
+}
+
 export type ProjectOperationActorKind = "human" | "agent";
 
 export interface ProjectOperationActor {

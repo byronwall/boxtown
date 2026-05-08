@@ -18,6 +18,7 @@ export type ProjectSocketEvent =
         summary: string;
         nodeIds: string[];
         linkKeys?: string[];
+        metadata?: Record<string, string>;
       } | null;
       serverTime: string;
     }
@@ -98,5 +99,6 @@ function toSocketOperation(operation: ProjectOperationLogEntry | null) {
     summary: operation.summary,
     nodeIds: operation.nodeIds,
     linkKeys: operation.linkKeys,
+    metadata: operation.metadata,
   };
 }

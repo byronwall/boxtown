@@ -1,5 +1,6 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { spawn as spawnProcess } from "node:child_process";
 import { ProductGridClient } from "./client.mjs";
 import {
   getConfigPath,
@@ -17,7 +18,7 @@ import {
   writeTable,
 } from "./output.mjs";
 import { notifyIfUpdateAvailable } from "./update-check.mjs";
-import { packageVersion } from "./version.mjs";
+import { packageName, packageVersion } from "./version.mjs";
 
 export async function main(argv = process.argv, io = defaultIo()) {
   const parsed = parseArgs(argv.slice(2));
@@ -31,6 +32,10 @@ export async function main(argv = process.argv, io = defaultIo()) {
   }
   if (isConfigPathCommand(parsed.command)) {
     io.stdout.write(`${getConfigPath(io.env)}\n`);
+    return;
+  }
+  if (isUpdateCommand(parsed.command)) {
+    await dispatchUpdate({ parsed, io });
     return;
   }
 
@@ -80,6 +85,50 @@ async function dispatch(context) {
   }
 
   throw new CliError(`Unknown command: ${[scope, action, subaction].filter(Boolean).join(" ")}`, exitCodes.usage);
+}
+
+async function dispatchUpdate(context) {
+  const command = getUpdateCommand();
+  const result = {
+    packageName,
+    currentVersion: packageVersion,
+    command: command.join(" "),
+    dryRun: Boolean(context.parsed.options.dryRun),
+  };
+
+  if (context.parsed.options.dryRun) {
+    writeMaybeJson(context, result, `${result.command}\n`);
+    return;
+  }
+
+  if (!context.parsed.options.json) {
+    context.io.stdout.write(`Updating pgm with: ${result.command}\n`);
+  }
+
+  const exitCode = await runUpdateCommand(command, context.io);
+  if (exitCode !== 0) {
+    throw new CliError(`pgm update failed with exit code ${exitCode}.`, exitCode);
+  }
+
+  writeMaybeJson(context, { ...result, exitCode }, "pgm update completed.\n");
+}
+
+export function getUpdateCommand() {
+  return ["npm", "install", "-g", `${packageName}@latest`];
+}
+
+async function runUpdateCommand(command, io) {
+  const spawnImpl = io.spawn ?? spawnProcess;
+  const child = spawnImpl(command[0], command.slice(1), {
+    cwd: io.cwd,
+    env: io.env,
+    stdio: "inherit",
+  });
+
+  return new Promise((resolve, reject) => {
+    child.on("error", reject);
+    child.on("close", (code) => resolve(typeof code === "number" ? code : 1));
+  });
 }
 
 async function dispatchAuth(context, action) {
@@ -277,11 +326,12 @@ async function dispatchNode(context, action) {
     context: dispatchNodeContext,
     metadata: dispatchNodeMetadata,
     "export-context": dispatchNodeExportContext,
+    "context-pack": dispatchNodeContextPack,
     "import-markdown": dispatchNodeImportMarkdown,
   };
   const handler = handlers[action];
   if (!handler) {
-    throw new CliError("Usage: pgm node <list|view|status|create|update|complete|resolve|batch-update|agent-update|move|context|metadata|export-context|import-markdown>", exitCodes.usage);
+    throw new CliError("Usage: pgm node <list|view|status|create|update|complete|resolve|batch-update|agent-update|move|context|metadata|export-context|context-pack|import-markdown>", exitCodes.usage);
   }
 
   await handler(context, projectId);
@@ -591,6 +641,55 @@ async function dispatchNodeExportContext(context, projectId) {
   }
 }
 
+async function dispatchNodeContextPack(context, projectId) {
+  const nodeId = requireOption(context.parsed.positionals[0], "A parent node id is required.");
+  const output = requireOption(context.parsed.options.output, "--output <directory> is required.");
+  const outputDir = resolveInputPath(output, context.io.cwd);
+  await mkdir(outputDir, { recursive: true });
+
+  const summaries = await context.client.listNodes(projectId, {
+    subtree: nodeId,
+    includeSelf: true,
+    depth: context.parsed.options.depth,
+    fields: "id",
+  });
+  const nodeIds = uniqueStrings([nodeId, ...summaries.map((node) => node.id)]);
+  const contexts = [];
+  for (const currentNodeId of nodeIds) {
+    contexts.push(await context.client.getNodeContextTree(projectId, currentNodeId));
+  }
+
+  const markdown = formatContextPackMarkdown({ projectId, rootNodeId: nodeId, contexts });
+  const metadata = formatContextPackMetadata({ projectId, rootNodeId: nodeId, contexts });
+  const imageResults = await downloadContextPackImages(context, outputDir, contexts);
+
+  const contextFile = path.join(outputDir, "context-pack.md");
+  const metadataFile = path.join(outputDir, "context-pack.json");
+  await writeFile(contextFile, markdown, "utf8");
+  await writeFile(metadataFile, `${JSON.stringify({
+    ...metadata,
+    images: imageResults,
+  }, null, 2)}\n`, "utf8");
+
+  const result = {
+    projectId,
+    rootNodeId: nodeId,
+    output: outputDir,
+    contextFile,
+    metadataFile,
+    nodeCount: contexts.length,
+    imageCount: imageResults.downloaded.length,
+    downloaded: imageResults.downloaded,
+    failed: imageResults.failed,
+  };
+
+  writeMaybeJson(
+    context,
+    result,
+    `Exported context pack for ${nodeId}: ${contexts.length} nodes, ${imageResults.downloaded.length} images.\n${outputDir}\n`,
+  );
+}
+
 async function dispatchNodeImportMarkdown(context, projectId) {
   const file = requireOption(
     context.parsed.options.file ?? context.parsed.positionals[0],
@@ -819,6 +918,7 @@ const booleanOptionNames = new Set([
   "roots",
   "root",
   "include-self",
+  "dry-run",
   "split-by-heading-level",
   "split-headings",
   "with-ancestors",
@@ -851,6 +951,10 @@ function isVersionCommand(command) {
 
 function isConfigPathCommand(command) {
   return command.length === 2 && command[0] === "config" && command[1] === "path";
+}
+
+function isUpdateCommand(command) {
+  return command.length === 1 && command[0] === "update";
 }
 
 function requireProject(context) {
@@ -1134,6 +1238,120 @@ function formatMetadataLines(metadata) {
   return entries.map(([key, value]) => `- ${key}: ${value}`);
 }
 
+function formatContextPackMarkdown({ projectId, rootNodeId, contexts }) {
+  const root = contexts.find((item) => item.node.id === rootNodeId) ?? contexts[0];
+  const sections = [
+    `# Context Pack: ${root?.node.title ?? root?.node.label ?? rootNodeId}`,
+    "",
+    `Project: ${projectId}`,
+    `Root node: ${rootNodeId}`,
+    `Nodes: ${contexts.length}`,
+    "",
+  ];
+
+  for (const nodeContext of contexts) {
+    sections.push(formatNodeContextMarkdown(nodeContext).trimEnd(), "");
+  }
+
+  return `${sections.join("\n").trimEnd()}\n`;
+}
+
+function formatContextPackMetadata({ projectId, rootNodeId, contexts }) {
+  return {
+    projectId,
+    rootNodeId,
+    nodes: contexts.map((nodeContext) => ({
+      id: nodeContext.node.id,
+      title: nodeContext.node.title ?? nodeContext.node.label,
+      status: nodeContext.node.status,
+      type: nodeContext.node.type,
+      parentNodeId: nodeContext.node.parentNodeId ?? null,
+      titlePath: nodeContext.inheritedContext.titlePath,
+      metadata: nodeContext.node.metadata ?? {},
+      inheritedContext: nodeContext.inheritedContext,
+      path: nodeContext.path.map((node) => ({
+        id: node.id,
+        title: node.title,
+        status: node.status,
+        type: node.type,
+        metadata: node.metadata ?? {},
+        imageCount: node.images?.length ?? 0,
+      })),
+    })),
+  };
+}
+
+async function downloadContextPackImages(context, outputDir, contexts) {
+  const imageDir = path.join(outputDir, "images");
+  const imageMap = new Map();
+  for (const nodeContext of contexts) {
+    for (const pathNode of nodeContext.path ?? []) {
+      for (const image of pathNode.images ?? []) {
+        const key = `${pathNode.id}:${image.id}`;
+        if (!imageMap.has(key)) {
+          imageMap.set(key, { ...image, sourceNodeId: pathNode.id, sourceTitle: pathNode.title });
+        }
+      }
+    }
+  }
+
+  const downloaded = [];
+  const failed = [];
+  if (imageMap.size > 0) {
+    await mkdir(imageDir, { recursive: true });
+  }
+
+  for (const image of imageMap.values()) {
+    try {
+      const filename = `${sanitizePathPart(image.sourceNodeId)}-${sanitizePathPart(image.id)}${imageExtension(image)}`;
+      const outputPath = path.join(imageDir, filename);
+      await writeFile(outputPath, await context.client.downloadAsset(image.src));
+      downloaded.push({
+        nodeId: image.sourceNodeId,
+        imageId: image.id,
+        originalName: image.originalName,
+        src: image.src,
+        path: outputPath,
+      });
+    } catch (error) {
+      failed.push({
+        nodeId: image.sourceNodeId,
+        imageId: image.id,
+        src: image.src,
+        error: error instanceof Error ? error.message : "Image download failed.",
+      });
+    }
+  }
+
+  return { downloaded, failed };
+}
+
+function imageExtension(image) {
+  const filename = image.filename ?? image.originalName ?? "";
+  const ext = path.extname(filename);
+  if (ext) {
+    return ext;
+  }
+  if (image.mimeType === "image/jpeg") {
+    return ".jpg";
+  }
+  if (image.mimeType === "image/webp") {
+    return ".webp";
+  }
+  return ".png";
+}
+
+function sanitizePathPart(value) {
+  return String(value)
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120) || "item";
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values.filter((value) => typeof value === "string" && value.trim().length > 0))];
+}
+
 function resolveInputPath(value, cwd) {
   return path.isAbsolute(value) ? value : path.resolve(cwd, value);
 }
@@ -1195,11 +1413,13 @@ Usage:
   pgm node metadata set <node-id> <key> <value> [--json] [--full]
   pgm node metadata unset <node-id> <key> [--json] [--full]
   pgm node export-context <node-id> [--project <project-id>] [--output ./node-context.md] [--json]
+  pgm node context-pack <parent-node-id> --output ./context-pack-dir [--depth N] [--json]
   pgm node import-markdown --file <path> [--title "Notes"] [--split-headings] [--max-heading-depth 2] [--metadata-json '{"purpose":"..."}'] [--json]
   pgm image add <node-id> <image-path...> [--project <project-id>] [--json]
   pgm image list <node-id> [--project <project-id>] [--json]
   pgm image remove <node-id> <image-id> [--project <project-id>] [--json]
   pgm issue view <product-grid-url> [--json]
+  pgm update [--dry-run] [--json]
   pgm skill install [--agent codex] [--global] [--force]
   pgm skill path
   pgm skill print

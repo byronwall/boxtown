@@ -25,7 +25,7 @@ import { useAddNodesFlow } from "./useAddNodesFlow";
 
 interface AddNodesFlowRailProps {
   project: ProjectRecord;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }
 
 export function AddNodesFlowRail(props: AddNodesFlowRailProps) {

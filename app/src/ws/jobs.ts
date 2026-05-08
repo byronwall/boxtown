@@ -4,6 +4,9 @@ import {
   subscribeProjectSocketEvents,
 } from "./project-events";
 
+const JOBS_SOCKET_PROBE_HEADER = "x-pgm-websocket-route";
+const JOBS_SOCKET_PROBE_VALUE = "jobs";
+
 type JobSocketServerMessage =
   | {
       type: "jobs:init";
@@ -63,7 +66,14 @@ subscribeProjectSocketEvents((event) => {
 });
 
 export default eventHandler({
-  handler() {},
+  handler() {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        [JOBS_SOCKET_PROBE_HEADER]: JOBS_SOCKET_PROBE_VALUE,
+      },
+    });
+  },
   websocket: {
     open(peer) {
       peers.add(peer);

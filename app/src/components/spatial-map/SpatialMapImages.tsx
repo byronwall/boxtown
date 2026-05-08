@@ -34,6 +34,7 @@ import {
   addProjectNodeImages,
   deleteProjectNodeImage,
 } from "~/lib/projects/data";
+import { appendClientMutationId, createClientMutationId } from "~/lib/projects/optimistic";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type {
   MapLink,
@@ -121,10 +122,8 @@ const IMAGE_VIEWER_MIN_SCALE = 0.2;
 const IMAGE_VIEWER_MAX_SCALE = 8;
 
 export function SpatialMapImageProvider(props: {
-  projectId: string;
-  projectName: string;
-  spatialMap: SpatialMapData;
-  onProjectUpdated?: (project: ProjectRecord) => void;
+  project: ProjectRecord;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
   children: JSX.Element;
 }) {
   const spatialMap = useSpatialMap();
@@ -137,8 +136,8 @@ export function SpatialMapImageProvider(props: {
   const submitAddProjectNodeImages = useAction(addProjectNodeImages);
   const submitDeleteProjectNodeImage = useAction(deleteProjectNodeImage);
 
-  const applyDeletedImageResult = (result: ProjectRecord) => {
-    props.onProjectUpdated?.(result);
+  const applyDeletedImageResult = (result: ProjectRecord, clientMutationId: string) => {
+    props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
     setViewerState((state) => {
       if (!state) return state;
       const nodesById = new Map(
@@ -182,7 +181,7 @@ export function SpatialMapImageProvider(props: {
 
     try {
       const formData = new FormData();
-      formData.set("projectId", props.projectId);
+      formData.set("projectId", props.project.id);
       formData.set("nodeId", nodeId);
       for (const file of imageFiles) {
         formData.append("images", file);
@@ -191,12 +190,13 @@ export function SpatialMapImageProvider(props: {
         nodeId,
         uploadedFiles: describeFiles(imageFiles),
       });
-      const result = await submitAddProjectNodeImages(formData);
+      const clientMutationId = createClientMutationId();
+      const result = await submitAddProjectNodeImages(appendClientMutationId(formData, clientMutationId));
       console.info(IMAGE_DEBUG_PREFIX, "upload submission resolved", {
         projectId: result.id,
         nodeCount: result.spatialMap.nodes.length,
       });
-      props.onProjectUpdated?.(result);
+      props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       toaster.success({
         title: "Images attached",
         description: "Image files were stored on disk and attached to the node.",
@@ -218,14 +218,33 @@ export function SpatialMapImageProvider(props: {
   };
 
   const deleteImage = async (nodeId: string, imageId: string) => {
+    const clientMutationId = createClientMutationId();
+    const previousProject = props.project;
     try {
       setPendingDeleteImageId(imageId);
+      const optimisticProject = {
+        ...props.project,
+        updatedAt: new Date().toISOString(),
+        spatialMap: {
+          ...props.project.spatialMap,
+          nodes: props.project.spatialMap.nodes.map((node) =>
+            node.id === nodeId
+              ? { ...node, images: (node.images ?? []).filter((image) => image.id !== imageId) }
+              : node,
+          ),
+        },
+      } satisfies ProjectRecord;
+      props.onProjectUpdated?.(optimisticProject, { clientMutationId, phase: "optimistic" });
       const formData = new FormData();
-      formData.set("projectId", props.projectId);
+      formData.set("projectId", props.project.id);
       formData.set("nodeId", nodeId);
       formData.set("imageId", imageId);
-      applyDeletedImageResult(await submitDeleteProjectNodeImage(formData));
+      applyDeletedImageResult(
+        await submitDeleteProjectNodeImage(appendClientMutationId(formData, clientMutationId)),
+        clientMutationId,
+      );
     } catch (error) {
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
       setPendingDeleteImageId(null);
       toaster.error({
         title: "Delete failed",
@@ -324,8 +343,8 @@ export function SpatialMapImageProvider(props: {
       {props.children}
       <SpatialMapImageViewer
         state={viewerState()}
-        projectName={props.projectName}
-        spatialMap={props.spatialMap}
+        projectName={props.project.name}
+        spatialMap={props.project.spatialMap}
         canDelete={viewerState()?.canDelete ?? true}
         pendingDeleteImageId={pendingDeleteImageId()}
         onDeleteImage={deleteImage}

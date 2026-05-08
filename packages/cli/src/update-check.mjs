@@ -18,7 +18,7 @@ export async function notifyIfUpdateAvailable(io = {}, options = {}) {
     return;
   }
 
-  const command = `npm install -g ${packageName}`;
+  const command = "pgm update";
   io.stderr?.write(
     [
       `A fresh pgm update is ready: ${packageVersion} -> ${latestVersion}.`,
