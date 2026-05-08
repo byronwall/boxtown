@@ -15,18 +15,19 @@ export function ProjectExportControl(props: ProjectExportControlProps) {
       aria-label={`Download ${props.projectName} archive`}
       class={css({
         alignItems: "center",
-        bg: "#dbe3da",
-        borderColor: "#42614d",
-        borderRadius: "0",
+        bg: "rgba(229, 239, 229, 0.86)",
+        borderColor: "var(--spatial-map-panel-border-strong)",
+        borderRadius: "4px",
         borderWidth: "1px",
-        color: "#1e4f39",
+        color: "var(--spatial-map-accent-strong)",
         display: "inline-flex",
-        h: "8",
+        h: "30px",
         justifyContent: "center",
-        minW: "8",
+        minW: "30px",
         px: "0",
-        _hover: { bg: "#e4ebe2" },
-        _focusVisible: { outline: "2px solid #1e4f39", outlineOffset: "2px" },
+        transition: "background-color 140ms ease, border-color 140ms ease",
+        _hover: { bg: "rgba(214, 229, 214, 0.95)", borderColor: "var(--spatial-map-accent)" },
+        _focusVisible: { outline: "2px solid var(--spatial-map-accent)", outlineOffset: "2px" },
       })}
     >
       <Box as={Download} boxSize="4" />

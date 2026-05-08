@@ -5,6 +5,7 @@ import {
   createMemo,
   createSignal,
   For,
+  type JSX,
   onCleanup,
   onMount,
   Show,
@@ -14,17 +15,32 @@ import { Box, HStack, styled } from "styled-system/jsx";
 
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { EditInPlace } from "~/components/ui/edit-in-place";
 import { Input } from "~/components/ui/input";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
 import { Tooltip } from "~/components/ui/tooltip";
-import { deleteProjectLink } from "~/lib/projects/data";
-import { appendClientMutationId, createClientMutationId } from "~/lib/projects/optimistic";
+import {
+  deleteProjectLink,
+  updateProjectNodeMetadata,
+  updateProjectNodeStatus,
+  updateProjectNodeTitle,
+  updateProjectNodeType,
+} from "~/lib/projects/data";
+import {
+  appendClientMutationId,
+  createClientMutationId,
+  updateProjectNode,
+} from "~/lib/projects/optimistic";
 import type {
   ProjectNodeMetadataField,
   ProjectRecord,
 } from "~/lib/projects/types";
-import type { MapLink, MapNode } from "~/lib/spatial-map/types";
+import {
+  getMapNodeStatusGlyph,
+  getMapNodeStatusLabel,
+} from "~/lib/spatial-map/node-status";
+import type { MapLink, MapNode, MapNodeStatus } from "~/lib/spatial-map/types";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { useSpatialMap } from "./SpatialMapContext";
 import { useSpatialMapImages } from "./SpatialMapImages";
@@ -40,6 +56,24 @@ interface NodeGridRow {
   parentNodeId: string | null;
   pathKey: string;
 }
+
+const DEFAULT_NODE_COLUMN_WIDTHS = {
+  name: 340,
+  type: 132,
+  status: 152,
+  metadata: 240,
+  image: 120,
+  actions: 92,
+};
+
+const MIN_NODE_COLUMN_WIDTHS = {
+  name: 220,
+  type: 104,
+  status: 116,
+  metadata: 150,
+  image: 92,
+  actions: 76,
+};
 
 // Native tables and tree connector rails need descendant and pseudo-element
 // selectors; the surrounding panels still use props below.
@@ -143,6 +177,7 @@ const gridStructureClass = css({
 
 const GridButton = styled("button");
 const GridImage = styled("img");
+const GridSelectElement = styled("select");
 
 export function SpatialMapGridView(props: {
   project: ProjectRecord;
@@ -356,10 +391,21 @@ function NodesGrid(props: {
   onSelectNode: (nodeId: string) => void;
   onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
+  const spatialMap = useSpatialMap();
   let gridWrapRef: HTMLDivElement | undefined;
+  let lastAutoScrolledNodeId: string | null = null;
   const rowElements = new Map<string, HTMLTableRowElement>();
   const [treeGridActive, setTreeGridActive] = createSignal(false);
   const [collapsedNodeIds, setCollapsedNodeIds] = createSignal<Set<string>>(new Set());
+  const [columnWidths, setColumnWidths] = createSignal<Record<string, number>>({});
+  const getColumnWidth = (columnKey: string, fallback: number) =>
+    columnWidths()[columnKey] ?? fallback;
+  const setColumnWidth = (columnKey: string, width: number) => {
+    setColumnWidths((current) => ({ ...current, [columnKey]: width }));
+  };
+  const columnDefinitions = createMemo(() =>
+    getNodeGridColumns(props.metadataFields, getColumnWidth),
+  );
   const rowByNodeId = createMemo(() => new Map(props.rows.map((row) => [row.node.id, row])));
   const visibleRows = createMemo(() => {
     const collapsed = collapsedNodeIds();
@@ -480,6 +526,11 @@ function NodesGrid(props: {
   createEffect(() => {
     const selectedNodeId = props.selectedNodeId;
     if (!selectedNodeId) {
+      lastAutoScrolledNodeId = null;
+      return;
+    }
+
+    if (selectedNodeId === lastAutoScrolledNodeId) {
       return;
     }
 
@@ -487,6 +538,7 @@ function NodesGrid(props: {
       return;
     }
 
+    lastAutoScrolledNodeId = selectedNodeId;
     const scrollFrame = window.requestAnimationFrame(() => {
       rowElements
         .get(selectedNodeId)
@@ -533,18 +585,50 @@ function NodesGrid(props: {
         when={visibleRows().length > 0}
         fallback={<GridEmpty>No visible nodes.</GridEmpty>}
       >
-        <Box class="spatial-map-grid-table-x" display="grid" gridTemplateRows="auto minmax(0, 1fr)" h="100%" style={getNodeGridStyle(props.metadataFields)}>
+        <Box class="spatial-map-grid-table-x" display="grid" gridTemplateRows="auto minmax(0, 1fr)" h="100%" style={getNodeGridStyle(columnDefinitions())}>
           <table class="spatial-map-grid-table spatial-map-grid-table--nodes" role="treegrid">
-            <GridColGroup mode="nodes" metadataFields={props.metadataFields} />
+            <GridColGroup mode="nodes" columns={columnDefinitions()} />
             <thead>
               <tr>
-                <th scope="col">Name</th>
-                <th scope="col">Type</th>
-                <th scope="col">Status</th>
+                <ResizableHeader
+                  label="Name"
+                  columnKey="name"
+                  width={getColumnWidth("name", DEFAULT_NODE_COLUMN_WIDTHS.name)}
+                  minWidth={MIN_NODE_COLUMN_WIDTHS.name}
+                  onResize={setColumnWidth}
+                />
+                <ResizableHeader
+                  label="Type"
+                  columnKey="type"
+                  width={getColumnWidth("type", DEFAULT_NODE_COLUMN_WIDTHS.type)}
+                  minWidth={MIN_NODE_COLUMN_WIDTHS.type}
+                  onResize={setColumnWidth}
+                />
+                <ResizableHeader
+                  label="Status"
+                  columnKey="status"
+                  width={getColumnWidth("status", DEFAULT_NODE_COLUMN_WIDTHS.status)}
+                  minWidth={MIN_NODE_COLUMN_WIDTHS.status}
+                  onResize={setColumnWidth}
+                />
                 <For each={props.metadataFields}>
-                  {(field) => <th scope="col">{field.label}</th>}
+                  {(field) => (
+                    <ResizableHeader
+                      label={field.label}
+                      columnKey={`metadata:${field.key}`}
+                      width={getColumnWidth(`metadata:${field.key}`, DEFAULT_NODE_COLUMN_WIDTHS.metadata)}
+                      minWidth={MIN_NODE_COLUMN_WIDTHS.metadata}
+                      onResize={setColumnWidth}
+                    />
+                  )}
                 </For>
-                <th scope="col">Image</th>
+                <ResizableHeader
+                  label="Image"
+                  columnKey="image"
+                  width={getColumnWidth("image", DEFAULT_NODE_COLUMN_WIDTHS.image)}
+                  minWidth={MIN_NODE_COLUMN_WIDTHS.image}
+                  onResize={setColumnWidth}
+                />
                 <th scope="col">Actions</th>
               </tr>
             </thead>
@@ -555,7 +639,7 @@ function NodesGrid(props: {
               role="treegrid"
               tabIndex={0}
             >
-              <GridColGroup mode="nodes" metadataFields={props.metadataFields} />
+              <GridColGroup mode="nodes" columns={columnDefinitions()} />
               <tbody>
                 <For each={visibleRows()}>
                   {(row) => (
@@ -570,26 +654,47 @@ function NodesGrid(props: {
                       aria-selected={props.selectedNodeId === row.node.id}
                       tabIndex={props.selectedNodeId === row.node.id ? 0 : -1}
                       onClick={() => props.onSelectNode(row.node.id)}
+                      onDblClick={(event) => {
+                        if (isTextEntryTarget(event.target)) return;
+                        event.preventDefault();
+                        spatialMap.isolateNode(row.node.id);
+                      }}
                       onKeyDown={handleTreeGridKeyDown}
                     >
                       <td>
                         <NodeNameCell
                           row={row}
                           node={row.node}
+                          project={props.project}
                           expanded={isExpanded(row)}
                           onToggleExpanded={() => toggleRowExpanded(row)}
                           onTreeKeyDown={handleTreeGridKeyDown}
-                          searchQuery={props.searchQuery}
+                          onProjectUpdated={props.onProjectUpdated}
                         />
                       </td>
                       <td>
-                        <Badge variant="spatial" size="sm">{row.node.type}</Badge>
+                        <NodeTypeCell
+                          project={props.project}
+                          node={row.node}
+                          onProjectUpdated={props.onProjectUpdated}
+                        />
                       </td>
                       <td>
-                        <Badge variant="spatial" size="sm">{row.node.status}</Badge>
+                        <NodeStatusCell
+                          project={props.project}
+                          node={row.node}
+                          onProjectUpdated={props.onProjectUpdated}
+                        />
                       </td>
                       <For each={props.metadataFields}>
-                        {(field) => <MetadataValueCell node={row.node} field={field} />}
+                        {(field) => (
+                          <MetadataValueCell
+                            project={props.project}
+                            node={row.node}
+                            field={field}
+                            onProjectUpdated={props.onProjectUpdated}
+                          />
+                        )}
                       </For>
                       <td>
                         <ImagePreviewCell node={row.node} />
@@ -692,28 +797,14 @@ function LinksGrid(props: {
 
 function GridColGroup(props: {
   mode: SpatialMapGridMode;
-  metadataFields?: ProjectNodeMetadataField[];
+  columns?: Array<{ key: string; width: number }>;
 }) {
-  const nodeColumnWidths = () => getNodeGridColumnWidths(props.metadataFields ?? []);
-
   return (
     <colgroup>
       <Show when={props.mode === "nodes"}>
-        <col style={{ width: nodeColumnWidths()[0] }} />
-        <col style={{ width: nodeColumnWidths()[1] }} />
-        <For each={props.metadataFields ?? []}>
-          {(_, index) => <col style={{ width: nodeColumnWidths()[2 + index()] }} />}
+        <For each={props.columns ?? []}>
+          {(column) => <col style={{ width: `${column.width}px` }} />}
         </For>
-        <col
-          style={{
-            width: nodeColumnWidths()[nodeColumnWidths().length - 2],
-          }}
-        />
-        <col
-          style={{
-            width: nodeColumnWidths()[nodeColumnWidths().length - 1],
-          }}
-        />
       </Show>
       <Show when={props.mode === "links"}>
         <col style={{ width: "36%" }} />
@@ -722,6 +813,72 @@ function GridColGroup(props: {
         <col style={{ width: "10%" }} />
       </Show>
     </colgroup>
+  );
+}
+
+function ResizableHeader(props: {
+  label: string;
+  columnKey: string;
+  width: number;
+  minWidth: number;
+  onResize: (columnKey: string, width: number) => void;
+}) {
+  let startX = 0;
+  let startWidth = 0;
+  const [resizing, setResizing] = createSignal(false);
+  const handlePointerDown = (event: PointerEvent) => {
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLElement)) return;
+    startX = event.clientX;
+    startWidth = props.width;
+    setResizing(true);
+    target.setPointerCapture(event.pointerId);
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  const handlePointerMove = (event: PointerEvent) => {
+    if (!resizing()) return;
+    props.onResize(
+      props.columnKey,
+      Math.max(props.minWidth, Math.round(startWidth + event.clientX - startX)),
+    );
+  };
+  const finishResize = (event: PointerEvent) => {
+    if (!resizing()) return;
+    const target = event.currentTarget;
+    if (target instanceof HTMLElement) {
+      target.releasePointerCapture(event.pointerId);
+    }
+    setResizing(false);
+  };
+
+  return (
+    <th scope="col">
+      <Box display="flex" alignItems="center" gap="8px" minW="0">
+        <Box as="span" minW="0" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+          {props.label}
+        </Box>
+        <GridButton
+          type="button"
+          flex="0 0 8px"
+          w="8px"
+          alignSelf="stretch"
+          minH="18px"
+          ml="auto"
+          p="0"
+          border="0"
+          borderRadius="2px"
+          background={resizing() ? "rgba(23, 62, 39, 0.42)" : "rgba(44, 52, 46, 0.16)"}
+          cursor="col-resize"
+          aria-label={`Resize ${props.label} column`}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={finishResize}
+          onPointerCancel={finishResize}
+          onClick={(event) => event.stopPropagation()}
+        />
+      </Box>
+    </th>
   );
 }
 
@@ -917,14 +1074,48 @@ function NodeCell(props: { node: MapNode }) {
 function NodeNameCell(props: {
   row: NodeGridRow;
   node: MapNode;
+  project: ProjectRecord;
   expanded: boolean;
   onToggleExpanded: () => void;
   onTreeKeyDown: (event: KeyboardEvent) => void;
-  searchQuery?: string;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
   const spatialMap = useSpatialMap();
+  const submitSaveTitle = useAction(updateProjectNodeTitle);
+  const [pending, setPending] = createSignal(false);
   const context = createMemo(() => getNodeContext(props.node));
   const hasContext = createMemo(() => context().length > 0);
+  const submitTitle = async (value: string) => {
+    const title = value.trim();
+    if (!title || title === props.node.label || pending()) return;
+
+    setPending(true);
+    const previousProject = props.project;
+    const clientMutationId = createClientMutationId();
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, props.node.id, (projectNode) => ({
+        ...projectNode,
+        label: title,
+      })),
+      { clientMutationId, phase: "optimistic" },
+    );
+    try {
+      const formData = createNodeFormData(props.project.id, props.node.id, {
+        title,
+      });
+      const result = await submitSaveTitle(appendClientMutationId(formData, clientMutationId));
+      props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
+      toaster.success({ title: "Node renamed", description: `${title} is now shown in the grid.` });
+    } catch (error) {
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      toaster.error({
+        title: "Rename failed",
+        description: error instanceof Error ? error.message : "The node title could not be updated.",
+      });
+    } finally {
+      setPending(false);
+    }
+  };
 
   return (
     <Box
@@ -1000,10 +1191,15 @@ function NodeNameCell(props: {
         lineHeight="1.24"
         fontWeight={props.row.hasChildren ? "720" : "640"}
         overflowWrap="anywhere"
+        onClick={(event) => event.stopPropagation()}
       >
-        <HighlightedText
-          text={props.node.label}
-          query={props.searchQuery ?? ""}
+        <EditInPlace
+          value={props.node.label}
+          disabled={pending()}
+          aria-label={`Edit name for ${props.node.label}`}
+          onConfirm={(value) => {
+            void submitTitle(value);
+          }}
         />
         <Show when={hasContext()}>
           <GridButton
@@ -1035,50 +1231,294 @@ function NodeNameCell(props: {
   );
 }
 
-function HighlightedText(props: { text: string; query: string }) {
-  const segments = createMemo(() =>
-    getHighlightedSegments(props.text, props.query),
+function NodeTypeCell(props: {
+  project: ProjectRecord;
+  node: MapNode;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
+}) {
+  const submitSaveType = useAction(updateProjectNodeType);
+  const [pending, setPending] = createSignal(false);
+  const typeColor = createMemo(() =>
+    props.project.nodeTypeSchema.find((type) => type.name === props.node.type)?.color ?? "#dbdbdb",
   );
+  const submitType = async (type: string) => {
+    if (!type || type === props.node.type || pending()) return;
+
+    await submitNodePatch({
+      project: props.project,
+      node: props.node,
+      clientUpdate: (projectNode) => ({ ...projectNode, type }),
+      submit: submitSaveType,
+      fields: { type },
+      successTitle: "Type updated",
+      successDescription: `${props.node.label} is now a ${type} node.`,
+      errorTitle: "Type update failed",
+      onProjectUpdated: props.onProjectUpdated,
+      setPending,
+    });
+  };
 
   return (
-    <Box as="span" display="inline">
-      <For each={segments()}>
-        {(segment) => (
-          <Show when={segment.match} fallback={segment.text}>
-            <mark>{segment.text}</mark>
-          </Show>
-        )}
-      </For>
+    <Box onClick={(event) => event.stopPropagation()}>
+      <GridSelect
+        value={props.node.type}
+        ariaLabel={`Edit type for ${props.node.label}`}
+        pending={pending()}
+        options={props.project.nodeTypeSchema.map((type) => ({ value: type.name, label: type.name }))}
+        leading={
+          <Box as="span" w="9px" h="9px" borderRadius="999px" background={typeColor()} border="1px solid rgba(34, 41, 36, 0.24)" aria-hidden="true" />
+        }
+        onChange={submitType}
+      />
+    </Box>
+  );
+}
+
+function NodeStatusCell(props: {
+  project: ProjectRecord;
+  node: MapNode;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
+}) {
+  const submitSaveStatus = useAction(updateProjectNodeStatus);
+  const [pending, setPending] = createSignal(false);
+  const submitStatus = async (status: string) => {
+    if (!status || status === props.node.status || pending()) return;
+
+    await submitNodePatch({
+      project: props.project,
+      node: props.node,
+      clientUpdate: (projectNode) => ({
+        ...projectNode,
+        status: status as MapNodeStatus,
+      }),
+      submit: submitSaveStatus,
+      fields: { status },
+      successTitle: "Status updated",
+      successDescription: `${props.node.label} is now ${getMapNodeStatusLabel(status as MapNodeStatus)}.`,
+      errorTitle: "Status update failed",
+      onProjectUpdated: props.onProjectUpdated,
+      setPending,
+    });
+  };
+
+  return (
+    <Box onClick={(event) => event.stopPropagation()}>
+      <GridSelect
+        value={props.node.status}
+        ariaLabel={`Edit status for ${props.node.label}`}
+        pending={pending()}
+        options={["planned", "working", "needs-review", "implemented", "blocked", "deprecated"].map((status) => ({
+          value: status,
+          label: getMapNodeStatusLabel(status as MapNodeStatus),
+        }))}
+        leading={
+          <Box as="span" display="inline-flex" alignItems="center" justifyContent="center" w="18px" h="18px" border="1px solid rgba(34, 41, 36, 0.2)" borderRadius="999px" background="rgba(252, 253, 252, 0.72)" color="var(--spatial-map-accent-strong)" fontSize="10px" fontWeight="800" lineHeight="1" aria-hidden="true">
+            {getMapNodeStatusGlyph(props.node.status)}
+          </Box>
+        }
+        onChange={submitStatus}
+      />
     </Box>
   );
 }
 
 function MetadataValueCell(props: {
+  project: ProjectRecord;
   node: MapNode;
   field: ProjectNodeMetadataField;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
+  const submitSaveMetadata = useAction(updateProjectNodeMetadata);
+  const [pending, setPending] = createSignal(false);
   const value = createMemo(() => props.node.metadata[props.field.key]?.trim() ?? "");
+  const submitMetadata = async (nextValue: string) => {
+    const metadataValue = nextValue.trim();
+    if (metadataValue === value() || pending()) return;
+
+    const metadata = {
+      ...props.node.metadata,
+      [props.field.key]: metadataValue,
+    };
+    await submitNodePatch({
+      project: props.project,
+      node: props.node,
+      clientUpdate: (projectNode) => ({ ...projectNode, metadata }),
+      submit: submitSaveMetadata,
+      fields: Object.fromEntries(
+        props.project.nodeMetadataSchema.map((field) => [
+          `metadata.${field.key}`,
+          metadata[field.key] ?? "",
+        ]),
+      ),
+      successTitle: "Metadata updated",
+      successDescription: `${props.field.label} was updated for ${props.node.label}.`,
+      errorTitle: "Metadata update failed",
+      onProjectUpdated: props.onProjectUpdated,
+      setPending,
+    });
+  };
 
   return (
-    <Show
-      when={value().length > 0}
-      fallback={<td><Box as="span" color="var(--spatial-map-copy-dim)" fontSize="11px">None</Box></td>}
-    >
-      <td>
-        <Badge
-          variant="spatial"
-          size="sm"
-          maxW="100%"
-          minW="0"
-          overflow="hidden"
-        >
-          <Box as="span" minW="0" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
-            {value()}
-          </Box>
-        </Badge>
-      </td>
-    </Show>
+    <td onClick={(event) => event.stopPropagation()}>
+      <GridTextInput
+        value={value()}
+        ariaLabel={`Edit ${props.field.label} for ${props.node.label}`}
+        placeholder="None"
+        pending={pending()}
+        onCommit={submitMetadata}
+      />
+    </td>
   );
+}
+
+function GridTextInput(props: {
+  value: string;
+  ariaLabel: string;
+  placeholder?: string;
+  pending: boolean;
+  onCommit: (value: string) => void | Promise<void>;
+}) {
+  let inputRef: HTMLInputElement | undefined;
+  const [draft, setDraft] = createSignal(props.value);
+
+  createEffect(() => {
+    if (document.activeElement !== inputRef) {
+      setDraft(props.value);
+    }
+  });
+
+  const commit = () => {
+    void props.onCommit(draft());
+  };
+
+  return (
+    <Input
+      ref={inputRef}
+      type="text"
+      variant="spatial"
+      size="compact"
+      value={draft()}
+      placeholder={props.placeholder}
+      disabled={props.pending}
+      aria-label={props.ariaLabel}
+      title={props.value || props.placeholder}
+      minW="0"
+      w="100%"
+      h="26px"
+      px="6px"
+      fontSize="12px"
+      fontWeight="inherit"
+      overflow="hidden"
+      textOverflow="ellipsis"
+      onInput={(event) => setDraft(event.currentTarget.value)}
+      onBlur={commit}
+      onKeyDown={(event) => {
+        event.stopPropagation();
+        if (event.key === "Enter") {
+          event.preventDefault();
+          commit();
+          event.currentTarget.blur();
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          setDraft(props.value);
+          event.currentTarget.blur();
+        }
+      }}
+    />
+  );
+}
+
+function GridSelect(props: {
+  value: string;
+  ariaLabel: string;
+  pending: boolean;
+  options: Array<{ value: string; label: string }>;
+  leading?: JSX.Element;
+  onChange: (value: string) => void | Promise<void>;
+}) {
+  return (
+    <Box position="relative" w="100%" minW="0">
+      <Show when={props.leading}>
+        <Box position="absolute" left="8px" top="50%" display="inline-flex" alignItems="center" justifyContent="center" transform="translateY(-50%)" pointerEvents="none" zIndex="1">
+          {props.leading}
+        </Box>
+      </Show>
+      <GridSelectElement
+        value={props.value}
+        disabled={props.pending}
+        aria-label={props.ariaLabel}
+        w="100%"
+        h="30px"
+        pl={props.leading ? "34px" : "10px"}
+        pr="30px"
+        border="1px solid rgba(44, 52, 46, 0.22)"
+        borderRadius="6px"
+        background="rgba(252, 253, 252, 0.62)"
+        color="var(--spatial-map-copy)"
+        fontSize="13px"
+        fontWeight="660"
+        lineHeight="1"
+        cursor="pointer"
+        appearance="none"
+        boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.74)"
+        _hover={{ borderColor: "rgba(23, 62, 39, 0.34)", background: "rgba(250, 252, 249, 0.88)" }}
+        _focusVisible={{ outline: "2px solid rgba(23, 62, 39, 0.24)", outlineOffset: "1px", borderColor: "rgba(23, 62, 39, 0.44)" }}
+        onChange={(event) => {
+          void props.onChange(event.currentTarget.value);
+        }}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <For each={props.options}>
+          {(option) => <option value={option.value}>{option.label}</option>}
+        </For>
+      </GridSelectElement>
+      <Box position="absolute" right="10px" top="50%" w="8px" h="8px" borderRight="1.5px solid rgba(34, 41, 36, 0.74)" borderBottom="1.5px solid rgba(34, 41, 36, 0.74)" transform="translateY(-65%) rotate(45deg)" pointerEvents="none" aria-hidden="true" />
+    </Box>
+  );
+}
+
+async function submitNodePatch(input: {
+  project: ProjectRecord;
+  node: MapNode;
+  clientUpdate: (node: MapNode) => MapNode;
+  submit: (formData: FormData) => Promise<ProjectRecord>;
+  fields: Record<string, string>;
+  successTitle: string;
+  successDescription: string;
+  errorTitle: string;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
+  setPending: (value: boolean) => void;
+}) {
+  input.setPending(true);
+  const previousProject = input.project;
+  const clientMutationId = createClientMutationId();
+  input.onProjectUpdated?.(
+    updateProjectNode(input.project, input.node.id, input.clientUpdate),
+    { clientMutationId, phase: "optimistic" },
+  );
+  try {
+    const result = await input.submit(
+      appendClientMutationId(
+        createNodeFormData(input.project.id, input.node.id, input.fields),
+        clientMutationId,
+      ),
+    );
+    input.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
+    toaster.success({
+      title: input.successTitle,
+      description: input.successDescription,
+    });
+  } catch (error) {
+    input.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+    toaster.error({
+      title: input.errorTitle,
+      description: error instanceof Error ? error.message : "The grid value could not be updated.",
+    });
+  } finally {
+    input.setPending(false);
+  }
 }
 
 function ImagePreviewCell(props: { node: MapNode }) {
@@ -1151,35 +1591,6 @@ function getNodesSummary(filteredCount: number, totalCount: number, query: strin
   }
 
   return `${filteredCount} of ${totalCount} visible nodes`;
-}
-
-function getHighlightedSegments(text: string, query: string) {
-  const normalizedQuery = normalizeSearchQuery(query);
-  if (!normalizedQuery) {
-    return [{ text, match: false }];
-  }
-
-  const normalizedText = text.toLocaleLowerCase();
-  const segments: Array<{ text: string; match: boolean }> = [];
-  let cursor = 0;
-  let matchIndex = normalizedText.indexOf(normalizedQuery);
-
-  while (matchIndex !== -1) {
-    if (matchIndex > cursor) {
-      segments.push({ text: text.slice(cursor, matchIndex), match: false });
-    }
-
-    const matchEnd = matchIndex + normalizedQuery.length;
-    segments.push({ text: text.slice(matchIndex, matchEnd), match: true });
-    cursor = matchEnd;
-    matchIndex = normalizedText.indexOf(normalizedQuery, cursor);
-  }
-
-  if (cursor < text.length) {
-    segments.push({ text: text.slice(cursor), match: false });
-  }
-
-  return segments.length > 0 ? segments : [{ text, match: false }];
 }
 
 function GridEmpty(props: { children: string }) {
@@ -1286,9 +1697,8 @@ function isTextEntryTarget(target: EventTarget | null) {
   );
 }
 
-function getNodeGridStyle(metadataFields: ProjectNodeMetadataField[]) {
-  const columns = getNodeGridColumnWidths(metadataFields);
-  const tableWidth = `${columns.reduce((sum, column) => sum + Number.parseInt(column, 10), 0)}px`;
+function getNodeGridStyle(columns: Array<{ width: number }>) {
+  const tableWidth = `${columns.reduce((sum, column) => sum + column.width, 0)}px`;
 
   return {
     "min-width": tableWidth,
@@ -1296,13 +1706,44 @@ function getNodeGridStyle(metadataFields: ProjectNodeMetadataField[]) {
   };
 }
 
-function getNodeGridColumnWidths(metadataFields: ProjectNodeMetadataField[]) {
+function getNodeGridColumns(
+  metadataFields: ProjectNodeMetadataField[],
+  getColumnWidth: (columnKey: string, fallback: number) => number,
+) {
   return [
-    "270px",
-    "104px",
-    "116px",
-    ...metadataFields.map(() => "220px"),
-    "160px",
-    "92px",
+    {
+      key: "name",
+      width: getColumnWidth("name", DEFAULT_NODE_COLUMN_WIDTHS.name),
+    },
+    {
+      key: "type",
+      width: getColumnWidth("type", DEFAULT_NODE_COLUMN_WIDTHS.type),
+    },
+    {
+      key: "status",
+      width: getColumnWidth("status", DEFAULT_NODE_COLUMN_WIDTHS.status),
+    },
+    ...metadataFields.map((field) => ({
+      key: `metadata:${field.key}`,
+      width: getColumnWidth(`metadata:${field.key}`, DEFAULT_NODE_COLUMN_WIDTHS.metadata),
+    })),
+    {
+      key: "image",
+      width: getColumnWidth("image", DEFAULT_NODE_COLUMN_WIDTHS.image),
+    },
+    {
+      key: "actions",
+      width: getColumnWidth("actions", DEFAULT_NODE_COLUMN_WIDTHS.actions),
+    },
   ];
+}
+
+function createNodeFormData(projectId: string, nodeId: string, fields: Record<string, string>) {
+  const formData = new FormData();
+  formData.set("projectId", projectId);
+  formData.set("nodeId", nodeId);
+  for (const [key, value] of Object.entries(fields)) {
+    formData.set(key, value);
+  }
+  return formData;
 }

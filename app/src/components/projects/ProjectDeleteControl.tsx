@@ -45,18 +45,19 @@ export function ProjectDeleteControl(props: ProjectDeleteControlProps) {
         type="button"
         variant="outline"
         size="xs"
-        h="8"
-        minW="8"
+        h="30px"
+        minW="30px"
         px="0"
-        borderRadius="0"
-        borderColor="#7f4036"
+        borderRadius="4px"
+        borderColor="rgba(127, 64, 54, 0.72)"
         color="#6e1f14"
-        bg="#e6dbd7"
-        _hover={{ bg: "#eadfd9" }}
+        bg="rgba(230, 219, 215, 0.86)"
+        transition="background-color 140ms ease, border-color 140ms ease"
+        _hover={{ bg: "rgba(234, 223, 217, 0.96)", borderColor: "#7f4036" }}
         aria-label={`Delete ${props.projectName}`}
         onClick={() => setOpen(true)}
-        >
-          <Box as={Trash2} boxSize="4" />
+      >
+        <Box as={Trash2} boxSize="4" />
       </Button>
       <SimpleDialog
         open={open()}

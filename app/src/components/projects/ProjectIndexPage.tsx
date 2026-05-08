@@ -1,40 +1,20 @@
-import { A, useAction } from "@solidjs/router";
-import { For, createSignal } from "solid-js";
-import { css } from "styled-system/css";
-import { Box, Grid, HStack, Stack, VStack } from "styled-system/jsx";
-import { Button } from "~/components/ui/button";
-import * as Field from "~/components/ui/field";
+import { useAction } from "@solidjs/router";
+import { FolderOpen } from "lucide-solid";
+import { For, Show, createSignal } from "solid-js";
+import { Box, HStack, Stack, VStack } from "styled-system/jsx";
 import { Heading } from "~/components/ui/heading";
-import { Input } from "~/components/ui/input";
 import { Text } from "~/components/ui/text";
 import { createProject } from "~/lib/projects/data";
 import type { ProjectSummary } from "~/lib/projects/types";
-import { ProjectDeleteControl } from "./ProjectDeleteControl";
-import { ProjectExportControl } from "./ProjectExportControl";
-import { ProjectImportControl } from "./ProjectImportControl";
+import { ProjectIndexRail } from "./ProjectIndexRail";
+import { ProjectIndexRow } from "./ProjectIndexRow";
 
 interface ProjectIndexPageProps {
   projects: ProjectSummary[];
 }
 
-const dateFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
-
 const monoFont =
   '"IBM Plex Mono", "SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace';
-
-const projectLinkClass = css({
-  color: "inherit",
-  display: "block",
-  outline: "none",
-  textDecoration: "none",
-  _focusVisible: {
-    boxShadow: "0 0 0 2px token(colors.green.9)",
-  },
-});
 
 export function ProjectIndexPage(props: ProjectIndexPageProps) {
   const submitCreateProject = useAction(createProject);
@@ -44,240 +24,150 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
 
   return (
     <Box
+      position="relative"
+      boxSizing="border-box"
       minH="100dvh"
-      color="fg.default"
-      backgroundColor="olive.4"
-      backgroundImage="
+      w="100%"
+      overflow="hidden"
+      padding={{ base: "8px", md: "clamp(12px, 2vw, 24px)" }}
+      color="var(--spatial-map-copy)"
+      fontFamily={monoFont}
+      background="
         radial-gradient(circle at 15% 8%, rgba(48,164,108,0.16), transparent 28rem),
         radial-gradient(circle at 88% 20%, rgba(137,142,135,0.14), transparent 30rem),
         repeating-linear-gradient(0deg, rgba(31,36,33,0.045) 0 1px, transparent 1px 40px),
         repeating-linear-gradient(90deg, rgba(31,36,33,0.035) 0 1px, transparent 1px 40px),
         linear-gradient(180deg, rgba(248,250,248,0.96), rgba(223,226,223,1))
       "
+      style={{
+        "--spatial-map-panel": "rgba(252, 253, 252, 0.94)",
+        "--spatial-map-panel-strong": "rgba(248, 250, 248, 0.92)",
+        "--spatial-map-panel-border": "rgba(95, 101, 94, 0.34)",
+        "--spatial-map-panel-border-strong": "rgba(96, 101, 95, 0.72)",
+        "--spatial-map-copy": "#171c19",
+        "--spatial-map-copy-muted": "#323b35",
+        "--spatial-map-copy-dim": "#475249",
+        "--spatial-map-accent": "#2d6f48",
+        "--spatial-map-accent-strong": "#173e27",
+      }}
     >
-      <Box maxW="7xl" mx="auto" px={{ base: "3", md: "5" }} py={{ base: "3", md: "6" }}>
-        <Box
-          borderWidth="1px"
-          borderColor="olive.8"
-          bg="rgba(252,253,252,0.94)"
-          borderRadius="l3"
-          boxShadow="0 28px 70px rgba(29,33,28,0.2), 0 0 0 1px rgba(255,255,255,0.64), inset 0 1px 0 rgba(255,255,255,0.88)"
-          overflow="hidden"
-        >
-          <Stack gap="0">
-            <Box
-              px={{ base: "4", md: "6" }}
-              py={{ base: "4", md: "5" }}
-              borderBottomWidth="1px"
-              borderColor="olive.7"
-              bg="rgba(248,250,248,0.9)"
-            >
-              <HStack justifyContent="space-between" alignItems="start" gap="4" flexWrap="wrap">
-                <Box maxW="2xl">
-                  <Heading as="h1" textStyle="3xl" lineHeight="1.05">
-                    Projects
-                  </Heading>
-                  <Text mt="1" textStyle="sm" color="fg.muted">
-                    Create a project, import one, or open existing work.
-                  </Text>
-                </Box>
-                <HStack
-                  gap="3"
-                  borderWidth="1px"
-                  borderColor="olive.7"
-                  borderRadius="l2"
-                  px="4"
-                  py="2"
-                  bg="olive.1"
-                  boxShadow="inset 0 1px 0 rgba(255,255,255,0.8)"
-                  alignSelf={{ base: "stretch", md: "start" }}
-                  flex={{ base: "1 1 100%", md: "0 0 auto" }}
-                  flexWrap="wrap"
-                >
-                  <SummaryItem value={props.projects.length} label="projects" />
-                  <SummaryItem value={totalNodes()} label="nodes" />
-                  <SummaryItem value={totalLinks()} label="links" />
-                </HStack>
+      <Box
+        position="relative"
+        zIndex="1"
+        display="grid"
+        gridTemplateColumns={{ base: "minmax(0, 1fr)", lg: "minmax(300px, 336px) minmax(0, 1fr)" }}
+        w="100%"
+        h={{ base: "auto", lg: "calc(100dvh - clamp(24px, 4vw, 48px))" }}
+        minH={{ base: "calc(100dvh - 16px)", lg: "0" }}
+        overflow="hidden"
+        border="1px solid var(--spatial-map-panel-border-strong)"
+        borderRadius="12px"
+        background="var(--spatial-map-panel)"
+        boxShadow="
+          0 28px 70px rgba(29, 33, 28, 0.2),
+          0 0 0 1px rgba(255, 255, 255, 0.64),
+          inset 0 1px 0 rgba(255, 255, 255, 0.88)
+        "
+      >
+        <ProjectIndexRail
+          creatingProject={creatingProject()}
+          onSubmit={(form) => {
+            if (creatingProject()) {
+              return;
+            }
+
+            setCreatingProject(true);
+            void submitCreateProject(new FormData(form)).catch(() => setCreatingProject(false));
+          }}
+        />
+        <Stack minW="0" minH="0" gap="8px" p={{ base: "8px", md: "10px" }} overflow="hidden" bg="rgba(229, 234, 226, 0.72)">
+          <Box
+            border="1px solid var(--spatial-map-panel-border)"
+            borderRadius="6px"
+            background="var(--spatial-map-panel-strong)"
+            px={{ base: "10px", md: "12px" }}
+            py="10px"
+          >
+            <HStack justifyContent="space-between" alignItems="center" gap="3" flexWrap="wrap">
+              <HStack gap="2" minW="0">
+                <Heading as="h1" fontSize={{ base: "18px", md: "20px" }} lineHeight="1.1" letterSpacing="0">
+                  Projects
+                </Heading>
               </HStack>
-            </Box>
+              <HStack gap="2" flexWrap="wrap" justifyContent="flex-end">
+                <SummaryItem value={props.projects.length} label="projects" />
+                <SummaryItem value={totalNodes()} label="nodes" />
+                <SummaryItem value={totalLinks()} label="links" />
+              </HStack>
+            </HStack>
+          </Box>
 
-            <Grid
-              gap="0"
-              gridTemplateColumns={{ base: "1fr", lg: "minmax(300px, 340px) minmax(0, 1fr)" }}
-              alignItems="start"
-              bg="olive.3"
+          <Box
+            minH="0"
+            overflow="hidden"
+            border="1px solid var(--spatial-map-panel-border-strong)"
+            borderRadius="6px"
+            bg="rgba(252, 253, 252, 0.88)"
+          >
+            <HStack
+              justifyContent="space-between"
+              alignItems="center"
+              gap="3"
+              px={{ base: "12px", md: "14px" }}
+              py="10px"
+              borderBottom="1px solid var(--spatial-map-panel-border)"
+              bg="rgba(248, 250, 248, 0.9)"
+              flexWrap="wrap"
             >
-              <Box
-                borderRightWidth={{ base: "0", lg: "1px" }}
-                borderBottomWidth={{ base: "1px", lg: "0" }}
-                borderColor="olive.7"
-                bg="olive.3"
+              <HStack gap="2">
+                <Box as={FolderOpen} boxSize="16px" color="var(--spatial-map-accent-strong)" />
+                <Heading as="h2" fontSize="14px" lineHeight="1.2" letterSpacing="0">
+                  Existing projects
+                </Heading>
+              </HStack>
+              <Text fontSize="12px" color="var(--spatial-map-copy-dim)" fontWeight="700">
+                {props.projects.length} total
+              </Text>
+            </HStack>
+
+            <VStack alignItems="stretch" gap="0" maxH={{ base: "none", lg: "100%" }} overflowY={{ base: "visible", lg: "auto" }}>
+              <Show
+                when={props.projects.length > 0}
+                fallback={
+                  <Box p="24px" color="var(--spatial-map-copy-muted)" fontSize="13px" lineHeight="1.5">
+                    No projects yet. Create one from the rail to start a grid.
+                  </Box>
+                }
               >
-                <Box px="4" py="4" borderBottomWidth="1px" borderColor="olive.7" bg="olive.2">
-                  <Heading as="h2" textStyle="md" lineHeight="1.2">
-                    New project
-                  </Heading>
-                  <Text mt="1" textStyle="sm" color="fg.muted">
-                    Start with an empty grid.
-                  </Text>
-                </Box>
-                <Box px="4" py="4" borderBottomWidth="1px" borderColor="olive.7" bg="olive.1">
-                  <form
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      if (creatingProject()) {
-                        return;
-                      }
-
-                      setCreatingProject(true);
-                      void submitCreateProject(new FormData(event.currentTarget))
-                        .catch(() => setCreatingProject(false));
-                    }}
-                  >
-                    <VStack alignItems="stretch" gap="3">
-                      <Field.Root>
-                        <Field.Label fontSize="sm">
-                          Name
-                        </Field.Label>
-                        <Input
-                          name="name"
-                          placeholder="Untitled Project"
-                          borderRadius="l1"
-                          variant="surface"
-                          h="10"
-                          px="3"
-                        />
-                        <Field.HelperText color="fg.muted">
-                          Leave blank for an untitled grid.
-                        </Field.HelperText>
-                      </Field.Root>
-                      <Button
-                        type="submit"
-                        size="sm"
-                        loading={creatingProject()}
-                        loadingText="Initializing"
-                        colorPalette="green"
-                        borderRadius="l1"
-                        h="10"
-                      >
-                        Create
-                      </Button>
-                    </VStack>
-                  </form>
-                </Box>
-                <Box px="4" py="4" bg="olive.2">
-                  <ProjectImportControl />
-                </Box>
-              </Box>
-
-              <VStack alignItems="stretch" gap="0" bg="olive.1">
-                <Box
-                  px={{ base: "4", md: "5" }}
-                  py="4"
-                  borderBottomWidth="1px"
-                  borderColor="olive.7"
-                  bg="olive.1"
-                >
-                  <HStack justifyContent="space-between" alignItems="center" gap="4" flexWrap="wrap">
-                    <Heading as="h2" textStyle="md">
-                      Existing projects
-                    </Heading>
-                    <Text textStyle="sm" color="fg.muted">
-                      {props.projects.length} total
-                    </Text>
-                  </HStack>
-                </Box>
-
-                <VStack alignItems="stretch" gap="0" bg="olive.1">
-                  <For each={props.projects}>
-                    {(project) => (
-                      <Box
-                        borderBottomWidth="1px"
-                        borderColor="olive.6"
-                        bg="olive.1"
-                        transition="background-color 160ms ease, box-shadow 160ms ease"
-                        _hover={{ bg: "olive.2", boxShadow: "inset 3px 0 0 token(colors.green.9)" }}
-                      >
-                        <Grid
-                          gridTemplateColumns={{ base: "1fr", md: "minmax(0, 1fr) minmax(220px, 316px) auto" }}
-                          gap={{ base: "3", md: "4" }}
-                          alignItems="center"
-                          px={{ base: "4", md: "5" }}
-                          py="4"
-                        >
-                          <Box minW="0">
-                            <A href={`/projects/${project.id}`} class={projectLinkClass}>
-                              <Heading as="h3" textStyle="md" lineHeight="1.25">
-                                {project.name}
-                              </Heading>
-                              <Text mt="1" textStyle="sm" color="fg.muted" lineClamp="2" maxW="68ch">
-                                {project.description}
-                              </Text>
-                              <Text mt="2" textStyle="xs" color="fg.subtle" fontFamily={monoFont}>
-                                {project.id}
-                              </Text>
-                            </A>
-                          </Box>
-
-                          <HStack gap="2" color="fg.muted" flexWrap="wrap" textStyle="sm">
-                            <ProjectStat value={project.nodeCount} label="nodes" />
-                            <ProjectStat value={project.linkCount} label="links" />
-                            <ProjectStat value={dateFormatter.format(new Date(project.updatedAt))} />
-                          </HStack>
-                          <HStack
-                            gap="2"
-                            justifyContent={{ base: "end", md: "start" }}
-                            gridColumn={{ base: "1", md: "auto" }}
-                          >
-                            <ProjectExportControl projectId={project.id} projectName={project.name} />
-                            <ProjectDeleteControl projectId={project.id} projectName={project.name} />
-                          </HStack>
-                        </Grid>
-                      </Box>
-                    )}
-                  </For>
-                </VStack>
-              </VStack>
-            </Grid>
-          </Stack>
-        </Box>
+                <For each={props.projects}>
+                  {(project) => (
+                    <ProjectIndexRow project={project} />
+                  )}
+                </For>
+              </Show>
+            </VStack>
+          </Box>
+        </Stack>
       </Box>
     </Box>
   );
 }
 
-function ProjectStat(props: { label?: string; value: number | string }) {
-  return (
-    <HStack
-      as="span"
-      gap="1"
-      borderWidth="1px"
-      borderColor="olive.6"
-      borderRadius="l1"
-      bg="olive.2"
-      px="2"
-      py="1"
-      whiteSpace="nowrap"
-    >
-      <Text as="span" color="fg.default" fontWeight="medium" fontVariantNumeric="tabular-nums">
-        {props.value}
-      </Text>
-      {props.label && (
-        <Text as="span" color="fg.muted">
-          {props.label}
-        </Text>
-      )}
-    </HStack>
-  );
-}
-
 function SummaryItem(props: { label: string; value: number }) {
   return (
-    <HStack gap="1" whiteSpace="nowrap">
-      <Text as="span" textStyle="md" fontWeight="semibold">
+    <HStack
+      gap="5px"
+      px="8px"
+      py="5px"
+      border="1px solid var(--spatial-map-panel-border)"
+      borderRadius="4px"
+      bg="rgba(252, 253, 252, 0.74)"
+      whiteSpace="nowrap"
+    >
+      <Text as="span" fontSize="13px" fontWeight="700" fontVariantNumeric="tabular-nums">
         {props.value}
       </Text>
-      <Text as="span" textStyle="sm" color="fg.muted">
+      <Text as="span" fontSize="12px" color="var(--spatial-map-copy-dim)">
         {props.label}
       </Text>
     </HStack>

@@ -38,26 +38,30 @@ export function ProjectImportControl() {
       <VStack alignItems="stretch" gap="3">
         <Field.Root>
           <Field.Label fontSize="sm">
-            Import project
+            Archive
           </Field.Label>
           <input
             type="file"
             name="archive"
             accept=".zip,application/zip"
             class={css({
-              bg: "olive.1",
-              borderColor: "olive.7",
+              bg: "rgba(252, 253, 252, 0.78)",
+              borderColor: "var(--spatial-map-panel-border)",
               borderWidth: "1px",
-              borderRadius: "l1",
-              color: "fg.default",
+              borderRadius: "4px",
+              color: "var(--spatial-map-copy)",
               fontFamily: monoFont,
               fontSize: "xs",
-              h: "10",
+              h: "36px",
               px: "3",
               py: "2",
+              _focusVisible: {
+                outline: "2px solid var(--spatial-map-accent)",
+                outlineOffset: "2px",
+              },
             })}
           />
-          <Field.HelperText color="fg.muted">
+          <Field.HelperText color="var(--spatial-map-copy-dim)" fontSize="11px">
             Choose a project ZIP file.
           </Field.HelperText>
         </Field.Root>
@@ -67,8 +71,9 @@ export function ProjectImportControl() {
           loading={pending()}
           loadingText="Importing"
           variant="outline"
-          borderRadius="l1"
-          h="10"
+          borderRadius="4px"
+          borderColor="var(--spatial-map-panel-border-strong)"
+          h="34px"
         >
           <Box as={Upload} boxSize="4" />
           <Text as="span">Import</Text>
