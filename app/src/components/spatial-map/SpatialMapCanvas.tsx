@@ -15,7 +15,7 @@ import type {
 } from "./spatial-map-canvas.types";
 import { SpatialMapProvider, useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapInspector } from "./SpatialMapInspector";
-import { SpatialMapImageProvider } from "./SpatialMapImages";
+import { SpatialMapImageProvider, useSpatialMapImages } from "./SpatialMapImages";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { SpatialMapGenerateImageControl } from "./SpatialMapGenerateImageControl";
 import { SpatialMapCommandMenu } from "./SpatialMapCommandMenu";
@@ -41,6 +41,7 @@ const SourceDecompositionRail = lazy(() =>
 );
 
 const StashCardButton = styled("button");
+const StashCardImage = styled("img");
 
 // Router A is not a Panda styled component, so backlink hover styling remains
 // as a local class instead of the removed global stylesheet.
@@ -453,32 +454,41 @@ function StashedNodeCard(props: {
       background={isSelected() ? "rgba(229, 239, 229, 0.82)" : "rgba(246, 248, 244, 0.78)"}
       boxShadow={isSelected() ? "inset 0 0 0 1px rgba(45, 111, 72, 0.22)" : "none"}
     >
-      <StashCardButton
-        type="button"
+      <Box
         display="grid"
-        gap="3px"
+        gridTemplateColumns={(props.node.images ?? []).length > 0 ? "minmax(0, 1fr) 54px" : "minmax(0, 1fr)"}
+        alignItems="start"
+        gap="8px"
         minW="0"
-        p="0"
-        border="0"
-        background="transparent"
-        color="inherit"
-        textAlign="left"
-        cursor="pointer"
-        onClick={selectStashedNode}
       >
-        <Box as="span" color="var(--spatial-map-copy)" fontSize="14px" fontWeight="700" lineHeight="1.16" overflowWrap="anywhere">
-          {props.node.label}
-        </Box>
-        <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="11px" fontWeight="700" letterSpacing="0.04em">
-          {props.node.type} / {props.node.status}
-        </Box>
-      </StashCardButton>
+        <StashCardButton
+          type="button"
+          display="grid"
+          gap="3px"
+          minW="0"
+          p="0"
+          border="0"
+          background="transparent"
+          color="inherit"
+          textAlign="left"
+          cursor="pointer"
+          onClick={selectStashedNode}
+        >
+          <Box as="span" color="var(--spatial-map-copy)" fontSize="14px" fontWeight="700" lineHeight="1.16" overflowWrap="anywhere">
+            {props.node.label}
+          </Box>
+          <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="11px" fontWeight="700" letterSpacing="0.04em">
+            {props.node.type} / {props.node.status}
+          </Box>
+        </StashCardButton>
+        <StashedNodeThumbnail node={props.node} />
+      </Box>
       <Box display="flex" alignItems="center" flexWrap="wrap" gap="5px">
         <Button
           size="xs"
           variant="surface"
           colorPalette="green"
-          onClick={() => controller.focusNode(props.node.id)}
+          onClick={() => controller.focusStashedNode(props.node.id)}
         >
           <LocateFixedIcon size={13} />
           Find
@@ -519,6 +529,70 @@ function StashedNodeCard(props: {
         />
       </Box>
     </Box>
+  );
+}
+
+function StashedNodeThumbnail(props: { node: MapNode }) {
+  const imageUi = useSpatialMapImages();
+  const images = () => props.node.images ?? [];
+  const firstImage = () => images()[0];
+
+  return (
+    <Show when={firstImage()}>
+      {(image) => (
+        <StashCardButton
+          type="button"
+          position="relative"
+          display="block"
+          w="54px"
+          h="42px"
+          p="0"
+          border="1px solid rgba(34, 41, 36, 0.22)"
+          borderRadius="5px"
+          background="rgba(214, 220, 212, 0.92)"
+          cursor="zoom-in"
+          overflow="hidden"
+          aria-label={`Open ${image().originalName}`}
+          title={image().originalName}
+          onClick={(event) => {
+            event.stopPropagation();
+            imageUi.openImage(image(), props.node, images());
+          }}
+        >
+          <StashCardImage
+            src={image().src}
+            alt={image().originalName}
+            loading="lazy"
+            display="block"
+            w="100%"
+            h="100%"
+            objectFit="cover"
+            pointerEvents="none"
+          />
+          <Show when={images().length > 1}>
+            <Box
+              as="span"
+              position="absolute"
+              right="3px"
+              bottom="3px"
+              minW="18px"
+              p="2px 4px"
+              border="1px solid rgba(34, 41, 36, 0.24)"
+              borderRadius="3px"
+              background="rgba(249, 250, 247, 0.94)"
+              color="var(--spatial-map-copy)"
+              fontSize="9px"
+              fontWeight="760"
+              lineHeight="1"
+              textAlign="center"
+              pointerEvents="none"
+            >
+              {images().length}
+            </Box>
+          </Show>
+        </StashCardButton>
+      )}
+    </Show>
   );
 }
 

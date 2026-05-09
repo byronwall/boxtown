@@ -404,6 +404,28 @@ export function useSpatialMapCanvasController(
     setCameraImmediate(getGentleNodeCamera(node));
   };
 
+  const focusStashedNode = (nodeId: string) => {
+    if (nodesById().has(nodeId)) {
+      focusNode(nodeId);
+      return;
+    }
+
+    if (!sourceNodesById().has(nodeId)) {
+      return;
+    }
+
+    setViewMode("canvas");
+    setSelectedNodeId(nodeId);
+    setInspectorOpen(true);
+    setHoveredNodeId(null);
+    setShowLinkedInIsolation(false);
+    setIsolatedNodeId(null);
+    setVisibleDepthLevel("max");
+    pendingTransitionAnchorId = nodeId;
+    pendingCameraFocusNodeIds = new Set([nodeId]);
+    manualCameraFocusNodeIds = null;
+  };
+
   const stashNode = (nodeId: string) => {
     if (!sourceNodesById().has(nodeId)) {
       return;
@@ -1109,6 +1131,7 @@ export function useSpatialMapCanvasController(
     clearContextPreviewRequest: () => setContextPreviewRequest(null),
     clearReparentingNode: () => setReparentingNodeId(null),
     focusNode,
+    focusStashedNode,
     openChildNodeDraft,
     openAddNodesFlow: () => {
       setContextNoteConversionOpen(false);

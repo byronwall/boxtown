@@ -129,6 +129,7 @@ export interface SpatialMapCanvasController {
   clearContextPreviewRequest: () => void;
   clearReparentingNode: () => void;
   focusNode: (nodeId: string) => void;
+  focusStashedNode: (nodeId: string) => void;
   isolateNode: (nodeId: string) => void;
   stashNode: (nodeId: string) => void;
   setInspectorOpen: (value: boolean | ((current: boolean) => boolean)) => void;
