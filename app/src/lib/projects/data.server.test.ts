@@ -172,6 +172,33 @@ describe("createProjectOnDisk", () => {
       process.chdir(originalCwd);
     }
   });
+
+  it("loads a project detail without parsing unrelated project records", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-targeted-read-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
+
+    try {
+      process.chdir(tempRoot);
+
+      const created = await createProjectOnDisk({ name: "Target Project" });
+      writeProjectFixture(dataDir, {
+        id: "corrupt-project",
+        name: "Corrupt Project",
+        createdAt: "2026-04-20T00:00:00.000Z",
+        updatedAt: "2026-04-20T00:00:00.000Z",
+        operationLog: {},
+      });
+
+      const persisted = await readProjectByIdFromDisk(created.id);
+
+      expect(persisted?.id).toBe(created.id);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
 });
 
 describe("deleteProjectOnDisk", () => {
@@ -931,6 +958,47 @@ describe("context node persistence", () => {
       expect(project.spatialMap.nodes).toHaveLength(1);
       expect(project.spatialMap.nodes[0]?.id).toBe("node-a");
       expect(project.spatialMap.links).toHaveLength(0);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("deletes a node with descendants when requested", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-node-delete-children-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    writeProjectFixture(dataDir, buildProjectFixture({
+      id: "delete-node-children-project",
+      spatialMap: {
+        nodes: [
+          buildNode({ id: "root", label: "Root", type: "page", depth: 0 }),
+          buildNode({ id: "child", label: "Child", type: "note", depth: 1 }),
+          buildNode({ id: "grandchild", label: "Grandchild", type: "note", depth: 2 }),
+          buildNode({ id: "sibling", label: "Sibling", type: "note", depth: 1 }),
+        ],
+        links: [
+          { source: "root", target: "child", parentChild: true },
+          { source: "child", target: "grandchild", parentChild: true },
+          { source: "root", target: "sibling", parentChild: true },
+          { source: "sibling", target: "child", parentChild: false, relationship: "related" },
+        ],
+      },
+    }));
+
+    try {
+      process.chdir(tempRoot);
+
+      const project = await deleteProjectNodeOnDisk({
+        projectId: "delete-node-children-project",
+        nodeId: "child",
+        includeChildren: true,
+      });
+
+      expect(project.spatialMap.nodes.map((node) => node.id)).toEqual(["root", "sibling"]);
+      expect(project.spatialMap.links).toEqual([
+        { source: "root", target: "sibling", parentChild: true },
+      ]);
     } finally {
       process.chdir(originalCwd);
     }

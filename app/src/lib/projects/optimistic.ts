@@ -43,6 +43,24 @@ export function createProjectNodeFormData(
   return formData;
 }
 
+export function createOptimisticNodeId(
+  label: string,
+  type: string,
+  existingIds: Set<string>,
+) {
+  const baseId = slugifyProjectName(`${type}-${label}`);
+  if (!existingIds.has(baseId)) {
+    return baseId;
+  }
+
+  let suffix = 2;
+  while (existingIds.has(`${baseId}-${suffix}`)) {
+    suffix += 1;
+  }
+
+  return `${baseId}-${suffix}`;
+}
+
 export function updateProjectNode(
   project: ProjectRecord,
   nodeId: string,
@@ -70,4 +88,13 @@ function getComparableProjectState(project: ProjectRecord) {
     nodeTypeSchema: project.nodeTypeSchema,
     spatialMap: project.spatialMap,
   };
+}
+
+function slugifyProjectName(name: string) {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return slug || "project";
 }

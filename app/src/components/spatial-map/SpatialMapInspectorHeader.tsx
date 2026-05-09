@@ -1,5 +1,6 @@
 import { Show, createMemo } from "solid-js";
 import type { JSX } from "solid-js";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-solid";
 import { Box, VStack } from "styled-system/jsx";
 import { IconButton } from "~/components/ui/icon-button";
 import { Text } from "~/components/ui/text";
@@ -107,28 +108,31 @@ export function InspectorToggle(props: {
       justifyContent="center"
       justifySelf={props.inToolbar ? undefined : "end"}
       alignSelf={props.inToolbar ? "stretch" : undefined}
-      w="28px"
-      minW="28px"
-      h="28px"
+      w="24px"
+      minW="24px"
+      h="24px"
       p="0"
-      border="1px solid var(--spatial-map-panel-border-strong)"
+      border="0"
       borderRadius="4px"
-      background="rgba(231, 235, 228, 0.98)"
-      color="var(--spatial-map-copy)"
+      background="transparent"
+      color="var(--spatial-map-copy-dim)"
       fontFamily="inherit"
-      fontSize="15px"
+      fontSize="13px"
       lineHeight="1"
       fontWeight="700"
       cursor="pointer"
       appearance="none"
       flexShrink="0"
       transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease"
-      _hover={{ background: "rgba(221, 229, 220, 0.98)" }}
+      _hover={{
+        background: "rgba(229, 239, 229, 0.72)",
+        color: "var(--spatial-map-accent-strong)",
+      }}
       _active={{ transform: "scale(0.98)" }}
       _focusVisible={{
         outline: "none",
-        borderColor: "rgba(23, 62, 39, 0.56)",
-        boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.34)",
+        background: "rgba(229, 239, 229, 0.72)",
+        boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.28)",
       }}
       onClick={props.onClick ?? (() => spatialMap.setInspectorOpen((current) => !current))}
       aria-expanded={expanded()}
@@ -143,9 +147,10 @@ export function InspectorToggle(props: {
         alignItems="center"
         justifyContent="center"
         w="100%"
-        transform="translateX(-0.5px)"
       >
-        {expanded() ? ">" : "<"}
+        <Show when={expanded()} fallback={<ChevronLeftIcon size={15} />}>
+          <ChevronRightIcon size={15} />
+        </Show>
       </Box>
     </IconButton>
   );

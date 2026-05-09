@@ -414,6 +414,7 @@ export const deleteProjectNode = action(
 
     const projectId = formData.get("projectId");
     const nodeId = formData.get("nodeId");
+    const includeChildren = formData.get("includeChildren") === "true";
 
     if (typeof projectId !== "string" || projectId.trim().length === 0) {
       throw new Error("A project id is required.");
@@ -425,6 +426,7 @@ export const deleteProjectNode = action(
     return deleteProjectNodeOnDisk({
       projectId,
       nodeId,
+      includeChildren,
       clientMutationId: getClientMutationIdFromFormData(formData),
     });
   },

@@ -13,6 +13,8 @@ import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode } from "~/lib/spatial-map/types";
 import { useSpatialMap } from "./SpatialMapContext";
 
+type DeleteScope = "node" | "node-and-children";
+
 interface SpatialMapDeleteNodeControlProps {
   project: ProjectRecord;
   node: MapNode;
@@ -28,7 +30,11 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
   let deleteButtonRef: HTMLButtonElement | undefined;
   const submitDeleteNode = useAction(deleteProjectNode);
 
-  const deleteNode = async () => {
+  const descendantIds = () => getDescendantNodeIds(props.project.spatialMap, props.node.id);
+  const descendantCount = () => descendantIds().size;
+  const childrenButtonLabel = () => `Delete node and children (${descendantCount()})`;
+
+  const deleteNode = async (scope: DeleteScope = "node") => {
     if (pending()) {
       return;
     }
@@ -36,17 +42,25 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
     const formData = new FormData();
     const nodeId = props.node.id;
     const nodeLabel = props.node.label;
+    const includeChildren = scope === "node-and-children";
+    const nodeIdsToDelete = new Set([
+      nodeId,
+      ...(includeChildren ? descendantIds() : []),
+    ]);
     formData.set("projectId", props.project.id);
     formData.set("nodeId", nodeId);
+    if (includeChildren) {
+      formData.set("includeChildren", "true");
+    }
     const clientMutationId = createClientMutationId();
     const previousProject = props.project;
     const optimisticProject = {
       ...props.project,
       updatedAt: new Date().toISOString(),
       spatialMap: {
-        nodes: props.project.spatialMap.nodes.filter((node) => node.id !== nodeId),
+        nodes: props.project.spatialMap.nodes.filter((node) => !nodeIdsToDelete.has(node.id)),
         links: props.project.spatialMap.links.filter(
-          (link) => link.source !== nodeId && link.target !== nodeId,
+          (link) => !nodeIdsToDelete.has(link.source) && !nodeIdsToDelete.has(link.target),
         ),
       },
     };
@@ -127,13 +141,13 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
         open={open()}
         onOpenChange={setDialogOpen}
         title="Delete Node"
-        description={`Delete ${props.node.label}? Any links attached to this node will also be removed.`}
+        description={`Delete ${props.node.label}? Choose whether to remove only this node or include its descendants.`}
         maxW="520px"
         initialFocusEl={() => deleteButtonRef ?? null}
         footer={
-          <HStack>
+          <HStack justifyContent="flex-end" flexWrap="wrap">
             <Button variant="outline" type="button" onClick={() => setDialogOpen(false)}>
-              Keep
+              Cancel
             </Button>
             <Button
               ref={deleteButtonRef}
@@ -141,20 +155,54 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
               loading={pending()}
               variant="danger"
               onClick={() => {
-                void deleteNode();
+                void deleteNode("node");
               }}
             >
-              Delete
+              Delete node
+            </Button>
+            <Button
+              type="button"
+              loading={pending()}
+              disabled={descendantCount() === 0}
+              variant="danger"
+              onClick={() => {
+                void deleteNode("node-and-children");
+              }}
+            >
+              {childrenButtonLabel()}
             </Button>
           </HStack>
         }
       >
         <VStack alignItems="stretch" gap="4">
           <Text textStyle="sm" color="fg.muted">
-            This removes the node and prunes any incoming or outgoing links that reference it.
+            Delete node removes this node and its attached links. Delete node and children also removes every descendant connected by parent-child links.
           </Text>
         </VStack>
       </SimpleDialog>
     </>
   );
+}
+
+function getDescendantNodeIds(data: ProjectRecord["spatialMap"], nodeId: string) {
+  const childrenByParent = new Map<string, string[]>();
+  for (const link of data.links) {
+    if (!link.parentChild) {
+      continue;
+    }
+    childrenByParent.set(link.source, [...(childrenByParent.get(link.source) ?? []), link.target]);
+  }
+
+  const descendants = new Set<string>();
+  const pending = [...(childrenByParent.get(nodeId) ?? [])];
+  while (pending.length > 0) {
+    const current = pending.pop();
+    if (!current || descendants.has(current)) {
+      continue;
+    }
+    descendants.add(current);
+    pending.push(...(childrenByParent.get(current) ?? []));
+  }
+
+  return descendants;
 }

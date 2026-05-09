@@ -14,7 +14,6 @@ export interface ProjectEventsConnection {
 
 const RECONNECT_BASE_DELAY_MS = 500;
 const RECONNECT_MAX_DELAY_MS = 5000;
-const PROJECT_RECONCILE_INTERVAL_MS = 2000;
 const PROJECT_EVENTS_CHANNEL_NAME = "pgm:project-events";
 const JOBS_SOCKET_PROBE_HEADER = "x-pgm-websocket-route";
 const JOBS_SOCKET_PROBE_VALUE = "jobs";
@@ -36,6 +35,7 @@ export function connectProjectEvents(input: ConnectProjectEventsInput): ProjectE
   let reconnectTimer: number | undefined;
   let reconnectAttempt = 0;
   let stopped = false;
+  let socketOpen = false;
   let socketAvailable: boolean | null = null;
   let socketProbeInFlight: Promise<boolean> | null = null;
   let refreshInFlight: Promise<void> | null = null;
@@ -116,6 +116,7 @@ export function connectProjectEvents(input: ConnectProjectEventsInput): ProjectE
     socket = new WebSocket(getProjectEventsSocketUrl());
     socket.addEventListener("open", () => {
       opened = true;
+      socketOpen = true;
       reconnectAttempt = 0;
       socket?.send(JSON.stringify({ type: "jobs:ping" }));
       refreshProject(createClientReconcileEvent(input.projectId), true);
@@ -132,7 +133,10 @@ export function connectProjectEvents(input: ConnectProjectEventsInput): ProjectE
         input.onProjectDeleted();
       }
     });
-    socket.addEventListener("close", scheduleReconnect);
+    socket.addEventListener("close", () => {
+      socketOpen = false;
+      scheduleReconnect();
+    });
     socket.addEventListener("error", () => {
       if (!opened) {
         socketAvailable = false;
@@ -141,9 +145,11 @@ export function connectProjectEvents(input: ConnectProjectEventsInput): ProjectE
     });
   };
 
-  const reconcile = () => {
+  const catchUpIfDisconnected = () => {
     if (document.visibilityState === "hidden") return;
-    refreshProject(createClientReconcileEvent(input.projectId));
+    if (!socketOpen) {
+      refreshProject(createClientReconcileEvent(input.projectId), true);
+    }
   };
 
   channel?.addEventListener("message", (event: MessageEvent<ProjectBroadcastMessage>) => {
@@ -159,7 +165,9 @@ export function connectProjectEvents(input: ConnectProjectEventsInput): ProjectE
   });
 
   connect();
-  const reconcileTimer = window.setInterval(reconcile, PROJECT_RECONCILE_INTERVAL_MS);
+  window.addEventListener("focus", catchUpIfDisconnected);
+  document.addEventListener("visibilitychange", catchUpIfDisconnected);
+  window.addEventListener("online", catchUpIfDisconnected);
 
   return {
     disconnect: () => {
@@ -167,7 +175,9 @@ export function connectProjectEvents(input: ConnectProjectEventsInput): ProjectE
       if (reconnectTimer !== undefined) {
         window.clearTimeout(reconnectTimer);
       }
-      window.clearInterval(reconcileTimer);
+      window.removeEventListener("focus", catchUpIfDisconnected);
+      document.removeEventListener("visibilitychange", catchUpIfDisconnected);
+      window.removeEventListener("online", catchUpIfDisconnected);
       channel?.close();
       socket?.close();
     },

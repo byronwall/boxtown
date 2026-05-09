@@ -124,7 +124,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
                 minH="24px"
                 aria-label="Project settings"
                 title="Project settings"
-                onClick={open}
+                onClick={() => open()}
               >
                 <SettingsIcon size={15} aria-hidden="true" />
               </IconButton>
@@ -363,7 +363,6 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             }}
           </For>
         </HStack>
-        {!spatialMap.inspectorOpen() ? <InspectorToggle inToolbar /> : null}
       </HStack>
     </Box>
   );

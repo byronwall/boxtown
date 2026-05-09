@@ -67,6 +67,7 @@ Run inside `app/`:
 - The spatial map canvas renders a scaled SVG scene. Do not add CSS/SVG filters, `drop-shadow()`, `blur()`, or `filter` transitions to `.spatial-map-scene-layer`, `.spatial-map-node`, or child elements inside the scaled canvas.
 - Avoid `will-change: transform`, `transform: translateZ(0)`, and similar forced-compositing hints on the scaled SVG scene or nodes. At high zoom these have repeatedly caused flicker, oversized raster surfaces, and visual smearing.
 - If emphasis is needed on canvas nodes, prefer SVG-safe strokes, fills, opacity, or small unfiltered geometry changes instead of filter/shadow effects.
+- Very important: optimistic spatial-map node creation must keep the same node id that the server will return. Do not use temporary `pending-*` ids for newly created canvas nodes. A pending id that is later replaced by the real id makes the layout transition treat one node as exiting and another as entering, which causes the isolated-node creation bug where the new node appears, jumps back to the origin/anchor, and appears a second time.
 
 ## Available Feature Modules
 

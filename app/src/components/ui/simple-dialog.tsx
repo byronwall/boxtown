@@ -44,9 +44,28 @@ export function SimpleDialog(props: SimpleDialogProps) {
         maxW,
         "--dialog-base-margin": "24px",
         maxH: "calc(100vh - (var(--dialog-base-margin) * 2))",
+        boxSizing: "border-box",
         overflow: "visible",
         display: "flex",
         flexDirection: "column",
+        "& .dialog__closeTrigger": {
+          top: "12px",
+          insetEnd: "12px",
+          w: "28px",
+          h: "28px",
+          minW: "28px",
+          minH: "28px",
+          borderRadius: "4px",
+          borderColor: "rgba(96, 101, 95, 0.32)",
+          bg: "rgba(252, 253, 252, 0.82)",
+          boxShadow: "none",
+          color: "var(--spatial-map-copy-muted, token(colors.fg.muted))",
+          _hover: {
+            bg: "rgba(239, 241, 239, 0.96)",
+            borderColor: "rgba(96, 101, 95, 0.52)",
+            color: "var(--spatial-map-copy, token(colors.fg.default))",
+          },
+        },
       }),
     );
     if (props.contentClass) classes.push(props.contentClass);
@@ -87,9 +106,10 @@ export function SimpleDialog(props: SimpleDialogProps) {
             <Show when={shouldShowClose()}>
               <Dialog.CloseTrigger
                 aria-label={props.closeLabel ?? "Close dialog"}
-              >
-                <CloseButton />
-              </Dialog.CloseTrigger>
+                asChild={(triggerProps) => (
+                  <CloseButton {...triggerProps()} />
+                )}
+              />
             </Show>
             <Dialog.Body
               class={css({

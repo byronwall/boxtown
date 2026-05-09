@@ -24,6 +24,7 @@ import type {
 import { SpatialMapChildNodePlaceholder } from "./SpatialMapChildNodePlaceholder";
 import { getImageFilesFromDataTransfer, useSpatialMapImages } from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
+import { SpatialMapReparentControl } from "./SpatialMapReparentControl";
 
 const NODE_TYPE_FALLBACK_TONES = [
   {
@@ -136,6 +137,7 @@ const NODE_STATUS_BADGE_SIZE = 17;
 const NODE_STATUS_BADGE_MARGIN = 6;
 const NODE_STATUS_LABEL_GAP = 5;
 const NODE_STATUS_LABEL_WIDTH_FACTOR = 6.2;
+const NODE_DESCENDANT_COUNT_MARGIN = 8;
 
 const SpatialMapButton = styled("button");
 
@@ -186,6 +188,17 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
     const nodeId = controller.reparentingNodeId();
     return nodeId ? getDescendantNodeIds(props.project.spatialMap, nodeId) : new Set<string>();
   });
+  const invalidReparentParentIds = createMemo(() => {
+    const nodeId = controller.reparentingNodeId();
+    const invalidIds = new Set(reparentDescendantIds());
+    if (nodeId) {
+      invalidIds.add(nodeId);
+    }
+    return invalidIds;
+  });
+  const descendantCountsByNodeId = createMemo(() =>
+    createDescendantCountMap(props.project.spatialMap),
+  );
   const [movePending, setMovePending] = createSignal(false);
 
   const moveSelectedNode = async (parentNodeId: string | null) => {
@@ -500,6 +513,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                   item={item}
                   project={props.project}
                   colorMode={props.nodeColorMode}
+                  descendantCount={descendantCountsByNodeId().get(item.node.id) ?? 0}
                   viewportScale={controller.viewportScale()}
                   onClick={(nodeId) => {
                     if (controller.reparentingNodeId()) {
@@ -539,58 +553,15 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
         )}
       </Show>
       <Show when={reparentingNode()}>
-        {(node) => (
-          <Box
-            position="absolute"
-            right="10px"
-            bottom="48px"
-            zIndex="4"
-            w="min(360px, calc(100% - 20px))"
-            display="flex"
-            alignItems="center"
-            gap="8px"
-            p="8px"
-            border="1px solid rgba(24, 29, 26, 0.34)"
-            background="rgba(250, 252, 247, 0.98)"
-            color="var(--spatial-map-copy)"
-            pointerEvents="auto"
-            boxShadow="0 12px 28px rgba(20, 25, 22, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.58)"
-            onPointerDown={(event) => event.stopPropagation()}
-          >
-            <Box minW="0" flex="1" color="var(--spatial-map-copy-dim)" fontSize="12px" lineHeight="1.25">
-              Click the new parent node for {node().label}.
-            </Box>
-            <Box display="inline-flex" alignItems="stretch" gap="4px" flex="none">
-              <Button
-                colorPalette="green"
-                variant="plain"
-                size="xs"
-                minH="28px"
-                border="0"
-                borderRadius="4px"
-                background="transparent"
-                loading={movePending()}
-                onClick={() => {
-                  void moveSelectedNode(null);
-                }}
-              >
-                Move to root
-              </Button>
-              <Button
-                variant="plain"
-                size="xs"
-                minH="28px"
-                border="0"
-                borderRadius="4px"
-                background="transparent"
-                disabled={movePending()}
-                onClick={() => controller.clearReparentingNode()}
-              >
-                Cancel
-              </Button>
-            </Box>
-          </Box>
-        )}
+        <SpatialMapReparentControl
+          data={props.project.spatialMap}
+          invalidParentIds={invalidReparentParentIds()}
+          movePending={movePending()}
+          onMove={(parentNodeId) => {
+            void moveSelectedNode(parentNodeId);
+          }}
+          onCancel={() => controller.clearReparentingNode()}
+        />
       </Show>
     </Box>
   );
@@ -682,10 +653,52 @@ function getDescendantNodeIds(data: ProjectRecord["spatialMap"], nodeId: string)
   return descendants;
 }
 
+function createDescendantCountMap(data: ProjectRecord["spatialMap"]) {
+  const childrenByParent = new Map<string, string[]>();
+  for (const link of data.links) {
+    if (!link.parentChild) {
+      continue;
+    }
+    childrenByParent.set(link.source, [
+      ...(childrenByParent.get(link.source) ?? []),
+      link.target,
+    ]);
+  }
+
+  const counts = new Map<string, number>();
+  const countDescendants = (nodeId: string, visited: Set<string>): number => {
+    const cached = counts.get(nodeId);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const childIds = childrenByParent.get(nodeId) ?? [];
+    let count = 0;
+    for (const childId of childIds) {
+      if (visited.has(childId)) {
+        continue;
+      }
+      visited.add(childId);
+      count += 1 + countDescendants(childId, visited);
+      visited.delete(childId);
+    }
+
+    counts.set(nodeId, count);
+    return count;
+  };
+
+  for (const node of data.nodes) {
+    countDescendants(node.id, new Set([node.id]));
+  }
+
+  return counts;
+}
+
 function SpatialMapNode(props: {
   item: NodeVisualState;
   project: ProjectRecord;
   colorMode: SpatialMapNodeColorMode;
+  descendantCount: number;
   viewportScale: number;
   onClick: (nodeId: string) => void;
   onDoubleClick: (nodeId: string) => void;
@@ -695,8 +708,12 @@ function SpatialMapNode(props: {
   onPointerLeave: (nodeId: string) => void;
 }) {
   const imageUi = useSpatialMapImages();
-  const x = () => props.item.node.x - props.item.node.width / 2;
-  const y = () => props.item.node.y - props.item.node.height / 2;
+  const nodeTransform = createMemo(() => {
+    const node = props.item.node;
+    const scale = props.item.scale;
+
+    return `translate(${node.x}, ${node.y}) scale(${scale}) translate(${-node.width / 2}, ${-node.height / 2})`;
+  });
   const nodeImages = () => props.item.node.images ?? [];
   const firstImage = () => nodeImages()[0];
   const hasImages = () => nodeImages().length > 0;
@@ -775,9 +792,9 @@ function SpatialMapNode(props: {
 
   return (
     <g
-      class={`spatial-map-node ${nodeInteractionClass} spatial-map-node--${props.item.node.type}${props.item.isSelected ? " is-selected" : ""}${props.item.isHovered ? " is-hovered" : ""}${props.isIsolationTarget ? " is-isolated" : ""}`}
+      class={`spatial-map-node ${nodeInteractionClass} spatial-map-node--${props.item.node.type}${props.item.isSelected ? " is-selected" : ""}${props.item.isHovered ? " is-hovered" : ""}${props.item.hasUnexpandedChildren ? " has-unexpanded-children" : ""}${props.item.isManuallyExpanded ? " is-manually-expanded" : ""}${props.isIsolationTarget ? " is-isolated" : ""}`}
       data-node-id={props.item.node.id}
-      transform={`translate(${x()}, ${y()})`}
+      transform={nodeTransform()}
       opacity={props.item.opacity}
       style={{
         filter: "none",
@@ -841,6 +858,7 @@ function SpatialMapNode(props: {
         rx="0"
         ry="0"
         stroke-width={props.item.isSelected ? "2" : props.isIsolationTarget ? "2.4" : "var(--spatial-map-node-depth-stroke-width, 1.4)"}
+        stroke-dasharray={props.item.isManuallyExpanded ? "9 6" : undefined}
         shape-rendering="crispEdges"
         fill={`color-mix(
           in srgb,
@@ -865,6 +883,23 @@ function SpatialMapNode(props: {
           transition: "fill 120ms ease, stroke 120ms ease",
         }}
       />
+      <Show when={props.item.hasUnexpandedChildren}>
+        <rect
+          class="spatial-map-node-expandable-border"
+          x="5"
+          y="5"
+          width={props.item.node.width - 10}
+          height={props.item.node.height - 10}
+          rx="0"
+          ry="0"
+          fill="none"
+          pointer-events="none"
+          stroke="#173e27"
+          stroke-width="2.6"
+          shape-rendering="crispEdges"
+          style={{ filter: "none" }}
+        />
+      </Show>
       <Show when={firstImage()}>
         {(image) => (
           <foreignObject
@@ -982,6 +1017,26 @@ function SpatialMapNode(props: {
       >
         {props.item.node.type}
       </text>
+      <Show when={props.descendantCount > 0}>
+        <text
+          class="spatial-map-node-descendant-count"
+          x={props.item.node.width - NODE_DESCENDANT_COUNT_MARGIN}
+          y={metaBaselineY()}
+          text-anchor="end"
+          font-size={String(metaFontSize())}
+          fill="rgba(23, 27, 24, 0.72)"
+          font-family={`"SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace`}
+          font-weight="800"
+          letter-spacing="0"
+          pointer-events="none"
+          style={{
+            transition: "fill 120ms ease, stroke 120ms ease",
+            "user-select": "none",
+          }}
+        >
+          {props.descendantCount}
+        </text>
+      </Show>
       <g
         class={`spatial-map-node-status spatial-map-node-status--${props.item.node.status}`}
         transform={`translate(${NODE_STATUS_BADGE_MARGIN}, ${props.item.node.height - NODE_STATUS_BADGE_MARGIN - NODE_STATUS_BADGE_SIZE})`}

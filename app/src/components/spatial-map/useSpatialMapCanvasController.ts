@@ -82,8 +82,12 @@ export function useSpatialMapCanvasController(
     new Map<string, { opacity: number; scale: number }>(),
   );
   const [selectedNodeId, setSelectedNodeId] = createSignal<string | null>(null);
+  const [stashedNodeIds, setStashedNodeIds] = createSignal<string[]>([]);
   const [hoveredNodeId, setHoveredNodeId] = createSignal<string | null>(null);
   const [isolatedNodeId, setIsolatedNodeId] = createSignal<string | null>(null);
+  const [manuallyExpandedNodeIds, setManuallyExpandedNodeIds] = createSignal<Set<string>>(
+    new Set(),
+  );
   const [showLinkedInIsolation, setShowLinkedInIsolation] = createSignal(false);
   const [globalFilter, setGlobalFilter] = createSignal<SpatialMapGlobalFilterState>({
     enabled: false,
@@ -142,9 +146,18 @@ export function useSpatialMapCanvasController(
   const visibleDepthLevel = createMemo(() =>
     resolveVisibleDepthLevel(visibleDepthSelection(), availableDepthLevels()),
   );
-  const visibleData = createMemo(() =>
-    filterSpatialMapDataByDepthLevel(globalFilteredData(), visibleDepthLevel()),
-  );
+  const expandableNodeIds = createMemo(() => getExpandableNodeIds(globalFilteredData()));
+  const visibleData = createMemo(() => {
+    if (isolationModeActive()) {
+      return globalFilteredData();
+    }
+
+    return filterSpatialMapDataByDepthLevel(
+      globalFilteredData(),
+      visibleDepthLevel(),
+      manuallyExpandedNodeIds(),
+    );
+  });
 
   let viewportRef: HTMLDivElement | undefined;
   let svgRef: SVGSVGElement | undefined;
@@ -155,6 +168,8 @@ export function useSpatialMapCanvasController(
   let layoutTransitionTarget: PositionedMapNode[] | undefined;
   let layoutTransitionInitialized = false;
   let pendingTransitionAnchorId: string | null = null;
+  let pendingCameraFocusNodeIds: Set<string> | null = null;
+  let manualCameraFocusNodeIds: Set<string> | null = null;
   let resizeObserver: ResizeObserver | undefined;
   let panSession: PanSession | undefined;
   let suppressNodeClick = false;
@@ -171,6 +186,12 @@ export function useSpatialMapCanvasController(
   const selectedNode = createMemo(() =>
     selectedNodeId() ? sourceNodesById().get(selectedNodeId() ?? "") ?? null : null,
   );
+  const stashedNodes = createMemo(() => {
+    const nodeById = sourceNodesById();
+    return stashedNodeIds()
+      .map((nodeId) => nodeById.get(nodeId) ?? null)
+      .filter((node): node is NonNullable<typeof node> => Boolean(node));
+  });
   const isolationLabel = createMemo(() =>
     isolatedNodeId() ? sourceNodesById().get(isolatedNodeId() ?? "")?.label ?? null : null,
   );
@@ -178,6 +199,9 @@ export function useSpatialMapCanvasController(
     describeRelations(data().links, sourceNodesById(), selectedNode()),
   );
   const setVisibleDepthLevel = (value: SpatialMapDepthLevel) => {
+    pendingCameraFocusNodeIds = null;
+    manualCameraFocusNodeIds = null;
+    setManuallyExpandedNodeIds(new Set<string>());
     if (value === "max") {
       writeVisibleDepthSelection(value);
       return;
@@ -209,7 +233,9 @@ export function useSpatialMapCanvasController(
   const orderedNodes = createMemo(() =>
     createOrderedNodeState({
       activeNodeId: activeNodeId(),
+      expandableNodeIds: isolationModeActive() ? new Set() : expandableNodeIds(),
       hoveredNodeId: hoveredNodeId(),
+      manuallyExpandedNodeIds: manuallyExpandedNodeIds(),
       positionedNodes: positionedNodes(),
       relatedSet: relatedSet(),
       selectedNodeId: selectedNodeId(),
@@ -238,8 +264,21 @@ export function useSpatialMapCanvasController(
     const nextData = visibleData();
     const sourceData = data();
     const nextLayout = createInitialLayout(nextData);
-    transitionToLayout(nextLayout, pendingTransitionAnchorId);
+    const previousLayout = untrack(positionedNodes);
+    const anchorNodeId =
+      pendingTransitionAnchorId ??
+      inferNewNodeTransitionAnchorId(previousLayout, nextData);
+    const cameraFocusNodeIds = pendingCameraFocusNodeIds ?? manualCameraFocusNodeIds;
+    const focusLayout = cameraFocusNodeIds
+      ? nextLayout.filter((node) => cameraFocusNodeIds.has(node.id))
+      : nextLayout;
+    transitionToLayout(
+      nextLayout,
+      anchorNodeId,
+      focusLayout.length > 0 ? focusLayout : nextLayout,
+    );
     pendingTransitionAnchorId = null;
+    pendingCameraFocusNodeIds = null;
     setHoveredNodeId(null);
     setIsolatedNodeId((current) =>
       current && sourceData.nodes.some((node) => node.id === current) ? current : null,
@@ -247,6 +286,10 @@ export function useSpatialMapCanvasController(
     setSelectedNodeId((current) =>
       current && nextData.nodes.some((node) => node.id === current) ? current : null,
     );
+    setStashedNodeIds((current) =>
+      current.filter((nodeId) => sourceData.nodes.some((node) => node.id === nodeId)),
+    );
+    setManuallyExpandedNodeIds((current) => pruneManualExpansionSet(current, sourceData));
     setReparentingNodeId((current) =>
       current && sourceData.nodes.some((node) => node.id === current) ? current : null,
     );
@@ -333,6 +376,58 @@ export function useSpatialMapCanvasController(
     setCameraImmediate(getFitCamera(nodes, getViewportAspectRatio()));
   };
 
+  const getGentleNodeCamera = (node: PositionedMapNode) => {
+    const aspectRatio = getViewportAspectRatio();
+    const fittedCamera = getFitCamera([node], aspectRatio);
+    const gentleWidth = Math.max(fittedCamera.width, 920);
+    const gentleHeight = gentleWidth / aspectRatio;
+    const centerX = fittedCamera.x + fittedCamera.width / 2;
+    const centerY = fittedCamera.y + fittedCamera.height / 2;
+
+    return {
+      x: centerX - gentleWidth / 2,
+      y: centerY - gentleHeight / 2,
+      width: gentleWidth,
+      height: gentleHeight,
+    };
+  };
+
+  const focusNode = (nodeId: string) => {
+    const node = nodesById().get(nodeId);
+    if (!node) {
+      return;
+    }
+
+    setViewMode("canvas");
+    setSelectedNodeId(nodeId);
+    setInspectorOpen(true);
+    setCameraImmediate(getGentleNodeCamera(node));
+  };
+
+  const stashNode = (nodeId: string) => {
+    if (!sourceNodesById().has(nodeId)) {
+      return;
+    }
+
+    setStashedNodeIds((current) =>
+      current.includes(nodeId) ? current : [nodeId, ...current],
+    );
+    setSelectedNodeId(nodeId);
+  };
+
+  const unstashNode = (nodeId: string) => {
+    setStashedNodeIds((current) => current.filter((item) => item !== nodeId));
+  };
+
+  const toggleNodeStash = (nodeId: string) => {
+    if (stashedNodeIds().includes(nodeId)) {
+      unstashNode(nodeId);
+      return;
+    }
+
+    stashNode(nodeId);
+  };
+
   const animateCameraToLayout = (
     nodes: PositionedMapNode[],
     startedAt: number,
@@ -390,24 +485,33 @@ export function useSpatialMapCanvasController(
   const transitionToLayout = (
     nextLayout: PositionedMapNode[],
     anchorNodeId: string | null,
+    cameraFitNodes: PositionedMapNode[] = nextLayout,
   ) => {
     if (!layoutTransitionInitialized) {
       layoutTransitionInitialized = true;
       setPositionedNodes(nextLayout);
       setTransitionVisualState(new Map());
-      queueMicrotask(() => fitCameraToLayout(nextLayout));
+      queueMicrotask(() => fitCameraToLayout(cameraFitNodes));
+      return;
+    }
+
+    const previousLayout = untrack(positionedNodes);
+    if (
+      layoutTransitionTarget &&
+      !hasLayoutTransitionWork(layoutTransitionTarget, nextLayout)
+    ) {
+      layoutTransitionTarget = nextLayout;
+      return;
+    }
+
+    if (!hasLayoutTransitionWork(previousLayout, nextLayout)) {
+      setPositionedNodes(nextLayout);
+      setTransitionVisualState(new Map());
+      queueMicrotask(() => fitCameraToLayout(cameraFitNodes));
       return;
     }
 
     cancelLayoutTransition();
-
-    const previousLayout = untrack(positionedNodes);
-    if (!hasLayoutTransitionWork(previousLayout, nextLayout)) {
-      setPositionedNodes(nextLayout);
-      setTransitionVisualState(new Map());
-      queueMicrotask(() => fitCameraToLayout(nextLayout));
-      return;
-    }
 
     const anchorPosition = getLayoutTransitionAnchor({
       anchorNodeId,
@@ -422,7 +526,7 @@ export function useSpatialMapCanvasController(
     const startedAt = performance.now();
     layoutTransitionTarget = nextLayout;
 
-    animateCameraToLayout(nextLayout, startedAt, LAYOUT_TRANSITION_DURATION_MS);
+    animateCameraToLayout(cameraFitNodes, startedAt, LAYOUT_TRANSITION_DURATION_MS);
 
     const tick = (now: number) => {
       const progress = clampValue(
@@ -590,6 +694,22 @@ export function useSpatialMapCanvasController(
       return;
     }
 
+    if (event.key.toLowerCase() === "s" && !event.metaKey && !event.ctrlKey && !event.altKey) {
+      const nodeId = selectedNodeId();
+      if (nodeId && viewMode() === "canvas") {
+        event.preventDefault();
+        toggleNodeStash(nodeId);
+      }
+      return;
+    }
+
+    if (isIsolateNodeShortcut(event)) {
+      event.preventDefault();
+      const nodeId = selectedNodeId();
+      applyIsolation(nodeId && isolatedNodeId() !== nodeId ? nodeId : null);
+      return;
+    }
+
     if (event.key === "Escape" && reparentingNodeId()) {
       event.preventDefault();
       setReparentingNodeId(null);
@@ -600,6 +720,20 @@ export function useSpatialMapCanvasController(
     if (depthShortcut !== null) {
       event.preventDefault();
       setVisibleDepthLevel(depthShortcut);
+      return;
+    }
+
+    if (event.key === " " && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) {
+      const nodeId = selectedNodeId();
+      if (viewMode() === "canvas" && !isolationModeActive()) {
+        event.preventDefault();
+        if (nodeId) {
+          toggleManualNodeExpansion(nodeId);
+          return;
+        }
+
+        clearManualNodeExpansion();
+      }
       return;
     }
 
@@ -740,9 +874,6 @@ export function useSpatialMapCanvasController(
     pendingTransitionAnchorId = nodeId ?? isolatedNodeId() ?? selectedNodeId();
     setHoveredNodeId(null);
     setShowLinkedInIsolation(false);
-    if (nodeId) {
-      writeVisibleDepthSelection("max");
-    }
     setIsolatedNodeId(nodeId);
     if (nodeId) {
       setSelectedNodeId(nodeId);
@@ -755,6 +886,52 @@ export function useSpatialMapCanvasController(
     }
 
     applyIsolation(isolatedNodeId() === nodeId ? null : nodeId);
+  };
+
+  const toggleManualNodeExpansion = (nodeId: string) => {
+    pendingTransitionAnchorId = nodeId;
+    setManuallyExpandedNodeIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+        manualCameraFocusNodeIds = next.size === 0
+          ? null
+          : getManualExpansionFocusNodeIds(
+              globalFilteredData(),
+              visibleDepthLevel(),
+              next,
+              nodeId,
+            );
+        pendingCameraFocusNodeIds = manualCameraFocusNodeIds;
+        return next;
+      }
+
+      if (hasVisibleChildNode(globalFilteredData(), nodeId)) {
+        next.add(nodeId);
+        manualCameraFocusNodeIds = getManualExpansionFocusNodeIds(
+          globalFilteredData(),
+          visibleDepthLevel(),
+          next,
+          nodeId,
+        );
+        pendingCameraFocusNodeIds = manualCameraFocusNodeIds;
+      }
+
+      return next;
+    });
+  };
+
+  const clearManualNodeExpansion = () => {
+    if (manuallyExpandedNodeIds().size === 0 && !manualCameraFocusNodeIds) {
+      fitCameraToNodes();
+      return;
+    }
+
+    pendingTransitionAnchorId = selectedNodeId();
+    pendingCameraFocusNodeIds = null;
+    manualCameraFocusNodeIds = null;
+    setManuallyExpandedNodeIds(new Set<string>());
   };
 
   const toggleLinkedIsolation = () => {
@@ -900,8 +1077,11 @@ export function useSpatialMapCanvasController(
     reparentingNodeId,
     orderedNodes,
     selectedNodeId,
+    manuallyExpandedNodeIds,
     selectedNodeRelations,
     selectedNode,
+    stashedNodeIds,
+    stashedNodes,
     showEdges,
     showLinkedInIsolation,
     globalFilter,
@@ -928,6 +1108,7 @@ export function useSpatialMapCanvasController(
     clearChildNodeDraft: () => setChildNodeDraft(null),
     clearContextPreviewRequest: () => setContextPreviewRequest(null),
     clearReparentingNode: () => setReparentingNodeId(null),
+    focusNode,
     openChildNodeDraft,
     openAddNodesFlow: () => {
       setContextNoteConversionOpen(false);
@@ -953,6 +1134,7 @@ export function useSpatialMapCanvasController(
       setSourceDecompositionOpen(true);
     },
     isolateNode: (nodeId) => applyIsolation(nodeId),
+    stashNode,
     setInspectorOpen,
     setSelectedNodeId,
     setShowEdges,
@@ -970,6 +1152,8 @@ export function useSpatialMapCanvasController(
     setVisibleDepthLevel,
     toggleLinkedInIsolation: toggleLinkedIsolation,
     toggleEdges: () => setShowEdges((current) => !current),
+    toggleNodeStash,
+    unstashNode,
     reflowLayout: () => {
       const nextLayout = createInitialLayout(visibleData());
       transitionToLayout(nextLayout, selectedNodeId());
@@ -1065,6 +1249,16 @@ function isUnsafeDeleteNodeShortcut(event: KeyboardEvent) {
   );
 }
 
+function isIsolateNodeShortcut(event: KeyboardEvent) {
+  return (
+    event.key.toLowerCase() === "i" &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey &&
+    !event.shiftKey
+  );
+}
+
 function getKeyboardDigit(event: KeyboardEvent) {
   if (/^[0-9]$/.test(event.key)) {
     return Number(event.key);
@@ -1074,23 +1268,18 @@ function getKeyboardDigit(event: KeyboardEvent) {
   return codeDigit ? Number(codeDigit) : null;
 }
 
-function filterSpatialMapDataByDepthLevel(
+export function filterSpatialMapDataByDepthLevel(
   data: SpatialMapData,
   visibleDepthLevel: number,
+  manuallyExpandedNodeIds: Set<string> = new Set(),
 ): SpatialMapData {
   if (data.nodes.length === 0) {
     return data;
   }
 
-  const depthsByNodeId = calculateNodeDepths(data);
-  const depths = data.nodes.map((node) => depthsByNodeId.get(node.id) ?? 0);
-  const minDepth = Math.min(...depths);
-  const maxVisibleDepth = minDepth + Math.max(visibleDepthLevel, 1) - 1;
-  const visibleNodeIds = new Set(
-    data.nodes
-      .filter((node) => (depthsByNodeId.get(node.id) ?? 0) <= maxVisibleDepth)
-      .map((node) => node.id),
-  );
+  const visibleNodeIds = getDepthLimitedNodeIds(data, visibleDepthLevel);
+
+  includeManuallyExpandedChildren(data, visibleNodeIds, manuallyExpandedNodeIds);
 
   return {
     nodes: data.nodes.filter((node) => visibleNodeIds.has(node.id)),
@@ -1098,6 +1287,153 @@ function filterSpatialMapDataByDepthLevel(
       (link) => visibleNodeIds.has(link.source) && visibleNodeIds.has(link.target),
     ),
   };
+}
+
+function getDepthLimitedNodeIds(data: SpatialMapData, visibleDepthLevel: number) {
+  const depthsByNodeId = calculateNodeDepths(data);
+  const depths = data.nodes.map((node) => depthsByNodeId.get(node.id) ?? 0);
+  const minDepth = Math.min(...depths);
+  const maxVisibleDepth = minDepth + Math.max(visibleDepthLevel, 1) - 1;
+
+  return new Set(
+    data.nodes
+      .filter((node) => (depthsByNodeId.get(node.id) ?? 0) <= maxVisibleDepth)
+      .map((node) => node.id),
+  );
+}
+
+function includeManuallyExpandedChildren(
+  data: SpatialMapData,
+  visibleNodeIds: Set<string>,
+  manuallyExpandedNodeIds: Set<string>,
+) {
+  if (manuallyExpandedNodeIds.size === 0) {
+    return;
+  }
+
+  let addedNode = true;
+
+  while (addedNode) {
+    addedNode = false;
+
+    for (const link of data.links) {
+      if (
+        link.parentChild &&
+        manuallyExpandedNodeIds.has(link.source) &&
+        visibleNodeIds.has(link.source) &&
+        !visibleNodeIds.has(link.target)
+      ) {
+        visibleNodeIds.add(link.target);
+        addedNode = true;
+      }
+    }
+  }
+}
+
+function hasVisibleChildNode(data: SpatialMapData, nodeId: string) {
+  return data.links.some((link) => link.parentChild && link.source === nodeId);
+}
+
+function getExpandableNodeIds(data: SpatialMapData) {
+  const nodeIds = new Set(data.nodes.map((node) => node.id));
+  const expandableNodeIds = new Set<string>();
+
+  for (const link of data.links) {
+    if (link.parentChild && nodeIds.has(link.source) && nodeIds.has(link.target)) {
+      expandableNodeIds.add(link.source);
+    }
+  }
+
+  return expandableNodeIds;
+}
+
+function getManualExpansionFocusNodeIds(
+  data: SpatialMapData,
+  visibleDepthLevel: number,
+  manuallyExpandedNodeIds: Set<string>,
+  fallbackNodeId: string,
+) {
+  if (manuallyExpandedNodeIds.size === 0) {
+    return new Set([fallbackNodeId]);
+  }
+
+  const visibleNodeIds = getDepthLimitedNodeIds(data, visibleDepthLevel);
+  const focusNodeIds = new Set<string>();
+  let addedNode = true;
+
+  while (addedNode) {
+    addedNode = false;
+
+    for (const link of data.links) {
+      if (
+        link.parentChild &&
+        manuallyExpandedNodeIds.has(link.source) &&
+        visibleNodeIds.has(link.source)
+      ) {
+        focusNodeIds.add(link.source);
+        focusNodeIds.add(link.target);
+
+        if (!visibleNodeIds.has(link.target)) {
+          visibleNodeIds.add(link.target);
+          addedNode = true;
+        }
+      }
+    }
+  }
+
+  return focusNodeIds.size > 0 ? focusNodeIds : new Set([fallbackNodeId]);
+}
+
+function pruneManualExpansionSet(
+  expandedNodeIds: Set<string>,
+  sourceData: SpatialMapData,
+) {
+  if (expandedNodeIds.size === 0) {
+    return expandedNodeIds;
+  }
+
+  const sourceNodeIds = new Set(sourceData.nodes.map((node) => node.id));
+  const next = new Set<string>();
+
+  for (const nodeId of expandedNodeIds) {
+    if (sourceNodeIds.has(nodeId)) {
+      next.add(nodeId);
+    }
+  }
+
+  return next.size === expandedNodeIds.size ? expandedNodeIds : next;
+}
+
+function inferNewNodeTransitionAnchorId(
+  previousLayout: PositionedMapNode[],
+  nextData: SpatialMapData,
+) {
+  if (previousLayout.length === 0) {
+    return null;
+  }
+
+  const previousNodeIds = new Set(previousLayout.map((node) => node.id));
+  const addedNodeIds = new Set(
+    nextData.nodes
+      .filter((node) => !previousNodeIds.has(node.id))
+      .map((node) => node.id),
+  );
+
+  if (addedNodeIds.size === 0) {
+    return null;
+  }
+
+  for (const link of nextData.links) {
+    if (
+      link.parentChild &&
+      addedNodeIds.has(link.target) &&
+      previousNodeIds.has(link.source)
+    ) {
+      return link.source;
+    }
+  }
+
+  return null;
 }
 
 export function filterSpatialMapDataByGlobalFilter(

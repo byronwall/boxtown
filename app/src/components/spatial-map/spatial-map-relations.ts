@@ -47,7 +47,9 @@ export function describeRelations(
 
 export function createOrderedNodeState(options: {
   activeNodeId: string | null;
+  expandableNodeIds?: Set<string>;
   hoveredNodeId: string | null;
+  manuallyExpandedNodeIds?: Set<string>;
   positionedNodes: PositionedMapNode[];
   relatedSet: Set<string>;
   selectedNodeId: string | null;
@@ -55,7 +57,9 @@ export function createOrderedNodeState(options: {
 }): NodeVisualState[] {
   const {
     activeNodeId,
+    expandableNodeIds,
     hoveredNodeId,
+    manuallyExpandedNodeIds,
     positionedNodes,
     relatedSet,
     selectedNodeId,
@@ -65,6 +69,7 @@ export function createOrderedNodeState(options: {
 
   return positionedNodes.map((node) => {
     const isDimmed = Boolean(activeNodeId && !relatedSet.has(node.id));
+    const isManuallyExpanded = manuallyExpandedNodeIds?.has(node.id) ?? false;
     const isHovered = hoveredNodeId === node.id;
     const isSelected = selectedNodeId === node.id;
     const transitionState = transitionVisualState?.get(node.id);
@@ -92,7 +97,9 @@ export function createOrderedNodeState(options: {
 
     return {
       node,
+      hasUnexpandedChildren: Boolean(expandableNodeIds?.has(node.id) && !isManuallyExpanded),
       isHovered,
+      isManuallyExpanded,
       isSelected,
       opacity: baseOpacity * (transitionState?.opacity ?? 1),
       scale: transitionState?.scale ?? 1,

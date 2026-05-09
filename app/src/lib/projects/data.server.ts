@@ -133,6 +133,7 @@ interface ProjectNodeTypeRowInput {
 interface DeleteProjectNodeInput {
   projectId: string;
   nodeId: string;
+  includeChildren?: boolean;
   actor?: ProjectOperationActor;
   clientMutationId?: string;
 }
@@ -236,9 +237,22 @@ function appendProjectOperation(
     ...record,
     operationLog: [
       createProjectOperationLogEntry(operationWithState),
-      ...(record.operationLog ?? []),
+      ...stripProjectOperationStatePayloads(record.operationLog ?? []),
     ].slice(0, 250),
   };
+}
+
+function stripProjectOperationStatePayloads(
+  operationLog: ProjectOperationLogEntry[],
+): ProjectOperationLogEntry[] {
+  return operationLog.map((entry) => {
+    if (!entry.payload?.state) {
+      return entry;
+    }
+
+    const { payload: _payload, ...entryWithoutPayload } = entry;
+    return entryWithoutPayload;
+  });
 }
 
 function getMutationMetadata(input: { clientMutationId?: string }) {
@@ -254,10 +268,10 @@ function mergeMutationMetadata(
 }
 
 async function writeProjectRecordsAndPublishProject(
-  records: ProjectRecord[],
+  _records: ProjectRecord[],
   project: ProjectRecord,
 ) {
-  await writeProjectRecordsToDisk(records);
+  await writeProjectRecordToDisk(project);
   publishProjectRecordChanged(project);
 }
 
@@ -288,8 +302,17 @@ export async function readProjectSummariesFromDisk(): Promise<ProjectSummary[]> 
 export async function readProjectByIdFromDisk(
   projectId: string,
 ): Promise<ProjectRecord | null> {
-  const records = await readProjectRecordsFromDisk();
-  return records.find((record) => record.id === projectId) ?? null;
+  const projectFile = getProjectJsonFilePath(projectId);
+  if (!existsSync(projectFile)) {
+    return null;
+  }
+
+  const parsed = parseStoredProjectRecord(JSON.parse(await readFile(projectFile, "utf8")));
+  if (parsed.didNormalize) {
+    await writeProjectRecordToDisk(parsed.record);
+  }
+
+  return parsed.record;
 }
 
 export async function createProjectOnDisk(
@@ -1171,20 +1194,26 @@ export async function deleteProjectNodeOnDisk(
   }
 
   const removedNode = current.spatialMap.nodes.find((node) => node.id === input.nodeId);
+  const nodeIdsToDelete = new Set([
+    input.nodeId,
+    ...(input.includeChildren ? getDescendantNodeIds(current.spatialMap, input.nodeId) : []),
+  ]);
   const nextRecord = appendProjectOperation({
     ...current,
     updatedAt: new Date().toISOString(),
     spatialMap: {
-      nodes: current.spatialMap.nodes.filter((node) => node.id !== input.nodeId),
+      nodes: current.spatialMap.nodes.filter((node) => !nodeIdsToDelete.has(node.id)),
       links: current.spatialMap.links.filter(
-        (link) => link.source !== input.nodeId && link.target !== input.nodeId,
+        (link) => !nodeIdsToDelete.has(link.source) && !nodeIdsToDelete.has(link.target),
       ),
     },
   }, {
     kind: "node.deleted",
     actor: input.actor,
-    summary: `Deleted "${removedNode?.label ?? input.nodeId}".`,
-    nodeIds: [input.nodeId],
+    summary: input.includeChildren
+      ? `Deleted "${removedNode?.label ?? input.nodeId}" and ${nodeIdsToDelete.size - 1} children.`
+      : `Deleted "${removedNode?.label ?? input.nodeId}".`,
+    nodeIds: [...nodeIdsToDelete],
     metadata: getMutationMetadata(input),
   });
 
@@ -1364,13 +1393,7 @@ export async function writeProjectRecordsToDisk(records: ProjectRecord[]) {
   await mkdir(projectsDir, { recursive: true });
 
   for (const record of records) {
-    const projectDir = getProjectDataDir(record.id);
-    await mkdir(projectDir, { recursive: true });
-    await writeFile(
-      getProjectJsonFilePath(record.id),
-      `${JSON.stringify(serializeProjectRecord(record), null, 2)}\n`,
-      "utf8",
-    );
+    await writeProjectRecordToDisk(record);
   }
 
   const entries = await readdir(projectsDir, { withFileTypes: true });
@@ -1378,6 +1401,16 @@ export async function writeProjectRecordsToDisk(records: ProjectRecord[]) {
     entries
       .filter((entry) => entry.isDirectory() && !expectedDirs.has(entry.name))
       .map((entry) => rm(path.join(projectsDir, entry.name), { recursive: true, force: true })),
+  );
+}
+
+async function writeProjectRecordToDisk(record: ProjectRecord) {
+  const projectDir = getProjectDataDir(record.id);
+  await mkdir(projectDir, { recursive: true });
+  await writeFile(
+    getProjectJsonFilePath(record.id),
+    `${JSON.stringify(serializeProjectRecord(record), null, 2)}\n`,
+    "utf8",
   );
 }
 

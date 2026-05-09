@@ -6,8 +6,14 @@ import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
 import { createProjectChildNode } from "~/lib/projects/data";
 import { ensureProjectNodeTypeOptions } from "~/lib/projects/node-types";
-import { appendClientMutationId, createClientMutationId } from "~/lib/projects/optimistic";
+import {
+  appendClientMutationId,
+  createClientMutationId,
+  createOptimisticNodeId,
+} from "~/lib/projects/optimistic";
 import type { ProjectRecord } from "~/lib/projects/types";
+import { createParentChildLink } from "~/lib/spatial-map/links";
+import { DEFAULT_MAP_NODE_STATUS } from "~/lib/spatial-map/node-status";
 import { useSpatialMap } from "./SpatialMapContext";
 import type { ChildNodeDraft, NodeVisualState } from "./spatial-map-canvas.types";
 
@@ -89,14 +95,56 @@ export function SpatialMapChildNodePlaceholder(props: {
     formData.set("title", nextTitle);
     formData.set("context", nextContext);
     const clientMutationId = createClientMutationId();
+    const previousProject = props.project;
+    const title = nextTitle.trim() || "Untitled node";
+    const context = nextContext ?? "";
+    const optimisticNodeId = createOptimisticNodeId(
+      title,
+      nextType,
+      new Set(props.project.spatialMap.nodes.map((node) => node.id)),
+    );
 
     setPending(true);
+    props.onProjectUpdated?.(
+      {
+        ...props.project,
+        updatedAt: new Date().toISOString(),
+        spatialMap: {
+          ...props.project.spatialMap,
+          nodes: [
+            ...props.project.spatialMap.nodes,
+            {
+              id: optimisticNodeId,
+              label: title,
+              type: nextType,
+              status: DEFAULT_MAP_NODE_STATUS,
+              metadata: {},
+              context,
+              rawContext: context,
+            },
+          ],
+          links: props.parentNode
+            ? [
+                ...props.project.spatialMap.links,
+                createParentChildLink({
+                  source: props.parentNode.id,
+                  target: optimisticNodeId,
+                }),
+              ]
+            : props.project.spatialMap.links,
+        },
+      },
+      { clientMutationId, phase: "optimistic" },
+    );
+    controller.clearChildNodeDraft();
+    queueMicrotask(() => controller.setSelectedNodeId(optimisticNodeId));
+
     try {
       const result = await submitCreateProjectChildNode(appendClientMutationId(formData, clientMutationId));
       props.onProjectUpdated?.(result.project, { clientMutationId, phase: "server" });
-      controller.clearChildNodeDraft();
       queueMicrotask(() => controller.setSelectedNodeId(result.nodeId));
     } catch (error) {
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
       toaster.error({
         title: "Child node was not created",
         description:

@@ -107,7 +107,7 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
             overflow="hidden"
             border="1px solid var(--spatial-map-panel-border-strong)"
             borderRadius="6px"
-            bg="rgba(252, 253, 252, 0.88)"
+            bg="rgba(244, 247, 243, 0.9)"
           >
             <HStack
               justifyContent="space-between"
@@ -116,13 +116,13 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
               px={{ base: "12px", md: "14px" }}
               py="10px"
               borderBottom="1px solid var(--spatial-map-panel-border)"
-              bg="rgba(248, 250, 248, 0.9)"
+              bg="rgba(252, 253, 252, 0.92)"
               flexWrap="wrap"
             >
               <HStack gap="2">
                 <Box as={FolderOpen} boxSize="16px" color="var(--spatial-map-accent-strong)" />
                 <Heading as="h2" fontSize="14px" lineHeight="1.2" letterSpacing="0">
-                  Existing projects
+                  Project library
                 </Heading>
               </HStack>
               <Text fontSize="12px" color="var(--spatial-map-copy-dim)" fontWeight="700">
@@ -130,12 +130,26 @@ export function ProjectIndexPage(props: ProjectIndexPageProps) {
               </Text>
             </HStack>
 
-            <VStack alignItems="stretch" gap="0" maxH={{ base: "none", lg: "100%" }} overflowY={{ base: "visible", lg: "auto" }}>
+            <VStack
+              alignItems="stretch"
+              gap="2"
+              maxH={{ base: "none", lg: "100%" }}
+              overflowY={{ base: "visible", lg: "auto" }}
+              p="2"
+            >
               <Show
                 when={props.projects.length > 0}
                 fallback={
-                  <Box p="24px" color="var(--spatial-map-copy-muted)" fontSize="13px" lineHeight="1.5">
-                    No projects yet. Create one from the rail to start a grid.
+                  <Box
+                    p="24px"
+                    border="1px dashed var(--spatial-map-panel-border)"
+                    borderRadius="6px"
+                    bg="rgba(252, 253, 252, 0.78)"
+                    color="var(--spatial-map-copy-muted)"
+                    fontSize="13px"
+                    lineHeight="1.5"
+                  >
+                    No projects yet. Create one from the left rail to start a grid.
                   </Box>
                 }
               >

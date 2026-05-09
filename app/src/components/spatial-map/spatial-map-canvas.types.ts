@@ -26,7 +26,9 @@ export interface CameraState {
 
 export interface NodeVisualState {
   node: PositionedMapNode;
+  hasUnexpandedChildren: boolean;
   isHovered: boolean;
+  isManuallyExpanded: boolean;
   isSelected: boolean;
   opacity: number;
   scale: number;
@@ -90,11 +92,14 @@ export interface SpatialMapCanvasController {
   reparentingNodeId: Accessor<string | null>;
   orderedNodes: Accessor<NodeVisualState[]>;
   selectedNodeId: Accessor<string | null>;
+  manuallyExpandedNodeIds: Accessor<Set<string>>;
   selectedNodeRelations: Accessor<{
     outgoing: { kind: string; nodeId: string }[];
     incoming: { kind: string; nodeId: string }[];
   }>;
   selectedNode: Accessor<MapNode | null>;
+  stashedNodeIds: Accessor<string[]>;
+  stashedNodes: Accessor<MapNode[]>;
   showEdges: Accessor<boolean>;
   showLinkedInIsolation: Accessor<boolean>;
   globalFilter: Accessor<SpatialMapGlobalFilterState>;
@@ -123,7 +128,9 @@ export interface SpatialMapCanvasController {
   clearChildNodeDraft: () => void;
   clearContextPreviewRequest: () => void;
   clearReparentingNode: () => void;
+  focusNode: (nodeId: string) => void;
   isolateNode: (nodeId: string) => void;
+  stashNode: (nodeId: string) => void;
   setInspectorOpen: (value: boolean | ((current: boolean) => boolean)) => void;
   setSelectedNodeId: (
     value: string | null | ((current: string | null) => string | null),
@@ -142,6 +149,8 @@ export interface SpatialMapCanvasController {
   setVisibleDepthLevel: (value: SpatialMapDepthLevel) => void;
   toggleLinkedInIsolation: () => void;
   toggleEdges: () => void;
+  toggleNodeStash: (nodeId: string) => void;
+  unstashNode: (nodeId: string) => void;
   reflowLayout: () => void;
   fitCameraToNodes: () => void;
   openChildNodeDraft: (parentNodeId?: string | null) => void;

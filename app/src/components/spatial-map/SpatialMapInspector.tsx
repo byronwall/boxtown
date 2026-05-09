@@ -2,6 +2,7 @@ import { useAction } from "@solidjs/router";
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import {
   BotIcon,
+  ChevronLeftIcon,
   DatabaseBackupIcon,
   FilePlusIcon,
   GitBranchPlusIcon,
@@ -512,7 +513,18 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
   };
 
   return (
-    <Box position="relative" display="flex" alignItems="stretch" h="100%" minH="0">
+    <Box
+      position="relative"
+      display="flex"
+      alignItems="stretch"
+      h="100%"
+      minH="0"
+      w={spatialMap.inspectorOpen() ? "auto" : "34px"}
+      minW={spatialMap.inspectorOpen() ? undefined : "34px"}
+      flexBasis={spatialMap.inspectorOpen() ? "auto" : "34px"}
+      overflow="visible"
+      transition="width 160ms ease, flex-basis 160ms ease"
+    >
       <HStack
         class="spatial-map-toggle-group spatial-map-inspector-view-toggle"
         position="absolute"
@@ -521,7 +533,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         right="9px"
         zIndex="5"
         minH="24px"
-        display="grid"
+        display={spatialMap.inspectorOpen() ? "grid" : "none"}
         gridTemplateColumns="repeat(2, minmax(0, 1fr))"
         flexShrink="0"
         overflow="hidden"
@@ -598,10 +610,10 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         minH="0"
         overflow={spatialMap.inspectorOpen() ? "auto" : "hidden"}
         overflowX="hidden"
-        p={spatialMap.inspectorOpen() ? "12px" : "0"}
-        opacity={spatialMap.inspectorOpen() ? "1" : "0"}
+        p={spatialMap.inspectorOpen() ? "12px" : "8px 4px"}
+        opacity="1"
         borderLeft="1px solid"
-        borderLeftColor={spatialMap.inspectorOpen() ? "rgba(96, 101, 95, 0.38)" : "transparent"}
+        borderLeftColor="rgba(96, 101, 95, 0.38)"
         background="linear-gradient(180deg, rgba(248, 250, 248, 0.92), rgba(235, 239, 233, 0.96))"
         boxShadow={{
           base: "-12px 0 0 rgba(17, 22, 19, 0.08)",
@@ -610,11 +622,30 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         transition={resizingInspector() ? "padding 160ms ease, opacity 120ms ease" : "width 160ms ease, padding 160ms ease, opacity 120ms ease"}
         overscrollBehavior="contain"
         style={{
-          width: inspectorWidthCss(),
-          "flex-basis": inspectorWidthCss(),
-          "min-width": inspectorWidthCss(),
+          width: spatialMap.inspectorOpen() ? inspectorWidthCss() : "34px",
+          "flex-basis": spatialMap.inspectorOpen() ? inspectorWidthCss() : "34px",
+          "min-width": spatialMap.inspectorOpen() ? inspectorWidthCss() : "34px",
         }}
       >
+        <Show when={!spatialMap.inspectorOpen()}>
+          <Button
+            type="button"
+            size="xs"
+            variant="plain"
+            colorPalette="green"
+            minW="24px"
+            w="24px"
+            h="24px"
+            p="0"
+            aria-label="Show inspector panel"
+            aria-expanded="false"
+            aria-controls="spatial-map-inspector"
+            title="Show inspector panel"
+            onClick={() => spatialMap.setInspectorOpen(true)}
+          >
+            <ChevronLeftIcon size={15} />
+          </Button>
+        </Show>
         <InspectorResizeHandle
           type="button"
           aria-label="Resize inspector"
@@ -648,6 +679,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
           onPointerDown={startInspectorResize}
           onMouseDown={startInspectorMouseResize}
         />
+        <Show when={spatialMap.inspectorOpen()}>
         <VStack alignItems="start" gap="2" h="full">
           <SpatialMapInspectorHeader
             title={selectedNodeTitle()}
@@ -984,6 +1016,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
           </SpatialMapInspectorSection>
           </Show>
         </VStack>
+        </Show>
       </Box>
     </Box>
   );

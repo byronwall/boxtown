@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { filterSpatialMapDataByGlobalFilter } from "./useSpatialMapCanvasController";
+import {
+  filterSpatialMapDataByDepthLevel,
+  filterSpatialMapDataByGlobalFilter,
+} from "./useSpatialMapCanvasController";
 import type { SpatialMapGlobalFilterState } from "./spatial-map-canvas.types";
 import type { MapNode, SpatialMapData } from "~/lib/spatial-map/types";
 
@@ -40,6 +43,52 @@ describe("filterSpatialMapDataByGlobalFilter", () => {
     }));
 
     expect(filtered.nodes.map((node) => node.id)).toEqual(["task-planned"]);
+  });
+});
+
+describe("filterSpatialMapDataByDepthLevel", () => {
+  const treeData: SpatialMapData = {
+    nodes: [
+      createNode("root", "page", "working"),
+      createNode("section", "assembly", "working"),
+      createNode("component", "component", "working"),
+      createNode("nested", "component", "working"),
+    ],
+    links: [
+      { source: "root", target: "section", parentChild: true },
+      { source: "section", target: "component", parentChild: true },
+      { source: "component", target: "nested", parentChild: true },
+    ],
+  };
+
+  it("adds one child layer for manually expanded visible nodes", () => {
+    const filtered = filterSpatialMapDataByDepthLevel(
+      treeData,
+      1,
+      new Set(["root"]),
+    );
+
+    expect(filtered.nodes.map((node) => node.id)).toEqual(["root", "section"]);
+  });
+
+  it("adds another child layer when a newly visible child is also manually expanded", () => {
+    const filtered = filterSpatialMapDataByDepthLevel(
+      treeData,
+      1,
+      new Set(["root", "section"]),
+    );
+
+    expect(filtered.nodes.map((node) => node.id)).toEqual(["root", "section", "component"]);
+  });
+
+  it("does not expand through collapsed descendants", () => {
+    const filtered = filterSpatialMapDataByDepthLevel(
+      treeData,
+      1,
+      new Set(["root", "component"]),
+    );
+
+    expect(filtered.nodes.map((node) => node.id)).toEqual(["root", "section"]);
   });
 });
 

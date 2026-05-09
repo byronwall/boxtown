@@ -1,9 +1,11 @@
 import { A, useSearchParams } from "@solidjs/router";
-import { createEffect, createSignal, lazy, Show, untrack } from "solid-js";
+import { createEffect, createSignal, For, lazy, Show, untrack } from "solid-js";
+import { ChevronLeftIcon, ChevronRightIcon, LocateFixedIcon, XIcon } from "lucide-solid";
 import { css } from "styled-system/css";
-import { Box } from "styled-system/jsx";
+import { Box, styled } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import type { ProjectRecord } from "~/lib/projects/types";
+import type { MapNode } from "~/lib/spatial-map/types";
 
 import { AddNodesFlowRail } from "./add-nodes-flow/AddNodesFlowRail";
 import type {
@@ -15,6 +17,7 @@ import { SpatialMapProvider, useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapInspector } from "./SpatialMapInspector";
 import { SpatialMapImageProvider } from "./SpatialMapImages";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
+import { SpatialMapGenerateImageControl } from "./SpatialMapGenerateImageControl";
 import { SpatialMapCommandMenu } from "./SpatialMapCommandMenu";
 import { SpatialMapGridView } from "./SpatialMapGridView";
 import { SpatialMapScene } from "./SpatialMapScene";
@@ -36,6 +39,8 @@ const SourceDecompositionRail = lazy(() =>
     }),
   ),
 );
+
+const StashCardButton = styled("button");
 
 // Router A is not a Panda styled component, so backlink hover styling remains
 // as a local class instead of the removed global stylesheet.
@@ -183,7 +188,10 @@ function SpatialMapCanvasLayout(props: {
           position="relative"
           zIndex="1"
           display="grid"
-          gridTemplateColumns={{ base: "minmax(0, 1fr)", md: "minmax(0, 1fr) auto" }}
+          gridTemplateColumns={{
+            base: "minmax(0, 1fr)",
+            md: "auto minmax(0, 1fr) auto",
+          }}
           w="100%"
           h="100%"
           minH="0"
@@ -198,8 +206,13 @@ function SpatialMapCanvasLayout(props: {
             inset 0 1px 0 rgba(255, 255, 255, 0.88)
           `}
         >
+          <SpatialMapNodeStash
+            project={props.project}
+            onProjectUpdated={props.onProjectUpdated}
+          />
           <Box
             class="spatial-map-stage"
+            gridColumn={{ base: "1", md: "2" }}
             position="relative"
             display="grid"
             gridTemplateRows="auto minmax(0, 1fr)"
@@ -284,43 +297,228 @@ function SpatialMapCanvasLayout(props: {
             </Show>
           </Box>
 
-          <Show
-            when={!controller.addNodesOpen()}
-            fallback={
-              <AddNodesFlowRail
-                project={props.project}
-                onProjectUpdated={props.onProjectUpdated}
-              />
-            }
+          <Box
+            gridColumn={{ base: "1", md: "3" }}
+            minW="0"
+            minH="0"
+            h="100%"
           >
             <Show
-              when={!controller.sourceDecompositionOpen()}
+              when={!controller.addNodesOpen()}
               fallback={
-                <SourceDecompositionRail
+                <AddNodesFlowRail
                   project={props.project}
                   onProjectUpdated={props.onProjectUpdated}
                 />
               }
             >
               <Show
-                when={!controller.contextNoteConversionOpen()}
+                when={!controller.sourceDecompositionOpen()}
                 fallback={
-                  <ContextNoteConversionRail
+                  <SourceDecompositionRail
                     project={props.project}
                     onProjectUpdated={props.onProjectUpdated}
                   />
                 }
               >
-                <SpatialMapInspector
-                  project={props.project}
-                  onProjectUpdated={props.onProjectUpdated}
-                />
+                <Show
+                  when={!controller.contextNoteConversionOpen()}
+                  fallback={
+                    <ContextNoteConversionRail
+                      project={props.project}
+                      onProjectUpdated={props.onProjectUpdated}
+                    />
+                  }
+                >
+                  <SpatialMapInspector
+                    project={props.project}
+                    onProjectUpdated={props.onProjectUpdated}
+                  />
+                </Show>
               </Show>
             </Show>
-          </Show>
+          </Box>
         </Box>
       </Box>
     </SpatialMapImageProvider>
+  );
+}
+
+function SpatialMapNodeStash(props: {
+  project: ProjectRecord;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
+}) {
+  const controller = useSpatialMap();
+  const [stashOpen, setStashOpen] = createSignal(true);
+  let previousStashCount = controller.stashedNodeIds().length;
+
+  createEffect(() => {
+    const nextStashCount = controller.stashedNodeIds().length;
+    if (nextStashCount > previousStashCount) {
+      setStashOpen(true);
+    }
+    previousStashCount = nextStashCount;
+  });
+
+  return (
+    <Show when={controller.viewMode() === "canvas" && controller.stashedNodes().length > 0}>
+      <Box
+        as="aside"
+        aria-label="Node stash"
+        display={{ base: "none", md: "grid" }}
+        gridTemplateRows={stashOpen() ? "auto minmax(0, 1fr)" : "auto"}
+        w={stashOpen() ? "250px" : "34px"}
+        h="100%"
+        minH="0"
+        overflow="hidden"
+        p={stashOpen() ? "10px" : "8px 4px"}
+        borderRight="1px solid rgba(96, 101, 95, 0.38)"
+        background="linear-gradient(180deg, rgba(248, 250, 248, 0.88), rgba(235, 239, 233, 0.92))"
+        boxShadow="inset -1px 0 0 rgba(255, 255, 255, 0.58), 10px 0 24px rgba(29, 33, 28, 0.035)"
+        transition="width 160ms ease, padding 160ms ease"
+      >
+        <Box
+          display="flex"
+          alignItems="baseline"
+          justifyContent={stashOpen() ? "space-between" : "center"}
+          gap="2"
+          pb="8px"
+          borderBottom="1px solid rgba(96, 101, 95, 0.18)"
+        >
+          <Button
+            type="button"
+            size="xs"
+            variant="plain"
+            colorPalette="green"
+            minW="24px"
+            w="24px"
+            h="24px"
+            p="0"
+            aria-label={stashOpen() ? "Collapse node stash" : "Expand node stash"}
+            onClick={() => setStashOpen((current) => !current)}
+          >
+            <Show when={stashOpen()} fallback={<ChevronRightIcon size={15} />}>
+              <ChevronLeftIcon size={15} />
+            </Show>
+          </Button>
+          <Show when={stashOpen()}>
+            <Box as="h2" m="0" color="var(--spatial-map-copy)" fontSize="13px" fontWeight="700" letterSpacing="0.02em">
+              Node Stash
+            </Box>
+            <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="11px" fontWeight="700">
+              S toggles
+            </Box>
+          </Show>
+        </Box>
+        <Show when={stashOpen()}>
+          <Box display="grid" alignContent="start" gap="8px" minH="0" overflow="auto" pt="9px">
+            <For each={controller.stashedNodes()}>
+              {(node) => (
+                <StashedNodeCard
+                  node={node}
+                  project={props.project}
+                  onProjectUpdated={props.onProjectUpdated}
+                />
+              )}
+            </For>
+          </Box>
+        </Show>
+      </Box>
+    </Show>
+  );
+}
+
+function StashedNodeCard(props: {
+  node: MapNode;
+  project: ProjectRecord;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
+}) {
+  const controller = useSpatialMap();
+  const isSelected = () => controller.selectedNodeId() === props.node.id;
+
+  const selectStashedNode = () => {
+    controller.setSelectedNodeId(props.node.id);
+    controller.setInspectorOpen(true);
+  };
+
+  return (
+    <Box
+      as="section"
+      display="grid"
+      gap="7px"
+      p="9px"
+      border="1px solid"
+      borderColor={isSelected() ? "rgba(45, 111, 72, 0.62)" : "rgba(96, 101, 95, 0.24)"}
+      borderRadius="7px"
+      background={isSelected() ? "rgba(229, 239, 229, 0.82)" : "rgba(246, 248, 244, 0.78)"}
+      boxShadow={isSelected() ? "inset 0 0 0 1px rgba(45, 111, 72, 0.22)" : "none"}
+    >
+      <StashCardButton
+        type="button"
+        display="grid"
+        gap="3px"
+        minW="0"
+        p="0"
+        border="0"
+        background="transparent"
+        color="inherit"
+        textAlign="left"
+        cursor="pointer"
+        onClick={selectStashedNode}
+      >
+        <Box as="span" color="var(--spatial-map-copy)" fontSize="14px" fontWeight="700" lineHeight="1.16" overflowWrap="anywhere">
+          {props.node.label}
+        </Box>
+        <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="11px" fontWeight="700" letterSpacing="0.04em">
+          {props.node.type} / {props.node.status}
+        </Box>
+      </StashCardButton>
+      <Box display="flex" alignItems="center" flexWrap="wrap" gap="5px">
+        <Button
+          size="xs"
+          variant="surface"
+          colorPalette="green"
+          onClick={() => controller.focusNode(props.node.id)}
+        >
+          <LocateFixedIcon size={13} />
+          Find
+        </Button>
+        <Button
+          size="xs"
+          variant="outline"
+          colorPalette="green"
+          onClick={() => controller.unstashNode(props.node.id)}
+        >
+          <XIcon size={13} />
+          Unstash
+        </Button>
+      </Box>
+      <Box display="flex" alignItems="center" flexWrap="wrap" gap="5px">
+        <Button
+          size="xs"
+          variant="surface"
+          colorPalette="green"
+          onClick={() => {
+            selectStashedNode();
+            controller.openContextNoteConversionFlow();
+          }}
+        >
+          Context
+        </Button>
+        <SpatialMapGenerateImageControl
+          projectId={props.project.id}
+          node={props.node}
+          onProjectUpdated={props.onProjectUpdated}
+          compact
+        />
+        <SpatialMapDeleteNodeControl
+          project={props.project}
+          node={props.node}
+          onProjectUpdated={props.onProjectUpdated}
+          compact
+        />
+      </Box>
+    </Box>
   );
 }
 
