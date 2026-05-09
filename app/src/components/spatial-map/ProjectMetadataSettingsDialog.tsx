@@ -39,8 +39,8 @@ const SettingsSectionButtonRoot = styled("button");
 // SimpleDialog only exposes a content class, so the slot-level dialog chrome
 // stays as a small component-local Panda escape hatch instead of global CSS.
 const projectSettingsDialogClass = css({
-  w: "min(960px, 96vw)",
-  maxW: "min(960px, 96vw) !important",
+  w: "min(960px, calc(100dvw - 24px))",
+  maxW: "min(960px, calc(100dvw - 24px)) !important",
   h: "min(720px, calc(100dvh - 24px))",
   maxH: "calc(100dvh - 24px) !important",
   boxSizing: "border-box",
@@ -170,8 +170,9 @@ export function ProjectMetadataSettingsDialog(
         onOpenChange={setOpen}
         title="Project Settings"
         description="Edit the project title, subtitle, and node metadata fields."
-        maxW="min(960px, 96vw)"
+        maxW="min(960px, calc(100dvw - 24px))"
         contentClass={projectSettingsDialogClass}
+        scrollBehavior="inside"
         footer={
           <HStack>
             <Button variant="outline" onClick={() => setOpen(false)}>
