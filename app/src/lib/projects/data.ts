@@ -1,5 +1,6 @@
 import { action, query, redirect } from "@solidjs/router";
 import { getRequestEvent } from "solid-js/web";
+import type { ProjectBackupFileSummary } from "./data.server";
 import type { ProjectRecord, ProjectSummary } from "./types";
 
 const CLIENT_MUTATION_ID_FIELD = "clientMutationId";
@@ -27,6 +28,11 @@ export const getProjects = query(
 export const getProjectById = query(
   async (projectId: string) => fetchJson<ProjectRecord>(`/api/projects/${projectId}`),
   "project-by-id",
+);
+
+export const getProjectBackupFiles = query(
+  async () => fetchJson<ProjectBackupFileSummary[]>("/api/admin/project-backups"),
+  "project-backup-files",
 );
 
 export const createProject = action(

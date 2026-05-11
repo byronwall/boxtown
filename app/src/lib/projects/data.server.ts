@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import type { GeneratedNodeBatch } from "~/lib/add-nodes/types";
@@ -178,6 +178,13 @@ interface ProjectNodeImageSource {
   data: Buffer;
 }
 
+export interface ProjectBackupFileSummary {
+  projectId: string;
+  filename: string;
+  size: number;
+  updatedAt: string;
+}
+
 interface AddProjectNodeImageSourcesInput {
   projectId: string;
   nodeIds: string[];
@@ -307,8 +314,9 @@ export async function readProjectByIdFromDisk(
     return null;
   }
 
-  const parsed = parseStoredProjectRecord(JSON.parse(await readFile(projectFile, "utf8")));
-  if (parsed.didNormalize) {
+  const storedProject = await readStoredProjectJson(projectFile);
+  const parsed = parseStoredProjectRecord(storedProject.value);
+  if (parsed.didNormalize || storedProject.didRecover) {
     await writeProjectRecordToDisk(parsed.record);
   }
 
@@ -1374,9 +1382,10 @@ export async function readProjectRecordsFromDisk(): Promise<ProjectRecord[]> {
       continue;
     }
 
-    const parsed = parseStoredProjectRecord(JSON.parse(await readFile(projectFile, "utf8")));
+    const storedProject = await readStoredProjectJson(projectFile);
+    const parsed = parseStoredProjectRecord(storedProject.value);
     records.push(parsed.record);
-    didNormalizeAnyRecord ||= parsed.didNormalize;
+    didNormalizeAnyRecord ||= parsed.didNormalize || storedProject.didRecover;
   }
 
   if (didNormalizeAnyRecord) {
@@ -1404,14 +1413,176 @@ export async function writeProjectRecordsToDisk(records: ProjectRecord[]) {
   );
 }
 
+export async function listProjectBackupFilesFromDisk(): Promise<ProjectBackupFileSummary[]> {
+  const projectsDir = getProjectsDirPath();
+  if (!existsSync(projectsDir)) {
+    return [];
+  }
+
+  const entries = await readdir(projectsDir, { withFileTypes: true });
+  const backups: ProjectBackupFileSummary[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    const projectId = entry.name;
+    const projectDir = path.join(projectsDir, projectId);
+    const projectEntries = await readdir(projectDir, { withFileTypes: true });
+    for (const projectEntry of projectEntries) {
+      if (!projectEntry.isFile() || !isProjectBackupFilename(projectEntry.name)) {
+        continue;
+      }
+
+      const backupFile = path.join(projectDir, projectEntry.name);
+      const backupStat = await stat(backupFile);
+      backups.push({
+        projectId,
+        filename: projectEntry.name,
+        size: backupStat.size,
+        updatedAt: backupStat.mtime.toISOString(),
+      });
+    }
+  }
+
+  return backups.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+}
+
+export async function readProjectBackupFileFromDisk(input: {
+  projectId: string;
+  filename: string;
+}) {
+  if (safePathSegment(input.projectId) !== input.projectId || !isProjectBackupFilename(input.filename)) {
+    return null;
+  }
+
+  const backupFile = path.join(getProjectDataDir(input.projectId), input.filename);
+  if (!existsSync(backupFile)) {
+    return null;
+  }
+
+  const backupStat = await stat(backupFile);
+  if (!backupStat.isFile()) {
+    return null;
+  }
+
+  return {
+    data: await readFile(backupFile),
+    filename: input.filename,
+    size: backupStat.size,
+  };
+}
+
 async function writeProjectRecordToDisk(record: ProjectRecord) {
   const projectDir = getProjectDataDir(record.id);
   await mkdir(projectDir, { recursive: true });
-  await writeFile(
-    getProjectJsonFilePath(record.id),
-    `${JSON.stringify(serializeProjectRecord(record), null, 2)}\n`,
-    "utf8",
+  const projectFile = getProjectJsonFilePath(record.id);
+  const tempFile = path.join(
+    projectDir,
+    `.project.${process.pid}.${Date.now()}.${randomUUID()}.tmp`,
   );
+  await writeFile(tempFile, `${JSON.stringify(serializeProjectRecord(record), null, 2)}\n`, "utf8");
+  await rename(tempFile, projectFile);
+}
+
+function isProjectBackupFilename(filename: string) {
+  return (
+    path.basename(filename) === filename &&
+    filename.startsWith("project.json.corrupt-") &&
+    filename.includes(".bak")
+  );
+}
+
+async function readStoredProjectJson(projectFile: string) {
+  const raw = await readFile(projectFile, "utf8");
+  try {
+    return { value: JSON.parse(raw) as unknown, didRecover: false };
+  } catch (error) {
+    const recoveredRaw = recoverFirstJsonObject(raw);
+    if (!recoveredRaw) {
+      throw error;
+    }
+
+    const recovered = JSON.parse(recoveredRaw) as unknown;
+    const backupFile = await backupCorruptProjectFile(projectFile);
+    console.warn(
+      `Recovered ${projectFile} from trailing JSON data. Original file was preserved at ${backupFile}.`,
+    );
+    return { value: recovered, didRecover: true };
+  }
+}
+
+function recoverFirstJsonObject(raw: string) {
+  const start = raw.search(/\S/);
+  if (start === -1 || raw[start] !== "{") {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaping = false;
+
+  for (let index = start; index < raw.length; index += 1) {
+    const char = raw[index];
+
+    if (inString) {
+      if (escaping) {
+        escaping = false;
+      } else if (char === "\\") {
+        escaping = true;
+      } else if (char === "\"") {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === "\"") {
+      inString = true;
+      continue;
+    }
+
+    if (char === "{") {
+      depth += 1;
+      continue;
+    }
+
+    if (char !== "}") {
+      continue;
+    }
+
+    depth -= 1;
+    if (depth === 0) {
+      const end = index + 1;
+      if (raw.slice(end).trim().length === 0) {
+        return null;
+      }
+      return raw.slice(start, end);
+    }
+  }
+
+  return null;
+}
+
+async function backupCorruptProjectFile(projectFile: string) {
+  const backupFile = await createUniqueBackupFilePath(projectFile);
+  await copyFile(projectFile, backupFile);
+  return backupFile;
+}
+
+async function createUniqueBackupFilePath(projectFile: string) {
+  const safeTimestamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
+  const baseBackupFile = `${projectFile}.corrupt-${safeTimestamp}.bak`;
+  if (!existsSync(baseBackupFile)) {
+    return baseBackupFile;
+  }
+
+  let suffix = 2;
+  while (existsSync(`${baseBackupFile}.${suffix}`)) {
+    suffix += 1;
+  }
+
+  return `${baseBackupFile}.${suffix}`;
 }
 
 function sanitizeProjectName(name?: string) {

@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -9,8 +9,10 @@ import {
   deleteProjectNodeOnDisk,
   deleteProjectNodeImageOnDisk,
   deleteProjectOnDisk,
+  listProjectBackupFilesFromDisk,
   mergeGeneratedSpatialMapData,
   readProjectByIdFromDisk,
+  readProjectBackupFileFromDisk,
   readProjectSummariesFromDisk,
   updateProjectNodeContextOnDisk,
   updateProjectNodeMetadataOnDisk,
@@ -195,6 +197,57 @@ describe("createProjectOnDisk", () => {
       const persisted = await readProjectByIdFromDisk(created.id);
 
       expect(persisted?.id).toBe(created.id);
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("backs up and repairs a project file with trailing JSON data", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-trailing-json-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
+
+    try {
+      process.chdir(tempRoot);
+
+      const created = await createProjectOnDisk({ name: "Recovered Project" });
+      const projectDir = path.join(dataDir, "projects", created.id);
+      const projectFile = path.join(projectDir, "project.json");
+      const originalJson = readFileSync(projectFile, "utf8");
+      writeFileSync(projectFile, `${originalJson}${originalJson}`, "utf8");
+
+      const persisted = await readProjectByIdFromDisk(created.id);
+      const repairedJson = readFileSync(projectFile, "utf8");
+      const backupFiles = readdirSync(projectDir).filter((name) =>
+        name.startsWith("project.json.corrupt-"),
+      );
+
+      expect(persisted?.id).toBe(created.id);
+      expect(JSON.parse(repairedJson).id).toBe(created.id);
+      expect(backupFiles).toHaveLength(1);
+      expect(readFileSync(path.join(projectDir, backupFiles[0] ?? ""), "utf8")).toBe(
+        `${originalJson}${originalJson}`,
+      );
+
+      const listedBackups = await listProjectBackupFilesFromDisk();
+      const backup = listedBackups[0];
+      const backupFile = await readProjectBackupFileFromDisk({
+        projectId: backup?.projectId ?? "",
+        filename: backup?.filename ?? "",
+      });
+      const unsafeBackupFile = await readProjectBackupFileFromDisk({
+        projectId: created.id,
+        filename: "../project.json",
+      });
+
+      expect(backup).toMatchObject({
+        projectId: created.id,
+        size: Buffer.byteLength(`${originalJson}${originalJson}`),
+      });
+      expect(backupFile?.data.toString("utf8")).toBe(`${originalJson}${originalJson}`);
+      expect(unsafeBackupFile).toBeNull();
     } finally {
       process.chdir(originalCwd);
     }
