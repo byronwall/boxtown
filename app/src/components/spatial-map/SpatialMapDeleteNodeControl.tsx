@@ -1,5 +1,5 @@
 import { useAction } from "@solidjs/router";
-import { createEffect, createSignal, untrack } from "solid-js";
+import { Show, createEffect, createSignal, untrack } from "solid-js";
 import { HStack, VStack } from "styled-system/jsx";
 import { Trash2 } from "lucide-solid";
 import { Button } from "~/components/ui/button";
@@ -26,6 +26,8 @@ interface SpatialMapDeleteNodeControlProps {
 export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlProps) {
   const spatialMap = useSpatialMap();
   const [open, setOpen] = createSignal(false);
+  // "choose" comes from the trash button; "subtree" from the Cmd+Delete shortcut.
+  const [dialogMode, setDialogMode] = createSignal<"choose" | "subtree">("choose");
   const [pending, setPending] = createSignal(false);
   let deleteButtonRef: HTMLButtonElement | undefined;
   const submitDeleteNode = useAction(deleteProjectNode);
@@ -33,6 +35,9 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
   const descendantIds = () => getDescendantNodeIds(props.project.spatialMap, props.node.id);
   const descendantCount = () => descendantIds().size;
   const childrenButtonLabel = () => `Delete node and children (${descendantCount()})`;
+  const descendantLabel = () =>
+    descendantCount() === 1 ? "its 1 descendant" : `its ${descendantCount()} descendants`;
+  const isSubtreeMode = () => dialogMode() === "subtree";
 
   const deleteNode = async (scope: DeleteScope = "node") => {
     if (pending()) {
@@ -67,10 +72,10 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
 
     setPending(true);
     setOpen(false);
-    if (spatialMap.deleteNodeConfirmId() === nodeId) {
-      spatialMap.clearDeleteNodeConfirm();
+    if (spatialMap.deleteSubtreeConfirmId() === nodeId) {
+      spatialMap.clearDeleteSubtreeConfirm();
     }
-    spatialMap.clearUnsafeDeleteNodeRequest();
+    spatialMap.clearDeleteNodeRequest();
     props.onProjectUpdated?.(optimisticProject, { clientMutationId, phase: "optimistic" });
 
     let result: ProjectRecord;
@@ -95,13 +100,14 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
   };
 
   createEffect(() => {
-    if (props.hideTrigger && spatialMap.deleteNodeConfirmId() === props.node.id) {
+    if (props.hideTrigger && spatialMap.deleteSubtreeConfirmId() === props.node.id) {
+      setDialogMode("subtree");
       setOpen(true);
     }
   });
 
   createEffect(() => {
-    const request = spatialMap.unsafeDeleteNodeRequest();
+    const request = spatialMap.deleteNodeRequest();
     if (!props.hideTrigger || request?.nodeId !== props.node.id) {
       return;
     }
@@ -110,14 +116,14 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
       return;
     }
 
-    spatialMap.clearUnsafeDeleteNodeRequest();
+    spatialMap.clearDeleteNodeRequest();
     void deleteNode();
   });
 
   const setDialogOpen = (nextOpen: boolean) => {
     setOpen(nextOpen);
-    if (!nextOpen && spatialMap.deleteNodeConfirmId() === props.node.id) {
-      spatialMap.clearDeleteNodeConfirm();
+    if (!nextOpen && spatialMap.deleteSubtreeConfirmId() === props.node.id) {
+      spatialMap.clearDeleteSubtreeConfirm();
     }
   };
 
@@ -129,7 +135,10 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
             size="xs"
             variant="danger"
             px={props.compact ? "0" : undefined}
-            onClick={() => setDialogOpen(true)}
+            onClick={() => {
+              setDialogMode("choose");
+              setDialogOpen(true);
+            }}
             aria-label={props.compact ? "Delete node" : undefined}
           >
             {props.compact ? <Trash2 size={16} /> : "Delete Node"}
@@ -140,8 +149,12 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
       <SimpleDialog
         open={open()}
         onOpenChange={setDialogOpen}
-        title="Delete Node"
-        description={`Delete ${props.node.label}? Choose whether to remove only this node or include its descendants.`}
+        title={isSubtreeMode() ? "Delete Node and Children" : "Delete Node"}
+        description={
+          isSubtreeMode()
+            ? `Delete ${props.node.label} and ${descendantLabel()}?`
+            : `Delete ${props.node.label}? Choose whether to remove only this node or include its descendants.`
+        }
         maxW="520px"
         initialFocusEl={() => deleteButtonRef ?? null}
         footer={
@@ -149,34 +162,55 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
             <Button variant="outline" type="button" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
-            <Button
-              ref={deleteButtonRef}
-              type="button"
-              loading={pending()}
-              variant="danger"
-              onClick={() => {
-                void deleteNode("node");
-              }}
+            <Show
+              when={isSubtreeMode()}
+              fallback={
+                <>
+                  <Button
+                    ref={deleteButtonRef}
+                    type="button"
+                    loading={pending()}
+                    variant="danger"
+                    onClick={() => {
+                      void deleteNode("node");
+                    }}
+                  >
+                    Delete node
+                  </Button>
+                  <Button
+                    type="button"
+                    loading={pending()}
+                    disabled={descendantCount() === 0}
+                    variant="danger"
+                    onClick={() => {
+                      void deleteNode("node-and-children");
+                    }}
+                  >
+                    {childrenButtonLabel()}
+                  </Button>
+                </>
+              }
             >
-              Delete node
-            </Button>
-            <Button
-              type="button"
-              loading={pending()}
-              disabled={descendantCount() === 0}
-              variant="danger"
-              onClick={() => {
-                void deleteNode("node-and-children");
-              }}
-            >
-              {childrenButtonLabel()}
-            </Button>
+              <Button
+                ref={deleteButtonRef}
+                type="button"
+                loading={pending()}
+                variant="danger"
+                onClick={() => {
+                  void deleteNode("node-and-children");
+                }}
+              >
+                {childrenButtonLabel()}
+              </Button>
+            </Show>
           </HStack>
         }
       >
         <VStack alignItems="stretch" gap="4">
           <Text textStyle="sm" color="fg.muted">
-            Delete node removes this node and its attached links. Delete node and children also removes every descendant connected by parent-child links.
+            {isSubtreeMode()
+              ? "This removes the node and every descendant connected by parent-child links. It cannot be undone. Press Delete without Cmd to remove only this node."
+              : "Delete node removes this node and its attached links. Delete node and children also removes every descendant connected by parent-child links."}
           </Text>
         </VStack>
       </SimpleDialog>

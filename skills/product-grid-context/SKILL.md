@@ -209,6 +209,7 @@ pgm node metadata set <node-id> purpose "Checkout entry point" --json
 pgm node metadata unset <node-id> purpose --json
 pgm node move <node-id> --parent <parent-node-id> --json
 pgm node move <node-id> --root --json
+pgm node delete <node-id> --yes --json   # irreversible; add --with-children to remove descendants
 ```
 
 ## Attach Images To Nodes

@@ -1,11 +1,17 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { GET as getNodes } from "~/routes/api/v1/projects/[projectId]/nodes";
+import { DELETE as deleteNode } from "~/routes/api/v1/projects/[projectId]/nodes/[nodeId]";
 import { PATCH as patchMetadata } from "~/routes/api/v1/projects/[projectId]/nodes/[nodeId]/metadata";
 import { GET as getSchema } from "~/routes/api/v1/projects/[projectId]/schema";
-import { readProjectByIdFromDisk, updateProjectNodeMetadataOnDisk } from "~/lib/projects/data.server";
+import {
+  deleteProjectNodeOnDisk,
+  readProjectByIdFromDisk,
+  updateProjectNodeMetadataOnDisk,
+} from "~/lib/projects/data.server";
 
 vi.mock("~/lib/projects/data.server", () => ({
+  deleteProjectNodeOnDisk: vi.fn(),
   readProjectByIdFromDisk: vi.fn(),
   updateProjectNodeMetadataOnDisk: vi.fn(),
 }));
@@ -165,6 +171,40 @@ describe("agent node API projections", () => {
     expect(response.status).toBe(400);
     expect(body.error.code).toBe("invalid_metadata_key");
     expect(updateProjectNodeMetadataOnDisk).not.toHaveBeenCalled();
+  });
+
+  it("deletes a node and reports removed ids", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.mocked(readProjectByIdFromDisk).mockResolvedValue(project);
+    vi.mocked(deleteProjectNodeOnDisk).mockResolvedValue({
+      ...project,
+      spatialMap: { nodes: [project.spatialMap.nodes[1]], links: [] },
+    });
+
+    const response = await deleteNode(createEvent(
+      "http://localhost/api/v1/projects/demo/nodes/root-task",
+      { params: { projectId: "demo", nodeId: "root-task" }, method: "DELETE" },
+    ));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.deletedNodeIds).toEqual(["root-task"]);
+    expect(deleteProjectNodeOnDisk).toHaveBeenCalledWith(
+      expect.objectContaining({ projectId: "demo", nodeId: "root-task", includeChildren: false }),
+    );
+  });
+
+  it("returns 404 when deleting a missing node", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.mocked(readProjectByIdFromDisk).mockResolvedValue(project);
+
+    const response = await deleteNode(createEvent(
+      "http://localhost/api/v1/projects/demo/nodes/missing?children=true",
+      { params: { projectId: "demo", nodeId: "missing" }, method: "DELETE" },
+    ));
+
+    expect(response.status).toBe(404);
+    expect(deleteProjectNodeOnDisk).not.toHaveBeenCalled();
   });
 });
 
