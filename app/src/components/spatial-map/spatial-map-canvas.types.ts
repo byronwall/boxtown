@@ -13,6 +13,7 @@ export type SpatialMapNodeColorMode = "type" | "status";
 export interface SpatialMapGlobalFilterState {
   enabled: boolean;
   includeParents: boolean;
+  includeChildren: boolean;
   selectedTypes: string[];
   selectedStatuses: MapNodeStatus[];
 }
@@ -142,6 +143,9 @@ export interface SpatialMapCanvasController {
   ) => void;
   setGlobalFilterEnabled: (value: boolean | ((current: boolean) => boolean)) => void;
   setGlobalFilterIncludeParents: (
+    value: boolean | ((current: boolean) => boolean),
+  ) => void;
+  setGlobalFilterIncludeChildren: (
     value: boolean | ((current: boolean) => boolean),
   ) => void;
   showArchived: Accessor<boolean>;

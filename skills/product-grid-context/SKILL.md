@@ -223,6 +223,8 @@ Use `image add` when the agent creates screenshots or local image artifacts, suc
 pgm image add <node-id> ./screenshots/home-desktop.png ./screenshots/home-mobile.png --json
 pgm image list <node-id> --json
 pgm image remove <node-id> <image-id> --json
+pgm image download <node-id> --output ./tmp/images --json          # all images on the node
+pgm image download <node-id> <image-id> --output ./tmp/shot.png --json
 ```
 
 The JSON response includes the stored image IDs and URLs. Prefer attaching screenshots to the most specific matching node.
@@ -273,6 +275,7 @@ pgm node import-markdown --project <project-id> --file ./brief.md --title "Brief
 pgm image add <node-id> ./screenshot.png --project <project-id> --json
 pgm image list <node-id> --project <project-id> --json
 pgm image remove <node-id> <image-id> --project <project-id> --json
+pgm image download <node-id> [image-id...] --project <project-id> --output ./tmp/images --json
 pgm node list --project <project-id> --search "checkout" --with-ancestors --json
 pgm node export-context <node-id> --project <project-id> --output ./node-context.md
 pgm project export-markdown --project <project-id> --output ./project-context.md

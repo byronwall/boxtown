@@ -1,3 +1,4 @@
+import { createUniqueNodeId } from "./node-id";
 import type { ProjectRecord } from "./types";
 
 const CLIENT_MUTATION_ID_FIELD = "clientMutationId";
@@ -48,17 +49,7 @@ export function createOptimisticNodeId(
   type: string,
   existingIds: Set<string>,
 ) {
-  const baseId = slugifyProjectName(`${type}-${label}`);
-  if (!existingIds.has(baseId)) {
-    return baseId;
-  }
-
-  let suffix = 2;
-  while (existingIds.has(`${baseId}-${suffix}`)) {
-    suffix += 1;
-  }
-
-  return `${baseId}-${suffix}`;
+  return createUniqueNodeId(label, type, existingIds);
 }
 
 export function updateProjectNode(
@@ -88,13 +79,4 @@ function getComparableProjectState(project: ProjectRecord) {
     nodeTypeSchema: project.nodeTypeSchema,
     spatialMap: project.spatialMap,
   };
-}
-
-function slugifyProjectName(name: string) {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  return slug || "project";
 }
