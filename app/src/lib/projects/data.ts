@@ -407,6 +407,7 @@ export const updateProjectMetadataSchema = action(
     const defaultValues = formData.getAll("defaultValue");
     const nodeTypeNames = formData.getAll("nodeTypeName");
     const nodeTypeColors = formData.getAll("nodeTypeColor");
+    const defaultNodeTypeIndex = Number(formData.get("defaultNodeTypeIndex") ?? -1);
 
     if (typeof projectId !== "string" || projectId.trim().length === 0) {
       throw new Error("A project id is required.");
@@ -433,6 +434,7 @@ export const updateProjectMetadataSchema = action(
       nodeTypes: nodeTypeNames.map((name, index) => ({
         name: typeof name === "string" ? name : "",
         color: typeof nodeTypeColors[index] === "string" ? nodeTypeColors[index] : "",
+        isDefault: index === defaultNodeTypeIndex,
       })),
       clientMutationId: getClientMutationIdFromFormData(formData),
     });

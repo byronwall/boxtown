@@ -423,6 +423,7 @@ export function ProjectMetadataSettingsDialog(
               <Box {...typeGridProps()} minH="30px" borderTop="1px solid rgba(96, 101, 95, 0.4)" borderBottom="1px solid rgba(96, 101, 95, 0.34)" background="rgba(226, 232, 224, 0.9)">
                 <GridHeaderCell>Name</GridHeaderCell>
                 <GridHeaderCell>Color</GridHeaderCell>
+                <GridHeaderCell centered>Default</GridHeaderCell>
                 <GridHeaderCell centered>Order</GridHeaderCell>
               </Box>
               <Box {...typeGridProps()} borderBottom="1px solid rgba(96, 101, 95, 0.34)" background="rgba(239, 241, 239, 0.86)">
@@ -467,6 +468,17 @@ export function ProjectMetadataSettingsDialog(
                         <Text as="span" color="var(--spatial-map-copy-muted)" fontSize="11px" fontWeight="700">
                           {row().color}
                         </Text>
+                      </HStack>
+                      <HStack {...gridCellProps()} justifyContent="center" alignItems="center" background="rgba(248, 250, 248, 0.74)">
+                        <input
+                          aria-label={`Use ${row().name || "this type"} as the default for new nodes`}
+                          title="Default type for new nodes (click again to clear)"
+                          type="radio"
+                          name="defaultNodeTypeIndex"
+                          value={index}
+                          checked={row().isDefault === true}
+                          onClick={() => toggleDefaultTypeRow(index, setTypeRows)}
+                        />
                       </HStack>
                       <HStack gap="1" {...gridCellProps()} justifyContent="center" alignItems="center" background="rgba(232, 237, 229, 0.72)">
                         <IconButton
@@ -699,12 +711,12 @@ function metadataGridProps() {
 function typeGridProps() {
   return {
     display: "grid",
-    gridTemplateColumns: "minmax(180px, 280px) 136px 126px",
+    gridTemplateColumns: "minmax(180px, 280px) 136px 72px 126px",
     gap: "0",
     alignItems: "stretch",
     w: "fit-content",
     maxW: "100%",
-    minW: "442px",
+    minW: "514px",
     borderInline: "1px solid rgba(96, 101, 95, 0.34)",
   } as const;
 }
@@ -733,7 +745,22 @@ function createTypeRows(schema: ProjectNodeTypeDefinition[]): NodeTypeRowDraft[]
   return schema.map((field) => ({
     name: field.name,
     color: field.color,
+    ...(field.isDefault ? { isDefault: true } : {}),
   }));
+}
+
+// Radios can't be unchecked natively, so clicking the current default clears it
+// (new nodes then fall back to the parent's type).
+function toggleDefaultTypeRow(
+  index: number,
+  setRows: (setter: (current: NodeTypeRowDraft[]) => NodeTypeRowDraft[]) => void,
+) {
+  setRows((current) => {
+    const clearing = current[index]?.isDefault === true;
+    return current.map(({ isDefault: _isDefault, ...row }, rowIndex) =>
+      !clearing && rowIndex === index ? { ...row, isDefault: true } : row,
+    );
+  });
 }
 
 function updateRow(

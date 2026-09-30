@@ -23,6 +23,7 @@ import {
   createDefaultProjectNodeTypeSchema,
   normalizeProjectNodeTypeName,
   normalizeProjectNodeTypeSchema,
+  resolveNewNodeType,
 } from "./node-types";
 import {
   parseStoredProjectRecord,
@@ -137,6 +138,7 @@ interface ProjectMetadataSchemaRowInput {
 interface ProjectNodeTypeRowInput {
   name: string;
   color: string;
+  isDefault?: boolean;
 }
 
 interface DeleteProjectNodeInput {
@@ -1091,7 +1093,7 @@ export async function createChildNodeOnDisk(
   const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));
   const nodeType = input.type
     ? normalizeProjectNodeTypeName(input.type)
-    : parentNode?.type ?? "page";
+    : resolveNewNodeType(current.nodeTypeSchema, parentNode?.type);
   if (!nodeType) {
     throw new Error("A valid node type is required.");
   }

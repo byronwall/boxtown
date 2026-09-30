@@ -5,7 +5,7 @@ import { Button } from "~/components/ui/button";
 import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
 import { createProjectChildNode } from "~/lib/projects/data";
-import { ensureProjectNodeTypeOptions } from "~/lib/projects/node-types";
+import { ensureProjectNodeTypeOptions, resolveNewNodeType } from "~/lib/projects/node-types";
 import {
   appendClientMutationId,
   createClientMutationId,
@@ -34,7 +34,7 @@ export function SpatialMapChildNodePlaceholder(props: {
     ensureProjectNodeTypeOptions(props.project.nodeTypeSchema, props.parentNode?.type),
   );
   const [nodeType, setNodeType] = createSignal(untrack(() =>
-    props.parentNode?.type ?? nodeTypeOptions()[0]?.name ?? "page",
+    resolveNewNodeType(props.project.nodeTypeSchema, props.parentNode?.type),
   ));
   const [context, setContext] = createSignal("");
   let formRef: HTMLFormElement | undefined;
