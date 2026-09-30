@@ -131,6 +131,8 @@ pgm node list --status blocked --preset status --json
 pgm node list --type page --preset compact --json
 ```
 
+Archived nodes and their descendants are left out of `node list` results. Pass `--include-archived` when you need them.
+
 Avoid `pgm project view --json` as a default first step. It returns the full graph, all links, metadata, context, and images, which can be very large and usually wastes context. Use it only when you explicitly need the complete project record.
 
 Use `pgm project export-markdown` when another process needs broad project context, but prefer node context exports for ordinary implementation work.
@@ -210,6 +212,7 @@ pgm node metadata unset <node-id> purpose --json
 pgm node move <node-id> --parent <parent-node-id> --json
 pgm node move <node-id> --root --json
 pgm node delete <node-id> --yes --json   # irreversible; add --with-children to remove descendants
+pgm node archive <node-id...> --json      # hide finished work; reversible with `pgm node unarchive`
 ```
 
 ## Attach Images To Nodes

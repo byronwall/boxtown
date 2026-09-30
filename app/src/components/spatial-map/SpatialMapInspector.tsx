@@ -44,6 +44,7 @@ import { getMapNodeStatusLabel } from "~/lib/spatial-map/node-status";
 import { type MapNode, type MapNodeStatus } from "~/lib/spatial-map/types";
 import { SpatialMapGenerateImageControl } from "./SpatialMapGenerateImageControl";
 import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
+import { SpatialMapArchiveNodeControl } from "./SpatialMapArchiveNodeControl";
 import { SpatialMapNodeStatusMenu } from "./SpatialMapNodeStatusMenu";
 import { SpatialMapNodeTypePicker } from "./SpatialMapNodeTypePicker";
 import {
@@ -754,6 +755,11 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                   >
                     Generate From Context
                   </Button>
+                  <SpatialMapArchiveNodeControl
+                    project={props.project}
+                    node={node()}
+                    onProjectUpdated={props.onProjectUpdated}
+                  />
                   <SpatialMapDeleteNodeControl
                     project={props.project}
                     node={node()}
@@ -1215,6 +1221,7 @@ function getActivityKindConfig(kind: ProjectOperationLogEntry["kind"]): Activity
     case "node.context.updated":
     case "node.title.updated":
     case "node.status.updated":
+    case "node.archive.updated":
     case "node.type.updated":
       return { label: "Updated", tone: "edit", icon: PencilIcon };
     case "node.created":

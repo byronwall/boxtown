@@ -16,6 +16,7 @@ import {
   VIEWPORT_WIDTH,
 } from "~/lib/spatial-map/layout";
 import { calculateNodeDepths } from "~/lib/spatial-map/depth";
+import { hideArchivedNodes } from "~/lib/spatial-map/archive";
 import type { MapNodeStatus, PositionedMapNode, SpatialMapData } from "~/lib/spatial-map/types";
 
 import type {
@@ -69,8 +70,14 @@ const CHILD_NODE_PLACEHOLDER_HEIGHT = 430;
 const CHILD_NODE_PLACEHOLDER_EDGE_GAP = 12;
 
 export function useSpatialMapCanvasController(
-  data: Accessor<SpatialMapData>,
+  projectData: Accessor<SpatialMapData>,
 ): SpatialMapCanvasController {
+  // Archived subtrees are removed before anything else so every view (canvas,
+  // tree, grid, command menu) treats them as absent unless explicitly shown.
+  const [showArchived, setShowArchived] = createSignal(false);
+  const data = createMemo(() =>
+    showArchived() ? projectData() : hideArchivedNodes(projectData()),
+  );
   const initialPositionedNodes = createInitialLayout(data());
   const fallbackCamera = createDefaultCamera();
   const initialCamera = getFitCamera(
@@ -1164,6 +1171,8 @@ export function useSpatialMapCanvasController(
     setShowLinkedInIsolation,
     setGlobalFilterEnabled,
     setGlobalFilterIncludeParents,
+    showArchived,
+    setShowArchived,
     toggleGlobalFilterType,
     toggleGlobalFilterStatus,
     setViewMode: (value) => {

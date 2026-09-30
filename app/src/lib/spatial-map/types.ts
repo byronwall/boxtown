@@ -18,6 +18,8 @@ export interface MapNode {
   context: string;
   rawContext: string;
   images?: MapNodeImage[];
+  // Archived nodes (and their subtrees) are hidden from views by default.
+  archived?: boolean;
 }
 
 export interface MapNodeImage {

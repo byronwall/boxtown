@@ -324,6 +324,8 @@ async function dispatchNode(context, action) {
     "agent-update": dispatchNodeAgentUpdate,
     move: dispatchNodeMove,
     delete: dispatchNodeDelete,
+    archive: (context, projectId) => dispatchNodeArchive(context, projectId, true),
+    unarchive: (context, projectId) => dispatchNodeArchive(context, projectId, false),
     context: dispatchNodeContext,
     metadata: dispatchNodeMetadata,
     "export-context": dispatchNodeExportContext,
@@ -332,7 +334,7 @@ async function dispatchNode(context, action) {
   };
   const handler = handlers[action];
   if (!handler) {
-    throw new CliError("Usage: pgm node <list|view|status|create|update|complete|resolve|batch-update|agent-update|move|context|metadata|export-context|context-pack|import-markdown>", exitCodes.usage);
+    throw new CliError("Usage: pgm node <list|view|status|create|update|complete|resolve|batch-update|agent-update|move|delete|archive|unarchive|context|metadata|export-context|context-pack|import-markdown>", exitCodes.usage);
   }
 
   await handler(context, projectId);
@@ -351,6 +353,7 @@ async function dispatchNodeList(context, projectId) {
     depth: context.parsed.options.depth,
     includeSelf: context.parsed.options.includeSelf,
     include: getNodeIncludeOption(context.parsed.options),
+    includeArchived: context.parsed.options.includeArchived,
   });
   if (context.parsed.options.json) {
     writeJson({ nodes }, context.io.stdout);
@@ -600,6 +603,34 @@ async function dispatchNodeDelete(context, projectId) {
   } else {
     context.io.stdout.write(
       `Deleted ${deletedNodeIds.length} node${deletedNodeIds.length === 1 ? "" : "s"}: ${deletedNodeIds.join(", ")}\n`,
+    );
+  }
+}
+
+async function dispatchNodeArchive(context, projectId, archived) {
+  const nodeIds = context.parsed.positionals;
+  if (nodeIds.length === 0) {
+    throw new CliError("At least one node id is required.", exitCodes.usage);
+  }
+
+  const nodes = [];
+  for (const nodeId of nodeIds) {
+    const result = await context.client.updateNode(projectId, nodeId, { archived });
+    // Older servers ignore unknown PATCH fields; only trust a node that echoes the new state.
+    if (result?.node?.archived !== archived) {
+      throw new CliError(
+        `Server did not confirm ${archived ? "archiving" : "unarchiving"} ${nodeId}. It may not support node archiving yet.`,
+        1,
+      );
+    }
+    nodes.push(result.node);
+  }
+
+  if (context.parsed.options.json) {
+    writeJson({ archived, nodeIds, nodes }, context.io.stdout);
+  } else {
+    context.io.stdout.write(
+      `${archived ? "Archived" : "Unarchived"} ${nodeIds.length} node${nodeIds.length === 1 ? "" : "s"}: ${nodeIds.join(", ")}\n`,
     );
   }
 }
@@ -948,6 +979,7 @@ export function parseArgs(args) {
 const booleanOptionNames = new Set([
   "yes",
   "with-children",
+  "include-archived",
   "force",
   "compact",
   "global",
@@ -1436,7 +1468,7 @@ Usage:
   pgm project schema [project-id] [--json]
   pgm project export-markdown [project-id] [--output ./project.md] [--json]
   pgm project link <project-id>
-  pgm node list [--project <project-id>] [--roots] [--children <node-id>] [--subtree <node-id>] [--depth N] [--compact] [--fields id,label,status,type] [--preset status] [--status blocked] [--type feature] [--search text] [--with-ancestors|--with-context] [--json]
+  pgm node list [--project <project-id>] [--roots] [--children <node-id>] [--subtree <node-id>] [--depth N] [--compact] [--fields id,label,status,type] [--preset status] [--status blocked] [--type feature] [--search text] [--include-archived] [--with-ancestors|--with-context] [--json]
   pgm node view <node-id> [--project <project-id>] [--with-ancestors|--with-context] [--compact] [--fields id,status,metadata.implementation] [--json]
   pgm node status <node-id...> [--project <project-id>] [--json]
   pgm node create --title "Checkout" [--type page] [--parent <node-id>] [--context-file ./context.md] [--metadata-json '{"purpose":"..."}'] [--json]
@@ -1447,6 +1479,8 @@ Usage:
   pgm node agent-update --file ./agent-status.json [--json]
   pgm node move <node-id> (--parent <node-id> | --root) [--json]
   pgm node delete <node-id...> --yes [--with-children] [--json]
+  pgm node archive <node-id...> [--json]
+  pgm node unarchive <node-id...> [--json]
   pgm node context get <node-id> [--json]
   pgm node context set <node-id> --file ./context.md [--json] [--full]
   pgm node metadata get <node-id> [--json]

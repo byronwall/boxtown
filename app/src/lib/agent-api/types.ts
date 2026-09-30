@@ -84,6 +84,7 @@ export interface AgentNodeSummary {
   parentNodeId: string | null;
   childCount: number;
   imageCount: number;
+  archived: boolean;
   updatedAt: string;
   titlePath?: string;
   path?: AgentPathNode[];

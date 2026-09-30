@@ -71,6 +71,7 @@ pgm node update <node-id> --status working --json
 pgm node complete <node-id> --note "Implemented the requested change." --json
 pgm node move <node-id> --parent <parent-node-id> --json
 pgm node delete <node-id...> --yes --json
+pgm node archive <node-id...> --json
 pgm node import-markdown --file ./brief.md --title "Product Brief" --split-headings --json
 pgm image add <node-id> ./screenshot.png --json
 pgm image list <node-id> --json
@@ -120,6 +121,14 @@ Delete nodes (cannot be undone; `--yes` is required). Children of a deleted node
 ```bash
 pgm node delete <node-id> <node-id> --yes --json
 pgm node delete <node-id> --yes --with-children --json
+```
+
+Archive finished work instead of deleting it. An archived node and its descendants are hidden in the app and left out of `node list` unless you pass `--include-archived`:
+
+```bash
+pgm node archive <node-id> <node-id> --json
+pgm node unarchive <node-id> --json
+pgm node list --include-archived --json
 ```
 
 Attach one or more screenshots/images to a node:

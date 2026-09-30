@@ -107,6 +107,11 @@ export function SpatialMapGlobalFilterMenu() {
               spatialMap.setGlobalFilterIncludeParents(checked)
             }
           />
+          <FilterSwitchRow
+            label="Show archived"
+            checked={spatialMap.showArchived()}
+            onCheckedChange={(checked) => spatialMap.setShowArchived(checked)}
+          />
         </Menu.Content>
       </Menu.Positioner>
     </Menu.Root>
