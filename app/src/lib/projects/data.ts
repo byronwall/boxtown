@@ -1,6 +1,7 @@
 import { action, query, redirect } from "@solidjs/router";
 import { getRequestEvent } from "solid-js/web";
 import type { ProjectBackupFileSummary } from "./data.server";
+import type { MapNodeStatus } from "~/lib/spatial-map/types";
 import type { ProjectRecord, ProjectSummary } from "./types";
 
 const CLIENT_MUTATION_ID_FIELD = "clientMutationId";
@@ -210,6 +211,35 @@ export const updateProjectNodeArchived = action(
     });
   },
   "update-project-node-archived",
+);
+
+export const updateProjectNodesBulk = action(
+  async (input: {
+    projectId: string;
+    nodeIds: string[];
+    status?: MapNodeStatus;
+    archived?: boolean;
+    clientMutationId?: string;
+  }) => {
+    "use server";
+    const { updateProjectNodesBulkOnDisk } = await import("./data.server");
+
+    if (!input.projectId?.trim()) {
+      throw new Error("A project id is required.");
+    }
+    if (!Array.isArray(input.nodeIds) || input.nodeIds.length === 0) {
+      throw new Error("Select at least one node.");
+    }
+
+    return updateProjectNodesBulkOnDisk({
+      projectId: input.projectId,
+      nodeIds: input.nodeIds.filter((nodeId) => typeof nodeId === "string"),
+      status: input.status,
+      archived: typeof input.archived === "boolean" ? input.archived : undefined,
+      clientMutationId: input.clientMutationId,
+    });
+  },
+  "update-project-nodes-bulk",
 );
 
 export const updateProjectNodeType = action(

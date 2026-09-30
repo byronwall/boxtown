@@ -43,6 +43,7 @@ import {
 import type { MapLink, MapNode, MapNodeStatus } from "~/lib/spatial-map/types";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { useSpatialMap } from "./SpatialMapContext";
+import { SpatialMapGridBulkBar } from "./SpatialMapGridBulkBar";
 import { useSpatialMapImages } from "./SpatialMapImages";
 
 type SpatialMapGridMode = "nodes" | "links";
@@ -58,6 +59,7 @@ interface NodeGridRow {
 }
 
 const DEFAULT_NODE_COLUMN_WIDTHS = {
+  select: 36,
   name: 340,
   type: 132,
   status: 152,
@@ -67,6 +69,7 @@ const DEFAULT_NODE_COLUMN_WIDTHS = {
 };
 
 const MIN_NODE_COLUMN_WIDTHS = {
+  select: 36,
   name: 220,
   type: 104,
   status: 116,
@@ -189,11 +192,17 @@ export function SpatialMapGridView(props: {
     props.project.nodeMetadataSchema.map((field) => field.key),
   );
   const [nodeSearchQuery, setNodeSearchQuery] = createSignal("");
+  const [checkedNodeIds, setCheckedNodeIds] = createSignal<Set<string>>(new Set());
   let searchInputRef: HTMLInputElement | undefined;
   const nodes = createMemo(() => spatialMap.visibleData().nodes.slice());
   const hierarchyLinks = createMemo(() =>
     spatialMap.visibleData().links.filter((link) => link.parentChild),
   );
+  // Checked ids that are still visible; archived or filtered-out nodes drop out of the selection.
+  const visibleCheckedNodeIds = createMemo(() => {
+    const checked = checkedNodeIds();
+    return checked.size === 0 ? [] : nodes().map((node) => node.id).filter((id) => checked.has(id));
+  });
   const filteredNodes = createMemo(() => {
     const query = normalizeSearchQuery(nodeSearchQuery());
     if (!query) {
@@ -365,7 +374,18 @@ export function SpatialMapGridView(props: {
             />
           }
         >
+          <Box display="grid" gridTemplateRows="auto minmax(0, 1fr)" minH="0">
+          <Show when={visibleCheckedNodeIds().length > 0} fallback={<Box />}>
+            <SpatialMapGridBulkBar
+              project={props.project}
+              nodeIds={visibleCheckedNodeIds()}
+              onClear={() => setCheckedNodeIds(new Set<string>())}
+              onProjectUpdated={props.onProjectUpdated}
+            />
+          </Show>
           <NodesGrid
+            checkedNodeIds={checkedNodeIds()}
+            onCheckedNodeIdsChange={setCheckedNodeIds}
             rows={buildNodeGridRows(filteredNodes(), hierarchyLinks())}
             searchQuery={nodeSearchQuery()}
             project={props.project}
@@ -376,6 +396,7 @@ export function SpatialMapGridView(props: {
             onSelectNode={spatialMap.setSelectedNodeId}
             onProjectUpdated={props.onProjectUpdated}
           />
+          </Box>
         </Show>
       </Box>
     </Box>
@@ -383,6 +404,8 @@ export function SpatialMapGridView(props: {
 }
 
 function NodesGrid(props: {
+  checkedNodeIds: Set<string>;
+  onCheckedNodeIdsChange: (nodeIds: Set<string>) => void;
   rows: NodeGridRow[];
   searchQuery: string;
   project: ProjectRecord;
@@ -432,6 +455,29 @@ function NodesGrid(props: {
       return true;
     });
   });
+  const toggleChecked = (nodeId: string) => {
+    const next = new Set(props.checkedNodeIds);
+    if (next.has(nodeId)) {
+      next.delete(nodeId);
+    } else {
+      next.add(nodeId);
+    }
+    props.onCheckedNodeIdsChange(next);
+  };
+  const allVisibleChecked = () =>
+    visibleRows().length > 0 && visibleRows().every((row) => props.checkedNodeIds.has(row.node.id));
+  const toggleAllVisible = () => {
+    const next = new Set(props.checkedNodeIds);
+    const checkAll = !allVisibleChecked();
+    for (const row of visibleRows()) {
+      if (checkAll) {
+        next.add(row.node.id);
+      } else {
+        next.delete(row.node.id);
+      }
+    }
+    props.onCheckedNodeIdsChange(next);
+  };
   const isExpanded = (row: NodeGridRow) =>
     row.hasChildren && !collapsedNodeIds().has(row.node.id);
   const toggleRowExpanded = (row: NodeGridRow) => {
@@ -590,6 +636,14 @@ function NodesGrid(props: {
             <GridColGroup mode="nodes" columns={columnDefinitions()} />
             <thead>
               <tr>
+                <th scope="col">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all visible nodes"
+                    checked={allVisibleChecked()}
+                    onChange={toggleAllVisible}
+                  />
+                </th>
                 <ResizableHeader
                   label="Name"
                   columnKey="name"
@@ -661,6 +715,14 @@ function NodesGrid(props: {
                       }}
                       onKeyDown={handleTreeGridKeyDown}
                     >
+                      <td onClick={(event) => event.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          aria-label={`Select ${row.node.label}`}
+                          checked={props.checkedNodeIds.has(row.node.id)}
+                          onChange={() => toggleChecked(row.node.id)}
+                        />
+                      </td>
                       <td>
                         <NodeNameCell
                           row={row}
@@ -1711,6 +1773,10 @@ function getNodeGridColumns(
   getColumnWidth: (columnKey: string, fallback: number) => number,
 ) {
   return [
+    {
+      key: "select",
+      width: DEFAULT_NODE_COLUMN_WIDTHS.select,
+    },
     {
       key: "name",
       width: getColumnWidth("name", DEFAULT_NODE_COLUMN_WIDTHS.name),

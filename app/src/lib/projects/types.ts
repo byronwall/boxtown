@@ -31,6 +31,7 @@ export type ProjectOperationKind =
   | "node.title.updated"
   | "node.status.updated"
   | "node.archive.updated"
+  | "nodes.bulk.updated"
   | "node.type.updated"
   | "node.metadata.updated"
   | "project.schema.updated"

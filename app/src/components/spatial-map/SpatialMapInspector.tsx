@@ -1230,6 +1230,7 @@ function getActivityKindConfig(kind: ProjectOperationLogEntry["kind"]): Activity
     case "node.title.updated":
     case "node.status.updated":
     case "node.archive.updated":
+    case "nodes.bulk.updated":
     case "node.type.updated":
       return { label: "Updated", tone: "edit", icon: PencilIcon };
     case "node.created":
