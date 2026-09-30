@@ -107,6 +107,13 @@ export function SpatialMapGlobalFilterMenu() {
               spatialMap.setGlobalFilterIncludeParents(checked)
             }
           />
+          <FilterSwitchRow
+            label="Include all children"
+            checked={spatialMap.globalFilter().includeChildren}
+            onCheckedChange={(checked) =>
+              spatialMap.setGlobalFilterIncludeChildren(checked)
+            }
+          />
         </Menu.Content>
       </Menu.Positioner>
     </Menu.Root>

@@ -44,6 +44,29 @@ describe("filterSpatialMapDataByGlobalFilter", () => {
 
     expect(filtered.nodes.map((node) => node.id)).toEqual(["task-planned"]);
   });
+
+  it("includes every descendant of matched nodes when includeChildren is on", () => {
+    const treeData: SpatialMapData = {
+      nodes: [
+        createNode("area", "page", "working"),
+        createNode("child", "task", "implemented"),
+        createNode("grandchild", "task", "blocked"),
+        createNode("other", "task", "implemented"),
+      ],
+      links: [
+        { source: "area", target: "child", parentChild: true },
+        { source: "child", target: "grandchild", parentChild: true },
+      ],
+    };
+
+    const filtered = filterSpatialMapDataByGlobalFilter(treeData, createFilter({
+      selectedTypes: ["page"],
+      includeChildren: true,
+    }));
+
+    expect(filtered.nodes.map((node) => node.id)).toEqual(["area", "child", "grandchild"]);
+    expect(filtered.links).toHaveLength(2);
+  });
 });
 
 describe("filterSpatialMapDataByDepthLevel", () => {
@@ -98,6 +121,7 @@ function createFilter(
   return {
     enabled: true,
     includeParents: false,
+    includeChildren: false,
     selectedTypes: [],
     selectedStatuses: [],
     ...overrides,
