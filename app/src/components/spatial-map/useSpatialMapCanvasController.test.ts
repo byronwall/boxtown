@@ -45,6 +45,23 @@ describe("filterSpatialMapDataByGlobalFilter", () => {
     expect(filtered.nodes.map((node) => node.id)).toEqual(["task-planned"]);
   });
 
+  it("filters by priority, with none matching unprioritized nodes", () => {
+    const prioritized: SpatialMapData = {
+      nodes: [
+        { ...createNode("urgent-bug", "task", "planned"), priority: "urgent" },
+        createNode("plain", "task", "planned"),
+      ],
+      links: [],
+    };
+
+    expect(filterSpatialMapDataByGlobalFilter(prioritized, createFilter({
+      selectedPriorities: ["urgent"],
+    })).nodes.map((node) => node.id)).toEqual(["urgent-bug"]);
+    expect(filterSpatialMapDataByGlobalFilter(prioritized, createFilter({
+      selectedPriorities: ["none"],
+    })).nodes.map((node) => node.id)).toEqual(["plain"]);
+  });
+
   it("includes every descendant of matched nodes when includeChildren is on", () => {
     const treeData: SpatialMapData = {
       nodes: [
@@ -123,6 +140,7 @@ function createFilter(
     includeParents: false,
     includeChildren: false,
     selectedTypes: [],
+    selectedPriorities: [],
     selectedStatuses: [],
     ...overrides,
   };

@@ -1,3 +1,5 @@
+import type { MapNodePriority } from "./node-priority";
+
 export const mapNodeStatuses = [
   "planned",
   "implemented",
@@ -20,6 +22,8 @@ export interface MapNode {
   images?: MapNodeImage[];
   // Archived nodes (and their subtrees) are hidden from views by default.
   archived?: boolean;
+  // Absent means unprioritized.
+  priority?: MapNodePriority;
 }
 
 export interface MapNodeImage {

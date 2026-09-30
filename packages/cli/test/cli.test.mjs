@@ -1060,3 +1060,37 @@ test("image download writes node images to a directory or a single file", async 
     globalThis.fetch = originalFetch;
   }
 });
+
+test("node update and list pass priority through, with none clearing it", async () => {
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    if (!String(url).startsWith("http://localhost:3000")) {
+      return new Response("{}", { status: 404 });
+    }
+    calls.push({ url, init });
+    const body = init.body ? JSON.parse(init.body) : {};
+    return new Response(JSON.stringify(init.method === "PATCH"
+      ? { node: { id: "node-1", label: "Node", status: "planned", type: "task", priority: body.priority } }
+      : { nodes: [] }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  const io = () => ({
+    stdout: createWritableBuffer(),
+    stderr: createWritableBuffer(),
+    env: { PRODUCT_GRID_SERVER: "http://localhost:3000", PRODUCT_GRID_PROJECT: "demo" },
+    cwd: "/tmp",
+  });
+
+  try {
+    await main(["node", "pgm", "node", "update", "node-1", "--priority", "high", "--json"], io());
+    assert.deepEqual(JSON.parse(calls[0].init.body), { priority: "high" });
+
+    await main(["node", "pgm", "node", "update", "node-1", "--priority", "none", "--json"], io());
+    assert.deepEqual(JSON.parse(calls[1].init.body), { priority: null });
+
+    await main(["node", "pgm", "node", "list", "--priority", "urgent", "--json"], io());
+    assert.equal(calls[2].url, "http://localhost:3000/api/v1/projects/demo/nodes?priority=urgent");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

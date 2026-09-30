@@ -5,6 +5,8 @@ import path from "node:path";
 import type { GeneratedNodeBatch } from "~/lib/add-nodes/types";
 import { resolveAppDataDir } from "~/lib/server/data-dir";
 import { createParentChildLink, getLinkKey } from "~/lib/spatial-map/links";
+import { withNodePriority } from "~/lib/spatial-map/node-priority-update";
+import { isMapNodePriority, type MapNodePriority } from "~/lib/spatial-map/node-priority";
 import { DEFAULT_MAP_NODE_STATUS, isMapNodeStatus } from "~/lib/spatial-map/node-status";
 import type { MapNodeImage, MapNodeStatus, SpatialMapData } from "~/lib/spatial-map/types";
 import {
@@ -645,6 +647,55 @@ export async function updateProjectNodeArchivedOnDisk(
     kind: "node.archive.updated",
     actor: input.actor,
     summary: `${input.archived ? "Archived" : "Unarchived"} "${currentNode.label}".`,
+    nodeIds: [input.nodeId],
+    metadata: getMutationMetadata(input),
+  });
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  return nextRecord;
+}
+
+export async function updateProjectNodePriorityOnDisk(input: {
+  projectId: string;
+  nodeId: string;
+  priority: MapNodePriority | null;
+  actor?: ProjectOperationActor;
+  clientMutationId?: string;
+}): Promise<ProjectRecord> {
+  if (input.priority !== null && !isMapNodePriority(input.priority)) {
+    throw new Error("Invalid node priority.");
+  }
+
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const currentNode = current.spatialMap.nodes.find((node) => node.id === input.nodeId);
+
+  if (!currentNode) {
+    throw new Error("Node not found.");
+  }
+
+  const nextRecord = appendProjectOperation({
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: current.spatialMap.nodes.map((node) =>
+        node.id === input.nodeId ? withNodePriority(node, input.priority) : node,
+      ),
+    },
+  }, {
+    kind: "node.priority.updated",
+    actor: input.actor,
+    summary: input.priority
+      ? `Set "${currentNode.label}" priority to ${input.priority}.`
+      : `Cleared "${currentNode.label}" priority.`,
     nodeIds: [input.nodeId],
     metadata: getMutationMetadata(input),
   });

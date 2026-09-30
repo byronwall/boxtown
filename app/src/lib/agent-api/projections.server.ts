@@ -67,6 +67,7 @@ export function toAgentMapNode(node: MapNode): AgentMapNode {
     rawContext: node.rawContext,
     images: node.images ?? [],
     archived: node.archived === true,
+    priority: node.priority ?? null,
   };
 }
 
@@ -147,6 +148,7 @@ function toAgentNodeSummary(
     childCount,
     imageCount: node.images?.length ?? 0,
     archived: node.archived === true,
+    priority: node.priority ?? null,
     updatedAt: project.updatedAt,
     ...(withPath
       ? {
