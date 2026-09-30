@@ -435,6 +435,20 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     }
   };
 
+  // The child draft only renders on the canvas, so switch there first and wait
+  // a frame for the canvas camera before anchoring the draft to the node.
+  const openAddChildDraft = (nodeId: string) => {
+    if (spatialMap.viewMode() === "canvas") {
+      spatialMap.openChildNodeDraft(nodeId, { anchorToParent: true });
+      return;
+    }
+
+    spatialMap.setViewMode("canvas");
+    requestAnimationFrame(() => {
+      spatialMap.openChildNodeDraft(nodeId, { anchorToParent: true });
+    });
+  };
+
   const submitStatus = async (status: MapNodeStatus) => {
     const node = selectedNode();
     if (!node || statusPending() || status === node.status) return;
@@ -755,6 +769,16 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
             <Show when={selectedNode()}>
               {(node) => (
                 <HStack gap="0" flexWrap="wrap" justifyContent="flex-start" w="fit-content" pt="1px" border="1px solid rgba(96, 101, 95, 0.26)" borderRadius="6px" background="rgba(246, 248, 244, 0.78)">
+                  <Button
+                    size="xs"
+                    colorPalette="green"
+                    variant="surface"
+                    title="Add a child node (C)"
+                    onClick={() => openAddChildDraft(node().id)}
+                  >
+                    <PlusIcon size={14} />
+                    Add Child
+                  </Button>
                   <Button
                     size="xs"
                     colorPalette="green"

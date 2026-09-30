@@ -160,7 +160,10 @@ export interface SpatialMapCanvasController {
   unstashNode: (nodeId: string) => void;
   reflowLayout: () => void;
   fitCameraToNodes: () => void;
-  openChildNodeDraft: (parentNodeId?: string | null) => void;
+  openChildNodeDraft: (
+    parentNodeId?: string | null,
+    options?: { anchorToParent?: boolean },
+  ) => void;
   openAddNodesFlow: () => void;
   openContextNoteConversionFlow: () => void;
   openContextPreview: (nodeId: string) => void;
