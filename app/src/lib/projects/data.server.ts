@@ -12,6 +12,7 @@ import {
   publishProjectRecordChanged,
 } from "~/ws/project-events";
 import { splitMarkdownIntoHeadingSections } from "./context-node-markdown";
+import { createUniqueNodeId, getNodeImageDirSegment } from "./node-id";
 import {
   createDefaultProjectNodeMetadataSchema,
   normalizeProjectNodeMetadataKey,
@@ -1620,21 +1621,6 @@ function slugifyProjectName(name: string) {
   return slug || "project";
 }
 
-function createUniqueNodeId(label: string, type: string, existingIds: Set<string>) {
-  const baseId = slugifyProjectName(`${type}-${label}`);
-  if (!existingIds.has(baseId)) {
-    return baseId;
-  }
-
-  let suffix = 2;
-  while (existingIds.has(`${baseId}-${suffix}`)) {
-    suffix += 1;
-  }
-
-  return `${baseId}-${suffix}`;
-}
-
-
 function reserveUniqueNodeId(label: string, type: string, existingIds: Set<string>) {
   const nodeId = createUniqueNodeId(label, type, existingIds);
   existingIds.add(nodeId);
@@ -1743,7 +1729,7 @@ export function getProjectNodeImageFilePath(input: {
 }
 
 export function getProjectNodeImageDir(projectId: string, nodeId: string) {
-  return path.join(getProjectDataDir(projectId), "images", safePathSegment(nodeId));
+  return path.join(getProjectDataDir(projectId), "images", getNodeImageDirSegment(nodeId));
 }
 
 export function safePathSegment(value: string) {
