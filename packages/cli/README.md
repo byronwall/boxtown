@@ -70,6 +70,7 @@ pgm node create --title "Checkout" --type page --json
 pgm node update <node-id> --status working --json
 pgm node complete <node-id> --note "Implemented the requested change." --json
 pgm node move <node-id> --parent <parent-node-id> --json
+pgm node delete <node-id...> --yes --json
 pgm node import-markdown --file ./brief.md --title "Product Brief" --split-headings --json
 pgm image add <node-id> ./screenshot.png --json
 pgm image list <node-id> --json
@@ -112,6 +113,13 @@ pgm node complete <node-id> --note "Implemented the requested change." --json
 pgm node context set <node-id> --file ./context.md --json
 pgm node metadata set <node-id> purpose "Checkout entry point" --json
 pgm node move <node-id> --parent <parent-node-id> --json
+```
+
+Delete nodes (cannot be undone; `--yes` is required). Children of a deleted node become top-level nodes unless `--with-children` is passed:
+
+```bash
+pgm node delete <node-id> <node-id> --yes --json
+pgm node delete <node-id> --yes --with-children --json
 ```
 
 Attach one or more screenshots/images to a node:

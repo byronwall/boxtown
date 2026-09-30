@@ -81,8 +81,8 @@ export interface SpatialMapCanvasController {
   sceneTransform: Accessor<string>;
   contextNoteConversionOpen: Accessor<boolean>;
   contextPreviewRequest: Accessor<{ nodeId: string; requestId: number } | null>;
-  deleteNodeConfirmId: Accessor<string | null>;
-  unsafeDeleteNodeRequest: Accessor<{ nodeId: string; requestId: number } | null>;
+  deleteSubtreeConfirmId: Accessor<string | null>;
+  deleteNodeRequest: Accessor<{ nodeId: string; requestId: number } | null>;
   edgeState: Accessor<EdgeVisualState[]>;
   isolatedNodeId: Accessor<string | null>;
   isolationLabel: Accessor<string | null>;
@@ -123,8 +123,8 @@ export interface SpatialMapCanvasController {
   closeContextNoteConversionFlow: () => void;
   closeSourceDecompositionFlow: () => void;
   clearIsolation: () => void;
-  clearDeleteNodeConfirm: () => void;
-  clearUnsafeDeleteNodeRequest: () => void;
+  clearDeleteSubtreeConfirm: () => void;
+  clearDeleteNodeRequest: () => void;
   clearChildNodeDraft: () => void;
   clearContextPreviewRequest: () => void;
   clearReparentingNode: () => void;

@@ -5,6 +5,7 @@ import { toAgentOperationActor } from "~/lib/agent-api/operation-actor";
 import { toAgentMapNode } from "~/lib/agent-api/projections.server";
 import { agentJson } from "~/lib/agent-api/response.server";
 import {
+  deleteProjectNodeOnDisk,
   readProjectByIdFromDisk,
   updateProjectNodeStatusOnDisk,
   updateProjectNodeTitleOnDisk,
@@ -120,6 +121,46 @@ export async function PATCH(event: APIEvent) {
     }
 
     return agentJson({ node: toAgentMapNode(node) });
+  });
+}
+
+export async function DELETE(event: APIEvent) {
+  return withAgentApi(event, { scopes: ["node:write"] }, async (context) => {
+    const before = await readProjectByIdFromDisk(event.params.projectId);
+    if (!before) {
+      throw new AgentApiError("project_not_found", "Project not found.", 404, {
+        projectId: event.params.projectId,
+      });
+    }
+    if (!before.spatialMap.nodes.some((item) => item.id === event.params.nodeId)) {
+      throw new AgentApiError("node_not_found", "Node not found.", 404, {
+        nodeId: event.params.nodeId,
+      });
+    }
+
+    const includeChildren =
+      new URL(event.request.url).searchParams.get("children") === "true";
+
+    try {
+      const project = await deleteProjectNodeOnDisk({
+        projectId: event.params.projectId,
+        nodeId: event.params.nodeId,
+        includeChildren,
+        actor: toAgentOperationActor(context.actor),
+      });
+      const remainingIds = new Set(project.spatialMap.nodes.map((item) => item.id));
+      const deletedNodeIds = before.spatialMap.nodes
+        .map((item) => item.id)
+        .filter((id) => !remainingIds.has(id));
+
+      return agentJson({ nodeId: event.params.nodeId, includeChildren, deletedNodeIds });
+    } catch (error) {
+      throw new AgentApiError(
+        "node_delete_failed",
+        error instanceof Error ? error.message : "Failed to delete node.",
+        400,
+      );
+    }
   });
 }
 

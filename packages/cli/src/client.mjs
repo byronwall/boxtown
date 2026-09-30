@@ -149,6 +149,14 @@ export class ProductGridClient {
     );
   }
 
+  deleteNode(projectId, nodeId, options = {}) {
+    const suffix = options.includeChildren ? "?children=true" : "";
+    return this.request(
+      `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}${suffix}`,
+      { method: "DELETE" },
+    );
+  }
+
   importMarkdown(projectId, input) {
     return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/imports/markdown`, {
       method: "POST",

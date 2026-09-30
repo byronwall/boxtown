@@ -590,6 +590,58 @@ test("issue view resolves a Product Grid URL to compact context", async () => {
   }
 });
 
+test("node delete requires --yes and sends DELETE per node", async () => {
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    if (!String(url).startsWith("http://localhost:3000")) {
+      return new Response("{}", { status: 404 });
+    }
+    calls.push({ url, init });
+    const nodeId = new URL(url).pathname.split("/").pop();
+    return new Response(JSON.stringify({ nodeId, deletedNodeIds: [nodeId] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+  const io = (stdout) => ({
+    stdout,
+    stderr: createWritableBuffer(),
+    env: { PRODUCT_GRID_SERVER: "http://localhost:3000", PRODUCT_GRID_PROJECT: "demo" },
+    cwd: "/tmp",
+  });
+
+  try {
+    await assert.rejects(
+      main(["node", "pgm", "node", "delete", "node-1"], io(createWritableBuffer())),
+      /--yes/,
+    );
+    assert.equal(calls.length, 0);
+
+    const stdout = createWritableBuffer();
+    await main(
+      ["node", "pgm", "node", "delete", "node-1", "node-2", "--yes", "--with-children", "--json"],
+      io(stdout),
+    );
+
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0].init.method, "DELETE");
+    assert.equal(
+      calls[0].url,
+      "http://localhost:3000/api/v1/projects/demo/nodes/node-1?children=true",
+    );
+    assert.deepEqual(JSON.parse(stdout.value).deletedNodeIds, ["node-1", "node-2"]);
+
+    globalThis.fetch = async () => new Response("", { status: 200 });
+    await assert.rejects(
+      main(["node", "pgm", "node", "delete", "node-3", "--yes"], io(createWritableBuffer())),
+      /did not confirm/,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("writeJson ignores EPIPE from closed stdout consumers", () => {
   assert.doesNotThrow(() => {
     writeJson({ ok: true }, {

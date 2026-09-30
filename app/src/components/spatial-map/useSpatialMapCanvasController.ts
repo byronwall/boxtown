@@ -104,8 +104,8 @@ export function useSpatialMapCanvasController(
     requestId: number;
   } | null>(null);
   const [sourceDecompositionOpen, setSourceDecompositionOpen] = createSignal(false);
-  const [deleteNodeConfirmId, setDeleteNodeConfirmId] = createSignal<string | null>(null);
-  const [unsafeDeleteNodeRequest, setUnsafeDeleteNodeRequest] = createSignal<{
+  const [deleteSubtreeConfirmId, setDeleteSubtreeConfirmId] = createSignal<string | null>(null);
+  const [deleteNodeRequest, setDeleteNodeRequest] = createSignal<{
     nodeId: string;
     requestId: number;
   } | null>(null);
@@ -674,19 +674,16 @@ export function useSpatialMapCanvasController(
   };
 
   const handleWindowKeyDown = (event: KeyboardEvent) => {
-    if (isUnsafeDeleteNodeShortcut(event)) {
-      const nodeId = selectedNodeId();
-      if (nodeId && viewMode() === "canvas") {
-        event.preventDefault();
-        setUnsafeDeleteNodeRequest({
-          nodeId,
-          requestId: Date.now(),
-        });
-      }
+    if (isEditableTarget(event.target)) {
       return;
     }
 
-    if (isEditableTarget(event.target)) {
+    if (isDeleteSubtreeShortcut(event)) {
+      const nodeId = selectedNodeId();
+      if (nodeId && viewMode() === "canvas") {
+        event.preventDefault();
+        setDeleteSubtreeConfirmId(nodeId);
+      }
       return;
     }
 
@@ -702,7 +699,10 @@ export function useSpatialMapCanvasController(
       const nodeId = selectedNodeId();
       if (nodeId && viewMode() === "canvas") {
         event.preventDefault();
-        setDeleteNodeConfirmId(nodeId);
+        setDeleteNodeRequest({
+          nodeId,
+          requestId: Date.now(),
+        });
       }
       return;
     }
@@ -1086,8 +1086,8 @@ export function useSpatialMapCanvasController(
     addNodesOpen,
     contextNoteConversionOpen,
     contextPreviewRequest,
-    deleteNodeConfirmId,
-    unsafeDeleteNodeRequest,
+    deleteSubtreeConfirmId,
+    deleteNodeRequest,
     sourceDecompositionOpen,
     childNodeDraft,
     edgeState,
@@ -1125,8 +1125,8 @@ export function useSpatialMapCanvasController(
     closeContextNoteConversionFlow: () => setContextNoteConversionOpen(false),
     closeSourceDecompositionFlow: () => setSourceDecompositionOpen(false),
     clearIsolation: () => applyIsolation(null),
-    clearDeleteNodeConfirm: () => setDeleteNodeConfirmId(null),
-    clearUnsafeDeleteNodeRequest: () => setUnsafeDeleteNodeRequest(null),
+    clearDeleteSubtreeConfirm: () => setDeleteSubtreeConfirmId(null),
+    clearDeleteNodeRequest: () => setDeleteNodeRequest(null),
     clearChildNodeDraft: () => setChildNodeDraft(null),
     clearContextPreviewRequest: () => setContextPreviewRequest(null),
     clearReparentingNode: () => setReparentingNodeId(null),
@@ -1262,11 +1262,11 @@ function isDeleteNodeShortcut(event: KeyboardEvent) {
   );
 }
 
-function isUnsafeDeleteNodeShortcut(event: KeyboardEvent) {
+// Cmd+Delete on macOS, Ctrl+Delete elsewhere.
+function isDeleteSubtreeShortcut(event: KeyboardEvent) {
   return (
     (event.key === "Delete" || event.key === "Backspace") &&
-    event.metaKey &&
-    !event.ctrlKey &&
+    (event.metaKey || event.ctrlKey) &&
     !event.altKey &&
     !event.shiftKey
   );

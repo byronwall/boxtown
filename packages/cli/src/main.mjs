@@ -323,6 +323,7 @@ async function dispatchNode(context, action) {
     "batch-update": dispatchNodeBatchUpdate,
     "agent-update": dispatchNodeAgentUpdate,
     move: dispatchNodeMove,
+    delete: dispatchNodeDelete,
     context: dispatchNodeContext,
     metadata: dispatchNodeMetadata,
     "export-context": dispatchNodeExportContext,
@@ -564,6 +565,42 @@ async function dispatchNodeMove(context, projectId) {
   } else {
     context.io.stdout.write(`Moved ${result.node.label} (${result.node.id}).\n`);
     context.io.stdout.write(`Parent: ${result.parentLink?.source ?? "(root)"}\n`);
+  }
+}
+
+async function dispatchNodeDelete(context, projectId) {
+  const nodeIds = context.parsed.positionals;
+  if (nodeIds.length === 0) {
+    throw new CliError("At least one node id is required.", exitCodes.usage);
+  }
+  if (!context.parsed.options.yes) {
+    throw new CliError(
+      "Deleting nodes cannot be undone. Re-run with --yes to confirm.",
+      exitCodes.usage,
+    );
+  }
+
+  const includeChildren = Boolean(context.parsed.options.withChildren);
+  const results = [];
+  for (const nodeId of nodeIds) {
+    const result = await context.client.deleteNode(projectId, nodeId, { includeChildren });
+    // Older servers without the DELETE route answer 200 with a non-API body; never report that as a delete.
+    if (!Array.isArray(result?.deletedNodeIds)) {
+      throw new CliError(
+        `Server did not confirm deleting ${nodeId}. It may not support node deletes yet (needs the app version with DELETE /api/v1/.../nodes/:nodeId).`,
+        1,
+      );
+    }
+    results.push(result);
+  }
+
+  const deletedNodeIds = results.flatMap((result) => result.deletedNodeIds ?? []);
+  if (context.parsed.options.json) {
+    writeJson({ deleted: results, deletedNodeIds }, context.io.stdout);
+  } else {
+    context.io.stdout.write(
+      `Deleted ${deletedNodeIds.length} node${deletedNodeIds.length === 1 ? "" : "s"}: ${deletedNodeIds.join(", ")}\n`,
+    );
   }
 }
 
@@ -909,6 +946,8 @@ export function parseArgs(args) {
 }
 
 const booleanOptionNames = new Set([
+  "yes",
+  "with-children",
   "force",
   "compact",
   "global",
@@ -1407,6 +1446,7 @@ Usage:
   pgm node batch-update --json-input ./updates.json [--json]
   pgm node agent-update --file ./agent-status.json [--json]
   pgm node move <node-id> (--parent <node-id> | --root) [--json]
+  pgm node delete <node-id...> --yes [--with-children] [--json]
   pgm node context get <node-id> [--json]
   pgm node context set <node-id> --file ./context.md [--json] [--full]
   pgm node metadata get <node-id> [--json]
