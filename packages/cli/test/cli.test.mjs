@@ -631,6 +631,12 @@ test("node delete requires --yes and sends DELETE per node", async () => {
       "http://localhost:3000/api/v1/projects/demo/nodes/node-1?children=true",
     );
     assert.deepEqual(JSON.parse(stdout.value).deletedNodeIds, ["node-1", "node-2"]);
+
+    globalThis.fetch = async () => new Response("", { status: 200 });
+    await assert.rejects(
+      main(["node", "pgm", "node", "delete", "node-3", "--yes"], io(createWritableBuffer())),
+      /did not confirm/,
+    );
   } finally {
     globalThis.fetch = originalFetch;
   }

@@ -583,7 +583,15 @@ async function dispatchNodeDelete(context, projectId) {
   const includeChildren = Boolean(context.parsed.options.withChildren);
   const results = [];
   for (const nodeId of nodeIds) {
-    results.push(await context.client.deleteNode(projectId, nodeId, { includeChildren }));
+    const result = await context.client.deleteNode(projectId, nodeId, { includeChildren });
+    // Older servers without the DELETE route answer 200 with a non-API body; never report that as a delete.
+    if (!Array.isArray(result?.deletedNodeIds)) {
+      throw new CliError(
+        `Server did not confirm deleting ${nodeId}. It may not support node deletes yet (needs the app version with DELETE /api/v1/.../nodes/:nodeId).`,
+        1,
+      );
+    }
+    results.push(result);
   }
 
   const deletedNodeIds = results.flatMap((result) => result.deletedNodeIds ?? []);
