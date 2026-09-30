@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawn as spawnProcess } from "node:child_process";
 import { ProductGridClient } from "./client.mjs";
+import { downloadNodeImages, imageExtension } from "./image-download.mjs";
 import {
   getConfigPath,
   readConfig,
@@ -810,7 +811,27 @@ async function dispatchImage(context, action) {
     return;
   }
 
-  throw new CliError("Usage: pgm image <add|list|remove>", exitCodes.usage);
+  if (action === "download") {
+    const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
+    const result = await downloadNodeImages({
+      client: context.client,
+      projectId,
+      nodeId,
+      imageIds: context.parsed.positionals.slice(1),
+      output: context.parsed.options.output,
+      cwd: context.io.cwd,
+    });
+    if (context.parsed.options.json) {
+      writeJson(result, context.io.stdout);
+    } else {
+      for (const item of result.downloaded) {
+        context.io.stdout.write(`${item.imageId}  ${item.path}\n`);
+      }
+    }
+    return;
+  }
+
+  throw new CliError("Usage: pgm image <add|list|remove|download>", exitCodes.usage);
 }
 
 async function dispatchIssue(context, action) {
@@ -1365,21 +1386,6 @@ async function downloadContextPackImages(context, outputDir, contexts) {
   return { downloaded, failed };
 }
 
-function imageExtension(image) {
-  const filename = image.filename ?? image.originalName ?? "";
-  const ext = path.extname(filename);
-  if (ext) {
-    return ext;
-  }
-  if (image.mimeType === "image/jpeg") {
-    return ".jpg";
-  }
-  if (image.mimeType === "image/webp") {
-    return ".webp";
-  }
-  return ".png";
-}
-
 function sanitizePathPart(value) {
   return String(value)
     .replace(/[^a-zA-Z0-9._-]+/g, "-")
@@ -1458,6 +1464,7 @@ Usage:
   pgm image add <node-id> <image-path...> [--project <project-id>] [--json]
   pgm image list <node-id> [--project <project-id>] [--json]
   pgm image remove <node-id> <image-id> [--project <project-id>] [--json]
+  pgm image download <node-id> [image-id...] [--output <dir-or-file>] [--project <project-id>] [--json]
   pgm issue view <product-grid-url> [--json]
   pgm update [--dry-run] [--json]
   pgm skill install [--agent codex] [--global] [--force]
