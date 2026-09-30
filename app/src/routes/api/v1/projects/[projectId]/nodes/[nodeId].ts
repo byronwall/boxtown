@@ -7,6 +7,7 @@ import { agentJson } from "~/lib/agent-api/response.server";
 import {
   deleteProjectNodeOnDisk,
   readProjectByIdFromDisk,
+  updateProjectNodeArchivedOnDisk,
   updateProjectNodeStatusOnDisk,
   updateProjectNodeTitleOnDisk,
   updateProjectNodeTypeOnDisk,
@@ -46,6 +47,7 @@ type PatchNodeRequest = {
   label?: unknown;
   status?: unknown;
   type?: unknown;
+  archived?: unknown;
 };
 
 export async function PATCH(event: APIEvent) {
@@ -86,6 +88,18 @@ export async function PATCH(event: APIEvent) {
         });
       }
 
+      if (input.archived !== undefined) {
+        if (typeof input.archived !== "boolean") {
+          throw new AgentApiError("invalid_archived", "archived must be a boolean.", 400);
+        }
+        project = await updateProjectNodeArchivedOnDisk({
+          projectId: event.params.projectId,
+          nodeId: event.params.nodeId,
+          archived: input.archived,
+          actor: toAgentOperationActor(context.actor),
+        });
+      }
+
       if (typeof input.type === "string") {
         project = await updateProjectNodeTypeOnDisk({
           projectId: event.params.projectId,
@@ -108,7 +122,7 @@ export async function PATCH(event: APIEvent) {
     if (!project) {
       throw new AgentApiError(
         "empty_update",
-        "At least one of title, status, or type is required.",
+        "At least one of title, status, type, or archived is required.",
         400,
       );
     }

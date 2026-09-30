@@ -60,6 +60,14 @@ interface UpdateProjectNodeTitleInput {
   clientMutationId?: string;
 }
 
+interface UpdateProjectNodeArchivedInput {
+  projectId: string;
+  nodeId: string;
+  archived: boolean;
+  actor?: ProjectOperationActor;
+  clientMutationId?: string;
+}
+
 interface UpdateProjectNodeStatusInput {
   projectId: string;
   nodeId: string;
@@ -592,6 +600,51 @@ export async function updateProjectNodeStatusOnDisk(
     kind: "node.status.updated",
     actor: input.actor,
     summary: `Changed "${current.spatialMap.nodes[nodeIndex]?.label ?? input.nodeId}" status to ${input.status}.`,
+    nodeIds: [input.nodeId],
+    metadata: getMutationMetadata(input),
+  });
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  return nextRecord;
+}
+
+export async function updateProjectNodeArchivedOnDisk(
+  input: UpdateProjectNodeArchivedInput,
+): Promise<ProjectRecord> {
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const currentNode = current.spatialMap.nodes.find((node) => node.id === input.nodeId);
+
+  if (!currentNode) {
+    throw new Error("Node not found.");
+  }
+
+  const nextNodes = current.spatialMap.nodes.map((node) => {
+    if (node.id !== input.nodeId) {
+      return node;
+    }
+    const { archived: _archived, ...rest } = node;
+    return input.archived ? { ...rest, archived: true } : rest;
+  });
+
+  const nextRecord = appendProjectOperation({
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      ...current.spatialMap,
+      nodes: nextNodes,
+    },
+  }, {
+    kind: "node.archive.updated",
+    actor: input.actor,
+    summary: `${input.archived ? "Archived" : "Unarchived"} "${currentNode.label}".`,
     nodeIds: [input.nodeId],
     metadata: getMutationMetadata(input),
   });

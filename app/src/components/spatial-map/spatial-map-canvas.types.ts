@@ -148,6 +148,8 @@ export interface SpatialMapCanvasController {
   setGlobalFilterIncludeChildren: (
     value: boolean | ((current: boolean) => boolean),
   ) => void;
+  showArchived: Accessor<boolean>;
+  setShowArchived: (value: boolean) => void;
   toggleGlobalFilterType: (type: string) => void;
   toggleGlobalFilterStatus: (status: MapNodeStatus) => void;
   setViewMode: (value: SpatialMapViewMode) => void;

@@ -100,6 +100,33 @@ describe("agent node API projections", () => {
     ]);
   });
 
+  it("hides archived subtrees unless includeArchived is set", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    const archivedProject = {
+      ...project,
+      spatialMap: {
+        ...project.spatialMap,
+        nodes: project.spatialMap.nodes.map((node) =>
+          node.id === "root-task" ? { ...node, archived: true } : node,
+        ),
+      },
+    };
+    vi.mocked(readProjectByIdFromDisk).mockResolvedValue(archivedProject);
+
+    const hidden = await getNodes(createEvent(
+      "http://localhost/api/v1/projects/demo/nodes?compact=true&fields=id",
+    ));
+    expect((await hidden.json()).nodes).toEqual([]);
+
+    const shown = await getNodes(createEvent(
+      "http://localhost/api/v1/projects/demo/nodes?compact=true&fields=id,archived&includeArchived=true",
+    ));
+    expect((await shown.json()).nodes).toEqual([
+      { id: "child-task", archived: false },
+      { id: "root-task", archived: true },
+    ]);
+  });
+
   it("supports subtree filters and dot-path fields", async () => {
     vi.stubEnv("NODE_ENV", "development");
     vi.mocked(readProjectByIdFromDisk).mockResolvedValue(project);

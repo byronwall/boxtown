@@ -14,6 +14,7 @@ import {
   readProjectByIdFromDisk,
   readProjectBackupFileFromDisk,
   readProjectSummariesFromDisk,
+  updateProjectNodeArchivedOnDisk,
   updateProjectNodeContextOnDisk,
   updateProjectNodeMetadataOnDisk,
   updateProjectMetadataSchemaOnDisk,
@@ -875,6 +876,44 @@ describe("context node persistence", () => {
       expect(writtenBack.operationLog[0]?.metadata?.sourceOperationId).toBe(
         "legacy-backfill-backfilled-project",
       );
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("archives and unarchives a node on disk", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-archive-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    writeProjectFixture(dataDir, buildProjectFixture({
+      id: "archive-project",
+      spatialMap: {
+        nodes: [buildNode({ id: "node-1", label: "Node 1", type: "page", depth: 0 })],
+        links: [],
+      },
+    }));
+
+    try {
+      process.chdir(tempRoot);
+
+      const archived = await updateProjectNodeArchivedOnDisk({
+        projectId: "archive-project",
+        nodeId: "node-1",
+        archived: true,
+      });
+      expect(archived.spatialMap.nodes[0]?.archived).toBe(true);
+      expect(archived.operationLog[0]?.kind).toBe("node.archive.updated");
+
+      const reloaded = await readProjectByIdFromDisk("archive-project");
+      expect(reloaded?.spatialMap.nodes[0]?.archived).toBe(true);
+
+      const restored = await updateProjectNodeArchivedOnDisk({
+        projectId: "archive-project",
+        nodeId: "node-1",
+        archived: false,
+      });
+      expect(restored.spatialMap.nodes[0]).not.toHaveProperty("archived");
     } finally {
       process.chdir(originalCwd);
     }

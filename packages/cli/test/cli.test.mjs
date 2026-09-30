@@ -943,6 +943,77 @@ function createWritableBuffer() {
   };
 }
 
+test("node archive and unarchive PATCH each node and require server confirmation", async () => {
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  let echoArchived = true;
+  globalThis.fetch = async (url, init = {}) => {
+    if (!String(url).startsWith("http://localhost:3000")) {
+      return new Response("{}", { status: 404 });
+    }
+    calls.push({ url, init });
+    const nodeId = new URL(url).pathname.split("/").pop();
+    const body = JSON.parse(init.body ?? "{}");
+    return new Response(JSON.stringify({
+      node: { id: nodeId, archived: echoArchived ? body.archived : undefined },
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+  const io = (stdout) => ({
+    stdout,
+    stderr: createWritableBuffer(),
+    env: { PRODUCT_GRID_SERVER: "http://localhost:3000", PRODUCT_GRID_PROJECT: "demo" },
+    cwd: "/tmp",
+  });
+
+  try {
+    const stdout = createWritableBuffer();
+    await main(["node", "pgm", "node", "archive", "node-1", "node-2", "--json"], io(stdout));
+    const result = JSON.parse(stdout.value);
+    assert.deepEqual(result.nodeIds, ["node-1", "node-2"]);
+    assert.equal(calls[0].init.method, "PATCH");
+    assert.equal(calls[0].url, "http://localhost:3000/api/v1/projects/demo/nodes/node-1");
+    assert.deepEqual(JSON.parse(calls[1].init.body), { archived: true });
+
+    await main(["node", "pgm", "node", "unarchive", "node-1"], io(createWritableBuffer()));
+    assert.deepEqual(JSON.parse(calls[2].init.body), { archived: false });
+
+    echoArchived = false;
+    await assert.rejects(
+      main(["node", "pgm", "node", "archive", "node-1"], io(createWritableBuffer())),
+      /did not confirm archiving/,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("node list forwards --include-archived", async () => {
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (!String(url).startsWith("http://localhost:3000")) {
+      return new Response("{}", { status: 404 });
+    }
+    calls.push(url);
+    return new Response(JSON.stringify({ nodes: [] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  };
+
+  try {
+    await main(["node", "pgm", "node", "list", "--include-archived", "--json"], {
+      stdout: createWritableBuffer(),
+      stderr: createWritableBuffer(),
+      env: { PRODUCT_GRID_SERVER: "http://localhost:3000", PRODUCT_GRID_PROJECT: "demo" },
+      cwd: "/tmp",
+    });
+    assert.equal(calls[0], "http://localhost:3000/api/v1/projects/demo/nodes?includeArchived=true");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("image download writes node images to a directory or a single file", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "pgm-image-download-"));
   const calls = [];

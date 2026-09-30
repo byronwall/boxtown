@@ -12,6 +12,7 @@ import {
   createChildNodeOnDisk,
   readProjectByIdFromDisk,
 } from "~/lib/projects/data.server";
+import { getArchivedSubtreeNodeIds } from "~/lib/spatial-map/archive";
 import { isMapNodeStatus } from "~/lib/spatial-map/node-status";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode } from "~/lib/spatial-map/types";
@@ -37,6 +38,11 @@ export async function GET(event: APIEvent) {
     const subtree = url.searchParams.get("subtree");
     const includeSelf = parseBooleanSearchParam(url.searchParams.get("includeSelf"));
     const depth = parsePositiveInteger(url.searchParams.get("depth"));
+    // Archived subtrees are hidden from agents unless explicitly requested.
+    const hiddenNodeIds = parseBooleanSearchParam(url.searchParams.get("includeArchived"))
+      ? new Set<string>()
+      : getArchivedSubtreeNodeIds(project.spatialMap);
+    const isVisible = (nodeId: string) => !hiddenNodeIds.has(nodeId);
 
     if (status !== null && !isMapNodeStatus(status)) {
       throw new AgentApiError("invalid_status", "A valid node status is required.", 400, {
@@ -52,6 +58,7 @@ export async function GET(event: APIEvent) {
 
     if (include === "context") {
       const nodes = toAgentNodeContexts(project)
+        .filter((item) => isVisible(item.node.id))
         .filter((item) => matchesNodeFilters(item.node, {
           status,
           type,
@@ -71,6 +78,7 @@ export async function GET(event: APIEvent) {
 
     if (include === "ancestors" || compact || fields) {
       const nodes = toAgentNodeSummaries(project, { withAncestors: include === "ancestors" })
+        .filter((node) => isVisible(node.id))
         .filter((node) => matchesNodeFilters(node, {
           status,
           type,
@@ -89,6 +97,7 @@ export async function GET(event: APIEvent) {
     }
 
     const nodes = project.spatialMap.nodes
+      .filter((node) => isVisible(node.id))
       .filter((node) => matchesNodeFilters(node, {
         status,
         type,

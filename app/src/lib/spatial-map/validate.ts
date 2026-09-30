@@ -48,6 +48,7 @@ function parseMapNode(
     context,
     rawContext,
     images,
+    archived,
   } = input;
   if (!isNonEmptyString(id)) throw new Error("Node id must be a non-empty string.");
   if (!isNonEmptyString(label)) throw new Error("Node label must be a non-empty string.");
@@ -89,6 +90,7 @@ function parseMapNode(
     context: resolvedContext,
     rawContext: typeof rawContext === "string" ? rawContext : resolvedContext,
     images: Array.isArray(images) ? images.map(parseMapNodeImage) : [],
+    ...(archived === true ? { archived: true } : {}),
   };
 }
 

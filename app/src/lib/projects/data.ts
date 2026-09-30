@@ -185,6 +185,33 @@ export const updateProjectNodeStatus = action(
   "update-project-node-status",
 );
 
+export const updateProjectNodeArchived = action(
+  async (input: {
+    projectId: string;
+    nodeId: string;
+    archived: boolean;
+    clientMutationId?: string;
+  }) => {
+    "use server";
+    const { updateProjectNodeArchivedOnDisk } = await import("./data.server");
+
+    if (!input.projectId?.trim()) {
+      throw new Error("A project id is required.");
+    }
+    if (!input.nodeId?.trim()) {
+      throw new Error("A node id is required.");
+    }
+
+    return updateProjectNodeArchivedOnDisk({
+      projectId: input.projectId,
+      nodeId: input.nodeId,
+      archived: input.archived === true,
+      clientMutationId: input.clientMutationId,
+    });
+  },
+  "update-project-node-archived",
+);
+
 export const updateProjectNodeType = action(
   async (formData: FormData) => {
     "use server";
