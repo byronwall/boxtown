@@ -88,6 +88,7 @@ const contextDialogClass = css({
 });
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
+import { SpatialMapCopyAgentPromptButton } from "./SpatialMapCopyAgentPromptButton";
 import { SpatialMapInspectorHeader } from "./SpatialMapInspectorHeader";
 
 interface SpatialMapInspectorProps {
@@ -683,6 +684,13 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         <VStack alignItems="start" gap="2" h="full">
           <SpatialMapInspectorHeader
             title={selectedNodeTitle()}
+            actions={
+              <Show when={selectedNode()}>
+                {(node) => (
+                  <SpatialMapCopyAgentPromptButton project={props.project} nodeId={node().id} />
+                )}
+              </Show>
+            }
             titleContent={
               <Show when={Boolean(selectedNode())} fallback={selectedNodeTitle()}>
                 <EditInPlace

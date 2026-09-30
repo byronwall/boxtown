@@ -14,6 +14,7 @@ interface SpatialMapInspectorHeaderProps {
   controls?: string;
   closeLabel?: string;
   onClose?: () => void;
+  actions?: JSX.Element;
 }
 
 export function SpatialMapInspectorHeader(props: SpatialMapInspectorHeaderProps) {
@@ -73,13 +74,16 @@ export function SpatialMapInspectorHeader(props: SpatialMapInspectorHeaderProps)
           )}
         </Show>
       </VStack>
-      <InspectorToggle
-        inToolbar={false}
-        expanded
-        controls={props.controls}
-        expandedLabel={props.closeLabel}
-        onClick={props.onClose}
-      />
+      <Box display="flex" alignItems="center" gap="2px">
+        {props.actions}
+        <InspectorToggle
+          inToolbar={false}
+          expanded
+          controls={props.controls}
+          expandedLabel={props.closeLabel}
+          onClick={props.onClose}
+        />
+      </Box>
     </Box>
   );
 }
