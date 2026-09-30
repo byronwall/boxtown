@@ -92,6 +92,7 @@ export function useSpatialMapCanvasController(
   const [globalFilter, setGlobalFilter] = createSignal<SpatialMapGlobalFilterState>({
     enabled: false,
     includeParents: true,
+    includeChildren: false,
     selectedTypes: [],
     selectedStatuses: [],
   });
@@ -981,6 +982,16 @@ export function useSpatialMapCanvasController(
     }));
   };
 
+  const setGlobalFilterIncludeChildren = (
+    value: boolean | ((current: boolean) => boolean),
+  ) => {
+    pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
+    setGlobalFilter((current) => ({
+      ...current,
+      includeChildren: resolveBooleanSetter(value, current.includeChildren),
+    }));
+  };
+
   const toggleGlobalFilterType = (type: string) => {
     pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
     setGlobalFilter((current) => {
@@ -1164,6 +1175,7 @@ export function useSpatialMapCanvasController(
     setShowLinkedInIsolation,
     setGlobalFilterEnabled,
     setGlobalFilterIncludeParents,
+    setGlobalFilterIncludeChildren,
     toggleGlobalFilterType,
     toggleGlobalFilterStatus,
     setViewMode: (value) => {
@@ -1481,6 +1493,11 @@ export function filterSpatialMapDataByGlobalFilter(
       .map((node) => node.id),
   );
 
+  // Descendants first so their ancestors are covered by the matched nodes' ancestors.
+  if (filter.includeChildren) {
+    includeDescendantNodes(data, visibleNodeIds);
+  }
+
   if (filter.includeParents) {
     includeAncestorNodes(data, visibleNodeIds);
   }
@@ -1516,6 +1533,23 @@ function includeAncestorNodes(data: SpatialMapData, visibleNodeIds: Set<string>)
       }
 
       visibleNodeIds.add(link.source);
+      added = true;
+    }
+  }
+}
+
+function includeDescendantNodes(data: SpatialMapData, visibleNodeIds: Set<string>) {
+  let added = true;
+
+  while (added) {
+    added = false;
+
+    for (const link of data.links) {
+      if (!link.parentChild || !visibleNodeIds.has(link.source) || visibleNodeIds.has(link.target)) {
+        continue;
+      }
+
+      visibleNodeIds.add(link.target);
       added = true;
     }
   }
