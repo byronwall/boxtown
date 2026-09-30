@@ -128,6 +128,7 @@ Attach one or more screenshots/images to a node:
 pgm image add <node-id> ./desktop.png ./mobile.png --json
 pgm image list <node-id> --json
 pgm image remove <node-id> <image-id> --json
+pgm image download <node-id> [image-id...] --output ./images --json
 ```
 
 Export scoped node context as LLM-ready markdown:

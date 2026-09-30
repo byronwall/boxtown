@@ -942,3 +942,50 @@ function createWritableBuffer() {
     },
   };
 }
+
+test("image download writes node images to a directory or a single file", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "pgm-image-download-"));
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    calls.push(url);
+    if (url.endsWith("/images")) {
+      return new Response(JSON.stringify({
+        images: [
+          { id: "image-1", src: "/a.png", originalName: "shot.png", mimeType: "image/png" },
+          { id: "image-2", src: "/b.jpg", originalName: "shot.png", mimeType: "image/png" },
+        ],
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return new Response(Buffer.from([0x89, 0x50]), { status: 200 });
+  };
+
+  const run = async (args) => {
+    const stdout = createWritableBuffer();
+    await main(["node", "pgm", "image", "download", ...args, "--project", "demo", "--json"], {
+      stdout,
+      stderr: createWritableBuffer(),
+      env: { PRODUCT_GRID_SERVER: "http://localhost:3000" },
+      cwd: tempDir,
+    });
+    return JSON.parse(stdout.value);
+  };
+
+  try {
+    const all = await run(["node-1", "--output", "out"]);
+    assert.equal(all.imageCount, 2);
+    assert.deepEqual(all.downloaded.map((item) => item.path), [
+      path.join(tempDir, "out", "shot.png"),
+      path.join(tempDir, "out", "shot-image-2.png"),
+    ]);
+    assert.equal(calls[0], "http://localhost:3000/api/v1/projects/demo/nodes/node-1/images");
+
+    const single = await run(["node-1", "image-2", "--output", "one.jpg"]);
+    assert.equal(single.downloaded[0].path, path.join(tempDir, "one.jpg"));
+    assert.ok(calls.includes("http://localhost:3000/b.jpg"));
+
+    await assert.rejects(run(["node-1", "missing"]), /Image missing was not found/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
