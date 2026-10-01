@@ -13,6 +13,10 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 - Project-wide activity moved from the Details/Activity tab strip to a history icon in the inspector header.
 - Outgoing and incoming connections are one list with direction markers.
 - With nothing selected, the inspector shows project counts by status, project-level actions (new node, new context node, copy visible nodes as Markdown, project settings), and recent activity.
+- The project toolbar is flatter and shorter (40px, 24px controls). Controls are ordered view, depth, filter, create, more, and the depth switch has a "Depth" label.
+- While a node is isolated the toolbar shows an "Isolated: name ×" chip instead of a bare × button.
+- The view and depth switches mark the active option with a fill only; the underline marker is gone.
+- The toolbar's Create menu now includes "New node" alongside "New context node".
 
 ### Added
 
@@ -22,6 +26,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Fixed
 
+- The toolbar's controls now sit at the right edge on wide screens instead of floating in the middle.
 - Status, priority, and type chips now render with their tone colors. They previously showed a dark border and no fill, in the inspector and in the tree view.
 - Tooltips no longer render behind the main workspace panel.
 - Long metadata placeholders truncate with an ellipsis instead of running off the edge of the inspector.

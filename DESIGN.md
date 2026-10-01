@@ -611,30 +611,27 @@ The index page is the reference implementation for app-level management screens.
 
 ### Project toolbar
 
-- Use a prominent bordered toolbar container with muted surface fill.
-- Left section:
-  - Back link outside or above the main frame.
-  - Project title in bold monospace.
-  - Settings icon as a small bordered square.
-- Middle section:
-  - Segmented mode controls for Color / Type / Status.
-  - Active mode uses pale moss fill and stronger border.
-- Right section:
-  - Create button, action menu, layout/reflow button.
+The toolbar follows the same Density and Cleanup Principles as the inspector rail.
+
+- Surface: one flat bordered band, 40px tall, with no shadow or inset highlight. All controls are 24px.
+- Left: project title (16px bold, truncates) and a quiet settings icon button with a tooltip. The back link sits above the frame.
+- Right, ordered by how often the control changes what you see:
+  - An "Isolated: name ×" chip, only while isolation is active. It names what is isolated instead of showing a bare ×.
   - View switch: Canvas / Tree / Grid.
-  - Depth controls: 1 / 2 / 3 / Max.
+  - Depth: 1 / 2 / 3 / Max, with a dim "Depth" label because the numbers are ambiguous on their own.
+  - Filter button with its current summary.
+  - Create (+) menu: New node, New context node.
+  - Overflow (…) menu: Copy visible nodes as Markdown.
+- Icon-only buttons have tooltips. The cluster wraps onto a second row on narrow widths instead of clipping.
 
 ### Segmented controls
 
-- Use compact rectangular tabs.
-- Active item:
-  - Pale moss background.
-  - Dark green text.
-  - Stronger green/olive border or a subtle bottom inset when the control is already built as a connected segmented group.
-- Inactive item:
-  - Near-white or muted surface.
-  - Dark text or dark green text depending on context.
-- Keep spacing tight enough to read as one grouped control.
+- Use the shared `SpatialMapSegmentedControl` for any single-choice group of two to five options.
+- One bordered group, 24px tall, with hairline dividers between segments.
+- Active segment: pale moss fill, dark green bold text. No underline, inset bar, or extra border.
+- Inactive segment: transparent with dim text that darkens on hover.
+- A segment presses with a darker fill rather than a scale, because it sits flush in its group.
+- Add a dim text label beside the group when the option labels do not explain themselves.
 
 ### Create and action menu
 
@@ -642,7 +639,8 @@ The index page is the reference implementation for app-level management screens.
 - Menu surface should be near-white with a subtle shadow.
 - Items are text-first, monospaced, and vertically compact.
 - Expected items:
-  - “New Context Node”
+  - “New node”, with its `C` shortcut on the right
+  - “New context node”
 - Hover state should use pale moss or muted green surface.
 
 ### Canvas workspace
