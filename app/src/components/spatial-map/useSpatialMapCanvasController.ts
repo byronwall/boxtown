@@ -987,6 +987,11 @@ export function useSpatialMapCanvasController(
     }));
   };
 
+  const setGlobalFilterState = (value: SpatialMapGlobalFilterState) => {
+    pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
+    setGlobalFilter(value);
+  };
+
   const setGlobalFilterIncludeParents = (
     value: boolean | ((current: boolean) => boolean),
   ) => {
@@ -1192,6 +1197,7 @@ export function useSpatialMapCanvasController(
     setShowEdges,
     setShowLinkedInIsolation,
     setGlobalFilterEnabled,
+    setGlobalFilter: setGlobalFilterState,
     setGlobalFilterIncludeParents,
     setGlobalFilterIncludeChildren,
     resetFilters,

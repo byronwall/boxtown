@@ -8,6 +8,10 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 - The map filter menu has a Reset filters action that clears every filter and hides archived nodes again. It stays available when no nodes match.
 
+### Changed
+
+- Node filters and the grid name filter now stay in the URL, so a link or a refresh restores the same view.
+
 ## 2026-09-30
 
 ### Changed

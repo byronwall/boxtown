@@ -1,4 +1,4 @@
-import { useAction } from "@solidjs/router";
+import { useAction, useSearchParams } from "@solidjs/router";
 import { ChevronDown, ChevronRight, FileText, Trash2 } from "lucide-solid";
 import {
   createEffect,
@@ -7,6 +7,7 @@ import {
   For,
   onCleanup,
   onMount,
+  untrack,
   Show,
 } from "solid-js";
 import { css } from "styled-system/css";
@@ -227,6 +228,7 @@ export function SpatialMapGridView(props: {
   onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
   const spatialMap = useSpatialMap();
+  const [searchParams, setSearchParams] = useSearchParams<{ q?: string }>();
   const [mode, setMode] = createSignal<SpatialMapGridMode>("nodes");
   const [selectedMetadataKeys, setSelectedMetadataKeys] = createSignal(
     props.project.nodeMetadataSchema.map((field) => field.key),
@@ -234,6 +236,16 @@ export function SpatialMapGridView(props: {
   const [nodeSearchQuery, setNodeSearchQuery] = createSignal("");
   const [checkedNodeIds, setCheckedNodeIds] = createSignal<Set<string>>(new Set());
   let searchInputRef: HTMLInputElement | undefined;
+  createEffect(() => {
+    const query = searchParams.q ?? "";
+    untrack(() => setNodeSearchQuery(query));
+  });
+  createEffect(() => {
+    const query = nodeSearchQuery();
+    if ((searchParams.q ?? "") !== query) {
+      setSearchParams({ q: query || undefined }, { replace: true });
+    }
+  });
   const nodes = createMemo(() => spatialMap.visibleData().nodes.slice());
   const hierarchyLinks = createMemo(() =>
     spatialMap.visibleData().links.filter((link) => link.parentChild),
