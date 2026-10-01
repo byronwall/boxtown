@@ -132,6 +132,16 @@ export function SpatialMapGlobalFilterMenu() {
             checked={spatialMap.showArchived()}
             onCheckedChange={(checked) => spatialMap.setShowArchived(checked)}
           />
+          <Box h="1px" my="10px" background="rgba(32, 38, 34, 0.12)" />
+          <Button
+            colorPalette="green"
+            variant="outline"
+            size="xs"
+            w="100%"
+            onClick={() => spatialMap.resetFilters()}
+          >
+            Reset filters
+          </Button>
         </Menu.Content>
       </Menu.Positioner>
     </Menu.Root>
