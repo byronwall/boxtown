@@ -2,6 +2,7 @@ import { action, query, redirect } from "@solidjs/router";
 import { getRequestEvent } from "solid-js/web";
 import type { ProjectBackupFileSummary } from "./data.server";
 import type { MapNodeStatus } from "~/lib/spatial-map/types";
+import type { MapNodePriority } from "~/lib/spatial-map/node-priority";
 import type { ProjectRecord, ProjectSummary } from "./types";
 
 const CLIENT_MUTATION_ID_FIELD = "clientMutationId";
@@ -242,6 +243,33 @@ export const updateProjectNodesBulk = action(
   "update-project-nodes-bulk",
 );
 
+export const updateProjectNodePriority = action(
+  async (input: {
+    projectId: string;
+    nodeId: string;
+    priority: MapNodePriority | null;
+    clientMutationId?: string;
+  }) => {
+    "use server";
+    const { updateProjectNodePriorityOnDisk } = await import("./data.server");
+
+    if (!input.projectId?.trim()) {
+      throw new Error("A project id is required.");
+    }
+    if (!input.nodeId?.trim()) {
+      throw new Error("A node id is required.");
+    }
+
+    return updateProjectNodePriorityOnDisk({
+      projectId: input.projectId,
+      nodeId: input.nodeId,
+      priority: input.priority ?? null,
+      clientMutationId: input.clientMutationId,
+    });
+  },
+  "update-project-node-priority",
+);
+
 export const updateProjectNodeType = action(
   async (formData: FormData) => {
     "use server";
@@ -437,6 +465,7 @@ export const updateProjectMetadataSchema = action(
     const defaultValues = formData.getAll("defaultValue");
     const nodeTypeNames = formData.getAll("nodeTypeName");
     const nodeTypeColors = formData.getAll("nodeTypeColor");
+    const defaultNodeTypeIndex = Number(formData.get("defaultNodeTypeIndex") ?? -1);
 
     if (typeof projectId !== "string" || projectId.trim().length === 0) {
       throw new Error("A project id is required.");
@@ -463,6 +492,7 @@ export const updateProjectMetadataSchema = action(
       nodeTypes: nodeTypeNames.map((name, index) => ({
         name: typeof name === "string" ? name : "",
         color: typeof nodeTypeColors[index] === "string" ? nodeTypeColors[index] : "",
+        isDefault: index === defaultNodeTypeIndex,
       })),
       clientMutationId: getClientMutationIdFromFormData(formData),
     });

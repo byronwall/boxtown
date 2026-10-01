@@ -13,6 +13,7 @@ import {
   readProjectByIdFromDisk,
 } from "~/lib/projects/data.server";
 import { getArchivedSubtreeNodeIds } from "~/lib/spatial-map/archive";
+import { isMapNodePriority } from "~/lib/spatial-map/node-priority";
 import { isMapNodeStatus } from "~/lib/spatial-map/node-status";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode } from "~/lib/spatial-map/types";
@@ -28,6 +29,7 @@ export async function GET(event: APIEvent) {
 
     const url = new URL(event.request.url);
     const status = url.searchParams.get("status");
+    const priority = url.searchParams.get("priority");
     const type = url.searchParams.get("type");
     const search = url.searchParams.get("search");
     const include = url.searchParams.get("include");
@@ -44,6 +46,15 @@ export async function GET(event: APIEvent) {
       : getArchivedSubtreeNodeIds(project.spatialMap);
     const isVisible = (nodeId: string) => !hiddenNodeIds.has(nodeId);
 
+    if (priority !== null && priority !== "none" && !isMapNodePriority(priority)) {
+      throw new AgentApiError("invalid_priority", "A valid node priority (or none) is required.", 400, {
+        priority,
+      });
+    }
+    // "none" matches unprioritized nodes.
+    const matchesPriority = (node: { priority?: string | null }) =>
+      priority === null || (node.priority ?? "none") === priority;
+
     if (status !== null && !isMapNodeStatus(status)) {
       throw new AgentApiError("invalid_status", "A valid node status is required.", 400, {
         status,
@@ -58,7 +69,7 @@ export async function GET(event: APIEvent) {
 
     if (include === "context") {
       const nodes = toAgentNodeContexts(project)
-        .filter((item) => isVisible(item.node.id))
+        .filter((item) => isVisible(item.node.id) && matchesPriority(item.node))
         .filter((item) => matchesNodeFilters(item.node, {
           status,
           type,
@@ -78,7 +89,7 @@ export async function GET(event: APIEvent) {
 
     if (include === "ancestors" || compact || fields) {
       const nodes = toAgentNodeSummaries(project, { withAncestors: include === "ancestors" })
-        .filter((node) => isVisible(node.id))
+        .filter((node) => isVisible(node.id) && matchesPriority(node))
         .filter((node) => matchesNodeFilters(node, {
           status,
           type,
@@ -97,7 +108,7 @@ export async function GET(event: APIEvent) {
     }
 
     const nodes = project.spatialMap.nodes
-      .filter((node) => isVisible(node.id))
+      .filter((node) => isVisible(node.id) && matchesPriority(node))
       .filter((node) => matchesNodeFilters(node, {
         status,
         type,

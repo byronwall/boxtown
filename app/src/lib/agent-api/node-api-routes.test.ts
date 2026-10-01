@@ -100,6 +100,34 @@ describe("agent node API projections", () => {
     ]);
   });
 
+  it("filters node list by priority, with none for unprioritized", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.mocked(readProjectByIdFromDisk).mockResolvedValue({
+      ...project,
+      spatialMap: {
+        ...project.spatialMap,
+        nodes: project.spatialMap.nodes.map((node) =>
+          node.id === "child-task" ? { ...node, priority: "high" as const } : node,
+        ),
+      },
+    });
+
+    const high = await getNodes(createEvent(
+      "http://localhost/api/v1/projects/demo/nodes?compact=true&fields=id,priority&priority=high",
+    ));
+    expect((await high.json()).nodes).toEqual([{ id: "child-task", priority: "high" }]);
+
+    const none = await getNodes(createEvent(
+      "http://localhost/api/v1/projects/demo/nodes?compact=true&fields=id&priority=none",
+    ));
+    expect((await none.json()).nodes).toEqual([{ id: "root-task" }]);
+
+    const invalid = await getNodes(createEvent(
+      "http://localhost/api/v1/projects/demo/nodes?priority=someday",
+    ));
+    expect(invalid.status).toBe(400);
+  });
+
   it("hides archived subtrees unless includeArchived is set", async () => {
     vi.stubEnv("NODE_ENV", "development");
     const archivedProject = {

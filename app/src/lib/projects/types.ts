@@ -9,6 +9,8 @@ export interface ProjectNodeMetadataField {
 export interface ProjectNodeTypeDefinition {
   name: string;
   color: string;
+  // At most one type is the default for newly created nodes.
+  isDefault?: boolean;
 }
 
 export interface ProjectRecord {
@@ -32,6 +34,7 @@ export type ProjectOperationKind =
   | "node.status.updated"
   | "node.archive.updated"
   | "nodes.bulk.updated"
+  | "node.priority.updated"
   | "node.type.updated"
   | "node.metadata.updated"
   | "project.schema.updated"

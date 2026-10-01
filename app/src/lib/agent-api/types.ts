@@ -1,3 +1,4 @@
+import type { MapNodePriority } from "~/lib/spatial-map/node-priority";
 import type { ProjectRecord, ProjectSummary } from "~/lib/projects/types";
 import type { MapNode, MapNodeStatus } from "~/lib/spatial-map/types";
 
@@ -45,8 +46,9 @@ export interface AgentProjectCreateResponse {
   project: AgentProjectDetail;
 }
 
-export interface AgentMapNode extends Omit<MapNode, "images"> {
+export interface AgentMapNode extends Omit<MapNode, "images" | "priority"> {
   images: NonNullable<MapNode["images"]>;
+  priority: MapNodePriority | null;
 }
 
 export interface AgentNodeMutationResponse {
@@ -85,6 +87,7 @@ export interface AgentNodeSummary {
   childCount: number;
   imageCount: number;
   archived: boolean;
+  priority: MapNodePriority | null;
   updatedAt: string;
   titlePath?: string;
   path?: AgentPathNode[];

@@ -345,6 +345,7 @@ async function dispatchNodeList(context, projectId) {
   const nodes = await context.client.listNodes(projectId, {
     status: context.parsed.options.status,
     type: context.parsed.options.type,
+    priority: context.parsed.options.priority,
     search: context.parsed.options.search,
     roots: context.parsed.options.roots,
     compact: context.parsed.options.compact,
@@ -453,8 +454,12 @@ async function dispatchNodeUpdate(context, projectId) {
   if (context.parsed.options.type !== undefined) {
     input.type = context.parsed.options.type;
   }
+  if (context.parsed.options.priority !== undefined) {
+    // "none" clears the priority.
+    input.priority = context.parsed.options.priority === "none" ? null : context.parsed.options.priority;
+  }
   if (Object.keys(input).length === 0) {
-    throw new CliError("At least one of --title, --status, or --type is required.", exitCodes.usage);
+    throw new CliError("At least one of --title, --status, --type, or --priority is required.", exitCodes.usage);
   }
   const result = await context.client.updateNode(projectId, nodeId, input);
   writeNodeMutationResult(context, result, "Updated", Object.keys(input));
@@ -1190,8 +1195,8 @@ function resolveFieldsOption(options) {
   }
 
   const presets = {
-    status: "id,label,title,status,type,parentNodeId,metadata.implementation,updatedAt",
-    compact: "id,label,title,status,type,parentNodeId,childCount,imageCount",
+    status: "id,label,title,status,priority,type,parentNodeId,metadata.implementation,updatedAt",
+    compact: "id,label,title,status,priority,type,parentNodeId,childCount,imageCount",
     handoff: "id,label,title,status,context,metadata.implementation,images",
     images: "id,label,title,images",
     tree: "id,label,title,status,type,parentNodeId,childCount",
@@ -1474,11 +1479,11 @@ Usage:
   pgm project schema [project-id] [--json]
   pgm project export-markdown [project-id] [--output ./project.md] [--json]
   pgm project link <project-id>
-  pgm node list [--project <project-id>] [--roots] [--children <node-id>] [--subtree <node-id>] [--depth N] [--compact] [--fields id,label,status,type] [--preset status] [--status blocked] [--type feature] [--search text] [--include-archived] [--with-ancestors|--with-context] [--json]
+  pgm node list [--project <project-id>] [--roots] [--children <node-id>] [--subtree <node-id>] [--depth N] [--compact] [--fields id,label,status,type] [--preset status] [--status blocked] [--type feature] [--priority urgent|high|medium|low|none] [--search text] [--include-archived] [--with-ancestors|--with-context] [--json]
   pgm node view <node-id> [--project <project-id>] [--with-ancestors|--with-context] [--compact] [--fields id,status,metadata.implementation] [--json]
   pgm node status <node-id...> [--project <project-id>] [--json]
   pgm node create --title "Checkout" [--type page] [--parent <node-id>] [--context-file ./context.md] [--metadata-json '{"purpose":"..."}'] [--json]
-  pgm node update <node-id> [--title "Checkout"] [--status working] [--type page] [--json] [--full]
+  pgm node update <node-id> [--title "Checkout"] [--status working] [--type page] [--priority high|none] [--json] [--full]
   pgm node complete <node-id> [--note "Resolution note"] [--json] [--full]
   pgm node resolve <node-id> [--status implemented] [--note "Implementation note"] [--json] [--full]
   pgm node batch-update --json-input ./updates.json [--json]

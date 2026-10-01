@@ -16,6 +16,8 @@ export interface SpatialMapGlobalFilterState {
   includeChildren: boolean;
   selectedTypes: string[];
   selectedStatuses: MapNodeStatus[];
+  // Priority values, plus "none" for unprioritized nodes.
+  selectedPriorities: string[];
 }
 
 export interface CameraState {
@@ -152,6 +154,7 @@ export interface SpatialMapCanvasController {
   setShowArchived: (value: boolean) => void;
   toggleGlobalFilterType: (type: string) => void;
   toggleGlobalFilterStatus: (status: MapNodeStatus) => void;
+  toggleGlobalFilterPriority: (priority: string) => void;
   setViewMode: (value: SpatialMapViewMode) => void;
   setVisibleDepthLevel: (value: SpatialMapDepthLevel) => void;
   toggleLinkedInIsolation: () => void;
@@ -160,7 +163,10 @@ export interface SpatialMapCanvasController {
   unstashNode: (nodeId: string) => void;
   reflowLayout: () => void;
   fitCameraToNodes: () => void;
-  openChildNodeDraft: (parentNodeId?: string | null) => void;
+  openChildNodeDraft: (
+    parentNodeId?: string | null,
+    options?: { anchorToParent?: boolean },
+  ) => void;
   openAddNodesFlow: () => void;
   openContextNoteConversionFlow: () => void;
   openContextPreview: (nodeId: string) => void;

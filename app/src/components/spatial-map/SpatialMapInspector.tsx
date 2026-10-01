@@ -45,6 +45,7 @@ import { type MapNode, type MapNodeStatus } from "~/lib/spatial-map/types";
 import { SpatialMapGenerateImageControl } from "./SpatialMapGenerateImageControl";
 import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
 import { SpatialMapArchiveNodeControl } from "./SpatialMapArchiveNodeControl";
+import { SpatialMapNodePriorityMenu } from "./SpatialMapNodePriorityMenu";
 import { SpatialMapNodeStatusMenu } from "./SpatialMapNodeStatusMenu";
 import { SpatialMapNodeTypePicker } from "./SpatialMapNodeTypePicker";
 import {
@@ -435,6 +436,20 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
     }
   };
 
+  // The child draft only renders on the canvas, so switch there first and wait
+  // a frame for the canvas camera before anchoring the draft to the node.
+  const openAddChildDraft = (nodeId: string) => {
+    if (spatialMap.viewMode() === "canvas") {
+      spatialMap.openChildNodeDraft(nodeId, { anchorToParent: true });
+      return;
+    }
+
+    spatialMap.setViewMode("canvas");
+    requestAnimationFrame(() => {
+      spatialMap.openChildNodeDraft(nodeId, { anchorToParent: true });
+    });
+  };
+
   const submitStatus = async (status: MapNodeStatus) => {
     const node = selectedNode();
     if (!node || statusPending() || status === node.status) return;
@@ -736,6 +751,17 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                   />
                 )}
               </Show>
+              <Show when={selectedNode()}>
+                {(node) => (
+                  <SpatialMapNodePriorityMenu
+                    project={props.project}
+                    node={node()}
+                    showLabel
+                    variant="inspector"
+                    onProjectUpdated={props.onProjectUpdated}
+                  />
+                )}
+              </Show>
               <InspectorChip label="ID" value={spatialMap.selectedNode()?.id ?? "None"} />
               <Show when={selectedNodeForType()}>
                 {(node) => (
@@ -755,6 +781,16 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
             <Show when={selectedNode()}>
               {(node) => (
                 <HStack gap="0" flexWrap="wrap" justifyContent="flex-start" w="fit-content" pt="1px" border="1px solid rgba(96, 101, 95, 0.26)" borderRadius="6px" background="rgba(246, 248, 244, 0.78)">
+                  <Button
+                    size="xs"
+                    colorPalette="green"
+                    variant="surface"
+                    title="Add a child node (C)"
+                    onClick={() => openAddChildDraft(node().id)}
+                  >
+                    <PlusIcon size={14} />
+                    Add Child
+                  </Button>
                   <Button
                     size="xs"
                     colorPalette="green"
@@ -1231,6 +1267,7 @@ function getActivityKindConfig(kind: ProjectOperationLogEntry["kind"]): Activity
     case "node.status.updated":
     case "node.archive.updated":
     case "nodes.bulk.updated":
+    case "node.priority.updated":
     case "node.type.updated":
       return { label: "Updated", tone: "edit", icon: PencilIcon };
     case "node.created":

@@ -110,6 +110,7 @@ Create or update product structure nodes:
 ```bash
 pgm node create --title "Checkout" --type page --parent <parent-node-id> --context-file ./context.md --json
 pgm node update <node-id> --title "Checkout" --status working --type page --json
+pgm node update <node-id> --priority high --json
 pgm node complete <node-id> --note "Implemented the requested change." --json
 pgm node context set <node-id> --file ./context.md --json
 pgm node metadata set <node-id> purpose "Checkout entry point" --json
@@ -129,6 +130,7 @@ Archive finished work instead of deleting it. An archived node and its descendan
 pgm node archive <node-id> <node-id> --json
 pgm node unarchive <node-id> --json
 pgm node list --include-archived --json
+pgm node list --priority urgent --json   # priority: urgent|high|medium|low|none
 ```
 
 Attach one or more screenshots/images to a node:

@@ -102,6 +102,7 @@ export function useSpatialMapCanvasController(
     includeChildren: false,
     selectedTypes: [],
     selectedStatuses: [],
+    selectedPriorities: [],
   });
   const [showEdges, setShowEdges] = createSignal(false);
   const [inspectorOpen, setInspectorOpen] = createSignal(true);
@@ -677,8 +678,15 @@ export function useSpatialMapCanvasController(
 
   const openChildNodeDraft = (
     parentNodeId: string | null = selectedNodeId() ?? isolatedNodeId(),
+    options: { anchorToParent?: boolean } = {},
   ) => {
-    setChildNodeDraft({ parentNodeId, ...clampChildNodeDraftPoint(getDraftWorldPoint()) });
+    // Buttons outside the canvas have no meaningful pointer position, so they
+    // place the draft beside the parent node instead of at the last pointer.
+    const parent = options.anchorToParent && parentNodeId ? nodesById().get(parentNodeId) : undefined;
+    const point = parent
+      ? { x: parent.x + parent.width, y: parent.y }
+      : getDraftWorldPoint();
+    setChildNodeDraft({ parentNodeId, ...clampChildNodeDraftPoint(point) });
   };
 
   const handleWindowKeyDown = (event: KeyboardEvent) => {
@@ -1035,6 +1043,24 @@ export function useSpatialMapCanvasController(
     });
   };
 
+  const toggleGlobalFilterPriority = (priority: string) => {
+    pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
+    setGlobalFilter((current) => {
+      const selectedPriorities = current.selectedPriorities.includes(priority)
+        ? current.selectedPriorities.filter((item) => item !== priority)
+        : [...current.selectedPriorities, priority];
+
+      return {
+        ...current,
+        enabled: hasAnyGlobalFilterSelection({
+          ...current,
+          selectedPriorities,
+        }),
+        selectedPriorities,
+      };
+    });
+  };
+
   const handleBackgroundClick: SpatialMapCanvasController["sceneHandlers"]["onBackgroundClick"] = (event) => {
     if (suppressNodeClick) {
       return;
@@ -1187,6 +1213,7 @@ export function useSpatialMapCanvasController(
     setShowArchived,
     toggleGlobalFilterType,
     toggleGlobalFilterStatus,
+    toggleGlobalFilterPriority,
     setViewMode: (value) => {
       setViewMode(value);
       if (value === "canvas") {
@@ -1496,8 +1523,11 @@ export function filterSpatialMapDataByGlobalFilter(
         const statusMatches =
           filter.selectedStatuses.length === 0 ||
           filter.selectedStatuses.includes(node.status);
+        const priorityMatches =
+          filter.selectedPriorities.length === 0 ||
+          filter.selectedPriorities.includes(node.priority ?? "none");
 
-        return typeMatches && statusMatches;
+        return typeMatches && statusMatches && priorityMatches;
       })
       .map((node) => node.id),
   );
@@ -1526,7 +1556,8 @@ function isGlobalFilterActive(filter: SpatialMapGlobalFilterState) {
 function hasAnyGlobalFilterSelection(filter: SpatialMapGlobalFilterState) {
   return (
     filter.selectedTypes.length > 0 ||
-    filter.selectedStatuses.length > 0
+    filter.selectedStatuses.length > 0 ||
+    filter.selectedPriorities.length > 0
   );
 }
 

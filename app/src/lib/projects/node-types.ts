@@ -37,15 +37,19 @@ export function normalizeProjectNodeTypeSchema(
 ): ProjectNodeTypeDefinition[] {
   const seen = new Set<string>();
   const schema: ProjectNodeTypeDefinition[] = [];
+  let hasDefault = false;
 
   for (const item of input) {
     const name = normalizeProjectNodeTypeName(item.name);
     if (!name || seen.has(name)) continue;
 
     seen.add(name);
+    const isDefault: boolean = item.isDefault === true && !hasDefault;
+    hasDefault ||= isDefault;
     schema.push({
       name,
       color: normalizeProjectNodeTypeColor(item.color, schema.length),
+      ...(isDefault ? { isDefault: true } : {}),
     });
   }
 
@@ -105,4 +109,16 @@ function hslToHex(hue: number, saturation: number, lightness: number) {
         .padStart(2, "0"),
     )
     .join("")}`;
+}
+
+export function getDefaultProjectNodeType(schema: ProjectNodeTypeDefinition[]) {
+  return schema.find((item) => item.isDefault)?.name ?? null;
+}
+
+// New nodes use the project's default type when one is set, otherwise the parent's type.
+export function resolveNewNodeType(
+  schema: ProjectNodeTypeDefinition[],
+  parentType?: string | null,
+) {
+  return getDefaultProjectNodeType(schema) ?? parentType ?? schema[0]?.name ?? "page";
 }
