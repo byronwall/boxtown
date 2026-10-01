@@ -84,8 +84,8 @@ importers:
         specifier: ^6.2.2
         version: 6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.31.1)(terser@5.51.2)
       vite-plugin-lucide-preprocess:
-        specifier: ^1.4.6
-        version: 1.8.0(rollup@4.63.5)(vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.31.1)(terser@5.51.2))
+        specifier: 1.4.6
+        version: 1.4.6(vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.31.1)(terser@5.51.2))
       vite-tsconfig-paths:
         specifier: ^6.0.3
         version: 6.1.1(typescript@5.9.3)(vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.31.1)(terser@5.51.2))
@@ -5281,17 +5281,10 @@ packages:
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
 
-  vite-plugin-lucide-preprocess@1.8.0:
-    resolution: {integrity: sha512-T7flrMWZ/iOEJcb0HSAfeYHWEBr668MrZ3dK+cUj3/7vXXUkead0vwBi7xmHy68YvbvIzDtXBqMy3aomlWLuTA==}
+  vite-plugin-lucide-preprocess@1.4.6:
+    resolution: {integrity: sha512-cj0YtazL1Cwhf3HbI+FyufsNMJ4ir6st5YKr1qRpAuwnBL4WCy/EOQDEUsDjDK1LoG4/3W87qWEJET20RCe+NA==}
     peerDependencies:
-      rolldown: '>=0.1 || >=1.0.0-0'
-      rollup: '>=1'
-      vite: '>=2'
-    peerDependenciesMeta:
-      rolldown:
-        optional: true
-      rollup:
-        optional: true
+      vite: '>=5'
 
   vite-plugin-solid@2.11.14:
     resolution: {integrity: sha512-7ZVBt8rpoyqmlwin2kRIUveaHoF6/kulY7gsnD+qFh4nS29V4OPAnw+ojoAspXIjObiL9o1xh9a/nTuYHm02Rw==}
@@ -11776,12 +11769,10 @@ snapshots:
       - supports-color
       - terser
 
-  vite-plugin-lucide-preprocess@1.8.0(rollup@4.63.5)(vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.31.1)(terser@5.51.2)):
+  vite-plugin-lucide-preprocess@1.4.6(vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.31.1)(terser@5.51.2)):
     dependencies:
-      magic-string: 1.4.2
+      magic-string: 0.30.21
       vite: 6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.31.1)(terser@5.51.2)
-    optionalDependencies:
-      rollup: 4.63.5
 
   vite-plugin-solid@2.11.14(solid-js@1.9.15)(vite@6.4.3(@types/node@20.19.43)(jiti@2.7.0)(lightningcss@1.31.1)(terser@5.51.2)):
     dependencies:
