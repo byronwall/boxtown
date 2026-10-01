@@ -45,6 +45,7 @@ import { type MapNode, type MapNodeStatus } from "~/lib/spatial-map/types";
 import { SpatialMapGenerateImageControl } from "./SpatialMapGenerateImageControl";
 import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
 import { SpatialMapArchiveNodeControl } from "./SpatialMapArchiveNodeControl";
+import { SpatialMapNodePriorityMenu } from "./SpatialMapNodePriorityMenu";
 import { SpatialMapNodeStatusMenu } from "./SpatialMapNodeStatusMenu";
 import { SpatialMapNodeTypePicker } from "./SpatialMapNodeTypePicker";
 import {
@@ -736,6 +737,17 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                   />
                 )}
               </Show>
+              <Show when={selectedNode()}>
+                {(node) => (
+                  <SpatialMapNodePriorityMenu
+                    project={props.project}
+                    node={node()}
+                    showLabel
+                    variant="inspector"
+                    onProjectUpdated={props.onProjectUpdated}
+                  />
+                )}
+              </Show>
               <InspectorChip label="ID" value={spatialMap.selectedNode()?.id ?? "None"} />
               <Show when={selectedNodeForType()}>
                 {(node) => (
@@ -1230,6 +1242,7 @@ function getActivityKindConfig(kind: ProjectOperationLogEntry["kind"]): Activity
     case "node.title.updated":
     case "node.status.updated":
     case "node.archive.updated":
+    case "node.priority.updated":
     case "node.type.updated":
       return { label: "Updated", tone: "edit", icon: PencilIcon };
     case "node.created":

@@ -43,6 +43,7 @@ import {
 import type { MapLink, MapNode, MapNodeStatus } from "~/lib/spatial-map/types";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { useSpatialMap } from "./SpatialMapContext";
+import { SpatialMapNodePriorityMenu } from "./SpatialMapNodePriorityMenu";
 import { useSpatialMapImages } from "./SpatialMapImages";
 
 type SpatialMapGridMode = "nodes" | "links";
@@ -61,6 +62,7 @@ const DEFAULT_NODE_COLUMN_WIDTHS = {
   name: 340,
   type: 132,
   status: 152,
+  priority: 132,
   metadata: 240,
   image: 120,
   actions: 92,
@@ -70,6 +72,7 @@ const MIN_NODE_COLUMN_WIDTHS = {
   name: 220,
   type: 104,
   status: 116,
+  priority: 104,
   metadata: 150,
   image: 92,
   actions: 76,
@@ -611,6 +614,13 @@ function NodesGrid(props: {
                   minWidth={MIN_NODE_COLUMN_WIDTHS.status}
                   onResize={setColumnWidth}
                 />
+                <ResizableHeader
+                  label="Priority"
+                  columnKey="priority"
+                  width={getColumnWidth("priority", DEFAULT_NODE_COLUMN_WIDTHS.priority)}
+                  minWidth={MIN_NODE_COLUMN_WIDTHS.priority}
+                  onResize={setColumnWidth}
+                />
                 <For each={props.metadataFields}>
                   {(field) => (
                     <ResizableHeader
@@ -683,6 +693,14 @@ function NodesGrid(props: {
                         <NodeStatusCell
                           project={props.project}
                           node={row.node}
+                          onProjectUpdated={props.onProjectUpdated}
+                        />
+                      </td>
+                      <td onClick={(event) => event.stopPropagation()}>
+                        <SpatialMapNodePriorityMenu
+                          project={props.project}
+                          node={row.node}
+                          variant="tree"
                           onProjectUpdated={props.onProjectUpdated}
                         />
                       </td>
@@ -1722,6 +1740,10 @@ function getNodeGridColumns(
     {
       key: "status",
       width: getColumnWidth("status", DEFAULT_NODE_COLUMN_WIDTHS.status),
+    },
+    {
+      key: "priority",
+      width: getColumnWidth("priority", DEFAULT_NODE_COLUMN_WIDTHS.priority),
     },
     ...metadataFields.map((field) => ({
       key: `metadata:${field.key}`,

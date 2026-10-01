@@ -128,6 +128,7 @@ Use filters before expanding context:
 pgm node list --status working --with-ancestors --preset status --json
 pgm node list --type task --search "layout" --with-context --compact --json
 pgm node list --status blocked --preset status --json
+pgm node list --priority urgent --with-ancestors --preset status --json   # most important open work first
 pgm node list --type page --preset compact --json
 ```
 
@@ -205,6 +206,7 @@ Update existing nodes when the agent learns more:
 
 ```bash
 pgm node update <node-id> --title "Checkout" --status working --type page --json
+pgm node update <node-id> --priority high --json   # urgent|high|medium|low; `none` clears it
 pgm node complete <node-id> --note "Implemented the requested change." --json
 pgm node context set <node-id> --file ./context.md --json
 pgm node metadata set <node-id> purpose "Checkout entry point" --json

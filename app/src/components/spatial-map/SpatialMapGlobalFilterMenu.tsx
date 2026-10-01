@@ -9,6 +9,7 @@ import type { MapNodeStatus } from "~/lib/spatial-map/types";
 
 import type { SpatialMapGlobalFilterState } from "./spatial-map-canvas.types";
 import { useSpatialMap } from "./SpatialMapContext";
+import { priorityMenuItems } from "./SpatialMapNodePriorityMenu";
 
 export function SpatialMapGlobalFilterMenu() {
   const spatialMap = useSpatialMap();
@@ -80,6 +81,18 @@ export function SpatialMapGlobalFilterMenu() {
                   </FilterToggleButton>
                 );
               }}
+            </For>
+          </FilterToggleSection>
+          <FilterToggleSection label="Priority">
+            <For each={priorityMenuItems}>
+              {(item) => (
+                <FilterToggleButton
+                  selected={spatialMap.globalFilter().selectedPriorities.includes(item.value)}
+                  onClick={() => spatialMap.toggleGlobalFilterPriority(item.value)}
+                >
+                  {item.label}
+                </FilterToggleButton>
+              )}
             </For>
           </FilterToggleSection>
           <FilterToggleSection label="Status">
@@ -221,7 +234,11 @@ function getGlobalFilterLabel(enabled: boolean, selectedCount: number, visibleCo
 }
 
 function getGlobalFilterSelectionCount(filter: SpatialMapGlobalFilterState) {
-  return filter.selectedTypes.length + filter.selectedStatuses.length;
+  return (
+    filter.selectedTypes.length +
+    filter.selectedStatuses.length +
+    filter.selectedPriorities.length
+  );
 }
 
 function formatStatusLabel(status: MapNodeStatus) {

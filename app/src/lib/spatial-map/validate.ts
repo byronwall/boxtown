@@ -1,3 +1,4 @@
+import { isMapNodePriority } from "./node-priority";
 import type { MapLink, MapNode, MapNodeImage, SpatialMapData } from "~/lib/spatial-map/types";
 import { DEFAULT_MAP_NODE_STATUS, isMapNodeStatus } from "./node-status";
 import { isMapLinkRelationship } from "./links";
@@ -49,6 +50,7 @@ function parseMapNode(
     rawContext,
     images,
     archived,
+    priority,
   } = input;
   if (!isNonEmptyString(id)) throw new Error("Node id must be a non-empty string.");
   if (!isNonEmptyString(label)) throw new Error("Node label must be a non-empty string.");
@@ -91,6 +93,7 @@ function parseMapNode(
     rawContext: typeof rawContext === "string" ? rawContext : resolvedContext,
     images: Array.isArray(images) ? images.map(parseMapNodeImage) : [],
     ...(archived === true ? { archived: true } : {}),
+    ...(isMapNodePriority(priority) ? { priority } : {}),
   };
 }
 

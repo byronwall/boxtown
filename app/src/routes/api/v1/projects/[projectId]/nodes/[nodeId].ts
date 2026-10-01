@@ -8,10 +8,12 @@ import {
   deleteProjectNodeOnDisk,
   readProjectByIdFromDisk,
   updateProjectNodeArchivedOnDisk,
+  updateProjectNodePriorityOnDisk,
   updateProjectNodeStatusOnDisk,
   updateProjectNodeTitleOnDisk,
   updateProjectNodeTypeOnDisk,
 } from "~/lib/projects/data.server";
+import { isMapNodePriority } from "~/lib/spatial-map/node-priority";
 import { isMapNodeStatus } from "~/lib/spatial-map/node-status";
 
 export async function GET(event: APIEvent) {
@@ -48,6 +50,7 @@ type PatchNodeRequest = {
   status?: unknown;
   type?: unknown;
   archived?: unknown;
+  priority?: unknown;
 };
 
 export async function PATCH(event: APIEvent) {
@@ -100,6 +103,24 @@ export async function PATCH(event: APIEvent) {
         });
       }
 
+      if (input.priority !== undefined) {
+        const priority = input.priority === null || input.priority === "none" ? null : input.priority;
+        if (priority !== null && !isMapNodePriority(priority)) {
+          throw new AgentApiError(
+            "invalid_priority",
+            'priority must be one of "urgent", "high", "medium", "low", or null.',
+            400,
+            { priority: input.priority },
+          );
+        }
+        project = await updateProjectNodePriorityOnDisk({
+          projectId: event.params.projectId,
+          nodeId: event.params.nodeId,
+          priority,
+          actor: toAgentOperationActor(context.actor),
+        });
+      }
+
       if (typeof input.type === "string") {
         project = await updateProjectNodeTypeOnDisk({
           projectId: event.params.projectId,
@@ -122,7 +143,7 @@ export async function PATCH(event: APIEvent) {
     if (!project) {
       throw new AgentApiError(
         "empty_update",
-        "At least one of title, status, type, or archived is required.",
+        "At least one of title, status, type, archived, or priority is required.",
         400,
       );
     }

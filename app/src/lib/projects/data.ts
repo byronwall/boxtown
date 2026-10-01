@@ -1,6 +1,7 @@
 import { action, query, redirect } from "@solidjs/router";
 import { getRequestEvent } from "solid-js/web";
 import type { ProjectBackupFileSummary } from "./data.server";
+import type { MapNodePriority } from "~/lib/spatial-map/node-priority";
 import type { ProjectRecord, ProjectSummary } from "./types";
 
 const CLIENT_MUTATION_ID_FIELD = "clientMutationId";
@@ -210,6 +211,33 @@ export const updateProjectNodeArchived = action(
     });
   },
   "update-project-node-archived",
+);
+
+export const updateProjectNodePriority = action(
+  async (input: {
+    projectId: string;
+    nodeId: string;
+    priority: MapNodePriority | null;
+    clientMutationId?: string;
+  }) => {
+    "use server";
+    const { updateProjectNodePriorityOnDisk } = await import("./data.server");
+
+    if (!input.projectId?.trim()) {
+      throw new Error("A project id is required.");
+    }
+    if (!input.nodeId?.trim()) {
+      throw new Error("A node id is required.");
+    }
+
+    return updateProjectNodePriorityOnDisk({
+      projectId: input.projectId,
+      nodeId: input.nodeId,
+      priority: input.priority ?? null,
+      clientMutationId: input.clientMutationId,
+    });
+  },
+  "update-project-node-priority",
 );
 
 export const updateProjectNodeType = action(
