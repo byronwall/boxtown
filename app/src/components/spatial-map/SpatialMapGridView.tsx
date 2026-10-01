@@ -321,7 +321,8 @@ export function SpatialMapGridView(props: {
       background="var(--spatial-map-panel-strong)"
     >
       <Box display="grid" gridTemplateRows="auto minmax(0, 1fr)" w="100%" h="100%" minH="100%" color="var(--spatial-map-copy)">
-        <Box zIndex="3" borderBottom="1px solid var(--spatial-map-panel-border)">
+        {/* Above the sticky table cells (z-index up to 3) so the bulk status menu is not covered. */}
+        <Box zIndex="4" borderBottom="1px solid var(--spatial-map-panel-border)">
           <HStack
             justifyContent="space-between"
             gap="12px"
