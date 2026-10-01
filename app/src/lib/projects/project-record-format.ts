@@ -443,7 +443,7 @@ function parseNodeTypeField(input: unknown, index: number): ProjectNodeTypeDefin
     throw new Error(`Project node type row ${index + 1} must be an object.`);
   }
 
-  const { name, color } = input;
+  const { name, color, isDefault } = input;
   if (typeof name !== "string" || name.trim().length === 0) {
     throw new Error(`Project node type row ${index + 1} must have a name.`);
   }
@@ -454,6 +454,7 @@ function parseNodeTypeField(input: unknown, index: number): ProjectNodeTypeDefin
   return {
     name: normalizeProjectNodeTypeName(name),
     color: normalizeProjectNodeTypeColor(color, index),
+    ...(isDefault === true ? { isDefault: true } : {}),
   };
 }
 

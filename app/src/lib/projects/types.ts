@@ -9,6 +9,8 @@ export interface ProjectNodeMetadataField {
 export interface ProjectNodeTypeDefinition {
   name: string;
   color: string;
+  // At most one type is the default for newly created nodes.
+  isDefault?: boolean;
 }
 
 export interface ProjectRecord {
