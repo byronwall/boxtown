@@ -113,11 +113,9 @@ export function ProjectDetailPage(props: ProjectDetailPageProps) {
     <SpatialMapCanvas
       project={project()}
       header={{
-        eyebrow: "Project grid",
         title: project().name,
-        subtitle: project().description,
         backHref: "/",
-        backLabel: "All projects",
+        backLabel: "Projects",
       }}
       onProjectUpdated={handleProjectUpdated}
     />

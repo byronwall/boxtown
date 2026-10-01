@@ -6,11 +6,9 @@ import {
   For,
   onCleanup,
   onMount,
-  Show,
-} from "solid-js";
+  Show, type JSX } from "solid-js";
 
 import { Button } from "~/components/ui/button";
-import { Badge } from "~/components/ui/badge";
 import { PanelPopover } from "~/components/ui/panel-popover";
 import { Box, styled } from "styled-system/jsx";
 import type { SpatialMapTree, SpatialMapTreeItem } from "./spatial-map-tree";
@@ -27,6 +25,7 @@ type TreeNavigationEntry = {
 };
 
 type TreeNavigationProps = {
+  actions?: JSX.Element;
   tree: SpatialMapTree;
   getScrollRoot: () => HTMLElement | undefined;
   onNavigate: (path: string) => void;
@@ -157,20 +156,15 @@ export function SpatialMapTreeNavigation(props: TreeNavigationProps) {
       top="0"
       zIndex="2"
       display="grid"
-      gridTemplateColumns="max-content minmax(0, 1fr)"
+      gridTemplateColumns="max-content minmax(0, 1fr) max-content"
       alignItems="center"
       gap="6px"
       w="calc(100% + 16px)"
-      minH="48px"
-      m="0 -8px 8px"
-      p="8px 12px 8px max(12px, calc(((100% - min(100%, 86ch)) / 2) - 16px))"
-      border="1px solid rgba(44, 52, 46, 0.28)"
-      borderTop="0"
-      borderRight="0"
-      borderLeft="0"
-      borderRadius="0"
-      background="rgba(246, 248, 244, 0.96)"
-      boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 8px 18px rgba(29, 33, 28, 0.06)"
+      minH="32px"
+      m="0 -8px 0"
+      p="3px max(12px, calc(((100% - min(100%, 86ch)) / 2) - 4px)) 3px max(12px, calc(((100% - min(100%, 86ch)) / 2) - 16px))"
+      borderBottom="1px solid var(--spatial-map-panel-divider)"
+      background="rgba(248, 250, 248, 0.98)"
     >
       <PanelPopover
         open={isTocOpen()}
@@ -184,20 +178,16 @@ export function SpatialMapTreeNavigation(props: TreeNavigationProps) {
         anchor={
           <Button
             class="spatial-map-tree-nav-menu-button"
-            w="30px"
-            minW="30px"
-            h="30px"
-            minH="30px"
-            p="0"
-            borderColor="rgba(44, 52, 46, 0.34)"
-            borderRadius="4px"
-            background="rgba(252, 253, 252, 0.9)"
-            color="#202622"
+            variant="plain"
+            size="2xs"
+            px="0"
+            color="var(--spatial-map-copy-dim)"
             aria-label="Open tree table of contents"
+            title="Table of contents"
             aria-expanded={isTocOpen()}
             onClick={() => setIsTocOpen((open) => !open)}
           >
-            <MenuIcon size={16} strokeWidth={2} aria-hidden="true" />
+            <MenuIcon size={14} strokeWidth={2} aria-hidden="true" />
           </Button>
         }
       >
@@ -245,6 +235,9 @@ export function SpatialMapTreeNavigation(props: TreeNavigationProps) {
           </For>
         </Show>
       </Box>
+      <Box display="flex" alignItems="center" gap="2px">
+        {props.actions}
+      </Box>
     </Box>
   );
 }
@@ -258,39 +251,39 @@ function TocEntry(props: {
       <TreeNavigationButton
         type="button"
         display="grid"
-        gridTemplateColumns="max-content minmax(0, 1fr)"
-        alignItems="center"
+        gridTemplateColumns="minmax(0, 1fr) max-content"
+        alignItems="baseline"
         gap="8px"
         minW="0"
-        minH="30px"
-        p="4px 8px 4px calc(8px + (var(--spatial-map-tree-toc-depth) * 14px))"
+        minH="24px"
+        p="2px 8px 2px calc(8px + (var(--spatial-map-tree-toc-depth) * 14px))"
         border="0"
         borderRadius="4px"
         background="transparent"
-        color="#202622"
+        color="var(--spatial-map-copy)"
         fontFamily="inherit"
         textAlign="left"
         cursor="pointer"
-        _hover={{ background: "rgba(229, 239, 229, 0.84)", outline: "none" }}
-        _focusVisible={{ background: "rgba(229, 239, 229, 0.84)", outline: "none" }}
+        _hover={{ background: "rgba(34, 41, 36, 0.06)", outline: "none" }}
+        _focusVisible={{ background: "rgba(34, 41, 36, 0.06)", outline: "none" }}
         style={{ "--spatial-map-tree-toc-depth": String(props.entry.depth) }}
         onClick={() => props.onNavigate(props.entry.path)}
       >
-        <Badge as="span" variant="spatial" size="2xs">
-          {props.entry.item.node.type}
-        </Badge>
         <Box
           as="span"
           minW="0"
           overflow="hidden"
-          color="#202622"
+          color="var(--spatial-map-copy)"
           fontSize="12px"
-          lineHeight="1.2"
-          fontWeight="700"
+          lineHeight="1.3"
+          fontWeight={props.entry.depth === 0 ? "700" : "500"}
           textOverflow="ellipsis"
           whiteSpace="nowrap"
         >
           {props.entry.item.node.label}
+        </Box>
+        <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="11px">
+          {props.entry.item.node.type}
         </Box>
       </TreeNavigationButton>
       <Show when={props.entry.childEntries.length > 0}>
@@ -314,16 +307,15 @@ function BreadcrumbItem(props: {
     display: "inline-flex" as const,
     alignItems: "center" as const,
     maxW: "16rem",
-    minH: "28px",
-    p: "0 8px",
+    minH: "24px",
+    p: "0 6px",
     border: "0",
     borderRadius: "4px",
     background: "transparent",
     fontFamily: "inherit",
     fontSize: "11px",
     lineHeight: "1",
-    fontWeight: "700",
-    letterSpacing: "0.02em",
+    fontWeight: "500",
     whiteSpace: "nowrap" as const,
   };
 
@@ -334,12 +326,12 @@ function BreadcrumbItem(props: {
         <TreeNavigationBreadcrumbButton
           {...commonProps}
           type={props.type}
-          color="#202622"
+          color="var(--spatial-map-copy)"
           overflow="hidden"
           textOverflow="ellipsis"
           cursor="pointer"
-          _hover={{ background: "rgba(229, 239, 229, 0.84)", outline: "none" }}
-          _focusVisible={{ background: "rgba(229, 239, 229, 0.84)", outline: "none" }}
+          _hover={{ background: "rgba(34, 41, 36, 0.06)", outline: "none" }}
+          _focusVisible={{ background: "rgba(34, 41, 36, 0.06)", outline: "none" }}
           onClick={props.onClick}
         >
           {props.children}

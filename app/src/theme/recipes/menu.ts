@@ -8,9 +8,11 @@ export const menu = defineSlotRecipe({
     content: {
       "--menu-z-index": "zIndex.dropdown",
 
-      bg: "gray.surface.bg",
-      borderRadius: "l3",
-      boxShadow: "md",
+      bg: "#fbfcfb",
+      borderWidth: "1px",
+      borderColor: "olive.7",
+      borderRadius: "6px",
+      boxShadow: "0 8px 24px rgba(24, 32, 24, 0.15)",
       display: "flex",
       flexDirection: "column",
       maxH: "min(var(--available-height), {sizes.96})",
@@ -31,7 +33,8 @@ export const menu = defineSlotRecipe({
     },
     item: {
       alignItems: "center",
-      borderRadius: "l2",
+      borderRadius: "4px",
+      cursor: "pointer",
       display: "flex",
       flex: "0 0 auto",
       outline: "0",
@@ -91,8 +94,8 @@ export const menu = defineSlotRecipe({
         separator: { mx: "-1", my: "0.5" },
       },
       sm: {
-        content: { p: "1", gap: "0.5", textStyle: "sm" },
-        item: { px: "1.5", minH: "9", gap: "2", _icon: { boxSize: "4" } },
+        content: { p: "1", gap: "0", fontSize: "12px" },
+        item: { px: "2", minH: "7", gap: "2", _icon: { boxSize: "3.5" } },
         itemGroup: { gap: "0.5" },
         itemGroupLabel: { px: "1.5", height: "9" },
         separator: { mx: "-1.5", my: "0.5" },

@@ -150,11 +150,11 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
       <SimpleDialog
         open={open()}
         onOpenChange={setDialogOpen}
-        title={isSubtreeMode() ? "Delete Node and Children" : "Delete Node"}
+        title={isSubtreeMode() ? "Delete node and children" : "Delete node"}
         description={
           isSubtreeMode()
             ? `Delete ${props.node.label} and ${descendantLabel()}?`
-            : `Delete ${props.node.label}? Choose whether to remove only this node or include its descendants.`
+            : `Delete ${props.node.label}?`
         }
         maxW="520px"
         initialFocusEl={() => deleteButtonRef ?? null}
@@ -208,10 +208,10 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
         }
       >
         <VStack alignItems="stretch" gap="4">
-          <Text textStyle="sm" color="fg.muted">
+          <Text fontSize="12px" lineHeight="1.45" color="var(--spatial-map-copy-dim)">
             {isSubtreeMode()
-              ? "This removes the node and every descendant connected by parent-child links. It cannot be undone. Press Delete without Cmd to remove only this node."
-              : "Delete node removes this node and its attached links. Delete node and children also removes every descendant connected by parent-child links."}
+              ? "This removes the node and every descendant. It cannot be undone. Press Delete without Cmd to remove only this node."
+              : "Deleting a node also removes its links. Its children are kept unless you delete them too."}
           </Text>
         </VStack>
       </SimpleDialog>

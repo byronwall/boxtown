@@ -66,8 +66,8 @@ export function SpatialMapGridBulkBar(props: {
     <HStack
       gap="2"
       flexWrap="wrap"
-      p="6px 10px"
-      borderBottom="1px solid rgba(96, 101, 95, 0.26)"
+      p="5px 10px"
+      borderBottom="1px solid var(--spatial-map-panel-border)"
       background="rgba(229, 239, 229, 0.6)"
       role="toolbar"
       aria-label="Bulk actions for selected nodes"
