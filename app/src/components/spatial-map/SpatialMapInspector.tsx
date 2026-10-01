@@ -523,7 +523,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         alignSelf="stretch"
         p="0"
         border="0"
-        background={resizingInspector() ? "rgba(45, 111, 72, 0.18)" : "rgba(229, 234, 226, 0.72)"}
+        background={resizingInspector() ? "rgba(45, 111, 72, 0.18)" : "transparent"}
         color={resizingInspector() ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
         cursor="col-resize"
         _active={{ transform: "none" }}
@@ -695,7 +695,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                           onClick={() => openAddChildDraft(node().id)}
                         >
                           <PlusIcon size={13} />
-                          Add Child
+                          Add child
                         </Button>
                         <Box flex="1" />
                         <SpatialMapArchiveNodeControl

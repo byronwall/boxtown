@@ -162,13 +162,13 @@ export function SpatialMapInspectorContextSection(props: {
       <SimpleDialog
         open={props.dialogOpen}
         onOpenChange={props.onDialogOpenChange}
-        title={`${props.node.label} Context`}
-        description="Large markdown view for longer context notes and working material."
+        title={props.node.label}
+        description="Context"
         maxW="min(800px, 90vw)"
         contentClass={contextDialogClass}
         footer={
           <HStack justifyContent="flex-end">
-            <Button size="sm" variant="outline" onClick={() => props.onDialogOpenChange(false)}>
+            <Button variant="outline" onClick={() => props.onDialogOpenChange(false)}>
               Close
             </Button>
           </HStack>

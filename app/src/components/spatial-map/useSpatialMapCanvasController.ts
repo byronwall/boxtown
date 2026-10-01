@@ -68,6 +68,14 @@ interface ViewportSize {
 const CHILD_NODE_PLACEHOLDER_WIDTH = 300;
 const CHILD_NODE_PLACEHOLDER_HEIGHT = 430;
 const CHILD_NODE_PLACEHOLDER_EDGE_GAP = 12;
+const DEFAULT_GLOBAL_FILTER: SpatialMapGlobalFilterState = {
+  enabled: false,
+  includeParents: true,
+  includeChildren: false,
+  selectedTypes: [],
+  selectedStatuses: [],
+  selectedPriorities: [],
+};
 
 export function useSpatialMapCanvasController(
   projectData: Accessor<SpatialMapData>,
@@ -97,12 +105,7 @@ export function useSpatialMapCanvasController(
   );
   const [showLinkedInIsolation, setShowLinkedInIsolation] = createSignal(false);
   const [globalFilter, setGlobalFilter] = createSignal<SpatialMapGlobalFilterState>({
-    enabled: false,
-    includeParents: true,
-    includeChildren: false,
-    selectedTypes: [],
-    selectedStatuses: [],
-    selectedPriorities: [],
+    ...DEFAULT_GLOBAL_FILTER,
   });
   const [showEdges, setShowEdges] = createSignal(false);
   const [inspectorOpen, setInspectorOpen] = createSignal(true);
@@ -1009,6 +1012,12 @@ export function useSpatialMapCanvasController(
     }));
   };
 
+  const resetFilters = () => {
+    pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
+    setGlobalFilter({ ...DEFAULT_GLOBAL_FILTER });
+    setShowArchived(false);
+  };
+
   const toggleGlobalFilterType = (type: string) => {
     pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
     setGlobalFilter((current) => {
@@ -1191,6 +1200,7 @@ export function useSpatialMapCanvasController(
     setGlobalFilter: setGlobalFilterState,
     setGlobalFilterIncludeParents,
     setGlobalFilterIncludeChildren,
+    resetFilters,
     showArchived,
     setShowArchived,
     toggleGlobalFilterType,

@@ -1,5 +1,5 @@
 import { useAction } from "@solidjs/router";
-import { ArrowDownIcon, ArrowUpIcon, Trash2 } from "lucide-solid";
+import { ArrowDownIcon, ArrowUpIcon, PlusIcon, Trash2 } from "lucide-solid";
 import { Index, createEffect, createSignal, type JSX } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, HStack, VStack, styled } from "styled-system/jsx";
@@ -10,6 +10,7 @@ import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { Text } from "~/components/ui/text";
 import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
+import { Tooltip } from "~/components/ui/tooltip";
 import { updateProjectMetadataSchema } from "~/lib/projects/data";
 import { createNodeTypeColor } from "~/lib/projects/node-types";
 import { appendClientMutationId, createClientMutationId } from "~/lib/projects/optimistic";
@@ -39,41 +40,22 @@ const SettingsSectionButtonRoot = styled("button");
 // SimpleDialog only exposes a content class, so the slot-level dialog chrome
 // stays as a small component-local Panda escape hatch instead of global CSS.
 const projectSettingsDialogClass = css({
-  w: "min(960px, calc(100dvw - 24px))",
-  maxW: "min(960px, calc(100dvw - 24px)) !important",
-  h: "min(720px, calc(100dvh - 24px))",
+  w: "min(880px, calc(100dvw - 24px))",
+  maxW: "min(880px, calc(100dvw - 24px)) !important",
+  h: "min(600px, calc(100dvh - 24px))",
   maxH: "calc(100dvh - 24px) !important",
   boxSizing: "border-box",
-  py: "0",
-  border: "1px solid rgba(96, 101, 95, 0.72)",
-  background: "rgba(252, 253, 252, 0.94)",
-  boxShadow: "0 28px 70px rgba(29, 33, 28, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88)",
-  gap: "8px",
-  "& .dialog__header": {
-    flexShrink: "0",
-    minW: "0",
-    mx: "0",
-    p: "12px 56px 12px 16px",
-    borderBottom: "1px solid rgba(96, 101, 95, 0.28)",
-    background: "rgba(248, 250, 248, 0.9)",
-  },
   "& .dialog__body": {
     alignItems: "stretch",
     flex: "1",
     minH: "0",
     overflow: "hidden",
-    p: "8px 16px",
+    p: "0",
   },
   "& .dialog__body > *": {
     w: "100%",
     minW: "0",
     minH: "0",
-  },
-  "& .dialog__footer": {
-    flexShrink: "0",
-    p: "8px 16px 12px",
-    borderTop: "1px solid rgba(96, 101, 95, 0.18)",
-    background: "rgba(252, 253, 252, 0.86)",
   },
 });
 
@@ -168,9 +150,9 @@ export function ProjectMetadataSettingsDialog(
       <SimpleDialog
         open={open()}
         onOpenChange={setOpen}
-        title="Project Settings"
-        description="Edit the project title, subtitle, and node metadata fields."
-        maxW="min(960px, calc(100dvw - 24px))"
+        title="Project settings"
+        description="Project details, node metadata fields, and node types."
+        maxW="min(880px, calc(100dvw - 24px))"
         contentClass={projectSettingsDialogClass}
         scrollBehavior="inside"
         footer={
@@ -181,9 +163,10 @@ export function ProjectMetadataSettingsDialog(
             <Button
               type="submit"
               form={formId}
+              colorPalette="green"
               loading={pending()}
             >
-              Save Settings
+              Save
             </Button>
           </HStack>
         }
@@ -201,11 +184,6 @@ export function ProjectMetadataSettingsDialog(
           display="flex"
           flexDirection={{ base: "column", md: "row" }}
           overflow="hidden"
-          border="1px solid rgba(96, 101, 95, 0.48)"
-          borderRadius="4px"
-          background="linear-gradient(90deg, rgba(31, 36, 33, 0.045) 1px, transparent 1px), linear-gradient(rgba(31, 36, 33, 0.045) 1px, transparent 1px), radial-gradient(circle at 12% 8%, rgba(48, 164, 108, 0.08), transparent 24rem), rgba(248, 250, 248, 0.9)"
-          backgroundSize="24px 24px, 24px 24px, auto, auto"
-          boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 14px 36px rgba(29, 33, 28, 0.1)"
         >
           <input type="hidden" name="projectId" value={props.project.id} />
           <SettingsSectionRail
@@ -214,7 +192,7 @@ export function ProjectMetadataSettingsDialog(
             typeCount={typeRows().length}
             onSelect={setSelectedSection}
           />
-          <Box flex="1" minW="0" minH="0" p="8px" overflow="hidden">
+          <Box flex="1" minW="0" minH="0" p="12px 16px" overflow="hidden">
             <VStack
               alignItems="stretch"
               gap="2"
@@ -228,21 +206,14 @@ export function ProjectMetadataSettingsDialog(
             >
             <SettingsPanel selected={selectedSection() === "details"}>
             <SettingsSectionTitle>Project Details</SettingsSectionTitle>
-            <Box
-              display="grid"
-              gap="6px"
-              minW="0"
-              p="8px"
-              border="1px solid rgba(96, 101, 95, 0.34)"
-              background="rgba(239, 241, 239, 0.86)"
-            >
+            <Box display="grid" gap="8px" minW="0" maxW="560px">
               <Field.Root
                 display="grid"
                 gridTemplateColumns={{ base: "1fr", sm: "96px minmax(0, 1fr)" }}
                 alignItems="start"
                 gap="8px"
               >
-                <Field.Label>Title</Field.Label>
+                <Field.Label color="#475249" fontSize="12px" fontWeight="500" pt="7px">Title</Field.Label>
                 <Textarea
                   variant="spatial"
                   size="compact"
@@ -262,7 +233,7 @@ export function ProjectMetadataSettingsDialog(
                 alignItems="start"
                 gap="8px"
               >
-                <Field.Label>Subtitle</Field.Label>
+                <Field.Label color="#475249" fontSize="12px" fontWeight="500" pt="7px">Subtitle</Field.Label>
                 <Textarea
                   variant="spatial"
                   size="compact"
@@ -284,14 +255,14 @@ export function ProjectMetadataSettingsDialog(
               Node Metadata Fields
             </SettingsSectionTitle>
             <GridScrollArea>
-              <Box {...metadataGridProps()} minH="30px" borderTop="1px solid rgba(96, 101, 95, 0.4)" borderBottom="1px solid rgba(96, 101, 95, 0.34)" background="rgba(226, 232, 224, 0.9)">
+              <Box {...metadataGridProps()} minH="26px" borderBottom="1px solid rgba(96, 101, 95, 0.34)">
                 <GridHeaderCell>Key</GridHeaderCell>
                 <GridHeaderCell>Label</GridHeaderCell>
                 <GridHeaderCell>Default Value</GridHeaderCell>
                 <GridHeaderCell centered>Order</GridHeaderCell>
               </Box>
 
-              <Box {...metadataGridProps()} borderBottom="1px solid rgba(96, 101, 95, 0.34)" background="rgba(239, 241, 239, 0.86)">
+              <Box {...metadataGridProps()} >
                 <Index each={rows()}>
                   {(row, index) => (
                     <>
@@ -354,39 +325,46 @@ export function ProjectMetadataSettingsDialog(
                           rows={1}
                         />
                       </Field.Root>
-                      <HStack gap="1" {...gridCellProps()} justifyContent="center" alignItems="center" background="rgba(232, 237, 229, 0.72)">
-                        <IconButton
-                          aria-label={`Move ${row().label || row().key || "field"} up`}
-                          title="Move up"
-                          type="button"
-                          size="xs"
-                          variant="outline"
+                      <HStack gap="1" {...gridCellProps()} justifyContent="center" alignItems="center">
+                        <Tooltip content="Move up" openDelay={150} closeDelay={80}>
+                          <IconButton
+                            aria-label={`Move ${row().label || row().key || "field"} up`}
+                            type="button"
+                            size="2xs"
+                            variant="plain"
+                            color="#475249"
                           disabled={index === 0}
                           onClick={() => moveRow(index, -1, setRows)}
-                        >
-                          <ArrowUpIcon size={15} />
-                        </IconButton>
-                        <IconButton
-                          aria-label={`Move ${row().label || row().key || "field"} down`}
-                          title="Move down"
-                          type="button"
-                          size="xs"
-                          variant="outline"
+                          >
+                            <ArrowUpIcon size={13} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip content="Move down" openDelay={150} closeDelay={80}>
+                          <IconButton
+                            aria-label={`Move ${row().label || row().key || "field"} down`}
+                            type="button"
+                            size="2xs"
+                            variant="plain"
+                            color="#475249"
                           disabled={index === rows().length - 1}
                           onClick={() => moveRow(index, 1, setRows)}
-                        >
-                          <ArrowDownIcon size={15} />
-                        </IconButton>
-                        <IconButton
-                          aria-label={`Remove ${row().label || row().key || "field"}`}
-                          title="Remove"
-                          type="button"
-                          size="xs"
-                          variant="danger"
+                          >
+                            <ArrowDownIcon size={13} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip content="Remove" openDelay={150} closeDelay={80}>
+                          <IconButton
+                            aria-label={`Remove ${row().label || row().key || "field"}`}
+                            type="button"
+                            size="2xs"
+                            variant="plain"
+                            color="#475249"
+                            _hover={{ background: "red.subtle.bg", color: "red.outline.fg" }}
                           onClick={() => removeRow(index, setRows)}
-                        >
-                          <Trash2 size={15} />
-                        </IconButton>
+                          >
+                            <Trash2 size={13} />
+                          </IconButton>
+                        </Tooltip>
                       </HStack>
                     </>
                   )}
@@ -395,12 +373,12 @@ export function ProjectMetadataSettingsDialog(
             </GridScrollArea>
 
             <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap">
-              <Text color="fg.muted" textStyle="sm">
-                Keys are normalized on save and node metadata is remapped by the original key.
+              <Text color="#475249" fontSize="12px">
+                Keys are normalized on save; existing node values follow a renamed key.
               </Text>
               <Button
                 type="button"
-                size="xs"
+                size="2xs"
                 variant="surface"
                 colorPalette="green"
                 onClick={() =>
@@ -410,7 +388,8 @@ export function ProjectMetadataSettingsDialog(
                   ])
                 }
               >
-                Add Field
+                <PlusIcon size={13} />
+                Add field
               </Button>
             </HStack>
             </SettingsPanel>
@@ -420,13 +399,13 @@ export function ProjectMetadataSettingsDialog(
               Node Types
             </SettingsSectionTitle>
             <GridScrollArea>
-              <Box {...typeGridProps()} minH="30px" borderTop="1px solid rgba(96, 101, 95, 0.4)" borderBottom="1px solid rgba(96, 101, 95, 0.34)" background="rgba(226, 232, 224, 0.9)">
+              <Box {...typeGridProps()} minH="26px" borderBottom="1px solid rgba(96, 101, 95, 0.34)">
                 <GridHeaderCell>Name</GridHeaderCell>
                 <GridHeaderCell>Color</GridHeaderCell>
                 <GridHeaderCell centered>Default</GridHeaderCell>
                 <GridHeaderCell centered>Order</GridHeaderCell>
               </Box>
-              <Box {...typeGridProps()} borderBottom="1px solid rgba(96, 101, 95, 0.34)" background="rgba(239, 241, 239, 0.86)">
+              <Box {...typeGridProps()} >
                 <Index each={typeRows()}>
                   {(row, index) => (
                     <>
@@ -448,7 +427,7 @@ export function ProjectMetadataSettingsDialog(
                           rows={1}
                         />
                       </Field.Root>
-                      <HStack {...gridCellProps()} alignItems="center" gap="7px" background="rgba(248, 250, 248, 0.74)">
+                      <HStack {...gridCellProps()} alignItems="center" gap="7px">
                         <input
                           aria-label={`Color for node type ${row().name || index + 1}`}
                           style={{
@@ -465,11 +444,11 @@ export function ProjectMetadataSettingsDialog(
                             updateTypeRow(index, { color: event.currentTarget.value }, setTypeRows)
                           }
                         />
-                        <Text as="span" color="var(--spatial-map-copy-muted)" fontSize="11px" fontWeight="700">
+                        <Text as="span" color="#475249" fontFamily="mono" fontSize="11px">
                           {row().color}
                         </Text>
                       </HStack>
-                      <HStack {...gridCellProps()} justifyContent="center" alignItems="center" background="rgba(248, 250, 248, 0.74)">
+                      <HStack {...gridCellProps()} justifyContent="center" alignItems="center">
                         <input
                           aria-label={`Use ${row().name || "this type"} as the default for new nodes`}
                           title="Default type for new nodes (click again to clear)"
@@ -480,39 +459,46 @@ export function ProjectMetadataSettingsDialog(
                           onClick={() => toggleDefaultTypeRow(index, setTypeRows)}
                         />
                       </HStack>
-                      <HStack gap="1" {...gridCellProps()} justifyContent="center" alignItems="center" background="rgba(232, 237, 229, 0.72)">
-                        <IconButton
-                          aria-label={`Move ${row().name || "type"} up`}
-                          title="Move up"
-                          type="button"
-                          size="xs"
-                          variant="outline"
+                      <HStack gap="1" {...gridCellProps()} justifyContent="center" alignItems="center">
+                        <Tooltip content="Move up" openDelay={150} closeDelay={80}>
+                          <IconButton
+                            aria-label={`Move ${row().name || "type"} up`}
+                            type="button"
+                            size="2xs"
+                            variant="plain"
+                            color="#475249"
                           disabled={index === 0}
                           onClick={() => moveRow(index, -1, setTypeRows)}
-                        >
-                          <ArrowUpIcon size={15} />
-                        </IconButton>
-                        <IconButton
-                          aria-label={`Move ${row().name || "type"} down`}
-                          title="Move down"
-                          type="button"
-                          size="xs"
-                          variant="outline"
+                          >
+                            <ArrowUpIcon size={13} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip content="Move down" openDelay={150} closeDelay={80}>
+                          <IconButton
+                            aria-label={`Move ${row().name || "type"} down`}
+                            type="button"
+                            size="2xs"
+                            variant="plain"
+                            color="#475249"
                           disabled={index === typeRows().length - 1}
                           onClick={() => moveRow(index, 1, setTypeRows)}
-                        >
-                          <ArrowDownIcon size={15} />
-                        </IconButton>
-                        <IconButton
-                          aria-label={`Remove ${row().name || "type"}`}
-                          title="Remove"
-                          type="button"
-                          size="xs"
-                          variant="danger"
+                          >
+                            <ArrowDownIcon size={13} />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip content="Remove" openDelay={150} closeDelay={80}>
+                          <IconButton
+                            aria-label={`Remove ${row().name || "type"}`}
+                            type="button"
+                            size="2xs"
+                            variant="plain"
+                            color="#475249"
+                            _hover={{ background: "red.subtle.bg", color: "red.outline.fg" }}
                           onClick={() => removeRow(index, setTypeRows)}
-                        >
-                          <Trash2 size={15} />
-                        </IconButton>
+                          >
+                            <Trash2 size={13} />
+                          </IconButton>
+                        </Tooltip>
                       </HStack>
                     </>
                   )}
@@ -521,12 +507,12 @@ export function ProjectMetadataSettingsDialog(
             </GridScrollArea>
 
             <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap">
-              <Text color="fg.muted" textStyle="sm">
-                Node type names are normalized on save and become the available type picker options.
+              <Text color="#475249" fontSize="12px">
+                Type names are normalized on save and become the type picker options.
               </Text>
               <Button
                 type="button"
-                size="xs"
+                size="2xs"
                 variant="surface"
                 colorPalette="green"
                 onClick={() =>
@@ -536,7 +522,8 @@ export function ProjectMetadataSettingsDialog(
                   ])
                 }
               >
-                Add Type
+                <PlusIcon size={13} />
+                Add type
               </Button>
             </HStack>
             </SettingsPanel>
@@ -552,13 +539,13 @@ function SettingsSectionTitle(props: { children: JSX.Element }) {
   return (
     <Text
       as="h3"
-      m="4px 0 -1px"
-      color="var(--spatial-map-copy-muted)"
+      m="0"
+      color="#475249"
       fontSize="11px"
       fontWeight="700"
       letterSpacing="0.08em"
-      lineHeight="1"
-      textTransform="none"
+      lineHeight="1.2"
+      textTransform="uppercase"
     >
       {props.children}
     </Text>
@@ -595,9 +582,8 @@ function SettingsSectionRail(props: {
       w={{ base: "100%", md: "176px" }}
       maxH={{ base: "none", md: "100%" }}
       p="8px"
-      borderRight={{ base: "0", md: "1px solid rgba(96, 101, 95, 0.24)" }}
-      borderBottom={{ base: "1px solid rgba(96, 101, 95, 0.24)", md: "0" }}
-      background="rgba(239, 241, 239, 0.72)"
+      borderRight={{ base: "0", md: "1px solid rgba(96, 101, 95, 0.2)" }}
+      borderBottom={{ base: "1px solid rgba(96, 101, 95, 0.2)", md: "0" }}
       overflowX={{ base: "auto", md: "hidden" }}
       overflowY="hidden"
     >
@@ -638,22 +624,22 @@ function SettingsSectionButton(props: {
       display="grid"
       gap="2px"
       minW={{ base: "144px", md: "0" }}
-      p="8px 9px"
-      border="1px solid"
-      borderColor={props.selected ? "rgba(48, 164, 108, 0.42)" : "transparent"}
+      p="6px 8px"
+      border="0"
       borderRadius="4px"
-      background={props.selected ? "rgba(48, 164, 108, 0.12)" : "transparent"}
-      color="var(--spatial-map-copy)"
+      background={props.selected ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+      color="#171c19"
       cursor="pointer"
+      font="inherit"
       textAlign="left"
       _hover={{
-        background: props.selected ? "rgba(48, 164, 108, 0.14)" : "rgba(255, 255, 255, 0.58)",
+        background: props.selected ? "rgba(229, 239, 229, 0.96)" : "rgba(34, 41, 36, 0.06)",
       }}
     >
-      <Text as="span" fontSize="12px" fontWeight="800" lineHeight="1.15">
+      <Text as="span" fontSize="12px" fontWeight={props.selected ? "700" : "500"} lineHeight="1.3">
         {props.label}
       </Text>
-      <Text as="span" color="var(--spatial-map-copy-muted)" fontSize="11px" lineHeight="1.2">
+      <Text as="span" color="#475249" fontSize="11px" lineHeight="1.3">
         {props.meta}
       </Text>
     </SettingsSectionButtonRoot>
@@ -666,8 +652,6 @@ function GridScrollArea(props: { children: JSX.Element }) {
       minW="0"
       overflowX="auto"
       overflowY="hidden"
-      borderRadius="3px"
-      border="1px solid rgba(96, 101, 95, 0.22)"
       class={gridScrollAreaClass}
     >
       {props.children}
@@ -683,14 +667,11 @@ function GridHeaderCell(props: { children: JSX.Element; centered?: boolean }) {
       alignItems="center"
       justifyContent={props.centered ? "center" : undefined}
       minW="0"
-      p="0 9px"
-      borderRight={props.centered ? "0" : "1px solid rgba(96, 101, 95, 0.24)"}
-      color="var(--spatial-map-copy-muted)"
+      p="0 6px"
+      color="#475249"
       fontSize="11px"
-      fontWeight="700"
-      letterSpacing="0.08em"
+      fontWeight="500"
       lineHeight="1"
-      textTransform="none"
     >
       {props.children}
     </Text>
@@ -705,7 +686,6 @@ function metadataGridProps() {
     alignItems: "stretch",
     w: "100%",
     minW: "688px",
-    borderInline: "1px solid rgba(96, 101, 95, 0.34)",
   } as const;
 }
 
@@ -718,17 +698,15 @@ function typeGridProps() {
     w: "fit-content",
     maxW: "100%",
     minW: "514px",
-    borderInline: "1px solid rgba(96, 101, 95, 0.34)",
   } as const;
 }
 
 function gridCellProps() {
   return {
     minW: "0",
-    minH: "38px",
-    p: "5px",
-    borderRight: "1px solid rgba(96, 101, 95, 0.18)",
-    borderBottom: "1px solid rgba(96, 101, 95, 0.18)",
+    minH: "36px",
+    p: "3px",
+    borderBottom: "1px solid rgba(96, 101, 95, 0.2)",
     class: gridCellClass,
   } as const;
 }

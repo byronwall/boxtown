@@ -80,6 +80,8 @@ export const ButtonGroup = (props: ButtonGroupProps) => {
   );
 };
 
+export { ButtonPropsProvider };
+
 const [ButtonPropsProvider, useButtonPropsContext] =
   createContext<ButtonVariantProps>({
     strict: false,

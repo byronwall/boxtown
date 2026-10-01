@@ -26,7 +26,7 @@ export function SpatialMapGlobalFilterMenu() {
             {...triggerProps()}
             colorPalette="green"
             variant={spatialMap.globalFilterActive() ? "surface" : "outline"}
-            size="xs"
+            size="2xs"
             aria-label="Filter visible nodes"
             title="Filter visible nodes"
             background={
@@ -40,7 +40,7 @@ export function SpatialMapGlobalFilterMenu() {
                 : undefined
             }
           >
-            <FilterIcon size={15} aria-hidden="true" />
+            <FilterIcon size={13} aria-hidden="true" />
             <Text as="span" fontSize="11px" lineHeight="1">
               {getGlobalFilterLabel(
                 spatialMap.globalFilter().enabled,
@@ -132,6 +132,18 @@ export function SpatialMapGlobalFilterMenu() {
             checked={spatialMap.showArchived()}
             onCheckedChange={(checked) => spatialMap.setShowArchived(checked)}
           />
+          <Box h="1px" my="10px" background="rgba(32, 38, 34, 0.12)" />
+          <Button
+            variant="outline"
+            size="2xs"
+            w="100%"
+            disabled={
+              isDefaultGlobalFilter(spatialMap.globalFilter()) && !spatialMap.showArchived()
+            }
+            onClick={() => spatialMap.resetFilters()}
+          >
+            Reset filters
+          </Button>
         </Menu.Content>
       </Menu.Positioner>
     </Menu.Root>
@@ -147,14 +159,13 @@ function FilterToggleButton(props: {
     <Button
       colorPalette="green"
       variant={props.selected ? "surface" : "outline"}
-      size="xs"
+      size="2xs"
       aria-pressed={props.selected}
       onClick={(event) => {
         event.stopPropagation();
         props.onClick();
       }}
-      minH="28px"
-      borderRadius="5px"
+      borderRadius="4px"
       background={props.selected ? "rgba(229, 239, 229, 0.96)" : "transparent"}
       color={props.selected ? "var(--spatial-map-accent-strong)" : undefined}
     >
@@ -231,6 +242,15 @@ function getGlobalFilterLabel(enabled: boolean, selectedCount: number, visibleCo
   }
 
   return `${visibleCount}`;
+}
+
+function isDefaultGlobalFilter(filter: SpatialMapGlobalFilterState) {
+  return (
+    !filter.enabled &&
+    filter.includeParents &&
+    !filter.includeChildren &&
+    getGlobalFilterSelectionCount(filter) === 0
+  );
 }
 
 function getGlobalFilterSelectionCount(filter: SpatialMapGlobalFilterState) {

@@ -145,6 +145,7 @@ export interface SpatialMapCanvasController {
   setGlobalFilterIncludeChildren: (
     value: boolean | ((current: boolean) => boolean),
   ) => void;
+  resetFilters: () => void;
   showArchived: Accessor<boolean>;
   setShowArchived: (value: boolean) => void;
   toggleGlobalFilterType: (type: string) => void;

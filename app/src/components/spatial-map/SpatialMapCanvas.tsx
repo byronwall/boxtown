@@ -1,9 +1,10 @@
-import { A, useSearchParams } from "@solidjs/router";
+import { useSearchParams } from "@solidjs/router";
 import { createEffect, createSignal, For, Show, untrack } from "solid-js";
-import { ChevronLeftIcon, ChevronRightIcon, LocateFixedIcon, XIcon } from "lucide-solid";
-import { css } from "styled-system/css";
+import { ChevronLeftIcon, ChevronRightIcon, LocateFixedIcon, PlusIcon, UndoIcon } from "lucide-solid";
 import { Box, styled } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
+import { IconButton } from "~/components/ui/icon-button";
+import { Tooltip } from "~/components/ui/tooltip";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { mapNodeStatuses, type MapNode, type MapNodeStatus } from "~/lib/spatial-map/types";
 
@@ -14,6 +15,7 @@ import type {
 } from "./spatial-map-canvas.types";
 import { SpatialMapProvider, useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapInspector } from "./SpatialMapInspector";
+import { SpatialMapBlockTitle } from "./SpatialMapPanelPrimitives";
 import { SpatialMapImageProvider, useSpatialMapImages } from "./SpatialMapImages";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { SpatialMapCommandMenu } from "./SpatialMapCommandMenu";
@@ -25,36 +27,8 @@ import { SpatialMapTreeView } from "./SpatialMapTreeView";
 const StashCardButton = styled("button");
 const StashCardImage = styled("img");
 
-// Router A is not a Panda styled component, so backlink hover styling remains
-// as a local class instead of the removed global stylesheet.
-const shellBacklinkClass = css({
-  display: "inline-flex",
-  alignItems: "center",
-  flexShrink: "0",
-  w: "fit-content",
-  minH: "14px",
-  p: "0",
-  border: "0",
-  background: "transparent",
-  color: "var(--spatial-map-accent-strong)",
-  fontSize: "11px",
-  fontWeight: "700",
-  letterSpacing: "0.08em",
-  lineHeight: "1",
-  pointerEvents: "auto",
-  textDecoration: "none",
-  textTransform: "none",
-  _hover: {
-    color: "var(--spatial-map-accent)",
-    textDecoration: "underline",
-    textUnderlineOffset: "3px",
-  },
-});
-
 interface SpatialMapHeaderProps {
-  eyebrow?: string;
   title?: string;
-  subtitle?: string;
   backHref?: string;
   backLabel?: string;
 }
@@ -98,97 +72,31 @@ function SpatialMapCanvasLayout(props: {
         class={`spatial-map-shell${controller.inspectorOpen() ? "" : " spatial-map-shell--collapsed"}`}
         position="relative"
         boxSizing="border-box"
+        display="grid"
+        gridTemplateRows="auto minmax(0, 1fr)"
         h="100dvh"
         w="100%"
         overflow="hidden"
-        padding={{ base: "8px", md: "clamp(12px, 2vw, 24px)" }}
         color="var(--spatial-map-copy)"
         fontFamily={`"IBM Plex Mono", "SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", "Liberation Mono", monospace`}
-        background={`
-          radial-gradient(circle at 15% 8%, rgba(48, 164, 108, 0.16), transparent 28rem),
-          radial-gradient(circle at 88% 20%, rgba(137, 142, 135, 0.14), transparent 30rem),
-          repeating-linear-gradient(0deg, rgba(31, 36, 33, 0.045) 0 1px, transparent 1px 40px),
-          repeating-linear-gradient(90deg, rgba(31, 36, 33, 0.035) 0 1px, transparent 1px 40px),
-          linear-gradient(180deg, rgba(248, 250, 248, 0.96), rgba(223, 226, 223, 1))
-        `}
-        style={{
-          "--spatial-map-bg": "#dfe3dc",
-          "--spatial-map-panel": "rgba(252, 253, 252, 0.94)",
-          "--spatial-map-panel-strong": "rgba(248, 250, 248, 0.92)",
-          "--spatial-map-panel-border": "rgba(95, 101, 94, 0.34)",
-          "--spatial-map-panel-border-strong": "rgba(96, 101, 95, 0.72)",
-          "--spatial-map-panel-divider": "rgba(96, 101, 95, 0.2)",
-          "--spatial-map-copy": "#171c19",
-          "--spatial-map-copy-muted": "#323b35",
-          "--spatial-map-copy-dim": "#475249",
-          "--spatial-map-blue-fill": "#d6e0e8",
-          "--spatial-map-blue-fill-hover": "#c8d6e1",
-          "--spatial-map-blue-stroke": "#63798c",
-          "--spatial-map-blue-stroke-hover": "#4f677c",
-          "--spatial-map-green-fill": "#cdd9cd",
-          "--spatial-map-green-fill-hover": "#c0cfbf",
-          "--spatial-map-green-stroke": "#607861",
-          "--spatial-map-green-stroke-hover": "#4f684f",
-          "--spatial-map-neutral-fill": "#eef1eb",
-          "--spatial-map-neutral-fill-hover": "#e3e7df",
-          "--spatial-map-neutral-stroke": "#747b72",
-          "--spatial-map-neutral-stroke-hover": "#5f685f",
-          "--spatial-map-steel-fill": "#d8dddd",
-          "--spatial-map-steel-fill-hover": "#cbd2d2",
-          "--spatial-map-steel-stroke": "#677477",
-          "--spatial-map-steel-stroke-hover": "#556367",
-          "--spatial-map-amber-fill": "#e4d9bf",
-          "--spatial-map-amber-fill-hover": "#d8caa8",
-          "--spatial-map-amber-stroke": "#806c47",
-          "--spatial-map-amber-stroke-hover": "#6b5937",
-          "--spatial-map-accent": "#2d6f48",
-          "--spatial-map-accent-strong": "#173e27",
-        }}
+        background="var(--spatial-map-bg)"
       >
-        <Show when={props.header?.backHref}>
-          {(backHref) => (
-            <Box
-              class="spatial-map-shell-nav"
-              position="absolute"
-              top="6px"
-              left="30px"
-              zIndex="3"
-              display="flex"
-              alignItems="center"
-              pointerEvents="none"
-            >
-              <A
-                href={backHref()}
-                class={shellBacklinkClass}
-                aria-label={props.header?.backLabel ?? "Back"}
-              >
-                &lt; Back
-              </A>
-            </Box>
-          )}
-        </Show>
+        <SpatialMapToolbar
+          {...props.header}
+          project={props.project}
+          onProjectUpdated={props.onProjectUpdated}
+        />
         <Box
           class="spatial-map-main"
           position="relative"
-          zIndex="1"
           display="grid"
           gridTemplateColumns={{
             base: "minmax(0, 1fr)",
             md: "auto minmax(0, 1fr) auto",
           }}
           w="100%"
-          h="100%"
           minH="0"
-          m="0"
           overflow="hidden"
-          border="1px solid var(--spatial-map-panel-border-strong)"
-          borderRadius="12px"
-          background="var(--spatial-map-panel)"
-          boxShadow={`
-            0 28px 70px rgba(29, 33, 28, 0.2),
-            0 0 0 1px rgba(255, 255, 255, 0.64),
-            inset 0 1px 0 rgba(255, 255, 255, 0.88)
-          `}
         >
           <SpatialMapNodeStash
             project={props.project}
@@ -199,21 +107,11 @@ function SpatialMapCanvasLayout(props: {
             gridColumn={{ base: "1", md: "2" }}
             position="relative"
             display="grid"
-            gridTemplateRows="auto minmax(0, 1fr)"
+            gridTemplateRows="minmax(0, 1fr)"
             minW="0"
             minH="0"
-            p={{ base: "8px", md: "10px" }}
-            // The inspector's resize gutter already separates the panes on desktop.
-            pr={{ base: "8px", md: controller.inspectorOpen() ? "0" : "10px" }}
-            gap="8px"
             overflow="hidden"
-            background="rgba(229, 234, 226, 0.72)"
           >
-            <SpatialMapToolbar
-              {...props.header}
-              project={props.project}
-              onProjectUpdated={props.onProjectUpdated}
-            />
             <SpatialMapCommandMenu />
             <Show when={controller.viewMode() === "canvas"}>
               <SpatialMapScene
@@ -254,29 +152,30 @@ function SpatialMapCanvasLayout(props: {
             >
               <Box
                 position="absolute"
-                top="calc(50% + 27px)"
+                top="50%"
                 left="50%"
-                w="min(360px, calc(100% - 32px))"
-                p="16px 18px"
+                w="min(320px, calc(100% - 32px))"
+                p="12px"
                 border="1px solid var(--spatial-map-panel-border)"
-                background="rgba(246, 248, 244, 0.9)"
-                boxShadow="0 16px 40px rgba(23, 27, 24, 0.14)"
+                borderRadius="6px"
+                background="var(--spatial-map-panel-strong)"
                 transform="translate(-50%, -50%)"
               >
-                <Box as="h2" margin="0 0 8px" fontSize="16px" fontWeight="700" letterSpacing="-0.03em">
-                  Blank project grid
+                <Box as="h2" margin="0 0 4px" fontSize="13px" fontWeight="700">
+                  Blank project
                 </Box>
-                <Box as="p" margin="0" color="var(--spatial-map-copy-muted)" fontSize="12px" lineHeight="1.6">
-                  This project doesn’t have nodes yet. Create a node here or
-                  add project details with the CLI.
+                <Box as="p" margin="0" color="var(--spatial-map-copy-dim)" fontSize="12px" lineHeight="1.45">
+                  Create the first node here, or add nodes with the CLI.
                 </Box>
                 <Button
                   colorPalette="green"
-                  size="xs"
-                  mt="12px"
+                  variant="surface"
+                  size="2xs"
+                  mt="8px"
                   onClick={() => controller.openChildNodeDraft(null)}
                 >
-                  Create node
+                  <PlusIcon size={13} />
+                  New node
                 </Button>
               </Box>
             </Show>
@@ -326,47 +225,44 @@ function SpatialMapNodeStash(props: {
         h="100%"
         minH="0"
         overflow="hidden"
-        p={stashOpen() ? "10px" : "8px 4px"}
-        borderRight="1px solid rgba(96, 101, 95, 0.38)"
-        background="linear-gradient(180deg, rgba(248, 250, 248, 0.88), rgba(235, 239, 233, 0.92))"
-        boxShadow="inset -1px 0 0 rgba(255, 255, 255, 0.58), 10px 0 24px rgba(29, 33, 28, 0.035)"
+        p={stashOpen() ? "8px 10px" : "8px 4px"}
+        borderRight="1px solid var(--spatial-map-panel-border)"
+        background="var(--spatial-map-panel-strong)"
         transition="width 160ms ease, padding 160ms ease"
       >
         <Box
           display="flex"
-          alignItems="baseline"
-          justifyContent={stashOpen() ? "space-between" : "center"}
-          gap="2"
-          pb="8px"
-          borderBottom="1px solid rgba(96, 101, 95, 0.18)"
+          alignItems="center"
+          justifyContent={stashOpen() ? "flex-start" : "center"}
+          gap="1.5"
+          minH="24px"
         >
-          <Button
-            type="button"
-            size="xs"
-            variant="plain"
-            colorPalette="green"
-            minW="24px"
-            w="24px"
-            h="24px"
-            p="0"
-            aria-label={stashOpen() ? "Collapse node stash" : "Expand node stash"}
-            onClick={() => setStashOpen((current) => !current)}
-          >
-            <Show when={stashOpen()} fallback={<ChevronRightIcon size={15} />}>
-              <ChevronLeftIcon size={15} />
-            </Show>
-          </Button>
+          <Tooltip content={stashOpen() ? "Collapse node stash" : "Expand node stash"} openDelay={150} closeDelay={80}>
+            <IconButton
+              variant="plain"
+              size="2xs"
+              color="var(--spatial-map-copy-dim)"
+              aria-label={stashOpen() ? "Collapse node stash" : "Expand node stash"}
+              onClick={() => setStashOpen((current) => !current)}
+            >
+              <Show when={stashOpen()} fallback={<ChevronRightIcon size={14} />}>
+                <ChevronLeftIcon size={14} />
+              </Show>
+            </IconButton>
+          </Tooltip>
           <Show when={stashOpen()}>
-            <Box as="h2" m="0" color="var(--spatial-map-copy)" fontSize="13px" fontWeight="700" letterSpacing="0.02em">
-              Node Stash
+            <SpatialMapBlockTitle as="h3">Stash</SpatialMapBlockTitle>
+            <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="11px" fontVariantNumeric="tabular-nums">
+              {controller.stashedNodes().length}
             </Box>
-            <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="11px" fontWeight="700">
-              S toggles
+            <Box as="span" flex="1" />
+            <Box as="kbd" color="var(--spatial-map-copy-dim)" fontFamily="mono" fontSize="11px" title="Press S to stash or unstash the selected node">
+              S
             </Box>
           </Show>
         </Box>
         <Show when={stashOpen()}>
-          <Box display="grid" alignContent="start" gap="8px" minH="0" overflow="auto" pt="9px">
+          <Box display="grid" alignContent="start" minH="0" overflow="auto" pt="4px">
             <For each={controller.stashedNodes()}>
               {(node) => (
                 <StashedNodeCard
@@ -400,69 +296,63 @@ function StashedNodeCard(props: {
     <Box
       as="section"
       display="grid"
-      gap="7px"
-      p="9px"
-      border="1px solid"
-      borderColor={isSelected() ? "rgba(45, 111, 72, 0.62)" : "rgba(96, 101, 95, 0.24)"}
-      borderRadius="7px"
-      background={isSelected() ? "rgba(229, 239, 229, 0.82)" : "rgba(246, 248, 244, 0.78)"}
-      boxShadow={isSelected() ? "inset 0 0 0 1px rgba(45, 111, 72, 0.22)" : "none"}
+      gridTemplateColumns={(props.node.images ?? []).length > 0 ? "minmax(0, 1fr) 40px" : "minmax(0, 1fr)"}
+      alignItems="start"
+      columnGap="8px"
+      rowGap="4px"
+      m="0 -6px"
+      p="6px"
+      borderTop="1px solid var(--spatial-map-panel-divider)"
+      borderRadius="4px"
+      background={isSelected() ? "rgba(229, 239, 229, 0.8)" : "transparent"}
     >
-      <Box
+      <StashCardButton
+        type="button"
         display="grid"
-        gridTemplateColumns={(props.node.images ?? []).length > 0 ? "minmax(0, 1fr) 54px" : "minmax(0, 1fr)"}
-        alignItems="start"
-        gap="8px"
+        gap="2px"
         minW="0"
+        p="0"
+        border="0"
+        background="transparent"
+        color="inherit"
+        font="inherit"
+        textAlign="left"
+        cursor="pointer"
+        _active={{ transform: "scale(0.99)" }}
+        onClick={selectStashedNode}
       >
-        <StashCardButton
-          type="button"
-          display="grid"
-          gap="3px"
-          minW="0"
-          p="0"
-          border="0"
-          background="transparent"
-          color="inherit"
-          textAlign="left"
-          cursor="pointer"
-          onClick={selectStashedNode}
-        >
-          <Box as="span" color="var(--spatial-map-copy)" fontSize="14px" fontWeight="700" lineHeight="1.16" overflowWrap="anywhere">
-            {props.node.label}
-          </Box>
-          <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="11px" fontWeight="700" letterSpacing="0.04em">
-            {props.node.type} / {props.node.status}
-          </Box>
-        </StashCardButton>
-        <StashedNodeThumbnail node={props.node} />
-      </Box>
-      <Box display="flex" alignItems="center" flexWrap="wrap" gap="5px">
+        <Box as="span" color="var(--spatial-map-copy)" fontSize="12px" fontWeight={isSelected() ? "700" : "600"} lineHeight="1.3" overflowWrap="anywhere">
+          {props.node.label}
+        </Box>
+        <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="11px" lineHeight="1.3">
+          {props.node.type} · {props.node.status}
+        </Box>
+      </StashCardButton>
+      <StashedNodeThumbnail node={props.node} />
+      <Box gridColumn="1 / -1" display="flex" alignItems="center" gap="4px">
         <Button
-          size="xs"
-          variant="surface"
-          colorPalette="green"
+          size="2xs"
+          variant="outline"
           onClick={() => controller.focusStashedNode(props.node.id)}
         >
           <LocateFixedIcon size={13} />
           Find
         </Button>
         <Button
-          size="xs"
+          size="2xs"
           variant="outline"
-          colorPalette="green"
           onClick={() => controller.unstashNode(props.node.id)}
         >
-          <XIcon size={13} />
+          <UndoIcon size={13} />
           Unstash
         </Button>
-      </Box>
-      <Box display="flex" alignItems="center" flexWrap="wrap" gap="5px">
+        <Box flex="1" />
         <SpatialMapDeleteNodeControl
           project={props.project}
           node={props.node}
           onProjectUpdated={props.onProjectUpdated}
           compact
+          size="2xs"
         />
       </Box>
     </Box>
@@ -481,11 +371,11 @@ function StashedNodeThumbnail(props: { node: MapNode }) {
           type="button"
           position="relative"
           display="block"
-          w="54px"
-          h="42px"
+          w="40px"
+          h="32px"
           p="0"
-          border="1px solid rgba(34, 41, 36, 0.22)"
-          borderRadius="5px"
+          border="1px solid var(--spatial-map-panel-border)"
+          borderRadius="4px"
           background="rgba(214, 220, 212, 0.92)"
           cursor="zoom-in"
           overflow="hidden"
