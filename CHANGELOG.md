@@ -22,6 +22,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Fixed
 
+- Selecting nodes in the metadata grid no longer shifts the table when the bulk action bar appears.
 - Status, priority, and type chips now render with their tone colors. They previously showed a dark border and no fill, in the inspector and in the tree view.
 - Tooltips no longer render behind the main workspace panel.
 - Long metadata placeholders truncate with an ellipsis instead of running off the edge of the inspector.

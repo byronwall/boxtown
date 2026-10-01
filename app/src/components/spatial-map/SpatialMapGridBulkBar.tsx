@@ -1,7 +1,7 @@
 import { useAction } from "@solidjs/router";
 import { ArchiveIcon, ArchiveRestoreIcon, XIcon } from "lucide-solid";
 import { createSignal } from "solid-js";
-import { HStack } from "styled-system/jsx";
+import { Box, HStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import { SimpleSelect } from "~/components/ui/simple-select";
 import { Text } from "~/components/ui/text";
@@ -65,29 +65,33 @@ export function SpatialMapGridBulkBar(props: {
   return (
     <HStack
       gap="2"
-      flexWrap="wrap"
+      flexWrap="nowrap"
+      h="40px"
+      overflowX="auto"
       p="6px 10px"
       borderBottom="1px solid rgba(96, 101, 95, 0.26)"
       background="rgba(229, 239, 229, 0.6)"
       role="toolbar"
       aria-label="Bulk actions for selected nodes"
     >
-      <Text as="span" fontSize="12px" fontWeight="760" color="var(--spatial-map-copy)">
+      <Text as="span" flexShrink="0" whiteSpace="nowrap" fontSize="12px" fontWeight="760" color="var(--spatial-map-copy)">
         {count()} selected
       </Text>
-      <SimpleSelect
-        size="xs"
-        minW="150px"
-        placeholder="Set status..."
-        value=""
-        items={mapNodeStatuses.map((status) => ({
-          value: status,
-          label: getMapNodeStatusLabel(status),
-        }))}
-        onChange={(value) =>
-          void applyUpdate({ status: value as MapNodeStatus }, "Status updated")
-        }
-      />
+      <Box flex="0 0 170px">
+        <SimpleSelect
+          size="xs"
+          minW="150px"
+          placeholder="Set status..."
+          value=""
+          items={mapNodeStatuses.map((status) => ({
+            value: status,
+            label: getMapNodeStatusLabel(status),
+          }))}
+          onChange={(value) =>
+            void applyUpdate({ status: value as MapNodeStatus }, "Status updated")
+          }
+        />
+      </Box>
       <Button size="xs" variant="outline" loading={pending()} onClick={() => void applyUpdate({ archived: true }, "Nodes archived")}>
         <ArchiveIcon size={14} />
         Archive

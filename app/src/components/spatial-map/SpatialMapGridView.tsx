@@ -378,7 +378,7 @@ export function SpatialMapGridView(props: {
           }
         >
           <Box display="grid" gridTemplateRows="auto minmax(0, 1fr)" minH="0">
-          <Show when={visibleCheckedNodeIds().length > 0} fallback={<Box />}>
+          <Show when={visibleCheckedNodeIds().length > 0} fallback={<Box h="40px" />}>
             <SpatialMapGridBulkBar
               project={props.project}
               nodeIds={visibleCheckedNodeIds()}
