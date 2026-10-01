@@ -20,6 +20,11 @@ import { calculateNodeDepths } from "~/lib/spatial-map/depth";
 import type { MapNode, SpatialMapData } from "~/lib/spatial-map/types";
 
 import { isEditableTarget } from "./spatial-map-dom";
+import {
+  CommandProjectRow,
+  CommandSectionLabel,
+  useCommandMenuProjects,
+} from "./SpatialMapCommandProjects";
 import { useSpatialMap } from "./SpatialMapContext";
 
 const RESULT_LIMIT = 12;
@@ -68,10 +73,13 @@ export function SpatialMapCommandMenu() {
   const results = createMemo(() =>
     searchNodes(nodes(), query(), hierarchy()).slice(0, RESULT_LIMIT),
   );
+  // Project rows follow node rows and share one keyboard index.
+  const projects = useCommandMenuProjects(open, query);
+  const itemCount = () => results().length + projects().length;
 
   createEffect(() => {
-    if (activeIndex() >= results().length) {
-      setActiveIndex(Math.max(results().length - 1, 0));
+    if (activeIndex() >= itemCount()) {
+      setActiveIndex(Math.max(itemCount() - 1, 0));
     }
   });
 
@@ -116,6 +124,27 @@ export function SpatialMapCommandMenu() {
     closeMenu();
   };
 
+  // Full navigation: the project page keeps canvas state per mounted project,
+  // so a client-side param change would carry the old project's view over.
+  const openProject = (projectId: string | undefined) => {
+    if (!projectId) {
+      return;
+    }
+
+    closeMenu();
+    window.location.assign(`/projects/${encodeURIComponent(projectId)}`);
+  };
+
+  const selectActiveItem = () => {
+    const index = activeIndex();
+    if (index < results().length) {
+      selectResult(results()[index]);
+      return;
+    }
+
+    openProject(projects()[index - results().length]?.id);
+  };
+
   return (
     <SimpleDialog
       open={open()}
@@ -144,8 +173,8 @@ export function SpatialMapCommandMenu() {
             boxShadow="none"
             fontSize="0.95rem"
             fontWeight="650"
-            aria-label="Search nodes"
-            placeholder="Search nodes..."
+            aria-label="Search nodes and projects"
+            placeholder="Search nodes or switch project..."
             value={query()}
             onInput={(event) => {
               setQuery(event.currentTarget.value);
@@ -155,7 +184,7 @@ export function SpatialMapCommandMenu() {
               if (event.key === "ArrowDown") {
                 event.preventDefault();
                 setActiveIndex((current) =>
-                  Math.min(current + 1, Math.max(results().length - 1, 0)),
+                  Math.min(current + 1, Math.max(itemCount() - 1, 0)),
                 );
                 return;
               }
@@ -168,7 +197,7 @@ export function SpatialMapCommandMenu() {
 
               if (event.key === "Enter") {
                 event.preventDefault();
-                selectResult(results()[activeIndex()]);
+                selectActiveItem();
               }
             }}
           />
@@ -248,13 +277,28 @@ export function SpatialMapCommandMenu() {
                 )}
               </For>
             </Match>
-            <Match when={query().trim().length > 0}>
-              <CommandEmpty>No matching nodes</CommandEmpty>
+            <Match when={query().trim().length > 0 && projects().length === 0}>
+              <CommandEmpty>No matching nodes or projects</CommandEmpty>
             </Match>
-            <Match when>
+            <Match when={query().trim().length === 0}>
               <CommandEmpty>Type to search all nodes</CommandEmpty>
             </Match>
           </Switch>
+          <Show when={projects().length > 0}>
+            <CommandSectionLabel>
+              {query().trim() ? "Projects" : "Switch project"}
+            </CommandSectionLabel>
+            <For each={projects()}>
+              {(project, index) => (
+                <CommandProjectRow
+                  project={project}
+                  active={results().length + index() === activeIndex()}
+                  onHover={() => setActiveIndex(results().length + index())}
+                  onSelect={() => openProject(project.id)}
+                />
+              )}
+            </For>
+          </Show>
         </Box>
       </VStack>
     </SimpleDialog>
