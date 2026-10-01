@@ -2,6 +2,12 @@
 
 Notable changes to Product Grid Management, newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
 
+## 2026-10-01
+
+### Added
+
+- The map filter menu has a Reset filters action that clears every filter and hides archived nodes again. It stays available when no nodes match.
+
 ## 2026-09-30
 
 ### Changed

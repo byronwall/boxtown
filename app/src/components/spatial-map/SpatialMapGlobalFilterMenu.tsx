@@ -132,6 +132,18 @@ export function SpatialMapGlobalFilterMenu() {
             checked={spatialMap.showArchived()}
             onCheckedChange={(checked) => spatialMap.setShowArchived(checked)}
           />
+          <Box h="1px" my="10px" background="rgba(32, 38, 34, 0.12)" />
+          <Button
+            variant="outline"
+            size="2xs"
+            w="100%"
+            disabled={
+              isDefaultGlobalFilter(spatialMap.globalFilter()) && !spatialMap.showArchived()
+            }
+            onClick={() => spatialMap.resetFilters()}
+          >
+            Reset filters
+          </Button>
         </Menu.Content>
       </Menu.Positioner>
     </Menu.Root>
@@ -230,6 +242,15 @@ function getGlobalFilterLabel(enabled: boolean, selectedCount: number, visibleCo
   }
 
   return `${visibleCount}`;
+}
+
+function isDefaultGlobalFilter(filter: SpatialMapGlobalFilterState) {
+  return (
+    !filter.enabled &&
+    filter.includeParents &&
+    !filter.includeChildren &&
+    getGlobalFilterSelectionCount(filter) === 0
+  );
 }
 
 function getGlobalFilterSelectionCount(filter: SpatialMapGlobalFilterState) {
