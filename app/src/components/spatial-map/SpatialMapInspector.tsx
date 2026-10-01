@@ -51,7 +51,7 @@ const INSPECTOR_WIDTH_STORAGE_KEY = "spatial-map:inspector-width";
 const DEFAULT_INSPECTOR_WIDTH = 348;
 const MIN_INSPECTOR_WIDTH = 280;
 const MAX_INSPECTOR_WIDTH = 600;
-const RESIZE_GUTTER_WIDTH = 12;
+const RESIZE_GUTTER_WIDTH = 20;
 
 // EditInPlace renders a plain div, so its text treatment is passed as a class.
 const metadataValueClass = css({
@@ -523,13 +523,13 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         alignSelf="stretch"
         p="0"
         border="0"
-        background={resizingInspector() ? "rgba(45, 111, 72, 0.18)" : "rgba(229, 234, 226, 0.72)"}
-        color={resizingInspector() ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
+        background={resizingInspector() ? "rgba(68, 68, 64, 0.12)" : "rgba(68, 68, 64, 0.025)"}
+        color="var(--spatial-map-copy-dim)"
         cursor="col-resize"
         _active={{ transform: "none" }}
         touchAction="none"
         transition="background-color 120ms ease, color 120ms ease"
-        _hover={{ background: "rgba(96, 101, 95, 0.18)", color: "var(--spatial-map-copy)" }}
+        _hover={{ background: "rgba(68, 68, 64, 0.1)", color: "var(--spatial-map-copy)" }}
         _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(37, 95, 58, 0.56)" }}
         style={{ width: `${RESIZE_GUTTER_WIDTH}px` }}
         onPointerDown={startInspectorResize}
@@ -557,9 +557,15 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         borderLeft="1px solid var(--spatial-map-panel-border)"
         background="var(--spatial-map-panel-strong)"
         boxShadow={{ base: "-8px 0 24px rgba(17, 22, 19, 0.12)", md: "none" }}
+        fontFamily='-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
         transition={resizingInspector() ? "padding 160ms ease" : "width 160ms ease, padding 160ms ease"}
         overscrollBehavior="contain"
         style={{
+          "--spatial-map-panel-strong": "rgba(250, 250, 249, 0.98)",
+          "--spatial-map-panel-border": "rgba(83, 83, 77, 0.24)",
+          "--spatial-map-panel-divider": "rgba(83, 83, 77, 0.16)",
+          "--spatial-map-copy-muted": "#555650",
+          "--spatial-map-copy-dim": "#666760",
           width: spatialMap.inspectorOpen() ? inspectorWidthCss() : "34px",
           "flex-basis": spatialMap.inspectorOpen() ? inspectorWidthCss() : "34px",
           "min-width": spatialMap.inspectorOpen() ? inspectorWidthCss() : "34px",

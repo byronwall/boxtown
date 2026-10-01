@@ -163,11 +163,11 @@ function InspectorTitle(props: { children: JSX.Element }) {
     <Box
       as="h2"
       m="0"
-      color="#141816"
-      fontSize="1.125rem"
-      lineHeight="1.25"
+      color="var(--spatial-map-copy)"
+      fontSize="18px"
+      lineHeight="1.3"
       fontWeight="700"
-      letterSpacing="-0.02em"
+      letterSpacing="-0.01em"
       textTransform="none"
       overflowWrap="anywhere"
     >

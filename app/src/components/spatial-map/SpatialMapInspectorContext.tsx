@@ -18,8 +18,8 @@ import {
 // component-local selector escape hatch rather than a global stylesheet rule.
 const contextMarkdownClass = css({
   color: "var(--spatial-map-copy-muted)",
-  fontSize: "12px",
-  lineHeight: "1.5",
+  fontSize: "13px",
+  lineHeight: "1.55",
   "& :where(p, ul, ol, blockquote, pre, table)": {
     mb: "8px",
   },
@@ -137,8 +137,8 @@ export function SpatialMapInspectorContextSection(props: {
           variant="spatial"
           size="sm"
           minH="96px"
-          fontSize="12px"
-          lineHeight="1.5"
+          fontSize="13px"
+          lineHeight="1.55"
           aria-label="Markdown context"
           placeholder="Markdown notes, requirements, pasted material…"
           value={draft()}
