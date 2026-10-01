@@ -244,7 +244,8 @@ The visual style observed in the implemented site is a soft industrial UI with m
 
 Use this document as the cleanup target for the repo. When existing code diverges, prefer the rule that is already working in the strongest implemented surfaces:
 
-- **Index surface baseline:** page background, outer shell, left creation/import rail, right data list, modal backdrop language, token-led olive surfaces, compact chips, restrained green focus/active states.
+- **App shell baseline:** every page is full-bleed with one top header bar (see "App shell"). Pages are not inset inside a padded, shadowed frame.
+- **Index surface baseline:** token-led olive surfaces, list rows, modal backdrop language, restrained green focus/active states.
 - **Spatial map drafting baseline:** canvas nodes, metadata grid, tree view, inspector rail, image tools, and project settings dialogs.
 - **Shared cleanup direction:** converge custom spatial-map colors toward Panda olive/green/red/blue/amber tokens without losing the denser drafting feel.
 
@@ -270,10 +271,10 @@ Design goals:
 The index page is the clearest completed reference for the general product surface. Carry these rules forward anywhere the app renders a page-level layout, modal, drawer, shell, or non-canvas management view:
 
 - Use the olive/gray Panda token family for major surfaces: `olive.1`, `olive.2`, `olive.3`, `olive.4`, `olive.6`, `olive.7`, and `olive.8`.
-- Use near-white translucent shells such as `rgba(252,253,252,0.94)` over muted olive fields.
+- Use near-white panel surfaces over a flat muted olive page field.
 - Use green as an operational accent only: primary actions, active controls, focus rings, selected states, and occasional row hover markers.
 - Avoid pure black app surfaces, black modal stages, bright white full-page fields, glossy cards, and high-contrast black/white UI.
-- Use one strong outer shell for page-level tools: `olive.8` border, `l3` radius, near-white translucent fill, large tinted shadow, subtle white outline, and inset top highlight.
+- Pages are full-bleed under a shared header bar. The earlier inset outer shell (rounded frame, large tinted shadow, gridded page field) is retired for pages; dialogs and drawers may still use a framed shell because they float.
 - Use interior bands, rails, list rows, and framed tool surfaces instead of nested decorative cards.
 - Selected menu/list states should use restrained fill plus text weight/color. Do not add decorative side bars, inset stripes, or rail markers for ordinary selected/current states.
 
@@ -454,32 +455,19 @@ The product has two related layout families: the index/management surface and th
 
 ### Index and management surfaces
 
-Use the current project index page as the baseline:
-
-- Page field:
-  - `minH="100dvh"` with `olive.4` base.
-  - Layered background with low-opacity radial green/olive washes, a subtle 40px grid, and a light vertical wash.
-  - Keep the grid quiet enough that text reads only on opaque or near-opaque panels.
-- Outer shell:
-  - Constrain to a wide container, currently `maxW="7xl"` with responsive padding.
-  - Use one strong shell with `olive.8` border, `l3` radius, near-white translucent fill, and layered shadow.
-  - The shell should feel like a contained desktop tool.
-- Interior layout:
-  - Prefer a two-column work layout when the page has setup/actions plus primary data.
-  - Left rail contains creation, import, setup, filters, or project controls.
-  - Right side contains primary data lists, tables, grids, or previews.
-  - Separate sections with border lines and background shifts, not decorative nested cards.
-- Density:
-  - Keep rows moderate and scannable.
-  - Avoid marketing-style oversized cards, oversized empty states, and decorative hero composition inside authenticated app surfaces.
+- Use the standard app shell: header bar on top, content full-bleed below.
+- Content sits in one centered column on the flat olive page field.
+- Put page-level actions in a single row above the primary list or table.
+- Separate rows with hairlines and background shifts, not decorative nested cards.
+- Avoid marketing-style oversized cards, oversized empty states, and decorative hero composition inside authenticated app surfaces.
 
 ### Spatial workbench
 
-The spatial-map project page is a three-part workbench:
+The spatial-map project page is a full-bleed workbench under the app header:
 
 - **Top project toolbar**
   - Contains back navigation, project title, settings, color/type/status mode controls, create/actions controls, view switches, and depth controls.
-  - It sits inside a rounded panel with a thin border and muted surface.
+  - It is the page's app header: a flat full-width bar with a bottom border.
 - **Primary workspace**
   - Occupies the center/left.
   - Switches between canvas, tree/document, and metadata grid views.
@@ -523,8 +511,8 @@ Depth should be created with tonal layers, borders, and opacity rather than heav
 
 Use elevation sparingly:
 
-- **Page field:** olive base with soft radial washes, quiet grid texture, and vertical wash.
-- **Outer shell:** near-white translucent frame with strong olive boundary and layered shadow.
+- **Page field:** flat olive base.
+- **Header bar:** near-white band with one bottom border.
 - **Base workspace layer:** green-gray app background.
 - **Canvas layer:** pale grid plane with subtle vertical and horizontal grid lines.
 - **Panel layer:** near-white surface with 1px border.
@@ -534,7 +522,7 @@ Use elevation sparingly:
 
 Shadow guidance:
 
-- Page-level shells: may use the index-surface shadow pattern, currently `0 28px 70px rgba(29,33,28,0.2)`, a subtle white outline, and inset top highlight.
+- Pages and docked panes: no shadow.
 - Default interior panels: no visible shadow.
 - Popovers, menus, dialogs: use a small soft shadow like `0 8px 24px #18201826`.
 - Avoid modern glossy card shadows. They conflict with the drafting-table style.
@@ -575,46 +563,33 @@ The shape language is rectilinear and engineered.
 
 ### App shell
 
-- Use the olive/green-gray background as the global page field behind everything.
-- For page-level management surfaces, use the index-surface shell:
-  - `olive.4` page base.
-  - subtle radial washes.
-  - 40px low-opacity grid.
-  - `maxW="7xl"` constrained content.
-  - `olive.8` shell border.
-  - `rgba(252,253,252,0.94)` shell fill.
-  - `l3` shell radius.
-  - large tinted shadow, white outline, and inset highlight.
-- For full-workbench tools such as the spatial map, the app may fill the viewport but should still feel bounded by topbar, stage, and rail borders.
-- The frame should feel like a contained desktop tool, not a full-bleed website or marketing page.
+Every page uses the same standard shell: a full-width header bar on top and full-bleed content below it.
+
+- Header (`AppHeader`): 44px, flat fill, one bottom border. Left to right: the logo as a home link, an optional parent crumb ("Projects /"), the page title, then page actions on the right.
+- Navigation back to the project list is the logo and the crumb in the header. Do not float a back link outside the page frame.
+- Content fills the viewport under the header. No outer page padding, no rounded page frame, no page-level drop shadow, and no gridded page field behind the app.
+- While a route's data loads, show the shell itself (`AppShellFallback`): the header bar with a placeholder title on the page field. Never a blank page or a lone logo.
+- Images without an intrinsic size (the SVG logo) carry explicit `width` and `height` attributes so they hold their size before the stylesheet applies. On Panda `styled` elements `width="20"` is a style token, not the attribute; use a plain element or `htmlWidth`.
+- Panes inside a page (stash, workspace, inspector) are separated by single borders or the resize gutter, not by gaps and nested frames.
+- The drafting grid texture belongs to the canvas only.
 
 ### Index surface
 
-The index page is the reference implementation for app-level management screens.
+The project list is the reference for app-level management screens.
 
-- Header band:
-  - Slightly brighter/translucent than the work area.
-  - Contains direct heading, concise helper copy, and compact summary stats.
-  - Summary stats use bordered `olive.1`/`olive.2` capsules with tabular numbers.
-- Left rail:
-  - Contains create/import/setup actions.
-  - Uses `olive.2` and `olive.1` bands with `olive.7` borders.
-  - Form controls use small radii and compact heights.
-- Primary data area:
-  - Uses list rows or tables over `olive.1`.
-  - Rows separate with `olive.6`/`olive.7` borders.
-  - Row hover may lift with `olive.2` and a restrained green marker only when the row is actionable.
-  - Project ids and technical details use mono; headings/body copy can use standard Panda typography.
-- Empty states:
-  - Keep them compact and useful.
-  - Do not introduce illustration-heavy hero panels.
+- Header: logo, "Projects" title, and one dim summary line of counts on the right.
+- Content: a single centered column (max 960px).
+- Actions row above the list: a name input with a Create button, and one "Import archive" button that opens the file picker and imports on selection.
+- List: one bordered surface with hairline-separated rows, not cards. Each row is a link with the project name, a description clamped to two lines, and one dim meta line (`nodes · links · updated · id`).
+- Row actions: plain 24px icon buttons with tooltips (download archive, delete). Delete turns red on hover only.
+- Empty state: one line of dim text inside the list.
 
 ### Project toolbar
 
 The toolbar follows the same Density and Cleanup Principles as the inspector rail.
 
-- Surface: one flat bordered band, 40px tall, with no shadow or inset highlight. All controls are 24px.
-- Left: project title (16px bold, truncates) and a quiet settings icon button with a tooltip. The back link sits above the frame.
+- Surface: the project page's `AppHeader`. All controls are 24px.
+- Left: logo home link, "Projects /" crumb, project title (16px bold, truncates), and a quiet settings icon button with a tooltip.
 - Right, ordered by how often the control changes what you see:
   - An "Isolated: name ×" chip, only while isolation is active. It names what is isolated instead of showing a bare ×.
   - View switch: Canvas / Tree / Grid.
@@ -645,13 +620,21 @@ The toolbar follows the same Density and Cleanup Principles as the inspector rai
 
 ### Canvas workspace
 
-- Use a pale drafting-grid background.
+- The canvas fills its pane edge to edge with a pale drafting-grid background. It has no border, radius, or shadow of its own.
 - Grid lines should be subtle and regular, approximately 24px apart.
-- Nodes are rectangular and type-tinted.
-- Edges should be thin and muted by default.
-- Fit/zoom controls should be pinned bottom-right inside a small segmented panel.
+- Nodes are rectangular and type-tinted. Edges should be thin and muted by default.
+- Canvas controls are one compact floating bar in the top-right corner, 8px from the edges: zoom value, Fit, Edges toggle, a Linked toggle while isolated, and a labelled Type / Status color switch. All 24px.
+- Toggles in the bar show "on" with a fill and bold text.
+- The new-node draft is a small floating form with Cancel and Create.
+- A blank project shows one small centered prompt with a New node button.
 - Selected node should have clearer fill, stronger border, and remain above unrelated nodes.
 - Isolated/focus mode may fade unrelated nodes to low opacity while preserving spatial context.
+
+### Node stash
+
+- A flat side pane on the left of the canvas, shown only when nodes are stashed.
+- Header: collapse button, "Stash" label, count, and the `S` shortcut.
+- Stashed nodes are hairline-separated rows (name, `type · status`, optional thumbnail) with Find, Unstash, and delete as 24px controls. The selected row uses a fill.
 
 ### Canvas nodes
 
@@ -665,27 +648,31 @@ The toolbar follows the same Density and Cleanup Principles as the inspector rai
   - Smaller components and blocks.
 - Selected node should coordinate with the inspector and metadata grid selected state.
 
+### Tree view
+
+The tree view is a reading surface, so it stays roomier than the grid, but it follows the same rules.
+
+- Flat surface with a centered text column (max 86ch). No bordered document card, accent bar, shadow, or grid texture.
+- A slim sticky bar holds the table-of-contents button, the current path breadcrumb, and Expand all / Collapse all.
+- Each node is one header row: a collapse chevron in a fixed left gutter, the heading with a dim child count, and the controls on the right.
+- Controls sit in fixed-width columns (priority when any visible node has one, then status, then type) and each chip fills its column, so the right edge is a straight line down the page.
+- Headings step down by depth: 20px, 17px, 15px, then 13px. Depth is also shown by the rails on the left.
+- Branches collapse and expand from the chevron or with the left and right arrow keys. Jumping to a node from the table of contents opens its collapsed ancestors.
+- Context renders at 13px and is clamped with an "Open full context" link. Metadata is a compact table whose labels sit directly beside their values.
+- The selected node uses a fill.
+
 ### Metadata grid
 
-- Use a dense table with visible row and column boundaries.
-- Header area includes:
-  - Title and visible count.
-  - Column toggles.
-  - Filter input.
-  - Nodes / Links switch.
+- A flat, dense table that fills its pane. No outer border, radius, shadow, or grid texture.
+- Header row (36px): a dim summary of visible counts on the left; column toggles, the name filter, and the Nodes / Links switch on the right.
+- One table in one scroll container. The column header row is sticky at the top, and the select and name columns are sticky on the left with a stronger divider after the name.
+- Column headers use the section-label style (11px bold uppercase, dim).
+- Columns resize from their divider line: the right edge of each header is the drag handle and highlights on hover. There is no separate grip block.
+- Rows are separated by hairlines. No zebra striping; hover and selection use solid fills so sticky cells stay opaque.
 - Rows preserve tree hierarchy through indentation, elbows, and disclosure icons.
-- Selected row uses pale moss fill across the entire row.
-- Columns shown in the screenshot:
-  - Name
-  - Type
-  - Status
-  - Purpose
-  - Implementation
-  - Image
-  - Actions
+- Type, status, and priority all use the shared attribute chips, each filling its column.
 - Long cells should truncate with ellipses.
-- Type and status should be rendered as compact square-corner chips.
-- Delete actions use red icon buttons aligned to the right.
+- Delete actions use small red icon buttons with tooltips.
 
 ### Inspector rail
 
@@ -774,18 +761,21 @@ Every button gives physical feedback while it is pressed, so the interface visib
 - Disabled buttons do not respond.
 - Keep the scale between 0.95 and 0.99. Press feedback is confirmation, not animation.
 
-### Dialogs and popovers
+### Dialogs, menus, and popovers
 
-- Use the same surface, border, and typography split as the rest of the app: standard Panda text for management dialogs, mono for spatial-map/tooling dialogs and technical values.
-- Popovers can have slightly stronger depth than panels.
-- Dialogs should remain compact and task-oriented.
-- Do not introduce large marketing-style modal headers.
-- Modal/dialog treatment should inherit the index-surface language:
-  - Avoid black stage/backdrop treatment unless the content is truly a dark media-inspection mode.
-  - Use a warm olive/grid field behind large dialog content when the dialog behaves like a tool.
-  - Use a near-white shell, strong olive boundary shadow, compact header band, and token-aligned controls.
-  - Active thumbnails, focus rings, and selected controls use green accents.
-  - Project settings, image viewer tools, drawers, and console capture panels should converge on this family.
+Everything that floats belongs to one overlay family and gets its look from the shared recipes, not from per-dialog overrides.
+
+- Surface: opaque near-white (`#fbfcfb`), 1px olive border, and one shared shadow (`0 8px 24px rgba(24, 32, 24, 0.15)`). Dialogs use an 8px radius; menus and popovers use 6px.
+- Backdrop: a quiet translucent scrim. The page stays visible behind a dialog; there is no gridded or gradient stage.
+- Dialog header: 14px bold title, optional 12px dim description, hairline below. The close control is a plain 24px icon button in the corner.
+- Dialog body: 13px text with 12-16px padding. Do not nest another bordered or textured container inside the body.
+- Dialog footer: hairline above, actions right-aligned at one height (32px). Cancel is outline; the primary action is green; destructive actions use the danger variant.
+- Dialogs with sections (project settings) use a left list with a fill for the current section, not a framed sidebar.
+- Forms: labels are 12px dim and helper text is 11px dim, from the shared field recipe. Only add helper text that tells the user something the label and placeholder do not.
+- Menus: 12px items at 28px, a hover fill, and a pointer cursor. Do not override radius or font per menu.
+- Titles and button labels use sentence case ("Delete node", "Project settings", "Add child").
+- Overlays are portalled to `body`, so the type stack and the `--spatial-map-*` palette are defined globally (`body` and `:root`) rather than on a page shell.
+- Keep dialogs compact and task-oriented.
 
 ### Markdown renderer
 
@@ -832,6 +822,7 @@ Don't:
 - Do not give empty sections placeholder boxes or explanatory paragraphs.
 - Do not stack dividers, nest bordered cards inside panels, or put gradients and shadows on docked panels.
 - Do not float layout controls such as resize handles over content.
+- Do not inset the app inside a padded, rounded, shadowed frame, and do not float navigation outside that frame.
 - Do not add Edit / Save / Cancel rows for single-field edits.
 
 ## Site-Derived Details
@@ -840,18 +831,15 @@ These details are derived from the existing index surface, theme tokens, spatial
 
 Index-surface details:
 
-- The index page uses `olive.4` as the base field with soft radial washes, a subtle 40px grid, and a light vertical wash.
-- The index shell uses `rgba(252,253,252,0.94)`, `olive.8` border, `l3` radius, and the layered shadow `0 28px 70px rgba(29,33,28,0.2)` plus white outline/inset highlight.
-- The index content is a two-column work layout on desktop: left rail for new project/import controls, right side for existing project rows.
-- The left rail and primary data area use `olive.1`, `olive.2`, `olive.3`, `olive.6`, and `olive.7`.
-- Project rows are list rows, not cards. They use borders, compact stats, and restrained hover lift.
-- Project ids use a mono stack; headings and helper copy use the standard Panda type styles.
+- The index page is full-bleed: the shared header bar, then one centered column on a flat olive field.
+- A single actions row (create, import) sits above the project list.
+- Project rows are list rows, not cards: name, description, and one dim meta line, with icon-button actions on the right.
+- Project ids use a mono stack.
 - Focus rings and primary actions use green, currently `green.9`.
 
 Spatial-map details:
 
-- The app frame has a subtle green-gray background and a large bordered content container.
-- The top toolbar is a rounded white-green panel with compact grouped controls.
+- The project page is full-bleed: the header bar holds the title and toolbar controls, and the workspace and inspector fill the rest.
 - View switching uses three tabs: Canvas, Tree, and Grid.
 - Depth filtering uses small adjacent buttons: 1, 2, 3, Max.
 - The metadata grid shows approximately 50 visible nodes and supports column toggles, search, and Nodes/Links modes.
@@ -889,6 +877,7 @@ Suggested implementation approach:
 - Build metadata-grid row styling around data attributes such as `data-selected`, `data-depth`, `data-expanded`, and `data-has-image`.
 - Build inspector sections from the shared primitives in `app/src/components/spatial-map/SpatialMapPanelPrimitives.tsx`: `SpatialMapInspectorSection`, `SpatialMapSectionHeader` (title, count, right-side slot), `SpatialMapCollapsibleGroup` (title, summary, open state), and `SpatialMapEmptyState`.
 - Panda only extracts static style values. A style prop built from runtime data, such as a template literal containing a tone color, produces no CSS and silently falls back to defaults. Pass runtime colors through CSS variables in `style` and reference the variables from static props, as `SpatialMapNodeAttributeMenu` does.
+- The same applies to helpers: `fontSize={size()}` emits nothing even if `size()` returns a literal. Write the ternary of literals inline in the prop.
 - Grid and flex containers that hold truncating text need `minmax(0, 1fr)` columns or `minW="0"`; otherwise a `nowrap` child widens the container and gets clipped by the rail.
 - Overlay content needs a z-index token (`tooltip`, `popover`, `dropdown`). Portalled overlays without one render behind positioned panels that set their own z-index.
 - Treat menu, popover, select, and dialog primitives as a single overlay family with shared border, shadow, and typography tokens.

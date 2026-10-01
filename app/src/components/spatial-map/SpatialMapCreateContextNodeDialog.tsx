@@ -13,6 +13,8 @@ import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { Textarea } from "~/components/ui/textarea";
 import { toaster } from "~/components/ui/toast";
 import { useSpatialMap } from "./SpatialMapContext";
+import { SpatialMapBlockTitle } from "./SpatialMapPanelPrimitives";
+import { SpatialMapSegmentedControl } from "./SpatialMapSegmentedControl";
 
 interface SpatialMapCreateContextNodeDialogProps {
   project: ProjectRecord;
@@ -151,10 +153,10 @@ export function SpatialMapCreateContextNodeDialog(
       <SimpleDialog
         open={open()}
         onOpenChange={handleOpenChange}
-        title="Create Context Node"
-        description="Add a standalone note node with a name and freeform markdown context."
+        title="New context node"
+        description="A standalone note node. Paste markdown and optionally split it into child nodes."
         initialFocusEl={() => nameInput ?? null}
-        maxW="760px"
+        maxW="640px"
         footer={
           <HStack>
             <Button variant="outline" onClick={() => handleOpenChange(false)}>
@@ -163,9 +165,10 @@ export function SpatialMapCreateContextNodeDialog(
             <Button
               type="submit"
               form={formId}
+              colorPalette="green"
               loading={pending()}
             >
-              Create Node
+              Create
             </Button>
           </HStack>
         }
@@ -177,7 +180,7 @@ export function SpatialMapCreateContextNodeDialog(
             void createContextNode(new FormData(event.currentTarget));
           }}
         >
-          <VStack alignItems="stretch" gap="4">
+          <VStack alignItems="stretch" gap="3">
             <input type="hidden" name="projectId" value={props.project.id} />
             <input
               type="hidden"
@@ -192,14 +195,12 @@ export function SpatialMapCreateContextNodeDialog(
               <Input
                 ref={nameInput}
                 name="label"
+                size="xs"
                 required
                 value={label()}
                 onInput={(event) => setLabel(event.currentTarget.value)}
                 placeholder="Market Research Dump"
               />
-              <Field.HelperText>
-                Keep the label short enough to scan on the canvas.
-              </Field.HelperText>
             </Field.Root>
 
             <Field.Root>
@@ -209,16 +210,14 @@ export function SpatialMapCreateContextNodeDialog(
                 variant="spatial"
                 size="sm"
                 autoResize={false}
-                minH="180px"
+                minH="140px"
+                fontSize="12px"
                 resize="vertical"
                 value={context()}
                 onInput={(event) => setContext(event.currentTarget.value)}
-                rows={14}
+                rows={8}
                 placeholder={"# Loose context\n\nDrop notes, bullets, snippets, or raw markdown here."}
               />
-              <Field.HelperText>
-                Markdown is stored as plain text and rendered in the inspector when selected.
-              </Field.HelperText>
             </Field.Root>
 
             <For each={props.project.nodeMetadataSchema}>
@@ -226,6 +225,7 @@ export function SpatialMapCreateContextNodeDialog(
                 <Field.Root>
                   <Field.Label>{field.label}</Field.Label>
                   <Input
+                    size="xs"
                     name={`metadata.${field.key}`}
                     value={metadataDraft()[field.key] ?? ""}
                     onInput={(event) =>
@@ -236,19 +236,12 @@ export function SpatialMapCreateContextNodeDialog(
                     }
                     placeholder={field.defaultValue}
                   />
-                  <Field.HelperText>
-                    {field.defaultValue
-                      ? `Default: ${field.defaultValue}`
-                      : "Optional project metadata."}
-                  </Field.HelperText>
                 </Field.Root>
               )}
             </For>
 
-            <VStack alignItems="stretch" gap="3">
-              <Box as="span" fontSize="sm" fontWeight="medium">
-                Import Options
-              </Box>
+            <VStack alignItems="stretch" gap="2" pt="2" borderTop="1px solid var(--spatial-map-panel-divider)">
+              <SpatialMapBlockTitle>Split into child nodes</SpatialMapBlockTitle>
               <Checkbox.Root
                 checked={splitByHeadingLevel()}
                 onCheckedChange={(details) =>
@@ -261,37 +254,25 @@ export function SpatialMapCreateContextNodeDialog(
                     <Checkbox.Indicator />
                   </Checkbox.Control>
                   <VStack alignItems="stretch" gap="1">
-                    <Checkbox.Label fontSize="sm" fontWeight="medium">
+                    <Checkbox.Label fontSize="12px" fontWeight="600">
                       Split based on heading level
                     </Checkbox.Label>
-                    <Box as="span" color="fg.muted" fontSize="sm">
-                      Create a root note from the name above, then turn markdown headings into linked child nodes with each section body stored as that node&apos;s context.
+                    <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="12px" lineHeight="1.4">
+                      Each markdown heading becomes a child node; the section body becomes its context.
                     </Box>
                     <Show
                       when={splitByHeadingLevel() && headingDepthOptions().length > 0}
                     >
-                      <VStack alignItems="stretch" gap="1" mt="2">
-                        <Box as="span" color="fg.muted" fontSize="sm">
-                          Convert headings through depth {selectedMaxHeadingDepth()}. Deeper headings stay in the parent node&apos;s context.
+                      <VStack alignItems="start" gap="1" mt="1">
+                        <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="12px" lineHeight="1.4">
+                          Split through heading depth {selectedMaxHeadingDepth()}. Deeper headings stay in the parent&apos;s context.
                         </Box>
-                        <HStack gap="1" flexWrap="wrap">
-                          <For each={headingDepthOptions()}>
-                            {(depth) => (
-                              <Button
-                                type="button"
-                                size="2xs"
-                                variant={
-                                  selectedMaxHeadingDepth() === depth ? "solid" : "outline"
-                                }
-                                colorPalette="blue"
-                                aria-pressed={selectedMaxHeadingDepth() === depth}
-                                onClick={() => handleSelectMaxHeadingDepth(depth)}
-                              >
-                                {depth}
-                              </Button>
-                            )}
-                          </For>
-                        </HStack>
+                        <SpatialMapSegmentedControl
+                          ariaLabel="Maximum heading depth"
+                          value={selectedMaxHeadingDepth()}
+                          options={headingDepthOptions().map((depth) => ({ value: depth, label: String(depth) }))}
+                          onChange={(depth) => handleSelectMaxHeadingDepth(depth)}
+                        />
                       </VStack>
                     </Show>
                   </VStack>
@@ -302,7 +283,6 @@ export function SpatialMapCreateContextNodeDialog(
                 onCheckedChange={(details) =>
                   handleSplitByListItemsChange(details.checked === true)
                 }
-                mt="3"
               >
                 <Checkbox.HiddenInput name="splitByListItems" value="true" />
                 <HStack gap="2" alignItems="flex-start">
@@ -310,11 +290,11 @@ export function SpatialMapCreateContextNodeDialog(
                     <Checkbox.Indicator />
                   </Checkbox.Control>
                   <VStack alignItems="stretch" gap="1">
-                    <Checkbox.Label fontSize="sm" fontWeight="medium">
+                    <Checkbox.Label fontSize="12px" fontWeight="600">
                       Split on list items
                     </Checkbox.Label>
-                    <Box as="span" color="fg.muted" fontSize="sm">
-                      Turn markdown bullets or numbered items into linked child nodes under the current root or heading.
+                    <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="12px" lineHeight="1.4">
+                      Each bullet or numbered item becomes a child node under its root or heading.
                     </Box>
                   </VStack>
                 </HStack>
@@ -325,7 +305,6 @@ export function SpatialMapCreateContextNodeDialog(
                   onCheckedChange={(details) =>
                     setSplitNestedListItems(details.checked === true)
                   }
-                  mt="3"
                   ml="6"
                 >
                   <Checkbox.HiddenInput
@@ -337,10 +316,10 @@ export function SpatialMapCreateContextNodeDialog(
                       <Checkbox.Indicator />
                     </Checkbox.Control>
                     <VStack alignItems="stretch" gap="1">
-                      <Checkbox.Label fontSize="sm" fontWeight="medium">
+                      <Checkbox.Label fontSize="12px" fontWeight="600">
                         Split nested list items recursively
                       </Checkbox.Label>
-                      <Box as="span" color="fg.muted" fontSize="sm">
+                      <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="12px" lineHeight="1.4">
                         When off, nested bullets stay in the parent list item&apos;s context.
                       </Box>
                     </VStack>
