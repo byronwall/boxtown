@@ -270,14 +270,6 @@ export function SpatialMapImageProvider(props: {
       return;
     }
 
-    if (spatialMap.sourceDecompositionOpen()) {
-      console.info(
-        IMAGE_DEBUG_PREFIX,
-        "paste ignored: source decomposition intake is open",
-      );
-      return;
-    }
-
     const nodeId = spatialMap.selectedNodeId();
     if (!nodeId) {
       console.warn(IMAGE_DEBUG_PREFIX, "paste ignored: no selected node");

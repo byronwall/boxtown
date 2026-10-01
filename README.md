@@ -1,6 +1,6 @@
 # Product Grid Management
 
-Product Grid Management is a SolidStart application for mapping product ideas, UI architecture, system relationships, and loose planning context as a spatial graph. It combines a project registry, an interactive map canvas, structured node metadata, markdown context notes, image attachments, and AI-assisted workflows for expanding or converting project knowledge.
+Product Grid Management is a SolidStart application for mapping product ideas, UI architecture, system relationships, and loose planning context as a spatial graph. It combines a project registry, an interactive map canvas, structured node metadata, markdown context notes, image attachments, and a CLI for reading and editing project data.
 
 ## Screenshots
 
@@ -15,10 +15,6 @@ The current app supports several complementary working modes:
 ![Tree/document view with rich node previews](docs/readme-screenshots/tree-viewer.png)
 
 ![Project settings for metadata fields and node type colors](docs/readme-screenshots/project-settings.png)
-
-![Add-nodes AI workflow rail](docs/readme-screenshots/add-nodes-flow.png)
-
-![Source decomposition workflow rail](docs/readme-screenshots/source-decomposition.png)
 
 ![Command search palette](docs/readme-screenshots/command-search.png)
 
@@ -113,8 +109,6 @@ The current app supports several complementary working modes:
 - Click related nodes from the connection lists to jump selection.
 - Collapse and reopen the inspector rail.
 - Delete selected nodes and automatically remove their links.
-- Generate mockup images for the selected node from the inspector.
-- Open context-only note conversion from eligible nodes.
 
 ### Project Settings
 
@@ -131,9 +125,8 @@ The current app supports several complementary working modes:
 - Edit node context from the inspector with a form-backed server action.
 - Preview context as rendered markdown when not editing.
 - Expand longer context into a dialog.
-- Render context-only notes as raw text until they are converted.
+- Render context-only notes as raw text.
 - Copy raw context from context-only nodes.
-- Keep raw source context alongside structured context for AI conversion workflows.
 
 ### Context Nodes
 
@@ -160,69 +153,6 @@ The current app supports several complementary working modes:
 - Reset image viewer zoom/pan with double-click or the Reset button.
 - Show image metadata including MIME type, size, and zoom level.
 
-### AI-Generated Mockups
-
-- Generate a low-cost PNG mockup image for any selected node.
-- Capture selected node metadata plus child and descendant context before planning the image.
-- Ask the text model to plan the mockup title, prompt, dimensions, and rationale.
-- Generate the image through the server-only OpenAI image pipeline.
-- Attach the generated PNG back to the selected node automatically.
-- Track run progress through capture, prompt planning, image generation, and persistence steps.
-- Log LLM sessions and pipeline events for inspection and debugging.
-
-### AI-Assisted Node Expansion
-
-- Start an "Add Nodes" flow from any project.
-- Provide a short brief describing the new product area, workflow, or system detail.
-- Include the current project graph and current node selection as generation context.
-- Generate 3-4 clarifying questions before adding nodes.
-- Answer questions through guided multiple-choice options.
-- Generate a structured batch of new nodes and links.
-- Add up to 10 generated nodes per run.
-- Persist generated nodes into the current project.
-- Deduplicate generated link keys when merging results.
-- Generate follow-up suggestions after nodes are added.
-- Restart the flow from a suggested follow-up brief.
-- Track run progress with explicit steps: capture context, generate questions, await answers, generate nodes, persist graph, suggest follow-ups, and complete.
-
-### Source Decomposition
-
-- Start a "Decompose Source" flow from the create menu.
-- Paste or type source notes into the rail.
-- Paste, drag/drop, or browse for source images.
-- Preview source images before running decomposition.
-- Anchor decomposition to the currently selected node when available.
-- Generate a candidate tree of layout, block, component, and theme nodes from source material.
-- Review generated candidates before committing them to the project.
-- Select or deselect individual candidates and whole candidate subtrees.
-- Persist accepted candidates and links back into the graph.
-- Open the first accepted node after persistence.
-- Track run progress over SSE while decomposition is active.
-
-### Context Note Conversion
-
-- Convert context-only note nodes into structured product map nodes.
-- Generate clarifying questions before producing conversion candidates.
-- Produce a candidate hierarchy of structured nodes and links from loose context.
-- Review suggested candidates before committing them.
-- Select or deselect individual candidate nodes.
-- Toggle candidate subtrees as a group.
-- Accept only the selected nodes and links.
-- Trim the original note context after accepted structured nodes are created.
-- Track run progress with explicit conversion steps: capture context, generate questions, await answers, generate suggestions, await selection, persist graph, trim context, and complete.
-
-### AI SDK Integration
-
-- Uses the Vercel AI SDK with `@ai-sdk/openai`.
-- Keeps OpenAI calls in server-side service modules.
-- Reads `OPENAI_API_KEY` from the environment.
-- Defaults lightweight work to `OPENAI_MODEL`, with `gpt-5-mini` documented in `app/.env.example`.
-- Uses `OPENAI_HEAVY_MODEL` for heavier reasoning, with `gpt-5.4` documented in `app/.env.example`.
-- Uses structured `zod` schemas for generated questions, node batches, candidate batches, source decomposition output, image prompt plans, trim results, and follow-up suggestions.
-- Uses `generateText()` with structured object output for new AI service code.
-- Provides server-sent event endpoints for long-running AI workflow progress.
-- Includes LLM logging utilities for pipeline sessions and run events.
-
 ### Data Model
 
 - Projects contain a `SpatialMapData` graph with `nodes` and `links`.
@@ -231,7 +161,6 @@ The current app supports several complementary working modes:
 - Projects include metadata field definitions and node type definitions.
 - Links support parent-child relationships and lateral relationships.
 - Lateral relationships can be `related`, `dependency`, or `reuse`.
-- Generated node batches are merged with stable project-specific ids.
 - Node ids are derived from type and label and made unique with numeric suffixes.
 - Project ids are slugged from project names and made unique with numeric suffixes.
 - Data loading validates spatial map records before they reach the UI.
@@ -254,7 +183,7 @@ The current app supports several complementary working modes:
 
 ### Live and Debug Tooling
 
-- Includes a lightweight jobs websocket endpoint for connection status and future live job updates.
+- Includes a websocket endpoint for connection status and live project updates, including CLI writes.
 - Includes a console log capture module for in-app debugging, filtering, and review.
 - Includes global error overlay UI.
 - Includes a component explorer module for design system and recipe inspection.
@@ -275,7 +204,7 @@ The current app supports several complementary working modes:
 - Uses Panda CSS for theme tokens, recipes, layer styles, text styles, keyframes, and generated styles.
 - Uses Park UI / Ark UI wrapper components under `app/src/components/ui/`.
 - Includes reusable app wrappers such as `SimpleDialog`, `SimplePopover`, `SimpleSelect`, `PanelPopover`, and `ConfirmDialog`.
-- Provides Vitest tests for spatial layout, spatial relations, add-node validation, run registries, context-note conversion, source decomposition, LLM logging, archive behavior, API auth, and project data operations.
+- Provides Vitest tests for spatial layout, spatial relations, archive behavior, API auth, and project data operations.
 - Includes patched dependencies for Vinxi and Panda generator behavior.
 
 ## Quick Start
@@ -288,7 +217,7 @@ pnpm prepare
 pnpm dev
 ```
 
-For AI-assisted features, create an environment file from `app/.env.example` and provide `OPENAI_API_KEY`.
+Use `app/.env.example` to configure the data directory. The app needs no LLM API key.
 
 ## Common Commands
 
@@ -309,10 +238,6 @@ pnpm start
 - Project detail page: `app/src/components/projects/ProjectDetailPage.tsx`
 - Spatial map module: `app/src/components/spatial-map/`
 - Project data services: `app/src/lib/projects/`
-- Add-nodes AI workflow: `app/src/lib/add-nodes/`
-- Context-note conversion workflow: `app/src/lib/context-note-conversion/`
-- Source decomposition workflow: `app/src/lib/source-decomposition/`
-- Node image generation workflow: `app/src/lib/node-images/`
 - Agent API services: `app/src/lib/agent-api/`
 - CLI package: `packages/cli/`
 - Shared API contract package: `packages/api-contract/`

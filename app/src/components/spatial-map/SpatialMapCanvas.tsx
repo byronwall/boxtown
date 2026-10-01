@@ -1,5 +1,5 @@
 import { A, useSearchParams } from "@solidjs/router";
-import { createEffect, createSignal, For, lazy, Show, untrack } from "solid-js";
+import { createEffect, createSignal, For, Show, untrack } from "solid-js";
 import { ChevronLeftIcon, ChevronRightIcon, LocateFixedIcon, XIcon } from "lucide-solid";
 import { css } from "styled-system/css";
 import { Box, styled } from "styled-system/jsx";
@@ -7,7 +7,6 @@ import { Button } from "~/components/ui/button";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type { MapNode } from "~/lib/spatial-map/types";
 
-import { AddNodesFlowRail } from "./add-nodes-flow/AddNodesFlowRail";
 import type {
   SpatialMapDepthLevel,
   SpatialMapNodeColorMode,
@@ -17,28 +16,11 @@ import { SpatialMapProvider, useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapInspector } from "./SpatialMapInspector";
 import { SpatialMapImageProvider, useSpatialMapImages } from "./SpatialMapImages";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
-import { SpatialMapGenerateImageControl } from "./SpatialMapGenerateImageControl";
 import { SpatialMapCommandMenu } from "./SpatialMapCommandMenu";
 import { SpatialMapGridView } from "./SpatialMapGridView";
 import { SpatialMapScene } from "./SpatialMapScene";
 import { SpatialMapToolbar } from "./SpatialMapToolbar";
 import { SpatialMapTreeView } from "./SpatialMapTreeView";
-
-const ContextNoteConversionRail = lazy(() =>
-  import("./context-note-conversion-flow/ContextNoteConversionRail").then(
-    (module) => ({
-      default: module.ContextNoteConversionRail,
-    }),
-  ),
-);
-
-const SourceDecompositionRail = lazy(() =>
-  import("./source-decomposition-flow/SourceDecompositionRail").then(
-    (module) => ({
-      default: module.SourceDecompositionRail,
-    }),
-  ),
-);
 
 const StashCardButton = styled("button");
 const StashCardImage = styled("img");
@@ -282,9 +264,8 @@ function SpatialMapCanvasLayout(props: {
                   Blank project grid
                 </Box>
                 <Box as="p" margin="0" color="var(--spatial-map-copy-muted)" fontSize="12px" lineHeight="1.6">
-                  This project doesn’t have nodes yet. The route and canvas are
-                  ready for the next layer of project details and AI-assisted
-                  editing.
+                  This project doesn’t have nodes yet. Create a node here or
+                  add project details with the CLI.
                 </Box>
                 <Button
                   colorPalette="green"
@@ -304,40 +285,10 @@ function SpatialMapCanvasLayout(props: {
             minH="0"
             h="100%"
           >
-            <Show
-              when={!controller.addNodesOpen()}
-              fallback={
-                <AddNodesFlowRail
-                  project={props.project}
-                  onProjectUpdated={props.onProjectUpdated}
-                />
-              }
-            >
-              <Show
-                when={!controller.sourceDecompositionOpen()}
-                fallback={
-                  <SourceDecompositionRail
-                    project={props.project}
-                    onProjectUpdated={props.onProjectUpdated}
-                  />
-                }
-              >
-                <Show
-                  when={!controller.contextNoteConversionOpen()}
-                  fallback={
-                    <ContextNoteConversionRail
-                      project={props.project}
-                      onProjectUpdated={props.onProjectUpdated}
-                    />
-                  }
-                >
-                  <SpatialMapInspector
-                    project={props.project}
-                    onProjectUpdated={props.onProjectUpdated}
-                  />
-                </Show>
-              </Show>
-            </Show>
+            <SpatialMapInspector
+              project={props.project}
+              onProjectUpdated={props.onProjectUpdated}
+            />
           </Box>
         </Box>
       </Box>
@@ -504,23 +455,6 @@ function StashedNodeCard(props: {
         </Button>
       </Box>
       <Box display="flex" alignItems="center" flexWrap="wrap" gap="5px">
-        <Button
-          size="xs"
-          variant="surface"
-          colorPalette="green"
-          onClick={() => {
-            selectStashedNode();
-            controller.openContextNoteConversionFlow();
-          }}
-        >
-          Context
-        </Button>
-        <SpatialMapGenerateImageControl
-          projectId={props.project.id}
-          node={props.node}
-          onProjectUpdated={props.onProjectUpdated}
-          compact
-        />
         <SpatialMapDeleteNodeControl
           project={props.project}
           node={props.node}

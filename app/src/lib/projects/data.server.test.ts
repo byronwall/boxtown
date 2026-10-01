@@ -10,7 +10,6 @@ import {
   deleteProjectNodeImageOnDisk,
   deleteProjectOnDisk,
   listProjectBackupFilesFromDisk,
-  mergeGeneratedSpatialMapData,
   readProjectByIdFromDisk,
   readProjectBackupFileFromDisk,
   readProjectSummariesFromDisk,
@@ -29,79 +28,6 @@ import type { MapNodeImage } from "~/lib/spatial-map/types";
 
 const defaultSchema = createDefaultProjectNodeMetadataSchema();
 const defaultTypeSchema = createDefaultProjectNodeTypeSchema();
-
-describe("mergeGeneratedSpatialMapData", () => {
-  it("appends generated nodes, remaps ids, and dedupes links", () => {
-    const merged = mergeGeneratedSpatialMapData(
-      {
-        nodes: [
-          buildNode({
-            id: "page-home",
-            label: "Home",
-            type: "page",
-            depth: 0,
-            metadata: { purpose: "Purpose", implementation: "Implementation" },
-          }),
-        ],
-        links: [
-          {
-            source: "page-home",
-            target: "page-home",
-            parentChild: false,
-            relationship: "related",
-          },
-        ],
-      },
-      {
-        summary: "Generated",
-        nodes: [
-          buildNode({
-            id: "draft-node",
-            label: "Billing Center",
-            type: "page",
-            depth: 1,
-            metadata: { purpose: "Purpose", implementation: "Implementation" },
-          }),
-        ],
-        links: [
-          {
-            source: "page-home",
-            target: "draft-node",
-            parentChild: true,
-          },
-          {
-            source: "page-home",
-            target: "draft-node",
-            parentChild: true,
-          },
-          {
-            source: "draft-node",
-            target: "missing-node",
-            parentChild: false,
-            relationship: "related",
-          },
-        ],
-      },
-      defaultSchema,
-    );
-
-    expect(merged.nodes).toHaveLength(2);
-    expect(merged.nodes[1]?.id).toBe("page-billing-center");
-    expect(merged.links).toEqual([
-      {
-        source: "page-home",
-        target: "page-home",
-        parentChild: false,
-        relationship: "related",
-      },
-      {
-        source: "page-home",
-        target: "page-billing-center",
-        parentChild: true,
-      },
-    ]);
-  });
-});
 
 describe("createProjectOnDisk", () => {
   it("uses APP_DATA_DIR when an explicit data directory is configured", async () => {

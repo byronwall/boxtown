@@ -6,7 +6,6 @@
     "dev": "pnpm prepare && vinxi dev",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "image:task-ui": "node scripts/generate-gpt-image-2-task-ui.mjs",
     "test": "vitest run",
     "type-check": "tsc --noEmit",
     "build": "vinxi build",
@@ -14,12 +13,10 @@
     "panda": "panda codegen"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^2.0.24",
     "@ark-ui/solid": "^5.30.0",
     "@solidjs/meta": "^0.29.4",
     "@solidjs/router": "^0.15.3",
     "@solidjs/start": "^1.1.0",
-    "ai": "^5.0.39",
     "lucide-solid": "^0.562.0",
     "mermaid": "^11.12.2",
     "remark-gfm": "^4.0.1",

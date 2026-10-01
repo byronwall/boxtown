@@ -10,9 +10,6 @@ services:
       PORT: 3000
       BASE_PATH: ${BASE_PATH:-/}
       APP_DATA_DIR: /app/data
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5-mini}
-      OPENAI_HEAVY_MODEL: ${OPENAI_HEAVY_MODEL:-gpt-5.4}
     ports:
       - "${APP_PORT_EXPOSE:-}:3000"
     volumes:

@@ -1,5 +1,8 @@
 # Agentic LLM Interface Plan
 
+> Historical review. In-app AI workflows and their routes have been removed.
+> CLI APIs, project events, and image attachments remain.
+
 ## Summary
 
 Build a first-party CLI as the primary interface for agentic LLMs and power users. The CLI should behave like a focused mix of `gh` and Railway: login once, select or link a project, run predictable resource commands, emit machine-readable JSON when requested, and provide a few higher-level commands that agents can call safely.

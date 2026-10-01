@@ -79,10 +79,8 @@ export interface SceneInteractionHandlers {
 }
 
 export interface SpatialMapCanvasController {
-  addNodesOpen: Accessor<boolean>;
   camera: Accessor<CameraState>;
   sceneTransform: Accessor<string>;
-  contextNoteConversionOpen: Accessor<boolean>;
   contextPreviewRequest: Accessor<{ nodeId: string; requestId: number } | null>;
   deleteSubtreeConfirmId: Accessor<string | null>;
   deleteNodeRequest: Accessor<{ nodeId: string; requestId: number } | null>;
@@ -112,7 +110,6 @@ export interface SpatialMapCanvasController {
   availableNodeStatuses: Accessor<MapNodeStatus[]>;
   sourceData: Accessor<SpatialMapData>;
   sourceNodesById: Accessor<Map<string, MapNode>>;
-  sourceDecompositionOpen: Accessor<boolean>;
   childNodeDraft: Accessor<ChildNodeDraft | null>;
   availableDepthLevels: Accessor<number[]>;
   visibleData: Accessor<SpatialMapData>;
@@ -122,9 +119,6 @@ export interface SpatialMapCanvasController {
   viewportScale: Accessor<number>;
   zoomPercent: Accessor<string>;
   zoomScale: Accessor<number>;
-  closeAddNodesFlow: () => void;
-  closeContextNoteConversionFlow: () => void;
-  closeSourceDecompositionFlow: () => void;
   clearIsolation: () => void;
   clearDeleteSubtreeConfirm: () => void;
   clearDeleteNodeRequest: () => void;
@@ -167,10 +161,7 @@ export interface SpatialMapCanvasController {
     parentNodeId?: string | null,
     options?: { anchorToParent?: boolean },
   ) => void;
-  openAddNodesFlow: () => void;
-  openContextNoteConversionFlow: () => void;
   openContextPreview: (nodeId: string) => void;
-  openSourceDecompositionFlow: () => void;
   setViewportRef: (element: HTMLDivElement) => void;
   setSvgRef: (element: SVGSVGElement) => void;
   viewportHandlers: ViewportPointerHandlers;

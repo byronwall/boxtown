@@ -1,5 +1,8 @@
 # Agent Grid Buildout State
 
+> Historical review. In-app AI workflows and their routes have been removed.
+> CLI APIs, project events, and image attachments remain.
+
 ## Question
 
 Can an LLM agent use the current CLI and bundled skills to build out a Product Grid hierarchy from a markdown document or another LLM-generated artifact, while attaching arbitrary context to nodes?

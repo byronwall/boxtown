@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: Product Grid Industrial Drafting
-description: "A dense, calm, industrial drafting interface for Product Grid Management: an olive index surface, contained workspace shells, spatial product maps, metadata grids, inspector rails, AI workflow panels, markdown context, and image-backed architecture nodes."
+description: "A dense, calm, industrial drafting interface for Product Grid Management: an olive index surface, contained workspace shells, spatial product maps, metadata grids, inspector rails, markdown context, and image-backed architecture nodes."
 colors:
   primary: "#143A29"
   primary-strong: "#0F2D20"
@@ -236,7 +236,7 @@ components:
 
 ## Overview
 
-Product Grid Management should feel like a drafting table for software architecture: technical, calm, spatial, precise, and intentionally dense. The interface is not decorative or consumer-playful. It is a working environment for mapping product ideas, UI architecture, system relationships, planning notes, markdown context, images, and AI-generated graph expansions.
+Product Grid Management should feel like a drafting table for software architecture: technical, calm, spatial, precise, and intentionally dense. The interface is not decorative or consumer-playful. It is a working environment for mapping product ideas, UI architecture, system relationships, planning notes, markdown context, and image attachments.
 
 This document reconciles the broader product design direction with the existing `docs/design-language-index-surface.md` language. The index-surface doc is now treated as the baseline for page fields, app shells, token usage, modal treatment, and restrained interaction states because the current index page, drawer/dialog recipes, console log capture shell, and several spatial-map dialogs clearly follow it. The denser spatial-map workspace keeps the more technical drafting-table rules where the existing site already uses them.
 
@@ -245,7 +245,7 @@ The visual style observed in the implemented site is a soft industrial UI with m
 Use this document as the cleanup target for the repo. When existing code diverges, prefer the rule that is already working in the strongest implemented surfaces:
 
 - **Index surface baseline:** page background, outer shell, left creation/import rail, right data list, modal backdrop language, token-led olive surfaces, compact chips, restrained green focus/active states.
-- **Spatial map drafting baseline:** canvas nodes, metadata grid, tree view, inspector rail, AI workflow rails, image tools, and project settings dialogs.
+- **Spatial map drafting baseline:** canvas nodes, metadata grid, tree view, inspector rail, image tools, and project settings dialogs.
 - **Shared cleanup direction:** converge custom spatial-map colors toward Panda olive/green/red/blue/amber tokens without losing the denser drafting feel.
 
 Design goals:
@@ -259,7 +259,6 @@ Design goals:
 - Keep the selected node unmistakable.
   - The selected object should synchronize across canvas, metadata grid, tree/document view, and inspector rail.
   - Use pale green selected backgrounds in tables and stronger node fills on canvas.
-- Treat AI workflows as native workspace tools.
   - Create-menu actions, workflow rails, candidate review states, progress steps, and generated nodes should use the same industrial control language.
 - Prefer legibility over polish.
   - Workspace text can be monospaced where density and technical scanning matter.
@@ -360,7 +359,7 @@ Recommended stack split:
   - Use muted text for helper copy and descriptions.
   - Use monospaced text for project ids, file names, counts, metadata chips, keyboard shortcuts, command labels, code, and structured values.
 - **Spatial-map workspace**
-  - Use the project mono stack across toolbar, grid, tree, inspector, canvas labels, and AI workflow rails.
+  - Use the project mono stack across toolbar, grid, tree, inspector, canvas labels.
   - Current stack: `IBM Plex Mono`, `SFMono-Regular`, `SF Mono`, `Roboto Mono`, `Consolas`, `Liberation Mono`, monospace.
 - **Markdown/prose surfaces**
   - Use monospace for code, metadata, tables, ids, and diagram labels.
@@ -582,8 +581,6 @@ The index page is the reference implementation for app-level management screens.
 - Menu surface should be near-white with a subtle shadow.
 - Items are text-first, monospaced, and vertically compact.
 - Expected items:
-  - “Add Nodes”
-  - “Decompose Source”
   - “New Context Node”
 - Hover state should use pale moss or muted green surface.
 
@@ -638,7 +635,7 @@ The index page is the reference implementation for app-level management screens.
   - Node title on the left.
   - Collapse/expand button on the right.
   - Status select, ID pill, type select, and context-mode pill.
-  - Delete and AI/mockup actions as compact icon buttons.
+  - Delete action as a compact icon button.
 - Section panels:
   - Use a subtle surface fill and thin border.
   - Section labels are small, bold, and monospaced.
@@ -694,14 +691,6 @@ The index page is the reference implementation for app-level management screens.
   - Active thumbnails, focus rings, and selected controls use green accents.
   - Project settings, image viewer tools, drawers, and console capture panels should converge on this family.
 
-### AI workflow rails
-
-- Workflow rails should look like extensions of the inspector rail.
-- Use step-by-step progress rows with compact status indicators.
-- Candidate trees should reuse hierarchy indentation and selected-row behaviors from the metadata grid.
-- Generated candidates should use type-tinted node colors and standard metadata chips.
-- Review/commit actions should use primary green only for the final accepted action.
-
 ### Markdown renderer
 
 - Markdown preview should preserve the technical workspace style.
@@ -724,7 +713,7 @@ Do:
 - Use the selected-node state across canvas, grid, tree, and inspector.
 - Use muted type colors for nodes and stronger green only for active controls.
 - Use table indentation and canvas proximity to communicate hierarchy.
-- Keep create, decomposition, and AI workflows visually integrated with the core app.
+- Keep node creation and image tools visually integrated with the core app.
 - Prefer 1px borders, small labels, and tonal grouping over heavy shadows.
 - Prefer bands, rails, rows, and framed tool surfaces over decorative card stacks.
 
@@ -766,7 +755,7 @@ Spatial-map details:
 - The inspector rail remains visible in both canvas and grid views and shows the selected “Nav Tabs” node.
 - The selected node row in the grid is filled pale green.
 - The canvas view uses a fine grid background and faded surrounding nodes when a cluster is focused.
-- The create menu is a compact popover with Add Nodes, Decompose Source, and New Context Node actions.
+- The create menu is a compact popover with a New Context Node action.
 - The inspector metadata section includes editable Purpose and Implementation textareas and a Save Metadata button.
 - The images section has a quiet dashed drop target.
 - Destructive actions are represented by small red trash icon buttons.

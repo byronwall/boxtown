@@ -30,7 +30,7 @@
 - `spatial-map/core`
   - `SpatialMapCanvas`
     - Path: `app/src/components/spatial-map/SpatialMapCanvas.tsx`
-    - Commentary: Main custom workspace for the map editor/viewer. It coordinates the SVG scene, toolbar, tree, inspector, image controls, and AI workflow rails.
+    - Commentary: Main custom workspace for the map editor/viewer. It coordinates the SVG scene, toolbar, tree, inspector, and image controls.
   - `SpatialMapCanvasLayout`
     - Path: `app/src/components/spatial-map/SpatialMapCanvas.tsx`
     - Commentary: Internal layout component for the map workspace. It arranges the viewport and surrounding panels into the app's dense operator-style canvas.
@@ -48,7 +48,7 @@
     - Commentary: Internal SVG renderer for a single map node. It handles node tone, label wrapping, metadata display, hover state, and selection affordances.
   - `SpatialMapToolbar`
     - Path: `app/src/components/spatial-map/SpatialMapToolbar.tsx`
-    - Commentary: Custom control strip for map operations. It exposes map-specific actions such as fit, depth navigation, node creation, AI workflows, and inspector visibility.
+    - Commentary: Custom control strip for map operations. It exposes map-specific actions such as fit, depth navigation, node creation and inspector visibility.
   - `SpatialMapTreeView`
     - Path: `app/src/components/spatial-map/SpatialMapTreeView.tsx`
     - Commentary: Custom hierarchical view of the map graph. It gives users a tree-structured alternative to the spatial canvas for navigating parent/child relationships.
@@ -106,31 +106,6 @@
   - `SpatialMapImageViewer`
     - Path: `app/src/components/spatial-map/SpatialMapImages.tsx`
     - Commentary: Internal zoomable image viewer. It supports detailed inspection of node imagery without leaving the map workspace.
-
-- `spatial-map/add-nodes-flow`
-  - `AddNodesFlowRail`
-    - Path: `app/src/components/spatial-map/add-nodes-flow/AddNodesFlowRail.tsx`
-    - Commentary: Custom AI workflow rail for generating additional map nodes. It displays run progress, generated content, errors, and acceptance controls for the add-nodes job.
-  - `InspectorRow`
-    - Path: `app/src/components/spatial-map/add-nodes-flow/AddNodesFlowRail.tsx`
-    - Commentary: Internal metadata row for add-nodes output. It keeps generated-node details compact and aligned with the inspector style.
-  - `useAddNodesFlow`
-    - Path: `app/src/components/spatial-map/add-nodes-flow/useAddNodesFlow.ts`
-    - Commentary: Custom state hook for the add-nodes lifecycle. It starts runs, subscribes to event-stream updates, tracks terminal states, and exposes rail-ready snapshots.
-
-- `spatial-map/context-note-conversion-flow`
-  - `ContextNoteConversionRail`
-    - Path: `app/src/components/spatial-map/context-note-conversion-flow/ContextNoteConversionRail.tsx`
-    - Commentary: Custom AI workflow rail for converting freeform notes into candidate map structure. It lets users review generated trees before accepting them into the project.
-  - `CandidateTreeNode`
-    - Path: `app/src/components/spatial-map/context-note-conversion-flow/ContextNoteConversionRail.tsx`
-    - Commentary: Internal recursive renderer for conversion candidates. It makes AI-generated hierarchy inspectable before it becomes persisted map data.
-  - `InspectorRow`
-    - Path: `app/src/components/spatial-map/context-note-conversion-flow/ContextNoteConversionRail.tsx`
-    - Commentary: Internal metadata row for conversion output. It keeps run and candidate attributes readable in the rail.
-  - `useContextNoteConversionFlow`
-    - Path: `app/src/components/spatial-map/context-note-conversion-flow/useContextNoteConversionFlow.ts`
-    - Commentary: Custom state hook for the context-note conversion lifecycle. It starts conversion jobs, subscribes to updates, tracks completion, and exposes results to the rail.
 
 - `markdown-renderer`
   - `MarkdownRenderer`

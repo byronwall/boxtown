@@ -106,13 +106,10 @@ export function useSpatialMapCanvasController(
   });
   const [showEdges, setShowEdges] = createSignal(false);
   const [inspectorOpen, setInspectorOpen] = createSignal(true);
-  const [addNodesOpen, setAddNodesOpen] = createSignal(false);
-  const [contextNoteConversionOpen, setContextNoteConversionOpen] = createSignal(false);
   const [contextPreviewRequest, setContextPreviewRequest] = createSignal<{
     nodeId: string;
     requestId: number;
   } | null>(null);
-  const [sourceDecompositionOpen, setSourceDecompositionOpen] = createSignal(false);
   const [deleteSubtreeConfirmId, setDeleteSubtreeConfirmId] = createSignal<string | null>(null);
   const [deleteNodeRequest, setDeleteNodeRequest] = createSignal<{
     nodeId: string;
@@ -1127,12 +1124,9 @@ export function useSpatialMapCanvasController(
   return {
     camera,
     sceneTransform,
-    addNodesOpen,
-    contextNoteConversionOpen,
     contextPreviewRequest,
     deleteSubtreeConfirmId,
     deleteNodeRequest,
-    sourceDecompositionOpen,
     childNodeDraft,
     edgeState,
     isolatedNodeId,
@@ -1165,9 +1159,6 @@ export function useSpatialMapCanvasController(
     viewportScale,
     zoomPercent,
     zoomScale,
-    closeAddNodesFlow: () => setAddNodesOpen(false),
-    closeContextNoteConversionFlow: () => setContextNoteConversionOpen(false),
-    closeSourceDecompositionFlow: () => setSourceDecompositionOpen(false),
     clearIsolation: () => applyIsolation(null),
     clearDeleteSubtreeConfirm: () => setDeleteSubtreeConfirmId(null),
     clearDeleteNodeRequest: () => setDeleteNodeRequest(null),
@@ -1177,16 +1168,6 @@ export function useSpatialMapCanvasController(
     focusNode,
     focusStashedNode,
     openChildNodeDraft,
-    openAddNodesFlow: () => {
-      setContextNoteConversionOpen(false);
-      setSourceDecompositionOpen(false);
-      setAddNodesOpen(true);
-    },
-    openContextNoteConversionFlow: () => {
-      setAddNodesOpen(false);
-      setSourceDecompositionOpen(false);
-      setContextNoteConversionOpen(true);
-    },
     openContextPreview: (nodeId) => {
       setSelectedNodeId(nodeId);
       setInspectorOpen(true);
@@ -1194,11 +1175,6 @@ export function useSpatialMapCanvasController(
         nodeId,
         requestId: (current?.requestId ?? 0) + 1,
       }));
-    },
-    openSourceDecompositionFlow: () => {
-      setAddNodesOpen(false);
-      setContextNoteConversionOpen(false);
-      setSourceDecompositionOpen(true);
     },
     isolateNode: (nodeId) => applyIsolation(nodeId),
     stashNode,

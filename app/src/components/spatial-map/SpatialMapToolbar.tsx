@@ -182,18 +182,6 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
           <Menu.Positioner>
             <Menu.Content minW="190px" borderRadius="0" fontFamily="inherit" textTransform="none">
               <Menu.Item
-                value="add-nodes"
-                onClick={() => spatialMap.openAddNodesFlow()}
-              >
-                <Menu.ItemText>Add Nodes</Menu.ItemText>
-              </Menu.Item>
-              <Menu.Item
-                value="decompose-source"
-                onClick={() => spatialMap.openSourceDecompositionFlow()}
-              >
-                <Menu.ItemText>Decompose Source</Menu.ItemText>
-              </Menu.Item>
-              <Menu.Item
                 value="new-context-node"
                 onClick={() => setContextNodeDialogOpen(true)}
               >

@@ -1,5 +1,8 @@
 Hi,
 
+> Historical review. In-app AI workflows and their routes have been removed.
+> CLI APIs, project events, and image attachments remain.
+
 Below is a detailed breakdown of what changed between the original UI and the new shell concepts, and why those changes improve the product.
 
 The short version is that the canvas itself was already doing the right job. The biggest weakness was the chrome around it: the top bar, side rails, inspector, spacing, and control language were making the product feel softer, airier, and more generic than the underlying interaction model deserved. That diagnosis lines up closely with the design brief, which calls out soft surfaces, oversized controls, low information density, and a need to make the app feel more like a CAD-style workstation or systems console.

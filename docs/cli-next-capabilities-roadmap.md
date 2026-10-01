@@ -187,36 +187,6 @@ Implementation notes:
 - `task next` should use a deterministic priority order: blocked/working might be excluded by default, then planned or needs-review depending on mode.
 - Return the full node/task summary after each status change.
 
-## 7. Agent Run Commands
-
-Proposed commands:
-
-```bash
-pgm run list --json
-pgm run view <run-id> --json
-pgm run watch <run-id>
-pgm node add-from-brief --file ./brief.md --parent <node-id> --watch --json
-pgm node convert-context <node-id> --watch --json
-```
-
-Why it matters:
-
-The app has LLM-assisted workflows, but they are not currently exposed through the clean CLI contract. Agents should be able to start a run, watch progress, answer/accept when required, and then use returned node IDs.
-
-What it unlocks:
-
-- Agents can use the product's own LLM decomposition flows.
-- Long-running work becomes observable in terminal/CI contexts.
-- The CLI can support both direct deterministic writes and app-managed AI workflows.
-- Users can choose between "import exactly this markdown" and "ask the product to decompose this brief."
-
-Implementation notes:
-
-- Treat existing UI routes as proof points, not final API shape.
-- Add `/api/v1` run endpoints with typed events and stable snapshots.
-- Keep progress on stderr unless `--json` emits a final machine-readable summary.
-- Return created/accepted node IDs at completion.
-
 ## 8. Link Commands
 
 Proposed commands:
@@ -332,7 +302,6 @@ Implementation notes:
 4. Batch apply with dry run.
 5. Project/node markdown export.
 6. Task workflow commands.
-7. Agent run commands.
 8. Link commands.
 9. Query commands.
 10. Audit/history.

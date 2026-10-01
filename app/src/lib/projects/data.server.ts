@@ -2,7 +2,6 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
-import type { GeneratedNodeBatch } from "~/lib/add-nodes/types";
 import { resolveAppDataDir } from "~/lib/server/data-dir";
 import { createParentChildLink, getLinkKey } from "~/lib/spatial-map/links";
 import { withNodePriority } from "~/lib/spatial-map/node-priority-update";
@@ -185,26 +184,11 @@ interface DeleteProjectNodeImageInput {
   clientMutationId?: string;
 }
 
-interface ProjectNodeImageSource {
-  originalName: string;
-  mimeType: string;
-  size: number;
-  data: Buffer;
-}
-
 export interface ProjectBackupFileSummary {
   projectId: string;
   filename: string;
   size: number;
   updatedAt: string;
-}
-
-interface AddProjectNodeImageSourcesInput {
-  projectId: string;
-  nodeIds: string[];
-  images: ProjectNodeImageSource[];
-  actor?: ProjectOperationActor;
-  clientMutationId?: string;
 }
 
 export function createBlankSpatialMapData(): SpatialMapData {
@@ -348,7 +332,7 @@ export async function createProjectOnDisk(
     id,
     name,
     description:
-      "Blank project ready for grid editing, structure mapping, and future AI-assisted details.",
+      "Blank project ready for grid editing and structure mapping.",
     createdAt: now,
     updatedAt: now,
     nodeMetadataSchema: createDefaultProjectNodeMetadataSchema(),
@@ -386,104 +370,6 @@ export async function deleteProjectOnDisk(projectId: string): Promise<void> {
   }
 
   await writeProjectRecordsAndPublishDeletion(nextRecords, projectId);
-}
-
-export function mergeGeneratedSpatialMapData(
-  current: SpatialMapData,
-  generated: GeneratedNodeBatch,
-  nodeMetadataSchema: ProjectNodeMetadataField[],
-): SpatialMapData {
-  const existingIds = new Set(current.nodes.map((node) => node.id));
-  const nodeIdMap = new Map<string, string>();
-  const nextNodes = [...current.nodes];
-  const existingLinkKeys = new Set(current.links.map(getLinkKey));
-
-  for (const node of generated.nodes) {
-    const { depth: _legacyDepth, ...nodeWithoutDepth } = node as typeof node & {
-      depth?: unknown;
-    };
-    const stableId = createUniqueNodeId(node.label, node.type, existingIds);
-    existingIds.add(stableId);
-    nodeIdMap.set(node.id, stableId);
-    nextNodes.push({
-      ...nodeWithoutDepth,
-      id: stableId,
-      status: node.status ?? DEFAULT_MAP_NODE_STATUS,
-      metadata: sanitizeNodeMetadata(node.metadata, nodeMetadataSchema, {
-        omitDefaultValues: true,
-      }),
-      rawContext: node.rawContext ?? node.context,
-    });
-  }
-
-  const validNodeIds = new Set(nextNodes.map((node) => node.id));
-  const nextLinks = [...current.links];
-
-  for (const link of generated.links) {
-    const source = nodeIdMap.get(link.source) ?? link.source;
-    const target = nodeIdMap.get(link.target) ?? link.target;
-    if (!validNodeIds.has(source) || !validNodeIds.has(target)) {
-      continue;
-    }
-
-    const nextLink = link.parentChild
-      ? createParentChildLink({ source, target })
-      : {
-          source,
-          target,
-          parentChild: false,
-          relationship: link.relationship ?? "related",
-        };
-    const key = getLinkKey(nextLink);
-    if (existingLinkKeys.has(key)) {
-      continue;
-    }
-
-    existingLinkKeys.add(key);
-    nextLinks.push(nextLink);
-  }
-
-  return {
-    nodes: nextNodes,
-    links: nextLinks,
-  };
-}
-
-export async function appendGeneratedNodesToProjectOnDisk(input: {
-  projectId: string;
-  generated: GeneratedNodeBatch;
-  actor?: ProjectOperationActor;
-}) {
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
-
-  if (recordIndex === -1) {
-    throw new Error("Project not found.");
-  }
-
-  const current = records[recordIndex];
-  const nextSpatialMap = mergeGeneratedSpatialMapData(
-    current.spatialMap,
-    input.generated,
-    current.nodeMetadataSchema,
-  );
-  const createdNodes = nextSpatialMap.nodes.slice(current.spatialMap.nodes.length);
-  const createdLinks = nextSpatialMap.links.slice(current.spatialMap.links.length);
-  const nextRecord = appendProjectOperation({
-    ...current,
-    updatedAt: new Date().toISOString(),
-    spatialMap: nextSpatialMap,
-  }, {
-    kind: "nodes.generated",
-    actor: input.actor,
-    summary: `Generated ${createdNodes.length} nodes and ${createdLinks.length} links.`,
-    nodeIds: createdNodes.map((node) => node.id),
-    linkKeys: createdLinks.map(getLinkKey),
-  });
-
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
-  return nextRecord;
 }
 
 export async function updateProjectNodeContextOnDisk(
@@ -1019,85 +905,6 @@ export async function deleteProjectNodeImageOnDisk(
     { force: true },
   );
 
-  return nextRecord;
-}
-
-export async function addProjectNodeImageSourcesOnDisk(
-  input: AddProjectNodeImageSourcesInput,
-): Promise<ProjectRecord> {
-  if (input.nodeIds.length === 0 || input.images.length === 0) {
-    const project = await readProjectByIdFromDisk(input.projectId);
-    if (!project) {
-      throw new Error("Project not found.");
-    }
-    return project;
-  }
-
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
-
-  if (recordIndex === -1) {
-    throw new Error("Project not found.");
-  }
-
-  const current = records[recordIndex];
-  const targetNodeIds = new Set(input.nodeIds);
-  const currentNodeIds = new Set(current.spatialMap.nodes.map((node) => node.id));
-  for (const nodeId of targetNodeIds) {
-    if (!currentNodeIds.has(nodeId)) {
-      throw new Error(`Node "${nodeId}" not found.`);
-    }
-  }
-
-  const now = new Date().toISOString();
-  const imagesByNodeId = new Map<string, MapNodeImage[]>();
-  for (const nodeId of targetNodeIds) {
-    const imageDir = getProjectNodeImageDir(input.projectId, nodeId);
-    await mkdir(imageDir, { recursive: true });
-
-    const storedImages: MapNodeImage[] = [];
-    for (const image of input.images) {
-      const extension = getImageSourceFileExtension(image.mimeType);
-      const imageId = randomUUID();
-      const filename = `${imageId}${extension}`;
-      await writeFile(path.join(imageDir, filename), image.data);
-      storedImages.push({
-        id: imageId,
-        src: `/api/projects/${encodeURIComponent(input.projectId)}/images/${encodeURIComponent(nodeId)}/${encodeURIComponent(filename)}`,
-        filename,
-        originalName: sanitizeImageOriginalName(image.originalName),
-        mimeType: image.mimeType,
-        size: image.size,
-        createdAt: now,
-      });
-    }
-
-    imagesByNodeId.set(nodeId, storedImages);
-  }
-
-  const nextNodes = current.spatialMap.nodes.map((node) =>
-    targetNodeIds.has(node.id)
-      ? { ...node, images: [...(node.images ?? []), ...(imagesByNodeId.get(node.id) ?? [])] }
-      : node,
-  );
-
-  const nextRecord = appendProjectOperation({
-    ...current,
-    updatedAt: now,
-    spatialMap: {
-      ...current.spatialMap,
-      nodes: nextNodes,
-    },
-  }, {
-    kind: "node.images.added",
-    actor: input.actor,
-    summary: `Attached ${input.images.length} source images to ${input.nodeIds.length} nodes.`,
-    nodeIds: input.nodeIds,
-    metadata: mergeMutationMetadata(input, { imageCount: String(input.images.length) }),
-  });
-
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
   return nextRecord;
 }
 

@@ -1,5 +1,8 @@
 # spatial-map.css Refactor Review
 
+> Historical review. In-app AI workflows and their routes have been removed.
+> CLI APIs, project events, and image attachments remain.
+
 ## Goal
 
 Move common style decisions out of `app/src/components/spatial-map/spatial-map.css` and into the existing component system: Panda recipes, shared UI wrappers, and small spatial-map-specific wrapper components where the style is domain-specific.

@@ -122,19 +122,6 @@ This captures the places that still need updates to match the `AGENTS.md` guidan
 - Image delete does not need `FormData`; migrate `deleteProjectNodeImage` to a typed input and call it through `useAction(deleteProjectNodeImage)`.
 - Keep `pendingDeleteImageId` as the explicit local pending indicator.
 
-## Source Decomposition Flow
-
-`app/src/components/spatial-map/source-decomposition-flow/useSourceDecompositionFlow.ts`
-
-- Builds `FormData` for `startSourceDecompositionRunRequest(...)`.
-- This is not a Solid Router action and includes image files, so it is not part of the form-backed action migration.
-- Leave it alone unless the request API changes.
-
-`app/src/components/spatial-map/source-decomposition-flow/sourceDecomposition.api.ts`
-
-- Accepts `FormData` for image-bearing source decomposition requests.
-- Leave it as-is for now.
-
 ## Suggested Migration Order
 
 1. Convert non-file project actions in `app/src/lib/projects/data.ts` to typed object inputs.

@@ -1,5 +1,8 @@
 Hi,
 
+> Historical review. In-app AI workflows and their routes have been removed.
+> CLI APIs, project events, and image attachments remain.
+
 Yes — after seeing the shell directions, I would update both the **component inventory** and the **design brief** so they better reflect the product you are actually building now, not just the current implementation you started from.
 
 The biggest gap is that your current materials describe the map workspace mostly as a canvas plus toolbar/tree/inspector system, while the new concepts reveal that the real product direction is a broader **workspace shell** with stronger navigation, denser operational status, clearer multi-mode structure, and more deliberate utility surfaces. That is consistent with the current inventory, but it is not yet described explicitly enough.

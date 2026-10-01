@@ -42,7 +42,6 @@ import type { ProjectOperationLogEntry, ProjectRecord } from "~/lib/projects/typ
 import { Text } from "~/components/ui/text";
 import { getMapNodeStatusLabel } from "~/lib/spatial-map/node-status";
 import { type MapNode, type MapNodeStatus } from "~/lib/spatial-map/types";
-import { SpatialMapGenerateImageControl } from "./SpatialMapGenerateImageControl";
 import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
 import { SpatialMapArchiveNodeControl } from "./SpatialMapArchiveNodeControl";
 import { SpatialMapNodePriorityMenu } from "./SpatialMapNodePriorityMenu";
@@ -791,14 +790,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                     <PlusIcon size={14} />
                     Add Child
                   </Button>
-                  <Button
-                    size="xs"
-                    colorPalette="green"
-                    variant="surface"
-                    onClick={() => spatialMap.openContextNoteConversionFlow()}
-                  >
-                    Generate From Context
-                  </Button>
                   <SpatialMapArchiveNodeControl
                     project={props.project}
                     node={node()}
@@ -806,12 +797,6 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                   />
                   <SpatialMapDeleteNodeControl
                     project={props.project}
-                    node={node()}
-                    onProjectUpdated={props.onProjectUpdated}
-                    compact
-                  />
-                  <SpatialMapGenerateImageControl
-                    projectId={props.project.id}
                     node={node()}
                     onProjectUpdated={props.onProjectUpdated}
                     compact

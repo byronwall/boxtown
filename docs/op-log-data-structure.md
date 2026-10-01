@@ -301,25 +301,7 @@ updateProjectNodeTitleOnDisk(input)
 `-- persist operationLog-only record
 ```
 
-Generated-node flow:
-
-```text
-appendGeneratedNodesToProjectOnDisk(input)
-|-- mergeGeneratedSpatialMapData(...)
-|   |-- reserve stable node ids
-|   |-- remap generated links
-|   `-- append new nodes + links
-|-- diff by array tail
-|   |-- createdNodes = next.nodes after previous node count
-|   `-- createdLinks = next.links after previous link count
-|-- appendProjectOperation(...)
-|   |-- kind: nodes.generated
-|   |-- actor: human or agent
-|   |-- nodeIds: created persisted node ids
-|   |-- linkKeys: created persisted link keys
-|   `-- payload.state: full state after generation
-`-- persist operationLog-only record
-```
+Historical `nodes.generated` entries remain readable. The app no longer creates them through AI workflows.
 
 Schema update:
 
@@ -412,7 +394,7 @@ MapNode
 `-- rawContext
 ```
 
-The context-generation flow is now available for any selected node. The inspector keeps an `Original Context` section only when `rawContext` and `context` differ, which preserves useful provenance without exposing a separate mode concept.
+The app no longer provides context generation. The inspector shows `Original Context` when `rawContext` and `context` differ. This preserves source notes.
 
 ## Current Guarantees
 
