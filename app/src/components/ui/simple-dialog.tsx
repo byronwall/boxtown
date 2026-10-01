@@ -5,7 +5,7 @@ import { Box, HStack, VStack } from "styled-system/jsx";
 import * as Dialog from "./dialog";
 import { WrapWhen } from "./WrapWhen";
 import { CloseButton } from "./close-button";
-import { Button } from "./button";
+import { Button, ButtonPropsProvider } from "./button";
 import * as Field from "./field";
 import { Input } from "./input";
 
@@ -50,24 +50,6 @@ export function SimpleDialog(props: SimpleDialogProps) {
         overflow: "visible",
         display: "flex",
         flexDirection: "column",
-        "& .dialog__closeTrigger": {
-          top: "12px",
-          insetEnd: "12px",
-          w: "28px",
-          h: "28px",
-          minW: "28px",
-          minH: "28px",
-          borderRadius: "4px",
-          borderColor: "rgba(96, 101, 95, 0.32)",
-          bg: "rgba(252, 253, 252, 0.82)",
-          boxShadow: "none",
-          color: "var(--spatial-map-copy-muted, token(colors.fg.muted))",
-          _hover: {
-            bg: "rgba(239, 241, 239, 0.96)",
-            borderColor: "rgba(96, 101, 95, 0.52)",
-            color: "var(--spatial-map-copy, token(colors.fg.default))",
-          },
-        },
       }),
     );
     if (props.contentClass) classes.push(props.contentClass);
@@ -111,7 +93,7 @@ export function SimpleDialog(props: SimpleDialogProps) {
               <Dialog.CloseTrigger
                 aria-label={props.closeLabel ?? "Close dialog"}
                 asChild={(triggerProps) => (
-                  <CloseButton {...triggerProps()} />
+                  <CloseButton {...triggerProps()} size="2xs" />
                 )}
               />
             </Show>
@@ -125,7 +107,12 @@ export function SimpleDialog(props: SimpleDialogProps) {
               {props.children}
             </Dialog.Body>
             <Show when={props.footer}>
-              {(footer) => <Dialog.Footer>{footer()}</Dialog.Footer>}
+              {(footer) => (
+                // Footer actions share one height unless a button sets its own size.
+                <ButtonPropsProvider value={{ size: "xs" }}>
+                  <Dialog.Footer>{footer()}</Dialog.Footer>
+                </ButtonPropsProvider>
+              )}
             </Show>
           </Dialog.Content>
         </Dialog.Positioner>

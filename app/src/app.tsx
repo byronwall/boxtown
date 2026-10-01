@@ -8,6 +8,7 @@ import {
   onCleanup,
   onMount,
 } from "solid-js";
+import { AppShellFallback } from "./components/app-shell/AppHeader";
 import { ConsoleLogCaptureProvider } from "./components/console-log-capture";
 import { GlobalErrorOverlay } from "./components/errors/GlobalErrorOverlay";
 
@@ -164,7 +165,7 @@ export default function App() {
               />
             )}
           >
-            <Suspense>{props.children}</Suspense>
+            <Suspense fallback={<AppShellFallback />}>{props.children}</Suspense>
             <GlobalErrorOverlay
               title="Client exception"
               message="The page resumed with a stale connection and hit an uncaught client error."

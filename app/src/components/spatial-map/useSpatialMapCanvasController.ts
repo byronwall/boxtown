@@ -68,6 +68,14 @@ interface ViewportSize {
 const CHILD_NODE_PLACEHOLDER_WIDTH = 300;
 const CHILD_NODE_PLACEHOLDER_HEIGHT = 430;
 const CHILD_NODE_PLACEHOLDER_EDGE_GAP = 12;
+const DEFAULT_GLOBAL_FILTER: SpatialMapGlobalFilterState = {
+  enabled: false,
+  includeParents: true,
+  includeChildren: false,
+  selectedTypes: [],
+  selectedStatuses: [],
+  selectedPriorities: [],
+};
 
 export function useSpatialMapCanvasController(
   projectData: Accessor<SpatialMapData>,
@@ -97,12 +105,7 @@ export function useSpatialMapCanvasController(
   );
   const [showLinkedInIsolation, setShowLinkedInIsolation] = createSignal(false);
   const [globalFilter, setGlobalFilter] = createSignal<SpatialMapGlobalFilterState>({
-    enabled: false,
-    includeParents: true,
-    includeChildren: false,
-    selectedTypes: [],
-    selectedStatuses: [],
-    selectedPriorities: [],
+    ...DEFAULT_GLOBAL_FILTER,
   });
   const [showEdges, setShowEdges] = createSignal(false);
   const [inspectorOpen, setInspectorOpen] = createSignal(true);
@@ -984,6 +987,11 @@ export function useSpatialMapCanvasController(
     }));
   };
 
+  const setGlobalFilterState = (value: SpatialMapGlobalFilterState) => {
+    pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
+    setGlobalFilter(value);
+  };
+
   const setGlobalFilterIncludeParents = (
     value: boolean | ((current: boolean) => boolean),
   ) => {
@@ -1002,6 +1010,12 @@ export function useSpatialMapCanvasController(
       ...current,
       includeChildren: resolveBooleanSetter(value, current.includeChildren),
     }));
+  };
+
+  const resetFilters = () => {
+    pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
+    setGlobalFilter({ ...DEFAULT_GLOBAL_FILTER });
+    setShowArchived(false);
   };
 
   const toggleGlobalFilterType = (type: string) => {
@@ -1183,8 +1197,10 @@ export function useSpatialMapCanvasController(
     setShowEdges,
     setShowLinkedInIsolation,
     setGlobalFilterEnabled,
+    setGlobalFilter: setGlobalFilterState,
     setGlobalFilterIncludeParents,
     setGlobalFilterIncludeChildren,
+    resetFilters,
     showArchived,
     setShowArchived,
     toggleGlobalFilterType,

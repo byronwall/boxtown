@@ -4,7 +4,6 @@ import {
   ChevronRightIcon,
   ClipboardIcon,
   DownloadIcon,
-  RotateCcwIcon,
   Trash2Icon,
   ZoomInIcon,
   ZoomOutIcon,
@@ -24,12 +23,13 @@ import {
 } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, HStack, VStack, styled } from "styled-system/jsx";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { CloseButton } from "~/components/ui/close-button";
+import { IconButton } from "~/components/ui/icon-button";
 import * as Dialog from "~/components/ui/dialog";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
+import { Tooltip } from "~/components/ui/tooltip";
 import {
   addProjectNodeImages,
   deleteProjectNodeImage,
@@ -97,25 +97,15 @@ export const spatialMapImageViewerDialogClass = css({
   maxW: "min(1340px, 96vw) !important",
   h: "min(860px, calc(100dvh - 28px))",
   maxH: "calc(100dvh - 28px) !important",
-  border: "1px solid rgba(96, 101, 95, 0.72) !important",
-  borderRadius: "10px !important",
-  background: "rgba(252, 253, 252, 0.96) !important",
-  boxShadow: "0 28px 70px rgba(29, 33, 28, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88) !important",
   "& .dialog__body": {
     minH: "0",
     overflow: "hidden",
     p: "0",
   },
+  // The viewer puts its own close button in the header row.
   "& .dialog__header": {
     minW: "0",
-    p: "10px 12px",
-    borderBottom: "1px solid rgba(96, 101, 95, 0.28)",
-    background: "rgba(248, 250, 248, 0.9)",
-  },
-  "& .dialog__footer": {
-    p: "8px 12px",
-    borderTop: "1px solid rgba(96, 101, 95, 0.22)",
-    background: "rgba(248, 250, 248, 0.9)",
+    p: "6px 8px 6px 16px",
   },
 });
 const IMAGE_VIEWER_MIN_SCALE = 0.2;
@@ -751,91 +741,54 @@ function SpatialMapImageViewer(props: {
           minW="0"
           w="100%"
         >
-          <Dialog.Title>
-            {currentImage()?.originalName ?? "Image"}
-          </Dialog.Title>
-          <HStack
-            gap="1"
-            justifyContent="flex-end"
-            minW="0"
-            flexWrap="wrap"
-          >
-            <HStack gap="1" flexWrap="wrap" minW="0">
-              <Badge as="span" variant="spatial" size="2xs">
-                {(props.state?.index ?? 0) + 1} /{" "}
-                {props.state?.items.length || 1}
-              </Badge>
-              <Badge as="span" variant="spatial" size="2xs">{currentImage()?.mimeType ?? "image"}</Badge>
-              <Badge as="span" variant="spatial" size="2xs">{formatBytes(currentImage()?.size ?? 0)}</Badge>
-              <Badge as="span" variant="spatial" size="2xs">{Math.round(imageViewport.scale() * 100)}%</Badge>
-            </HStack>
-            <HStack
-              gap="1"
-              justifyContent="flex-end"
-              flexWrap="wrap"
+          <HStack gap="3" minW="0" alignItems="baseline">
+            <Dialog.Title
+              class={css({ minW: "0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" })}
             >
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={copyImage}
-              >
-                <ClipboardIcon size={14} />
-                <span>Copy</span>
-              </Button>
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={downloadImage}
-              >
-                <DownloadIcon size={14} />
-                <span>Download</span>
-              </Button>
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={() => zoomBy(0.8)}
-              >
-                <ZoomOutIcon size={14} />
-                <span>Zoom Out</span>
-              </Button>
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={resetView}
-              >
-                <RotateCcwIcon size={14} />
-                <span>Reset</span>
-              </Button>
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={() => zoomBy(1.25)}
-              >
-                <ZoomInIcon size={14} />
-                <span>Zoom In</span>
-              </Button>
-              <Show when={props.canDelete && currentImage()}>
-                {(image) => (
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    disabled={props.pendingDeleteImageId === image().id}
-                    onClick={deleteImage}
-                  >
-                    <Trash2Icon size={14} />
-                    <span>
-                      {props.pendingDeleteImageId === image().id
-                        ? "Deleting"
-                        : "Delete"}
-                    </span>
-                  </Button>
-                )}
-              </Show>
-              <CloseButton
-                aria-label="Close image viewer"
-                onClick={closeViewer}
-              />
-            </HStack>
+              {currentImage()?.originalName ?? "Image"}
+            </Dialog.Title>
+            <Box as="span" flexShrink="0" color="var(--spatial-map-copy-dim)" fontSize="11px" fontVariantNumeric="tabular-nums">
+              {(props.state?.index ?? 0) + 1} / {props.state?.items.length || 1} ·{" "}
+              {currentImage()?.mimeType ?? "image"} · {formatBytes(currentImage()?.size ?? 0)}
+            </Box>
+          </HStack>
+          <HStack gap="1" justifyContent="flex-end" flexShrink="0">
+            <Tooltip content="Zoom out" openDelay={150} closeDelay={80}>
+              <IconButton size="2xs" variant="outline" aria-label="Zoom out" onClick={() => zoomBy(0.8)}>
+                <ZoomOutIcon size={13} />
+              </IconButton>
+            </Tooltip>
+            <Button size="2xs" variant="outline" minW="52px" title="Reset zoom" onClick={resetView}>
+              {Math.round(imageViewport.scale() * 100)}%
+            </Button>
+            <Tooltip content="Zoom in" openDelay={150} closeDelay={80}>
+              <IconButton size="2xs" variant="outline" aria-label="Zoom in" onClick={() => zoomBy(1.25)}>
+                <ZoomInIcon size={13} />
+              </IconButton>
+            </Tooltip>
+            <Box w="1px" h="16px" mx="1" background="var(--spatial-map-panel-divider)" aria-hidden="true" />
+            <Button size="2xs" variant="outline" onClick={copyImage}>
+              <ClipboardIcon size={13} />
+              Copy
+            </Button>
+            <Button size="2xs" variant="outline" onClick={downloadImage}>
+              <DownloadIcon size={13} />
+              Download
+            </Button>
+            <Show when={props.canDelete && currentImage()}>
+              {(image) => (
+                <Button
+                  size="2xs"
+                  variant="danger"
+                  disabled={props.pendingDeleteImageId === image().id}
+                  onClick={deleteImage}
+                >
+                  <Trash2Icon size={13} />
+                  {props.pendingDeleteImageId === image().id ? "Deleting" : "Delete"}
+                </Button>
+              )}
+            </Show>
+            <CloseButton size="2xs" ml="1" aria-label="Close image viewer" onClick={closeViewer} />
           </HStack>
         </HStack>
       }
