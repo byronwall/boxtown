@@ -13,6 +13,7 @@ import {
   publishProjectDeleted,
   publishProjectRecordChanged,
 } from "~/ws/project-events";
+import { applyBulkNodeUpdate, describeBulkNodeUpdate, type BulkNodeUpdate } from "./bulk-update";
 import { splitMarkdownIntoHeadingSections } from "./context-node-markdown";
 import { createUniqueNodeId, getNodeImageDirSegment } from "./node-id";
 import {
@@ -650,6 +651,52 @@ export async function updateProjectNodeArchivedOnDisk(
     actor: input.actor,
     summary: `${input.archived ? "Archived" : "Unarchived"} "${currentNode.label}".`,
     nodeIds: [input.nodeId],
+    metadata: getMutationMetadata(input),
+  });
+
+  records[recordIndex] = nextRecord;
+  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  return nextRecord;
+}
+
+export async function updateProjectNodesBulkOnDisk(
+  input: BulkNodeUpdate & {
+    projectId: string;
+    actor?: ProjectOperationActor;
+    clientMutationId?: string;
+  },
+): Promise<ProjectRecord> {
+  if (input.status !== undefined && !isMapNodeStatus(input.status)) {
+    throw new Error("Invalid node status.");
+  }
+  if (input.status === undefined && input.archived === undefined) {
+    throw new Error("A bulk update needs a status or archive change.");
+  }
+
+  const records = await readProjectRecordsFromDisk();
+  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+
+  if (recordIndex === -1) {
+    throw new Error("Project not found.");
+  }
+
+  const current = records[recordIndex];
+  const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));
+  const nodeIds = [...new Set(input.nodeIds)].filter((nodeId) => existingIds.has(nodeId));
+  if (nodeIds.length === 0) {
+    throw new Error("No matching nodes to update.");
+  }
+
+  const update = { nodeIds, status: input.status, archived: input.archived };
+  const nextRecord = appendProjectOperation({
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: applyBulkNodeUpdate(current.spatialMap, update),
+  }, {
+    kind: "nodes.bulk.updated",
+    actor: input.actor,
+    summary: describeBulkNodeUpdate(update),
+    nodeIds,
     metadata: getMutationMetadata(input),
   });
 
