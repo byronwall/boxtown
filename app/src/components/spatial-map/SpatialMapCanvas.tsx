@@ -117,6 +117,7 @@ function SpatialMapCanvasLayout(props: {
           "--spatial-map-panel-strong": "rgba(248, 250, 248, 0.92)",
           "--spatial-map-panel-border": "rgba(95, 101, 94, 0.34)",
           "--spatial-map-panel-border-strong": "rgba(96, 101, 95, 0.72)",
+          "--spatial-map-panel-divider": "rgba(96, 101, 95, 0.2)",
           "--spatial-map-copy": "#171c19",
           "--spatial-map-copy-muted": "#323b35",
           "--spatial-map-copy-dim": "#475249",
@@ -202,6 +203,8 @@ function SpatialMapCanvasLayout(props: {
             minW="0"
             minH="0"
             p={{ base: "8px", md: "10px" }}
+            // The inspector's resize gutter already separates the panes on desktop.
+            pr={{ base: "8px", md: controller.inspectorOpen() ? "0" : "10px" }}
             gap="8px"
             overflow="hidden"
             background="rgba(229, 234, 226, 0.72)"

@@ -17,7 +17,7 @@ export const button = defineRecipe({
     outline: "0",
     position: "relative",
     transition: "colors",
-    transitionProperty: "background-color, border-color, color, box-shadow",
+    transitionProperty: "background-color, border-color, color, box-shadow, transform",
     userSelect: "none",
     verticalAlign: "middle",
     whiteSpace: "nowrap",
@@ -26,6 +26,10 @@ export const button = defineRecipe({
     },
     _disabled: {
       layerStyle: "disabled",
+    },
+    // Every button scales down slightly while pressed so the press registers.
+    "&:active:not(:disabled)": {
+      transform: "scale(0.97)",
     },
     focusVisibleRing: "outside",
   },

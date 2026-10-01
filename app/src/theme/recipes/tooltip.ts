@@ -16,6 +16,9 @@ export const tooltip = defineSlotRecipe({
       py: "1.5",
       textStyle: "xs",
       maxWidth: "xs",
+      // Ark copies the content z-index onto the portalled positioner; without it
+      // the tooltip renders behind any positioned panel that sets its own z-index.
+      zIndex: "tooltip",
       _open: {
         animationStyle: "scale-fade-in",
         animationDuration: "fast",

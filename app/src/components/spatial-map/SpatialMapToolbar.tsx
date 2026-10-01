@@ -11,14 +11,12 @@ import { Button } from "~/components/ui/button";
 import { IconButton } from "~/components/ui/icon-button";
 import * as Menu from "~/components/ui/menu";
 import { Text } from "~/components/ui/text";
-import { toaster } from "~/components/ui/toast";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { ProjectMetadataSettingsDialog } from "./ProjectMetadataSettingsDialog";
-import { buildVisibleNodesMarkdown } from "./spatial-map-markdown-export";
+import { copyVisibleNodesAsMarkdown } from "./spatial-map-markdown-export";
 import { SpatialMapCreateContextNodeDialog } from "./SpatialMapCreateContextNodeDialog";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapGlobalFilterMenu } from "./SpatialMapGlobalFilterMenu";
-import { InspectorToggle } from "./SpatialMapInspectorHeader";
 
 interface SpatialMapToolbarProps {
   project: ProjectRecord;
@@ -33,30 +31,6 @@ interface SpatialMapToolbarProps {
 export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
   const spatialMap = useSpatialMap();
   const [contextNodeDialogOpen, setContextNodeDialogOpen] = createSignal(false);
-  const copyVisibleNodesAsMarkdown = async () => {
-    try {
-      const markdown = buildVisibleNodesMarkdown({
-        project: props.project,
-        visibleData: spatialMap.visibleData(),
-        origin: typeof window === "undefined" ? undefined : window.location.origin,
-      });
-
-      await navigator.clipboard.writeText(markdown);
-      toaster.success({
-        title: "Markdown copied",
-        description: `${spatialMap.visibleData().nodes.length} visible nodes are now in your clipboard.`,
-      });
-    } catch (error) {
-      toaster.error({
-        title: "Copy failed",
-        description:
-          error instanceof Error
-            ? error.message
-            : "The visible node markdown could not be copied.",
-      });
-    }
-  };
-
   return (
     <Box
       class="spatial-map-topbar"
@@ -211,7 +185,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
             <Menu.Content minW="190px" borderRadius="0" fontFamily="inherit" textTransform="none">
               <Menu.Item
                 value="copy-visible-nodes-markdown"
-                onClick={copyVisibleNodesAsMarkdown}
+                onClick={() => void copyVisibleNodesAsMarkdown(props.project, spatialMap.visibleData())}
               >
                 <ClipboardIcon size={14} aria-hidden="true" />
                 <Menu.ItemText>Copy as Markdown</Menu.ItemText>

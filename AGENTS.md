@@ -29,6 +29,12 @@ Run inside `app/`:
 - `pnpm build`
 - `pnpm start`
 
+## Changelog
+
+- Update repo-root `CHANGELOG.md` in the same change whenever you alter behavior, UI, the CLI, or the design system.
+- Add entries under today's date heading (create it at the top if missing), grouped as `Added`, `Changed`, `Fixed`, or `Removed`.
+- Write each entry for someone using the app: say what is different, not which files changed. Skip pure refactors and internal cleanup.
+
 ## Prototype Verification
 
 - This is a prototype; conserve tokens and avoid routine browser automation unless the user explicitly asks for it.

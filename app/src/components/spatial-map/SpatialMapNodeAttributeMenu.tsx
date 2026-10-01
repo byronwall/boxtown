@@ -46,6 +46,12 @@ export function SpatialMapNodeAttributeMenu<T extends string>(props: {
         class="spatial-map-attribute-menu-trigger-wrap"
         display="inline-flex"
         minW="0"
+        // Panda cannot extract runtime color values, so tones reach the trigger as CSS variables.
+        style={{
+          "--attribute-fill": triggerTone().fill,
+          "--attribute-stroke": triggerTone().stroke,
+          "--attribute-copy": triggerTone().copy,
+        }}
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
       >
@@ -61,24 +67,25 @@ export function SpatialMapNodeAttributeMenu<T extends string>(props: {
               gap="6px"
               minW="0"
               maxW="100%"
-              minH={props.variant === "tree" ? "21px" : "28px"}
-              p={props.variant === "tree" ? "0 6px 0 8px" : "0 7px 0 9px"}
+              minH={props.variant === "tree" ? "21px" : "22px"}
+              p="0 5px 0 8px"
               border="1px solid"
-              borderColor={`color-mix(in srgb, ${triggerTone().stroke} 52%, transparent)`}
+              borderColor="color-mix(in srgb, var(--attribute-stroke) 52%, transparent)"
               borderRadius="4px"
-              background={triggerTone().fill}
-              color={triggerTone().copy}
+              background="var(--attribute-fill)"
+              color="var(--attribute-copy)"
+              title={props.ariaLabel}
               cursor={props.pending ? "wait" : "pointer"}
               font="inherit"
               opacity={props.pending ? "0.68" : undefined}
               _hover={{
-                borderColor: `color-mix(in srgb, ${triggerTone().stroke} 76%, transparent)`,
-                boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${triggerTone().stroke} 22%, transparent)`,
+                borderColor: "color-mix(in srgb, var(--attribute-stroke) 76%, transparent)",
+                boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--attribute-stroke) 22%, transparent)",
                 outline: "none",
               }}
               _focusVisible={{
-                borderColor: `color-mix(in srgb, ${triggerTone().stroke} 76%, transparent)`,
-                boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${triggerTone().stroke} 22%, transparent)`,
+                borderColor: "color-mix(in srgb, var(--attribute-stroke) 76%, transparent)",
+                boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--attribute-stroke) 22%, transparent)",
                 outline: "none",
               }}
               aria-label={props.ariaLabel}
@@ -102,9 +109,8 @@ export function SpatialMapNodeAttributeMenu<T extends string>(props: {
                 as="span"
                 minW="0"
                 overflow="hidden"
-                color={triggerTone().copy}
-                fontSize="10px"
-                fontWeight="700"
+                fontSize={props.variant === "tree" ? "10px" : "11px"}
+                fontWeight={props.variant === "tree" ? "700" : "600"}
                 letterSpacing={props.variant === "tree" ? "0.08em" : undefined}
                 textOverflow="ellipsis"
                 whiteSpace="nowrap"

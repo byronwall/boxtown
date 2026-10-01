@@ -2,6 +2,7 @@ import { Show, createSignal, onCleanup } from "solid-js";
 import { BotIcon, CheckIcon } from "lucide-solid";
 import { IconButton } from "~/components/ui/icon-button";
 import { toaster } from "~/components/ui/toast";
+import { Tooltip } from "~/components/ui/tooltip";
 import { buildNodeAgentPrompt } from "~/lib/projects/agent-prompt";
 import type { ProjectRecord } from "~/lib/projects/types";
 
@@ -43,6 +44,7 @@ export function SpatialMapCopyAgentPromptButton(props: {
   };
 
   return (
+    <Tooltip content={copied() ? "Copied agent prompt" : "Copy agent prompt"} openDelay={150} closeDelay={80}>
     <IconButton
       variant="plain"
       size="xs"
@@ -52,12 +54,12 @@ export function SpatialMapCopyAgentPromptButton(props: {
       p="0"
       color="var(--spatial-map-copy-dim)"
       aria-label="Copy agent prompt"
-      title={copied() ? "Copied agent prompt" : "Copy agent prompt"}
       onClick={() => void copyPrompt()}
     >
       <Show when={copied()} fallback={<BotIcon size={15} />}>
         <CheckIcon size={15} />
       </Show>
     </IconButton>
+    </Tooltip>
   );
 }

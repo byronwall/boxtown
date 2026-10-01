@@ -162,6 +162,7 @@ export function SpatialMapReparentControl(props: SpatialMapReparentControlProps)
                 <For each={results()}>
                   {(result, index) => (
                     <ReparentResultButton
+                      _active={{ transform: "scale(0.99)" }}
                       type="button"
                       role="option"
                       aria-selected={index() === activeIndex()}

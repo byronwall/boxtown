@@ -1,5 +1,5 @@
 import { useAction } from "@solidjs/router";
-import { createMemo, createSignal, For, Show, type JSX } from "solid-js";
+import { createMemo, createSignal, For, Show } from "solid-js";
 import { css } from "styled-system/css";
 import { Box, styled } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
@@ -323,7 +323,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
             borderRadius="4px"
             background="transparent"
             transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease"
-            _active={{ transform: "scale(0.98)" }}
+            _active={{ transform: "scale(0.97)" }}
             onClick={() => controller.fitCameraToNodes()}
           >
             Fit View
@@ -345,7 +345,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                 : undefined
             }
             transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease"
-            _active={{ transform: "scale(0.98)" }}
+            _active={{ transform: "scale(0.97)" }}
             aria-pressed={controller.showEdges()}
             onClick={() => controller.toggleEdges()}
           >
@@ -369,7 +369,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                   : undefined
               }
               transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease"
-              _active={{ transform: "scale(0.98)" }}
+              _active={{ transform: "scale(0.97)" }}
               aria-pressed={controller.showLinkedInIsolation()}
               onClick={() => controller.toggleLinkedInIsolation()}
             >

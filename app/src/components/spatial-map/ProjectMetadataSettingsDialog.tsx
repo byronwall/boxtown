@@ -631,6 +631,7 @@ function SettingsSectionButton(props: {
 }) {
   return (
     <SettingsSectionButtonRoot
+      _active={{ transform: "scale(0.99)" }}
       type="button"
       aria-current={props.selected ? "page" : undefined}
       onClick={props.onClick}

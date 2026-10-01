@@ -24,9 +24,7 @@ export function SpatialMapInspectorHeader(props: SpatialMapInspectorHeaderProps)
       display="grid"
       gridTemplateColumns="minmax(0, 1fr) auto"
       alignItems="start"
-      gap="6px"
-      p="0 0 10px"
-      borderBottom="1px solid rgba(96, 101, 95, 0.26)"
+      gap="8px"
     >
       <VStack alignItems="start" gap="1" minW="0">
         <Show when={props.kicker}>
@@ -132,7 +130,7 @@ export function InspectorToggle(props: {
         background: "rgba(229, 239, 229, 0.72)",
         color: "var(--spatial-map-accent-strong)",
       }}
-      _active={{ transform: "scale(0.98)" }}
+      _active={{ transform: "scale(0.97)" }}
       _focusVisible={{
         outline: "none",
         background: "rgba(229, 239, 229, 0.72)",
@@ -166,10 +164,10 @@ function InspectorTitle(props: { children: JSX.Element }) {
       as="h2"
       m="0"
       color="#141816"
-      fontSize="1.24rem"
-      lineHeight="1.18"
+      fontSize="1.125rem"
+      lineHeight="1.25"
       fontWeight="700"
-      letterSpacing="-0.04em"
+      letterSpacing="-0.02em"
       textTransform="none"
       overflowWrap="anywhere"
     >

@@ -18,5 +18,15 @@ export const globalCss = {
       textRendering: "optimizeLegibility",
       WebkitFontSmoothing: "antialiased",
     },
+    // Press feedback for every button (see DESIGN.md "Press feedback").
+    // :where() keeps specificity at zero and this sits in the base layer, so any
+    // component transform or _active style wins. Buttons inside the scaled SVG
+    // scene are excluded: transforms there cause flicker at high zoom.
+    ":where(button)": {
+      transition: "transform 160ms cubic-bezier(0.23, 1, 0.32, 1)",
+    },
+    ":where(button:not(:disabled):not(.spatial-map-scene-layer *)):active": {
+      transform: "scale(0.97)",
+    },
   },
 };

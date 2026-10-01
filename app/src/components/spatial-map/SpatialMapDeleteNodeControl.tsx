@@ -20,6 +20,7 @@ interface SpatialMapDeleteNodeControlProps {
   node: MapNode;
   onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
   compact?: boolean;
+  size?: "xs" | "2xs";
   hideTrigger?: boolean;
 }
 
@@ -132,7 +133,7 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
       {!props.hideTrigger && (
         <Tooltip content="Delete node" disabled={!props.compact} openDelay={150} closeDelay={80}>
           <Button
-            size="xs"
+            size={props.size ?? "xs"}
             variant="danger"
             px={props.compact ? "0" : undefined}
             onClick={() => {
@@ -141,7 +142,7 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
             }}
             aria-label={props.compact ? "Delete node" : undefined}
           >
-            {props.compact ? <Trash2 size={16} /> : "Delete Node"}
+            {props.compact ? <Trash2 size={props.size === "2xs" ? 13 : 16} /> : "Delete Node"}
           </Button>
         </Tooltip>
       )}

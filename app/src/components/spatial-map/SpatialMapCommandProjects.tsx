@@ -33,6 +33,7 @@ export function CommandProjectRow(props: {
 }) {
   return (
     <CommandProjectButton
+      _active={{ transform: "scale(0.99)" }}
       type="button"
       role="option"
       aria-selected={props.active}

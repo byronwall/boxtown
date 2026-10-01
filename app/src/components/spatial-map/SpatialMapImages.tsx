@@ -427,15 +427,15 @@ export function SpatialMapImageDropTarget(props: {
     <Box
       class={`${props.class ?? ""}${isDraggingImage() ? " is-dragging-image" : ""}`}
       w="100%"
+      minW="0"
       display="grid"
-      gap={props.variant === "tree" ? "0" : "9px"}
-      mt={props.variant === "tree" ? "0" : "8px"}
-      p={props.variant === "tree" ? "0" : "13px 0 0"}
-      border="0"
-      borderTop={props.variant === "tree" ? "0" : "1px dashed"}
-      borderColor={isDraggingImage() ? "rgba(23, 62, 39, 0.62)" : "rgba(96, 101, 95, 0.16)"}
+      gridTemplateColumns="minmax(0, 1fr)"
+      gap={props.variant === "tree" ? "0" : "8px"}
+      pt={props.variant === "tree" ? "0" : "12px"}
+      borderTop={props.variant === "tree" ? "0" : "1px solid"}
+      borderColor={isDraggingImage() ? "rgba(23, 62, 39, 0.62)" : "var(--spatial-map-panel-divider)"}
+      borderStyle={isDraggingImage() ? "dashed" : "solid"}
       background={isDraggingImage() ? "rgba(218, 229, 216, 0.96)" : "transparent"}
-      boxShadow={isDraggingImage() ? "inset 3px 0 0 rgba(23, 62, 39, 0.88)" : "none"}
       onDragEnter={(event) => {
         if (getImageFilesFromDataTransfer(event.dataTransfer).length === 0) {
           console.info(
@@ -958,6 +958,7 @@ function ImageViewerContent(props: {
               top="50%"
               zIndex="2"
               transform="translateY(-50%)"
+              _active={{ transform: "translateY(-50%) scale(0.97)" }}
               display="inline-flex"
               alignItems="center"
               justifyContent="center"
@@ -1053,6 +1054,7 @@ function ImageViewerContent(props: {
               top="50%"
               zIndex="2"
               transform="translateY(-50%)"
+              _active={{ transform: "translateY(-50%) scale(0.97)" }}
               display="inline-flex"
               alignItems="center"
               justifyContent="center"

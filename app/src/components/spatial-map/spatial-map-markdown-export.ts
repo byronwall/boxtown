@@ -1,4 +1,5 @@
 import type { ProjectRecord } from "~/lib/projects/types";
+import { toaster } from "~/components/ui/toast";
 import type { MapLink, MapNode, SpatialMapData } from "~/lib/spatial-map/types";
 
 interface BuildVisibleNodesMarkdownOptions {
@@ -190,5 +191,29 @@ function toAbsoluteUrl(src: string, origin?: string) {
     return new URL(src, origin).toString();
   } catch {
     return src;
+  }
+}
+
+export async function copyVisibleNodesAsMarkdown(project: ProjectRecord, visibleData: SpatialMapData) {
+  try {
+    const markdown = buildVisibleNodesMarkdown({
+      project,
+      visibleData,
+      origin: typeof window === "undefined" ? undefined : window.location.origin,
+    });
+
+    await navigator.clipboard.writeText(markdown);
+    toaster.success({
+      title: "Markdown copied",
+      description: `${visibleData.nodes.length} visible nodes are now in your clipboard.`,
+    });
+  } catch (error) {
+    toaster.error({
+      title: "Copy failed",
+      description:
+        error instanceof Error
+          ? error.message
+          : "The visible node markdown could not be copied.",
+    });
   }
 }

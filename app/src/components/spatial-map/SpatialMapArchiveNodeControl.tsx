@@ -72,14 +72,14 @@ export function SpatialMapArchiveNodeControl(props: SpatialMapArchiveNodeControl
   return (
     <Tooltip content={label()} openDelay={150} closeDelay={80}>
       <Button
-        size="xs"
+        size="2xs"
         variant="outline"
         px="0"
         loading={pending()}
         aria-label={label()}
         onClick={() => void toggleArchived()}
       >
-        {props.node.archived ? <ArchiveRestoreIcon size={16} /> : <ArchiveIcon size={16} />}
+        {props.node.archived ? <ArchiveRestoreIcon size={13} /> : <ArchiveIcon size={13} />}
       </Button>
     </Tooltip>
   );

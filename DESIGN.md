@@ -279,6 +279,63 @@ The index page is the clearest completed reference for the general product surfa
 
 Where the spatial-map workspace currently uses sharper zero-radius controls, full mono typography, or custom CSS variables, treat that as a specialized drafting mode. New shared UI and cleanup work should bias back toward index-surface tokens and small radii unless the component is explicitly part of the scaled SVG/canvas or metadata-grid drafting surface.
 
+## Density and Cleanup Principles
+
+These principles came out of the inspector-rail cleanup and are the method for cleaning up other surfaces. The inspector rail is the reference implementation. Each one names the smell it removes so it can be used as a review checklist.
+
+1. **Rank the content, then order by rank.**
+   - Decide what the surface is for before styling it: identity, then state, then actions, then primary content, then secondary detail.
+   - Secondary detail goes last and stays closed until it has something to show.
+   - Smell: sections appear in the order they were built, and mostly-empty sections sit above the content people came for.
+2. **Empty costs one line.**
+   - An empty section is a single header row with a summary on the right (`0/2`, `0`, "Drop or paste to add"). It never gets a placeholder box, a paragraph of explanation, or its own bordered panel.
+   - Groups open automatically when they have content and stay closed when they do not.
+   - Smell: dashed boxes, patterned fills, and multi-line "nothing here yet" copy.
+3. **One style per role.**
+   - A surface has one section-label style, one meta/dim style, one body style, and one control height. If two headings look different, one of them is wrong.
+   - Dense rails use three text sizes only: 11px for labels and meta, 12px for body and values, one title size.
+   - Smell: sibling headings with different weight, color, or tracking; controls of three different heights in one row.
+4. **Values over labels.**
+   - A value that explains itself does not need a label: a `Planned` chip does not need "Status" in front of it. Put the label in the tooltip and the accessible name.
+   - Keep a visible label only where the value is ambiguous on its own, such as free-text metadata fields.
+   - Smell: a label/value row per attribute where a single row of chips would do.
+5. **Rules, not boxes.**
+   - Separate sections with one hairline divider. Do not wrap sections, lists, or button groups in their own bordered containers, and never let two dividers touch.
+   - Lists are rows separated by hairlines with a hover fill. They are not stacks of cards.
+   - Smell: card-in-panel nesting, a header border directly above a section border, pill badges used for plain metadata.
+6. **Edit where you read.**
+   - Text is edited in place: click the rendered value, type, click away to save, Esc to cancel, Cmd/Ctrl+Enter to save from the keyboard.
+   - No Edit / Save / Cancel button rows for single-field edits, and no success toast for a routine save. Failures still surface as a toast.
+   - Smell: a mode switch button, a separate form, and a confirmation for changing one field.
+7. **Color means something.**
+   - Tone is reserved for state: status, priority, destructive, selected. Everything structural is neutral.
+   - Selected and current items use a fill plus text treatment. No accent bars, inset stripes, or underline markers.
+   - Smell: tinted buttons and borders that carry no information.
+8. **Flat docked surfaces.**
+   - Rails, panels, and bands that are docked into the shell use a flat fill and a single border. No gradients, inset highlights, or drop shadows. Shadows belong to things that float: menus, popovers, dialogs, tooltips.
+   - Smell: stacked box-shadows and gradient backgrounds on a panel that never moves.
+9. **Structural controls live in structure.**
+   - A control that acts on the layout sits in the layout, not on top of content. The pane resize handle is its own gutter column with a vertical ellipsis; it never overlaps either pane, and the neighbouring pane gives up its padding so the gutter is the only gap.
+   - Smell: absolutely positioned handles and toggles floating over text.
+10. **Every text run has an overflow plan.**
+    - Each line either wraps or truncates with an ellipsis and exposes the full value on hover. Nothing is clipped by a parent.
+    - Smell: text cut off mid-word at a panel edge.
+11. **Icon-only buttons explain themselves.**
+    - Every icon-only button gets the shared `Tooltip` component and an `aria-label`. Do not rely on the `title` attribute.
+    - Smell: two adjacent icon buttons that can only be told apart by clicking one.
+12. **Spend vertical space on content.**
+    - In dense rails: 8px between sections, 6px inside a section, 22-24px controls and header rows, 4px between adjacent controls.
+    - If an action row, header, or label line can merge into the row above it without losing meaning, merge it.
+    - Smell: 32px buttons in a rail, a row that holds one small control, 24px+ gaps between sections.
+
+Cleanup order for an existing surface:
+
+1. List what the surface shows and rank it (principle 1).
+2. Remove or collapse everything empty (2) and every redundant label (4).
+3. Collapse the styles to one per role (3) and the containers to hairlines (5, 8).
+4. Fix overflow (10), tooltips (11), and control placement (9).
+5. Tighten spacing last (12). Tightening first only makes a disorganized surface denser.
+
 ## Colors
 
 The palette is built from Panda olive/gray tokens, muted industrial greens, warm near-white surfaces, blueprint-like node tints, and restrained red for destructive actions. In implementation, prefer token references over hard-coded hex values whenever possible.
@@ -370,12 +427,15 @@ Type should be compact and sharp:
 - **Headlines**
   - Use 18-22px, bold, tight tracking.
   - Project titles such as “Recipe Architecture Grid” should feel like a technical document title.
-- **Panel and section titles**
-  - Use 14px bold.
-  - Examples: “Metadata grid”, “Images”, “Metadata”, “Context”.
+- **Panel titles**
+  - Use 14px bold for the title of a whole panel or view, such as “Metadata grid”.
+- **Section labels inside a panel**
+  - Use 11px bold uppercase with 0.08em tracking in the dim text color.
+  - Examples: “Context”, “Images”, “Metadata”, “Connections”, “Activity” in the inspector rail.
+  - Every section label on a surface uses this one style.
 - **Body and inspector text**
   - Use 12-13px regular with comfortable line height.
-  - Inspector text areas can use 16px monospace for editability when content is long.
+  - Inspector body text, values, and the in-place context editor use 12px; labels and meta use 11px.
 - **Table cells**
   - Use 12px monospaced body text.
   - Ellipsize long purpose and implementation copy.
@@ -426,14 +486,15 @@ The spatial-map project page is a three-part workbench:
   - In canvas mode, it uses a large gridded plane with visible fit/zoom controls in the lower-right.
   - In metadata grid mode, it uses a dense table with column controls, search, node/link toggle, and row actions.
 - **Inspector rail**
-  - Fixed on the right at roughly 348px wide.
-  - Shows selected-node title, status/type/id controls, action buttons, images, metadata, and context.
-  - Uses stacked bordered panels with compact section headers.
+  - Sits on the right at 348px by default and is resizable from 280px through a gutter handle between the panes.
+  - Shows, in order: title, id, status/priority/type chips, actions, context, images, then collapsible metadata, connections, and activity.
+  - Uses a flat surface with hairline dividers between sections, not stacked bordered panels.
 
 Spacing rules:
 
 - Use a 4px micro-grid with 8px as the default control rhythm.
-- Use 12px internal padding for inspector panels and toolbar groups.
+- Use 12px internal padding for the inspector rail and toolbar groups.
+- Inside dense rails use 8px between sections, 6px within a section, and 22-24px controls and header rows.
 - Use 16px only when separating larger regions.
 - Use 24px canvas grid spacing for the background drafting grid.
 - Table rows should be compact, roughly 40-42px high.
@@ -630,28 +691,53 @@ The index page is the reference implementation for app-level management screens.
 
 ### Inspector rail
 
-- The right rail is a persistent details panel for the selected node.
-- Top area:
-  - Node title on the left.
-  - Collapse/expand button on the right.
-  - Status select, ID pill, type select, and context-mode pill.
-  - Delete action as a compact icon button.
-- Section panels:
-  - Use a subtle surface fill and thin border.
-  - Section labels are small, bold, and monospaced.
-  - Primary section action buttons sit at the top-right.
-- Metadata fields:
-  - Use labels above textareas.
-  - Textareas are tall enough for multi-line notes.
-  - Save button uses disabled gray when no changes are pending.
-- Context preview/editing:
-  - Context cards should support expand and edit actions.
-  - Long markdown should scroll within the rail or open in a larger dialog.
+The inspector rail is the reference implementation of the Density and Cleanup Principles.
+
+- Surface:
+  - Flat near-white fill, one left border, no gradient or shadow on desktop.
+  - Sections are separated by a single hairline divider. The header has no border of its own.
+- Header:
+  - Editable node title on the left.
+  - Icon buttons on the right: copy agent prompt, project-activity toggle, collapse. Each has a tooltip.
+- Identity and state, directly under the title:
+  - Node id as one dim mono line that truncates and copies on click.
+  - Status, priority, and type as one row of unlabelled 22px chips. Status and priority chips carry tone; type is neutral.
+  - One 24px action row: Add Child on the left, archive and delete icon buttons on the right.
+- Context:
+  - First content section, because it is the primary content of a node.
+  - Rendered markdown that is edited in place: click to edit, click away or Cmd/Ctrl+Enter to save, Esc to cancel.
+  - When empty it is a single dim "click to add" line. A small icon in the section header opens the large view.
+- Images:
+  - One header row with a count and a quiet "Drop or paste to add" hint. Thumbnails render below only when images exist.
+  - The whole section is the drop target; dragging over it shows a dashed border and a tinted fill.
+- Secondary groups, last:
+  - Metadata, Connections, and Activity are one-line collapsible rows with a summary on the right (`1/2`, `3`, `8`).
+  - Metadata and Connections open on their own when they have content. Activity starts closed.
+  - Metadata fields are a dim 11px label above an in-place editable value.
+  - Connections are a single list with `→` / `←` direction markers, one line per link.
+- Nothing selected:
+  - The rail becomes a project starting point instead of showing empty sections.
+  - One dim line with the hint and project counts by status.
+  - A list of project-level actions as 24px rows (icon, label, shortcut on the right): new node, new context node, copy visible nodes as Markdown, project settings, and a search shortcut reminder.
+  - Recent project activity below, where each entry selects its node.
+
+### Activity lists
+
+- Activity is a dense list, not a stack of cards.
+- Each entry is one row: a toned 13px icon for the kind of change, the summary (up to two lines), a dim meta line (`Updated · actor`, plus the node name in project-wide lists), and a short relative time (`2h`, `3d`) on the right.
+- Rows are separated by hairlines and get a hover fill when they select a node.
+- Do not use badges for kind, actor, node, or date.
+
+### Pane resize handle
+
+- The handle is its own 12px full-height column between the workspace and the rail, marked with a vertical ellipsis.
+- It never overlaps content in either pane. The workspace drops its right padding while the rail is open so the handle is the only gap.
+- Hover darkens the gutter; dragging tints it green.
 
 ### Images panel
 
-- Use a bordered drop zone with dashed internal rectangle.
-- Empty state should remain very quiet.
+- The section itself is the drop target; there is no separate drop-zone box.
+- Empty state is the header row and hint only.
 - Thumbnails in nodes, table rows, and rail panels should keep their original aspect ratio.
 - Image borders should be thin and neutral.
 
@@ -667,8 +753,9 @@ The index page is the reference implementation for app-level management screens.
 ### Selects and pills
 
 - Select controls are compact, bordered, and rectangular.
-- ID and mode values can be pill-like but should retain squared industrial geometry.
-- Pills should not dominate the rail; they provide metadata, not primary actions.
+- Attribute chips (status, priority, type) are 22px tall with a 4px radius. Tone comes from the value; neutral values use the neutral fill.
+- Do not render plain metadata such as ids, actors, or dates as pills. Use dim text.
+- Chips should not dominate the rail; they provide state, not primary actions.
 
 ### Buttons
 
@@ -677,6 +764,17 @@ The index page is the reference implementation for app-level management screens.
 - Utility icon buttons use a white or pale green surface.
 - Destructive icon buttons use pale red surfaces with red outlines/icons.
 - Disabled buttons use neutral gray fills and low contrast text.
+
+### Press feedback
+
+Every button gives physical feedback while it is pressed, so the interface visibly registers the click before anything else happens.
+
+- Default: `transform: scale(0.97)` on `:active`, with a 160ms ease-out transform transition. This comes from a global rule for all `button` elements and from the shared button recipe, so new buttons get it without extra work.
+- Full-width rows (list rows, menu-like results, collapsible headers): use `scale(0.99)` plus a slightly darker fill. A 3% scale is too much travel on a wide row.
+- A button that already has a positioning transform must restate it in its pressed state, for example `translateY(-50%) scale(0.97)`.
+- No press scale on layout handles such as the pane resize gutter, and none on anything inside the scaled SVG canvas scene.
+- Disabled buttons do not respond.
+- Keep the scale between 0.95 and 0.99. Press feedback is confirmation, not animation.
 
 ### Dialogs and popovers
 
@@ -716,6 +814,10 @@ Do:
 - Keep node creation and image tools visually integrated with the core app.
 - Prefer 1px borders, small labels, and tonal grouping over heavy shadows.
 - Prefer bands, rails, rows, and framed tool surfaces over decorative card stacks.
+- Order content by importance and collapse secondary or empty groups to one line.
+- Edit text in place and save on blur.
+- Give every icon-only button a `Tooltip` and an `aria-label`.
+- Give every button a pressed state.
 
 Don't:
 
@@ -729,6 +831,10 @@ Don't:
 - Do not expand spacing so much that the tool loses its dense architecture-workbench feel.
 - Do not add decorative left/right accent bars, inset side borders, or stripe markers for ordinary selected/current states.
 - Do not use black app surfaces or black modal stages unless the interaction is explicitly media inspection.
+- Do not give empty sections placeholder boxes or explanatory paragraphs.
+- Do not stack dividers, nest bordered cards inside panels, or put gradients and shadows on docked panels.
+- Do not float layout controls such as resize handles over content.
+- Do not add Edit / Save / Cancel rows for single-field edits.
 
 ## Site-Derived Details
 
@@ -756,8 +862,10 @@ Spatial-map details:
 - The selected node row in the grid is filled pale green.
 - The canvas view uses a fine grid background and faded surrounding nodes when a cluster is focused.
 - The create menu is a compact popover with a New Context Node action.
-- The inspector metadata section includes editable Purpose and Implementation textareas and a Save Metadata button.
-- The images section has a quiet dashed drop target.
+- The inspector edits title, metadata fields, and context in place; there are no Save buttons in the rail.
+- The inspector's Metadata, Connections, and Activity groups are collapsible one-line rows at the end of the rail.
+- The images section is a header row with a hint when empty; the section is the drop target.
+- The pane resize handle is a 12px gutter column with a vertical ellipsis.
 - Destructive actions are represented by small red trash icon buttons.
 - Project settings dialogs already match the index-surface shell language: near-white translucent content, strong boundary shadow, brighter header band, compact bordered controls, and subtle grid texture in the form area.
 - Drawer/dialog recipes include the same olive grid backdrop pattern and should remain the shared overlay foundation.
@@ -781,7 +889,10 @@ Suggested implementation approach:
 - Use component recipes for buttons, segmented controls, inspector panels, table rows, node cards, and icon buttons.
 - Keep canvas SVG styling token-driven but allow graph logic to determine opacity, scale, and focus states.
 - Build metadata-grid row styling around data attributes such as `data-selected`, `data-depth`, `data-expanded`, and `data-has-image`.
-- Build inspector sections as reusable panel components with `title`, `actions`, and `children` slots.
+- Build inspector sections from the shared primitives in `app/src/components/spatial-map/SpatialMapPanelPrimitives.tsx`: `SpatialMapInspectorSection`, `SpatialMapSectionHeader` (title, count, right-side slot), `SpatialMapCollapsibleGroup` (title, summary, open state), and `SpatialMapEmptyState`.
+- Panda only extracts static style values. A style prop built from runtime data, such as a template literal containing a tone color, produces no CSS and silently falls back to defaults. Pass runtime colors through CSS variables in `style` and reference the variables from static props, as `SpatialMapNodeAttributeMenu` does.
+- Grid and flex containers that hold truncating text need `minmax(0, 1fr)` columns or `minW="0"`; otherwise a `nowrap` child widens the container and gets clipped by the rail.
+- Overlay content needs a z-index token (`tooltip`, `popover`, `dropdown`). Portalled overlays without one render behind positioned panels that set their own z-index.
 - Treat menu, popover, select, and dialog primitives as a single overlay family with shared border, shadow, and typography tokens.
 - For selected/current items in menus, lists, inspectors, grids, and dropdowns, implement background fill plus text treatment. Reserve side markers for hover affordances or true navigation rails/timelines.
 - Keep the spatial SVG canvas free of CSS filters, shadows, blur, and forced-compositing hints on scaled scene layers and nodes.

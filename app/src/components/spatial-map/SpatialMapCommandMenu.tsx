@@ -210,6 +210,7 @@ export function SpatialMapCommandMenu() {
               <For each={results()}>
                 {(result, index) => (
                   <CommandResultButton
+                    _active={{ transform: "scale(0.99)" }}
                     type="button"
                     role="option"
                     aria-selected={index() === activeIndex()}
