@@ -6,6 +6,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Added
 
+- The metadata grid header has an Archive implemented action that archives every implemented node in the project in one click.
 - The map filter menu has a Reset filters action that clears every filter and hides archived nodes again. It stays available when no nodes match.
 
 ### Changed
@@ -17,10 +18,6 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 - Selecting nodes in the metadata grid no longer shifts the table. The bulk actions now take the place of the count summary in the grid header instead of adding a row, and Set status is a menu.
 
 ## 2026-09-30
-
-### Added
-
-- The node grid can archive every unarchived implemented node in the project with one action.
 
 ### Changed
 

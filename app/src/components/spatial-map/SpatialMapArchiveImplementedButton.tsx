@@ -1,8 +1,10 @@
 import { useAction } from "@solidjs/router";
 import { ArchiveIcon } from "lucide-solid";
 import { createMemo, createSignal, Show } from "solid-js";
+import { Box } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import { toaster } from "~/components/ui/toast";
+import { Tooltip } from "~/components/ui/tooltip";
 import { applyBulkNodeUpdate } from "~/lib/projects/bulk-update";
 import { updateProjectNodesBulk } from "~/lib/projects/data";
 import { createClientMutationId, type ProjectUpdateOptions } from "~/lib/projects/optimistic";
@@ -62,20 +64,28 @@ export function SpatialMapArchiveImplementedButton(props: {
     }
   };
 
+  const description = () =>
+    `Archive all ${count()} implemented node${count() === 1 ? "" : "s"} in this project`;
+
   return (
     <Show when={count() > 0}>
-      <Button
-        size="xs"
-        variant="outline"
-        loading={pending()}
-        loadingText={`Archiving ${count()}…`}
-        title={`Archive all ${count()} unarchived implemented nodes in this project`}
-        aria-label={`Archive all ${count()} unarchived implemented nodes in this project`}
-        onClick={() => void archiveImplemented()}
-      >
-        <ArchiveIcon size={14} />
-        Archive implemented in project ({count()})
-      </Button>
+      <Tooltip content={description()} openDelay={150} closeDelay={80}>
+        <Button
+          size="2xs"
+          variant="outline"
+          flexShrink="0"
+          loading={pending()}
+          loadingText={`Archiving ${count()}…`}
+          aria-label={description()}
+          onClick={() => void archiveImplemented()}
+        >
+          <ArchiveIcon size={13} aria-hidden="true" />
+          Archive implemented
+          <Box as="span" color="var(--spatial-map-copy-dim)" fontVariantNumeric="tabular-nums">
+            {count()}
+          </Box>
+        </Button>
+      </Tooltip>
     </Show>
   );
 }

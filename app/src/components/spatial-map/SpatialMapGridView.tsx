@@ -350,7 +350,7 @@ export function SpatialMapGridView(props: {
               />
             </Show>
             <HStack gap="8px" flex="0 1 auto" justifyContent="flex-end" minW="0">
-              <Show when={mode() === "nodes"}>
+              <Show when={mode() === "nodes" && !bulkSelectionActive()}>
                 <SpatialMapArchiveImplementedButton
                   project={props.project}
                   onProjectUpdated={props.onProjectUpdated}
