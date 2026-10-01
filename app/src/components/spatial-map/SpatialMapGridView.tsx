@@ -1,13 +1,13 @@
-import { useAction } from "@solidjs/router";
+import { useAction, useSearchParams } from "@solidjs/router";
 import { ChevronDown, ChevronRight, FileText, Trash2 } from "lucide-solid";
 import {
   createEffect,
   createMemo,
   createSignal,
   For,
-  type JSX,
   onCleanup,
   onMount,
+  untrack,
   Show,
 } from "solid-js";
 import { css } from "styled-system/css";
@@ -37,15 +37,17 @@ import type {
   ProjectRecord,
 } from "~/lib/projects/types";
 import {
-  getMapNodeStatusGlyph,
   getMapNodeStatusLabel,
 } from "~/lib/spatial-map/node-status";
 import type { MapLink, MapNode, MapNodeStatus } from "~/lib/spatial-map/types";
 import { SpatialMapArchiveImplementedButton } from "./SpatialMapArchiveImplementedButton";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { useSpatialMap } from "./SpatialMapContext";
+import { SpatialMapSegmentedControl, type SpatialMapSegmentedOption } from "./SpatialMapSegmentedControl";
 import { SpatialMapGridBulkBar } from "./SpatialMapGridBulkBar";
 import { SpatialMapNodePriorityMenu } from "./SpatialMapNodePriorityMenu";
+import { SpatialMapNodeStatusMenu } from "./SpatialMapNodeStatusMenu";
+import { SpatialMapNodeTypePicker } from "./SpatialMapNodeTypePicker";
 import { useSpatialMapImages } from "./SpatialMapImages";
 
 type SpatialMapGridMode = "nodes" | "links";
@@ -96,54 +98,86 @@ const gridStructureClass = css({
     minW: "0",
   },
   "& .spatial-map-grid-table th": {
-    p: "7px 12px",
-    borderBottom: "1px solid rgba(34, 41, 36, 0.16)",
-    background: "rgba(235, 240, 233, 0.98)",
+    p: "5px 8px",
+    borderBottom: "1px solid var(--spatial-map-panel-border)",
+    background: "rgba(240, 243, 238, 1)",
     color: "var(--spatial-map-copy-dim)",
-    fontSize: "10px",
-    fontWeight: "760",
-    letterSpacing: "0.1em",
-    lineHeight: "1.1",
+    fontSize: "11px",
+    fontWeight: "700",
+    letterSpacing: "0.08em",
+    lineHeight: "1.2",
+    textTransform: "uppercase",
     textAlign: "left",
   },
   "& .spatial-map-grid-table--links th:first-child, & .spatial-map-grid-table--links td:first-child": {
     textAlign: "right",
   },
   "& .spatial-map-grid-table td": {
-    p: "6px 12px",
-    borderBottom: "1px solid rgba(34, 41, 36, 0.09)",
+    p: "3px 8px",
+    borderBottom: "1px solid var(--spatial-map-panel-divider)",
     color: "var(--spatial-map-copy)",
     fontSize: "12px",
     lineHeight: "1.4",
     verticalAlign: "middle",
   },
   "& .spatial-map-grid-table th:not(:last-child), & .spatial-map-grid-table td:not(:last-child)": {
-    borderRight: "1px solid rgba(34, 41, 36, 0.07)",
+    borderRight: "1px solid rgba(96, 101, 95, 0.1)",
   },
   "& .spatial-map-grid-table tbody tr": {
-    background: "rgba(252, 253, 252, 0.72)",
+    "--grid-row-bg": "#f8faf8",
+    background: "var(--grid-row-bg)",
     cursor: "pointer",
-  },
-  "& .spatial-map-grid-table tbody tr:nth-child(even)": {
-    background: "rgba(247, 250, 246, 0.76)",
+    scrollMarginTop: "32px",
   },
   "& .spatial-map-grid-table tbody tr:hover": {
-    background: "rgba(230, 239, 229, 0.68)",
+    "--grid-row-bg": "#f0f3ee",
   },
   "& .spatial-map-grid-table tbody tr.is-selected": {
-    background: "rgba(215, 231, 216, 0.88)",
+    "--grid-row-bg": "#e5efe5",
     color: "#132017",
   },
   "& .spatial-map-grid-table tbody tr:focus-visible": {
     outline: "2px solid rgba(23, 62, 39, 0.48)",
     outlineOffset: "-2px",
   },
+  // The header row and the select + name columns stay in view while the rest scrolls.
+  "& .spatial-map-grid-table--nodes thead th": {
+    position: "sticky",
+    top: "0",
+    zIndex: "2",
+  },
+  "& .spatial-map-grid-table--nodes :is(th, td):nth-child(-n+2)": {
+    position: "sticky",
+    zIndex: "1",
+  },
+  "& .spatial-map-grid-table--nodes thead th:nth-child(-n+2)": {
+    zIndex: "3",
+  },
+  "& .spatial-map-grid-table--nodes td:nth-child(-n+2)": {
+    background: "var(--grid-row-bg)",
+  },
+  "& .spatial-map-grid-table--nodes :is(th, td):nth-child(1)": {
+    left: "0",
+  },
+  "& .spatial-map-grid-table--nodes :is(th, td):nth-child(2)": {
+    left: "36px",
+    borderRight: "1px solid var(--spatial-map-panel-border)",
+  },
+  // Status, type, and priority chips fill their column so the columns read as aligned controls.
+  "& .spatial-map-grid-table .spatial-map-attribute-menu-trigger-wrap": {
+    display: "flex",
+    w: "100%",
+  },
+  "& .spatial-map-grid-table .spatial-map-attribute-menu-trigger": {
+    w: "100%",
+    justifyContent: "space-between",
+  },
   "& .spatial-map-grid-tree-ancestor, & .spatial-map-grid-tree-branch": {
     position: "relative",
     display: "inline-flex",
     flex: "0 0 var(--tree-rail-width)",
     w: "var(--tree-rail-width)",
-    minH: "28px",
+    minH: "24px",
   },
   "& .spatial-map-grid-tree-ancestor.has-continuation::before, & .spatial-map-grid-tree-branch::before, & .spatial-map-grid-tree-branch::after": {
     content: '""',
@@ -182,15 +216,20 @@ const gridStructureClass = css({
   },
 });
 
+const GRID_MODE_OPTIONS: SpatialMapSegmentedOption<SpatialMapGridMode>[] = [
+  { value: "nodes", label: "Nodes" },
+  { value: "links", label: "Links" },
+];
+
 const GridButton = styled("button");
 const GridImage = styled("img");
-const GridSelectElement = styled("select");
 
 export function SpatialMapGridView(props: {
   project: ProjectRecord;
   onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
   const spatialMap = useSpatialMap();
+  const [searchParams, setSearchParams] = useSearchParams<{ q?: string }>();
   const [mode, setMode] = createSignal<SpatialMapGridMode>("nodes");
   const [selectedMetadataKeys, setSelectedMetadataKeys] = createSignal(
     props.project.nodeMetadataSchema.map((field) => field.key),
@@ -198,6 +237,16 @@ export function SpatialMapGridView(props: {
   const [nodeSearchQuery, setNodeSearchQuery] = createSignal("");
   const [checkedNodeIds, setCheckedNodeIds] = createSignal<Set<string>>(new Set());
   let searchInputRef: HTMLInputElement | undefined;
+  createEffect(() => {
+    const query = searchParams.q ?? "";
+    untrack(() => setNodeSearchQuery(query));
+  });
+  createEffect(() => {
+    const query = nodeSearchQuery();
+    if ((searchParams.q ?? "") !== query) {
+      setSearchParams({ q: query || undefined }, { replace: true });
+    }
+  });
   const nodes = createMemo(() => spatialMap.visibleData().nodes.slice());
   const hierarchyLinks = createMemo(() =>
     spatialMap.visibleData().links.filter((link) => link.parentChild),
@@ -207,6 +256,7 @@ export function SpatialMapGridView(props: {
     const checked = checkedNodeIds();
     return checked.size === 0 ? [] : nodes().map((node) => node.id).filter((id) => checked.has(id));
   });
+  const bulkSelectionActive = () => mode() === "nodes" && visibleCheckedNodeIds().length > 0;
   const filteredNodes = createMemo(() => {
     const query = normalizeSearchQuery(nodeSearchQuery());
     if (!query) {
@@ -269,27 +319,37 @@ export function SpatialMapGridView(props: {
       position="relative"
       minH="0"
       overflow="hidden"
-      p="0"
-      border="1px solid rgba(96, 101, 95, 0.46)"
-      borderRadius="8px"
-      background="linear-gradient(90deg, rgba(35, 42, 37, 0.035) 1px, transparent 1px), linear-gradient(rgba(35, 42, 37, 0.035) 1px, transparent 1px), linear-gradient(180deg, rgba(248, 250, 248, 0.88), rgba(235, 239, 233, 0.96))"
-      backgroundSize="40px 40px, 40px 40px, auto"
-      boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.64), 0 12px 30px rgba(29, 33, 28, 0.06)"
+      background="var(--spatial-map-panel-strong)"
     >
-      <Box display="grid" gridTemplateRows="auto minmax(0, 1fr)" w="100%" h="100%" minH="100%" margin="0 auto" border="0" background="rgba(249, 250, 247, 0.97)" color="var(--spatial-map-copy)" boxShadow="0 18px 48px rgba(29, 33, 28, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5)">
-        <Box zIndex="3" borderBottom="1px solid rgba(44, 52, 46, 0.22)" background="rgba(246, 248, 244, 0.96)" boxShadow="0 10px 22px rgba(29, 33, 28, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.5)">
-          <HStack justifyContent="space-between" gap="16px" minH="54px" p="9px 10px 9px 14px">
-            <Box flex="1 1 auto" flexShrink="0" minW="0">
-              <Box as="h2" m="0 0 4px" color="#141816" fontSize="16px" lineHeight="1.1" fontWeight="760" letterSpacing="0">
-                Metadata grid
-              </Box>
-              <Box color="var(--spatial-map-copy-dim)" fontSize="11px" lineHeight="1" letterSpacing="0.06em">
-                {mode() === "nodes"
-                  ? getNodesSummary(filteredNodes().length, nodes().length, nodeSearchQuery())
-                  : `${links().length} visible non-hierarchy links`}
-              </Box>
-            </Box>
-            <HStack gap="12px" flex="0 1 auto" justifyContent="flex-end" minW="0">
+      <Box display="grid" gridTemplateRows="auto minmax(0, 1fr)" w="100%" h="100%" minH="100%" color="var(--spatial-map-copy)">
+        {/* Above the sticky table cells (z-index up to 3) so the bulk status menu is not covered. */}
+        <Box zIndex="4" borderBottom="1px solid var(--spatial-map-panel-border)">
+          <HStack
+            justifyContent="space-between"
+            gap="12px"
+            minH="36px"
+            p="5px 10px"
+            background={bulkSelectionActive() ? "rgba(229, 239, 229, 0.6)" : "transparent"}
+          >
+            {/* Bulk actions take the summary's place so selecting rows never moves the table. */}
+            <Show
+              when={bulkSelectionActive()}
+              fallback={
+                <Box flexShrink="0" color="var(--spatial-map-copy-dim)" fontSize="12px" lineHeight="1.2" fontVariantNumeric="tabular-nums">
+                  {mode() === "nodes"
+                    ? getNodesSummary(filteredNodes().length, nodes().length, nodeSearchQuery())
+                    : `${links().length} visible non-hierarchy links`}
+                </Box>
+              }
+            >
+              <SpatialMapGridBulkBar
+                project={props.project}
+                nodeIds={visibleCheckedNodeIds()}
+                onClear={() => setCheckedNodeIds(new Set<string>())}
+                onProjectUpdated={props.onProjectUpdated}
+              />
+            </Show>
+            <HStack gap="8px" flex="0 1 auto" justifyContent="flex-end" minW="0">
               <Show when={mode() === "nodes"}>
                 <SpatialMapArchiveImplementedButton
                   project={props.project}
@@ -323,53 +383,16 @@ export function SpatialMapGridView(props: {
                       placeholder="Filter node names"
                       onInput={(event) => setNodeSearchQuery(event.currentTarget.value)}
                     />
-                    <Box as="kbd" position="absolute" top="50%" right="6px" display="inline-flex" alignItems="center" justifyContent="center" minW="18px" h="18px" border="1px solid rgba(44, 52, 46, 0.22)" background="rgba(236, 241, 234, 0.92)" color="var(--spatial-map-copy-dim)" font="inherit" fontSize="10px" fontWeight="760" lineHeight="1" transform="translateY(-50%)" pointerEvents="none">/</Box>
+                    <Box as="kbd" position="absolute" top="50%" right="6px" display="inline-flex" alignItems="center" justifyContent="center" minW="18px" h="18px" border="1px solid var(--spatial-map-panel-divider)" borderRadius="3px" color="var(--spatial-map-copy-dim)" font="inherit" fontSize="10px" fontWeight="600" lineHeight="1" transform="translateY(-50%)" pointerEvents="none">/</Box>
                   </Box>
                 </Box>
               </Show>
-              <HStack
-                gap="0"
-                flexShrink="0"
-                overflow="hidden"
-                border="1px solid rgba(96, 101, 95, 0.44)"
-                borderRadius="6px"
-                background="rgba(246, 248, 244, 0.94)"
-                aria-label="Grid mode"
-              >
-                <Button
-                  size="xs"
-                  colorPalette="green"
-                  variant={mode() === "nodes" ? "surface" : "outline"}
-                  minW="54px"
-                  h="28px"
-                  p="0 10px"
-                  border="0"
-                  borderRight="1px solid rgba(24, 29, 26, 0.24)"
-                  background={mode() === "nodes" ? "rgba(37, 95, 58, 0.16)" : "transparent"}
-                  color={mode() === "nodes" ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-muted)"}
-                  boxShadow={mode() === "nodes" ? "inset 0 -2px 0 rgba(23, 62, 39, 0.86)" : undefined}
-                  aria-pressed={mode() === "nodes"}
-                  onClick={() => setMode("nodes")}
-                >
-                  Nodes
-                </Button>
-                <Button
-                  size="xs"
-                  colorPalette="green"
-                  variant={mode() === "links" ? "surface" : "outline"}
-                  minW="54px"
-                  h="28px"
-                  p="0 10px"
-                  border="0"
-                  background={mode() === "links" ? "rgba(37, 95, 58, 0.16)" : "transparent"}
-                  color={mode() === "links" ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-muted)"}
-                  boxShadow={mode() === "links" ? "inset 0 -2px 0 rgba(23, 62, 39, 0.86)" : undefined}
-                  aria-pressed={mode() === "links"}
-                  onClick={() => setMode("links")}
-                >
-                  Links
-                </Button>
-              </HStack>
+              <SpatialMapSegmentedControl
+                ariaLabel="Grid mode"
+                value={mode()}
+                options={GRID_MODE_OPTIONS}
+                onChange={(nextMode) => setMode(nextMode)}
+              />
             </HStack>
           </HStack>
         </Box>
@@ -384,15 +407,6 @@ export function SpatialMapGridView(props: {
             />
           }
         >
-          <Box display="grid" gridTemplateRows="auto minmax(0, 1fr)" minH="0">
-          <Show when={visibleCheckedNodeIds().length > 0} fallback={<Box />}>
-            <SpatialMapGridBulkBar
-              project={props.project}
-              nodeIds={visibleCheckedNodeIds()}
-              onClear={() => setCheckedNodeIds(new Set<string>())}
-              onProjectUpdated={props.onProjectUpdated}
-            />
-          </Show>
           <NodesGrid
             checkedNodeIds={checkedNodeIds()}
             onCheckedNodeIdsChange={setCheckedNodeIds}
@@ -406,7 +420,6 @@ export function SpatialMapGridView(props: {
             onSelectNode={spatialMap.setSelectedNodeId}
             onProjectUpdated={props.onProjectUpdated}
           />
-          </Box>
         </Show>
       </Box>
     </Box>
@@ -631,8 +644,7 @@ function NodesGrid(props: {
     <Box
       ref={gridWrapRef}
       minH="0"
-      overflowX="auto"
-      overflowY="hidden"
+      overflow="auto"
       tabIndex={0}
       onKeyDown={handleTreeGridKeyDown}
       onFocusIn={() => setTreeGridActive(true)}
@@ -641,8 +653,12 @@ function NodesGrid(props: {
         when={visibleRows().length > 0}
         fallback={<GridEmpty>No visible nodes.</GridEmpty>}
       >
-        <Box class="spatial-map-grid-table-x" display="grid" gridTemplateRows="auto minmax(0, 1fr)" h="100%" style={getNodeGridStyle(columnDefinitions())}>
-          <table class="spatial-map-grid-table spatial-map-grid-table--nodes" role="treegrid">
+          <table
+            class="spatial-map-grid-table spatial-map-grid-table--nodes"
+            role="treegrid"
+            tabIndex={0}
+            style={getNodeGridStyle(columnDefinitions())}
+          >
             <GridColGroup mode="nodes" columns={columnDefinitions()} />
             <thead>
               <tr>
@@ -703,14 +719,6 @@ function NodesGrid(props: {
                 <th scope="col">Actions</th>
               </tr>
             </thead>
-          </table>
-          <Box minH="0" overflowX="hidden" overflowY="auto">
-            <table
-              class="spatial-map-grid-table spatial-map-grid-table--nodes"
-              role="treegrid"
-              tabIndex={0}
-            >
-              <GridColGroup mode="nodes" columns={columnDefinitions()} />
               <tbody>
                 <For each={visibleRows()}>
                   {(row) => (
@@ -797,9 +805,7 @@ function NodesGrid(props: {
                   )}
                 </For>
               </tbody>
-            </table>
-          </Box>
-        </Box>
+          </table>
       </Show>
     </Box>
   );
@@ -941,30 +947,34 @@ function ResizableHeader(props: {
 
   return (
     <th scope="col">
-      <Box display="flex" alignItems="center" gap="8px" minW="0">
-        <Box as="span" minW="0" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
-          {props.label}
-        </Box>
-        <GridButton
-          type="button"
-          flex="0 0 8px"
-          w="8px"
-          alignSelf="stretch"
-          minH="18px"
-          ml="auto"
-          p="0"
-          border="0"
-          borderRadius="2px"
-          background={resizing() ? "rgba(23, 62, 39, 0.42)" : "rgba(44, 52, 46, 0.16)"}
-          cursor="col-resize"
-          aria-label={`Resize ${props.label} column`}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={finishResize}
-          onPointerCancel={finishResize}
-          onClick={(event) => event.stopPropagation()}
-        />
+      <Box as="span" display="block" minW="0" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
+        {props.label}
       </Box>
+      {/* The handle sits on the column's divider line; the th is sticky, so it anchors absolute children. */}
+      <GridButton
+        type="button"
+        position="absolute"
+        top="0"
+        right="0"
+        bottom="0"
+        w="7px"
+        p="0"
+        border="0"
+        borderRight="2px solid"
+        borderRightColor={resizing() ? "var(--spatial-map-accent)" : "transparent"}
+        background="transparent"
+        cursor="col-resize"
+        touchAction="none"
+        _hover={{ borderRightColor: "var(--spatial-map-accent)" }}
+        _active={{ transform: "none" }}
+        aria-label={`Resize ${props.label} column`}
+        title="Drag to resize"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={finishResize}
+        onPointerCancel={finishResize}
+        onClick={(event) => event.stopPropagation()}
+      />
     </th>
   );
 }
@@ -979,20 +989,11 @@ function MetadataKeyPicker(props: {
       <HStack
         aria-label="Metadata columns"
         flex="0 1 auto"
-        gap="1.5"
-        minH="7.5"
+        gap="1"
         minW="30"
         overflowX="auto"
       >
-        <Box
-          as="span"
-          flexShrink="0"
-          color="fg.subtle"
-          fontSize="10px"
-          fontWeight="bold"
-          letterSpacing="0.08em"
-          lineHeight="1"
-        >
+        <Box as="span" flexShrink="0" color="var(--spatial-map-copy-dim)" fontSize="11px" lineHeight="1">
           Columns
         </Box>
         <For each={props.fields}>
@@ -1001,16 +1002,12 @@ function MetadataKeyPicker(props: {
             return (
               <Button
                 type="button"
-                variant={selected() ? "subtle" : "outline"}
+                variant="outline"
                 size="2xs"
                 aria-pressed={selected()}
-                color={selected() ? "var(--spatial-map-accent-strong)" : "fg.muted"}
-                borderColor={selected() ? "rgba(23, 62, 39, 0.38)" : "rgba(44, 52, 46, 0.22)"}
-                bg={selected() ? "rgba(37, 95, 58, 0.14)" : "rgba(252, 253, 252, 0.72)"}
-                fontSize="10px"
-                fontWeight="bold"
-                minH="6"
-                px="2"
+                background={selected() ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+                color={selected() ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
+                fontWeight={selected() ? "700" : "500"}
                 onClick={() => props.onToggle(field.key)}
               >
                 {field.label}
@@ -1034,6 +1031,7 @@ function NodeActionsCell(props: {
         project={props.project}
         node={props.node}
         compact
+        size="2xs"
         onProjectUpdated={props.onProjectUpdated}
       />
     </Box>
@@ -1097,19 +1095,19 @@ function LinkActionsCell(props: {
     <Box display="flex" alignItems="center" gap="4px" onClick={(event) => event.stopPropagation()}>
       <Tooltip content="Delete link" openDelay={150} closeDelay={80}>
         <Button
-          size="xs"
+          size="2xs"
           variant="danger"
           px="0"
           aria-label="Delete link"
           onClick={() => setOpen(true)}
         >
-          <Trash2 size={16} />
+          <Trash2 size={13} />
         </Button>
       </Tooltip>
       <SimpleDialog
         open={open()}
         onOpenChange={setOpen}
-        title="Delete Link"
+        title="Delete link"
         description={`Delete the ${formatLinkRelationship(props.link)} link from ${props.source.label} to ${props.target.label}?`}
         maxW="520px"
         initialFocusEl={() => deleteButtonRef ?? null}
@@ -1210,15 +1208,15 @@ function NodeNameCell(props: {
       alignItems="center"
       gap="0"
       minW="0"
-      minH="28px"
+      minH="24px"
       style={{
         "--tree-rail-width": "18px",
-        "--tree-row-bleed": "7px",
+        "--tree-row-bleed": "4px",
         "--tree-connector-color": "rgba(44, 52, 46, 0.28)",
         "--tree-connector-strong": "rgba(44, 52, 46, 0.36)",
       }}
     >
-      <Box display="inline-flex" alignSelf="stretch" alignItems="stretch" flex="0 0 auto" minH="28px" pointerEvents="none" aria-hidden="true">
+      <Box display="inline-flex" alignSelf="stretch" alignItems="stretch" flex="0 0 auto" minH="24px" pointerEvents="none" aria-hidden="true">
         <For each={props.row.ancestorHasNextSibling}>
           {(hasNextSibling) => (
             <span
@@ -1325,9 +1323,6 @@ function NodeTypeCell(props: {
 }) {
   const submitSaveType = useAction(updateProjectNodeType);
   const [pending, setPending] = createSignal(false);
-  const typeColor = createMemo(() =>
-    props.project.nodeTypeSchema.find((type) => type.name === props.node.type)?.color ?? "#dbdbdb",
-  );
   const submitType = async (type: string) => {
     if (!type || type === props.node.type || pending()) return;
 
@@ -1347,15 +1342,12 @@ function NodeTypeCell(props: {
 
   return (
     <Box onClick={(event) => event.stopPropagation()}>
-      <GridSelect
-        value={props.node.type}
-        ariaLabel={`Edit type for ${props.node.label}`}
+      <SpatialMapNodeTypePicker
+        project={props.project}
+        type={props.node.type}
         pending={pending()}
-        options={props.project.nodeTypeSchema.map((type) => ({ value: type.name, label: type.name }))}
-        leading={
-          <Box as="span" w="9px" h="9px" borderRadius="999px" background={typeColor()} border="1px solid rgba(34, 41, 36, 0.24)" aria-hidden="true" />
-        }
-        onChange={submitType}
+        variant="tree"
+        onChange={(type) => void submitType(type)}
       />
     </Box>
   );
@@ -1390,20 +1382,11 @@ function NodeStatusCell(props: {
 
   return (
     <Box onClick={(event) => event.stopPropagation()}>
-      <GridSelect
-        value={props.node.status}
-        ariaLabel={`Edit status for ${props.node.label}`}
+      <SpatialMapNodeStatusMenu
+        node={props.node}
         pending={pending()}
-        options={["planned", "working", "needs-review", "implemented", "blocked", "deprecated"].map((status) => ({
-          value: status,
-          label: getMapNodeStatusLabel(status as MapNodeStatus),
-        }))}
-        leading={
-          <Box as="span" display="inline-flex" alignItems="center" justifyContent="center" w="18px" h="18px" border="1px solid rgba(34, 41, 36, 0.2)" borderRadius="999px" background="rgba(252, 253, 252, 0.72)" color="var(--spatial-map-accent-strong)" fontSize="10px" fontWeight="800" lineHeight="1" aria-hidden="true">
-            {getMapNodeStatusGlyph(props.node.status)}
-          </Box>
-        }
-        onChange={submitStatus}
+        variant="tree"
+        onChange={(status) => void submitStatus(status)}
       />
     </Box>
   );
@@ -1516,56 +1499,6 @@ function GridTextInput(props: {
   );
 }
 
-function GridSelect(props: {
-  value: string;
-  ariaLabel: string;
-  pending: boolean;
-  options: Array<{ value: string; label: string }>;
-  leading?: JSX.Element;
-  onChange: (value: string) => void | Promise<void>;
-}) {
-  return (
-    <Box position="relative" w="100%" minW="0">
-      <Show when={props.leading}>
-        <Box position="absolute" left="8px" top="50%" display="inline-flex" alignItems="center" justifyContent="center" transform="translateY(-50%)" pointerEvents="none" zIndex="1">
-          {props.leading}
-        </Box>
-      </Show>
-      <GridSelectElement
-        value={props.value}
-        disabled={props.pending}
-        aria-label={props.ariaLabel}
-        w="100%"
-        h="30px"
-        pl={props.leading ? "34px" : "10px"}
-        pr="30px"
-        border="1px solid rgba(44, 52, 46, 0.22)"
-        borderRadius="6px"
-        background="rgba(252, 253, 252, 0.62)"
-        color="var(--spatial-map-copy)"
-        fontSize="13px"
-        fontWeight="660"
-        lineHeight="1"
-        cursor="pointer"
-        appearance="none"
-        boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.74)"
-        _hover={{ borderColor: "rgba(23, 62, 39, 0.34)", background: "rgba(250, 252, 249, 0.88)" }}
-        _focusVisible={{ outline: "2px solid rgba(23, 62, 39, 0.24)", outlineOffset: "1px", borderColor: "rgba(23, 62, 39, 0.44)" }}
-        onChange={(event) => {
-          void props.onChange(event.currentTarget.value);
-        }}
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => event.stopPropagation()}
-      >
-        <For each={props.options}>
-          {(option) => <option value={option.value}>{option.label}</option>}
-        </For>
-      </GridSelectElement>
-      <Box position="absolute" right="10px" top="50%" w="8px" h="8px" borderRight="1.5px solid rgba(34, 41, 36, 0.74)" borderBottom="1.5px solid rgba(34, 41, 36, 0.74)" transform="translateY(-65%) rotate(45deg)" pointerEvents="none" aria-hidden="true" />
-    </Box>
-  );
-}
-
 async function submitNodePatch(input: {
   project: ProjectRecord;
   node: MapNode;
@@ -1607,6 +1540,7 @@ async function submitNodePatch(input: {
     input.setPending(false);
   }
 }
+
 
 function ImagePreviewCell(props: { node: MapNode }) {
   const imageUi = useSpatialMapImages();
@@ -1682,7 +1616,7 @@ function getNodesSummary(filteredCount: number, totalCount: number, query: strin
 
 function GridEmpty(props: { children: string }) {
   return (
-    <Box m="12px" p="14px" border="1px solid rgba(34, 41, 36, 0.16)" background="rgba(244, 246, 242, 0.82)" color="var(--spatial-map-copy-muted)" fontSize="11px" lineHeight="1.35" letterSpacing="0.04em">
+    <Box p="10px" color="var(--spatial-map-copy-dim)" fontSize="12px" lineHeight="1.4">
       {props.children}
     </Box>
   );

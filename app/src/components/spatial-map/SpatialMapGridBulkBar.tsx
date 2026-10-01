@@ -1,9 +1,9 @@
 import { useAction } from "@solidjs/router";
-import { ArchiveIcon, ArchiveRestoreIcon, XIcon } from "lucide-solid";
-import { createSignal } from "solid-js";
+import { ArchiveIcon, ArchiveRestoreIcon, ChevronDownIcon, XIcon } from "lucide-solid";
+import { createSignal, For } from "solid-js";
 import { HStack } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
-import { SimpleSelect } from "~/components/ui/simple-select";
+import * as Menu from "~/components/ui/menu";
 import { Text } from "~/components/ui/text";
 import { toaster } from "~/components/ui/toast";
 import { applyBulkNodeUpdate, type BulkNodeUpdate } from "~/lib/projects/bulk-update";
@@ -11,7 +11,7 @@ import { updateProjectNodesBulk } from "~/lib/projects/data";
 import { createClientMutationId, type ProjectUpdateOptions } from "~/lib/projects/optimistic";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { getMapNodeStatusLabel } from "~/lib/spatial-map/node-status";
-import { mapNodeStatuses, type MapNodeStatus } from "~/lib/spatial-map/types";
+import { mapNodeStatuses } from "~/lib/spatial-map/types";
 
 export function SpatialMapGridBulkBar(props: {
   project: ProjectRecord;
@@ -63,41 +63,52 @@ export function SpatialMapGridBulkBar(props: {
   };
 
   return (
-    <HStack
-      gap="2"
-      flexWrap="wrap"
-      p="6px 10px"
-      borderBottom="1px solid rgba(96, 101, 95, 0.26)"
-      background="rgba(229, 239, 229, 0.6)"
-      role="toolbar"
-      aria-label="Bulk actions for selected nodes"
-    >
-      <Text as="span" fontSize="12px" fontWeight="760" color="var(--spatial-map-copy)">
+    <HStack gap="1" flexShrink="0" role="toolbar" aria-label="Bulk actions for selected nodes">
+      <Text
+        as="span"
+        mr="1"
+        whiteSpace="nowrap"
+        fontSize="12px"
+        fontWeight="700"
+        fontVariantNumeric="tabular-nums"
+        color="var(--spatial-map-copy)"
+      >
         {count()} selected
       </Text>
-      <SimpleSelect
-        size="xs"
-        minW="150px"
-        placeholder="Set status..."
-        value=""
-        items={mapNodeStatuses.map((status) => ({
-          value: status,
-          label: getMapNodeStatusLabel(status),
-        }))}
-        onChange={(value) =>
-          void applyUpdate({ status: value as MapNodeStatus }, "Status updated")
-        }
-      />
-      <Button size="xs" variant="outline" loading={pending()} onClick={() => void applyUpdate({ archived: true }, "Nodes archived")}>
-        <ArchiveIcon size={14} />
+      <Menu.Root positioning={{ placement: "bottom-start", gutter: 4 }} size="sm">
+        <Menu.Trigger
+          asChild={(triggerProps) => (
+            <Button {...triggerProps()} variant="outline" size="2xs" disabled={pending()}>
+              Set status
+              <ChevronDownIcon size={13} aria-hidden="true" />
+            </Button>
+          )}
+        />
+        <Menu.Positioner>
+          <Menu.Content minW="170px" borderRadius="0" fontFamily="inherit" textTransform="none">
+            <For each={mapNodeStatuses}>
+              {(status) => (
+                <Menu.Item
+                  value={status}
+                  onClick={() => void applyUpdate({ status }, "Status updated")}
+                >
+                  <Menu.ItemText>{getMapNodeStatusLabel(status)}</Menu.ItemText>
+                </Menu.Item>
+              )}
+            </For>
+          </Menu.Content>
+        </Menu.Positioner>
+      </Menu.Root>
+      <Button size="2xs" variant="outline" loading={pending()} onClick={() => void applyUpdate({ archived: true }, "Nodes archived")}>
+        <ArchiveIcon size={13} aria-hidden="true" />
         Archive
       </Button>
-      <Button size="xs" variant="outline" loading={pending()} onClick={() => void applyUpdate({ archived: false }, "Nodes restored")}>
-        <ArchiveRestoreIcon size={14} />
+      <Button size="2xs" variant="outline" loading={pending()} onClick={() => void applyUpdate({ archived: false }, "Nodes restored")}>
+        <ArchiveRestoreIcon size={13} aria-hidden="true" />
         Unarchive
       </Button>
-      <Button size="xs" variant="plain" onClick={() => props.onClear()}>
-        <XIcon size={14} />
+      <Button size="2xs" variant="plain" onClick={() => props.onClear()}>
+        <XIcon size={13} aria-hidden="true" />
         Clear
       </Button>
     </HStack>

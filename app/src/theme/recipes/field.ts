@@ -8,16 +8,18 @@ export const field = defineSlotRecipe({
     root: {
       display: "flex",
       flexDirection: "column",
-      gap: "1.5",
+      gap: "1",
     },
     label: {
       alignItems: "center",
-      color: "fg.default",
+      color: "var(--spatial-map-copy-dim)",
       display: "flex",
+      fontSize: "12px",
+      fontWeight: "500",
       gap: "0.5",
+      lineHeight: "1.3",
       textAlign: "start",
       userSelect: "none",
-      textStyle: "label",
       _disabled: {
         layerStyle: "disabled",
       },
@@ -26,15 +28,16 @@ export const field = defineSlotRecipe({
       color: "colorPalette.solid",
     },
     helperText: {
-      color: "fg.muted",
-      textStyle: "sm",
+      color: "var(--spatial-map-copy-dim)",
+      fontSize: "11px",
+      lineHeight: "1.35",
       _disabled: {
         layerStyle: "disabled",
       },
     },
     errorText: {
       color: "error",
-      textStyle: "sm",
+      fontSize: "11px",
     },
   },
 });

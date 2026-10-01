@@ -169,9 +169,10 @@ export function SpatialMapChildNodePlaceholder(props: {
       flexDirection="column"
       gap="8px"
       p="10px"
-      border="1px solid rgba(47, 57, 50, 0.5)"
+      border="1px solid var(--spatial-map-panel-border-strong)"
+      borderRadius="6px"
       background="rgba(250, 252, 247, 0.98)"
-      boxShadow="0 12px 28px rgba(20, 25, 22, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.7)"
+      boxShadow="0 8px 24px rgba(24, 32, 24, 0.15)"
       color="var(--spatial-map-copy)"
       overflow="auto"
       overscrollBehavior="contain"
@@ -299,7 +300,7 @@ export function SpatialMapChildNodePlaceholder(props: {
       </Box>
       <Box display="flex" gap="6px" justifyContent="flex-end">
         <Button
-          size="xs"
+          size="2xs"
           variant="plain"
           type="button"
           disabled={pending()}
@@ -308,13 +309,13 @@ export function SpatialMapChildNodePlaceholder(props: {
           Cancel
         </Button>
         <Button
-          size="xs"
+          size="2xs"
           colorPalette="green"
           disabled={!title().trim()}
           loading={pending()}
           type="submit"
         >
-          Accept
+          Create
         </Button>
       </Box>
     </SpatialMapForm>

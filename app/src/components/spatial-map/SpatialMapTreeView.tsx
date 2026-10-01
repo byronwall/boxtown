@@ -7,10 +7,12 @@ import {
   onMount,
   Show,
 } from "solid-js";
+import { ChevronDownIcon, ChevronRightIcon } from "lucide-solid";
 import { css } from "styled-system/css";
 import { Box, VStack, styled } from "styled-system/jsx";
 
 import { MarkdownRenderer } from "~/components/markdown-renderer";
+import { Button } from "~/components/ui/button";
 import { SimpleDialog } from "~/components/ui/simple-dialog";
 import { toaster } from "~/components/ui/toast";
 import { updateProjectNodeStatus, updateProjectNodeType } from "~/lib/projects/data";
@@ -27,6 +29,7 @@ import {
   SpatialMapImageStrip,
 } from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
+import { SpatialMapNodePriorityMenu } from "./SpatialMapNodePriorityMenu";
 import { SpatialMapNodeStatusMenu } from "./SpatialMapNodeStatusMenu";
 import { SpatialMapNodeTypePicker } from "./SpatialMapNodeTypePicker";
 import { SpatialMapTreeNavigation } from "./SpatialMapTreeNavigation";
@@ -63,7 +66,7 @@ const treeStructureClass = css({
   "& .spatial-map-tree-rail::before": {
     content: '""',
     position: "absolute",
-    inset: "0 0 -32px",
+    inset: "0 0 -10px",
     background: "color-mix(in srgb, var(--spatial-map-tree-stroke) 84%, #f8faf7)",
     borderRadius: "inherit",
     WebkitMaskImage: "linear-gradient(90deg, transparent 0, #000 38%, #000 62%, transparent 100%)",
@@ -72,26 +75,34 @@ const treeStructureClass = css({
   "& .spatial-map-tree-rail--terminal::before": {
     bottom: "0",
   },
-  "& .spatial-map-tree-metadata": {
+  "& .spatial-map-tree-controls .spatial-map-attribute-menu-trigger-wrap": {
+    display: "flex",
     w: "100%",
+  },
+  "& .spatial-map-tree-controls .spatial-map-attribute-menu-trigger": {
+    w: "100%",
+    justifyContent: "space-between",
+  },
+  "& .spatial-map-tree-metadata": {
     borderCollapse: "collapse",
     fontSize: "12px",
   },
   "& .spatial-map-tree-metadata th": {
-    w: "34%",
-    p: "4px 8px 4px 0",
+    p: "2px 12px 2px 0",
     color: "var(--spatial-map-copy-dim)",
-    fontWeight: "700",
+    fontSize: "11px",
+    fontWeight: "500",
+    whiteSpace: "nowrap",
     textAlign: "left",
     verticalAlign: "top",
   },
   "& .spatial-map-tree-metadata td": {
-    p: "4px 0",
+    p: "2px 0",
     color: "var(--spatial-map-copy-muted)",
     verticalAlign: "top",
   },
   "& .spatial-map-tree-context :where(p, ul, ol, blockquote, pre, table)": {
-    mb: "14px",
+    mb: "8px",
   },
   "& .spatial-map-tree-context :where(p, ul, ol, blockquote, pre, table):last-child": {
     mb: "0",
@@ -116,6 +127,17 @@ export function SpatialMapTreeView(props: {
   let viewportRef: HTMLDivElement | undefined;
   const [statusPending, setStatusPending] = createSignal(false);
   const [typePending, setTypePending] = createSignal(false);
+  // Collapsed branches are keyed by tree path so the same node can be open in one place and closed in another.
+  const [collapsedPaths, setCollapsedPaths] = createSignal<Set<string>>(new Set());
+  // The priority column is only reserved when some visible node has a priority.
+  const hasPriorities = createMemo(() => spatialMap.visibleData().nodes.some((node) => Boolean(node.priority)));
+  const toggleCollapsed = (path: string) => {
+    setCollapsedPaths((current) => {
+      const next = new Set(current);
+      if (!next.delete(path)) next.add(path);
+      return next;
+    });
+  };
   const [optimisticStatus, setOptimisticStatus] = createSignal<{
     clientMutationId: string;
     nodeId: string;
@@ -176,15 +198,19 @@ export function SpatialMapTreeView(props: {
   };
 
   const scrollToTreeNode = (path: string) => {
-    const rows = Array.from(
-      viewportRef?.querySelectorAll<HTMLElement>(
-        "[data-spatial-map-tree-path]",
-      ) ?? [],
-    );
-    const row = rows.find(
-      (entry) => entry.dataset.spatialMapTreePath === path,
-    );
-    row?.scrollIntoView({ behavior: "smooth", block: "start" });
+    // A collapsed ancestor has no row to scroll to, so open the way down first.
+    const hiddenBy = [...collapsedPaths()].filter((collapsed) => path.startsWith(`${collapsed}/`));
+    if (hiddenBy.length > 0) {
+      setCollapsedPaths((current) => new Set([...current].filter((collapsed) => !hiddenBy.includes(collapsed))));
+    }
+
+    requestAnimationFrame(() => {
+      const rows = Array.from(
+        viewportRef?.querySelectorAll<HTMLElement>("[data-spatial-map-tree-path]") ?? [],
+      );
+      const row = rows.find((entry) => entry.dataset.spatialMapTreePath === path);
+      row?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const submitStatus = async (nodeId: string, status: MapNodeStatus) => {
@@ -265,33 +291,15 @@ export function SpatialMapTreeView(props: {
       minH="0"
       overflowX="hidden"
       overflowY="auto"
-      p={{ base: "0 8px 8px", md: "0 8px 8px" }}
-      border="1px solid rgba(96, 101, 95, 0.46)"
-      borderRadius={{ base: "6px", md: "8px" }}
-      background={`
-        linear-gradient(90deg, rgba(35, 42, 37, 0.035) 1px, transparent 1px),
-        linear-gradient(rgba(35, 42, 37, 0.035) 1px, transparent 1px),
-        linear-gradient(180deg, rgba(248, 250, 248, 0.88), rgba(235, 239, 233, 0.96))
-      `}
-      backgroundSize="40px 40px, 40px 40px, auto"
-      boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.64), 0 12px 30px rgba(29, 33, 28, 0.06)"
-      style={{ "--spatial-map-tree-sticky-offset": "58px" }}
+      p="0 8px 8px"
+      background="var(--spatial-map-panel-strong)"
+      style={{ "--spatial-map-tree-sticky-offset": "40px" }}
     >
       <Show
         when={tree().roots.length > 0}
         fallback={
-          <Box
-            m="0"
-            p="12px"
-            border="1px solid rgba(34, 41, 36, 0.16)"
-            background="rgba(244, 246, 242, 0.82)"
-            color="var(--spatial-map-copy-muted)"
-            fontSize="11px"
-            lineHeight="1.35"
-            letterSpacing="0.04em"
-            textTransform="none"
-          >
-            No hierarchy nodes are visible at this level.
+          <Box p="12px 4px" color="var(--spatial-map-copy-dim)" fontSize="12px" lineHeight="1.4">
+            No nodes are visible at this depth or with the current filters.
           </Box>
         }
       >
@@ -299,21 +307,38 @@ export function SpatialMapTreeView(props: {
           tree={tree()}
           getScrollRoot={() => viewportRef}
           onNavigate={scrollToTreeNode}
+          actions={
+            <>
+              <Button
+                variant="plain"
+                size="2xs"
+                color="var(--spatial-map-copy-dim)"
+                disabled={collapsedPaths().size === 0}
+                onClick={() => setCollapsedPaths(new Set<string>())}
+              >
+                Expand all
+              </Button>
+              <Button
+                variant="plain"
+                size="2xs"
+                color="var(--spatial-map-copy-dim)"
+                onClick={() => setCollapsedPaths(new Set(collectParentPaths(tree())))}
+              >
+                Collapse all
+              </Button>
+            </>
+          }
         />
         <VStack
           alignItems="stretch"
-          gap="1.5"
+          gap="0"
           class="spatial-map-tree-list"
           w="min(100%, 86ch)"
           maxW="100%"
           minW="0"
           m="0 auto"
-          p="18px 20px 24px"
-          border="1px solid rgba(44, 52, 46, 0.28)"
-          borderRadius="6px"
-          background="rgba(252, 253, 252, 0.92)"
+          p="0 4px 24px"
           color="var(--spatial-map-copy)"
-          boxShadow="inset 3px 0 0 rgba(45, 111, 72, 0.28), 0 12px 30px rgba(29, 33, 28, 0.06)"
           role="tree"
         >
           <For each={tree().roots}>
@@ -335,8 +360,12 @@ export function SpatialMapTreeView(props: {
                       typePending={typePending()}
                       optimisticStatus={optimisticStatus()}
                       optimisticType={optimisticType()}
+                      collapsedPaths={collapsedPaths()}
+                      showPriority={hasPriorities()}
+                      onToggleCollapsed={toggleCollapsed}
                       onStatusChange={submitStatus}
                       onTypeChange={submitType}
+                      onProjectUpdated={props.onProjectUpdated}
                     />
                   )}
                 </Show>
@@ -368,10 +397,15 @@ function SpatialMapTreeNode(props: {
     nodeId: string;
     type: string;
   } | null;
+  collapsedPaths: Set<string>;
+  showPriority: boolean;
+  onToggleCollapsed: (path: string) => void;
   onStatusChange: (nodeId: string, status: MapNodeStatus) => void;
   onTypeChange: (nodeId: string, type: string) => void;
+  onProjectUpdated?: (project: ProjectRecord, options?: import("~/lib/projects/optimistic").ProjectUpdateOptions) => void;
 }) {
   const spatialMap = useSpatialMap();
+  const isCollapsed = () => props.collapsedPaths.has(props.path);
   const children = createMemo(() =>
     props.item.childNodeIds
       .filter((nodeId) => !props.ancestry.has(nodeId))
@@ -408,7 +442,7 @@ function SpatialMapTreeNode(props: {
           role="treeitem"
           tabindex="0"
           aria-level={props.depth + 1}
-          aria-expanded={children().length > 0 ? true : undefined}
+          aria-expanded={children().length > 0 ? !isCollapsed() : undefined}
           aria-selected={isSelected()}
           data-spatial-map-tree-node-id={props.item.node.id}
           data-spatial-map-tree-path={props.path}
@@ -416,16 +450,16 @@ function SpatialMapTreeNode(props: {
           display="grid"
           gridTemplateColumns={railLevels().length === 0 ? "minmax(0, 1fr)" : "max-content minmax(0, 1fr)"}
           alignItems="stretch"
-          gap="16px"
+          gap="10px"
           boxSizing="border-box"
           w="100%"
           maxW="100%"
           minW="0"
           minH="0"
-          p="0 0 22px"
+          p="0 0 6px"
           border="0"
-          borderRadius="0"
-          background={isSelected() ? "rgba(229, 239, 229, 0.38)" : "transparent"}
+          borderRadius="4px"
+          background={isSelected() ? "rgba(229, 239, 229, 0.7)" : "transparent"}
           color="var(--spatial-map-copy)"
           fontFamily="inherit"
           textAlign="left"
@@ -433,10 +467,10 @@ function SpatialMapTreeNode(props: {
           appearance="none"
           cursor="pointer"
           transition="background-color 180ms ease, box-shadow 180ms ease, outline-color 180ms ease"
-          _hover={{ background: "rgba(229, 239, 229, 0.22)", boxShadow: "none" }}
+          _hover={{ background: isSelected() ? "rgba(229, 239, 229, 0.7)" : "rgba(34, 41, 36, 0.04)", boxShadow: "none" }}
           _focusVisible={{
             outline: "2px solid rgba(23, 62, 39, 0.58)",
-            outlineOffset: "6px",
+            outlineOffset: "2px",
             boxShadow: "none",
           }}
           style={{
@@ -445,9 +479,15 @@ function SpatialMapTreeNode(props: {
           }}
           onClick={() => spatialMap.setSelectedNodeId(props.item.node.id)}
           onKeyDown={(event) => {
+            if (event.target !== event.currentTarget) return;
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               spatialMap.setSelectedNodeId(props.item.node.id);
+            }
+            const wantsCollapsed = event.key === "ArrowLeft";
+            if ((wantsCollapsed || event.key === "ArrowRight") && children().length > 0 && isCollapsed() !== wantsCollapsed) {
+              event.preventDefault();
+              props.onToggleCollapsed(props.path);
             }
           }}
         >
@@ -466,65 +506,109 @@ function SpatialMapTreeNode(props: {
             as="article"
             minW="0"
             display="grid"
-            gap="12px"
+            gridTemplateColumns="16px minmax(0, 1fr)"
+            columnGap="4px"
+            rowGap="6px"
+            alignItems="start"
             boxSizing="border-box"
-            p={railLevels().length === 0 ? "14px 28px 2px 0" : "0 12px 2px 0"}
-            borderTop={railLevels().length === 0 ? "1px solid rgba(34, 41, 36, 0.16)" : undefined}
+            p={railLevels().length === 0 ? "8px 8px 0 4px" : "4px 8px 0 0"}
+            borderTop={railLevels().length === 0 ? "1px solid var(--spatial-map-panel-divider)" : undefined}
           >
-            <NodeHeading node={props.item.node} depth={props.depth} />
+            {/* The collapse toggle sits in a fixed gutter so headings and the right-hand controls stay aligned. */}
+            <Show when={children().length > 0} fallback={<span aria-hidden="true" />}>
+              <TreeContextButton
+                type="button"
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+                w="16px"
+                h="21px"
+                mt="2px"
+                p="0"
+                border="0"
+                borderRadius="4px"
+                background="transparent"
+                color="var(--spatial-map-copy-dim)"
+                cursor="pointer"
+                _hover={{ background: "rgba(34, 41, 36, 0.1)", color: "var(--spatial-map-copy)" }}
+                _focusVisible={{ outline: "2px solid rgba(45, 111, 72, 0.42)", outlineOffset: "1px" }}
+                aria-label={`${isCollapsed() ? "Expand" : "Collapse"} ${children().length} ${children().length === 1 ? "child" : "children"}`}
+                title={isCollapsed() ? "Expand children" : "Collapse children"}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  props.onToggleCollapsed(props.path);
+                }}
+              >
+                <Show when={isCollapsed()} fallback={<ChevronDownIcon size={13} aria-hidden="true" />}>
+                  <ChevronRightIcon size={13} aria-hidden="true" />
+                </Show>
+              </TreeContextButton>
+            </Show>
+            <Box display="flex" flexWrap="wrap" alignItems="center" columnGap="12px" rowGap="4px" minW="0">
+              <Box display="flex" alignItems="baseline" gap="8px" flex="1 1 18ch" minW="0">
+                <NodeHeading node={props.item.node} depth={props.depth} />
+                <Show when={children().length > 0}>
+                  <Box
+                    as="span"
+                    flexShrink="0"
+                    color="var(--spatial-map-copy-dim)"
+                    fontSize="11px"
+                    fontWeight={isCollapsed() ? "700" : "500"}
+                    fontVariantNumeric="tabular-nums"
+                    title={`${children().length} ${children().length === 1 ? "child" : "children"}${isCollapsed() ? " hidden" : ""}`}
+                  >
+                    {children().length}
+                  </Box>
+                </Show>
+              </Box>
+              <Box
+                class="spatial-map-tree-controls"
+                display="grid"
+                gridTemplateColumns={props.showPriority ? "78px 116px 100px" : "116px 100px"}
+                gap="4px"
+                flexShrink="0"
+              >
+                <Show when={props.showPriority}>
+                  <Show when={props.item.node.priority} fallback={<span aria-hidden="true" />}>
+                    <SpatialMapNodePriorityMenu
+                      project={props.project}
+                      node={props.item.node}
+                      variant="tree"
+                      onProjectUpdated={props.onProjectUpdated}
+                    />
+                  </Show>
+                </Show>
+                <SpatialMapNodeStatusMenu
+                  node={nodeWithOptimisticStatus()}
+                  pending={props.statusPending}
+                  variant="tree"
+                  onChange={(status) => {
+                    void props.onStatusChange(props.item.node.id, status);
+                  }}
+                />
+                <SpatialMapNodeTypePicker
+                  project={props.project}
+                  type={nodeWithOptimisticType().type}
+                  pending={props.typePending}
+                  variant="tree"
+                  onChange={(type) => {
+                    void props.onTypeChange(props.item.node.id, type);
+                  }}
+                />
+              </Box>
+            </Box>
             <Show when={(props.item.node.images ?? []).length > 0}>
-              <Box maxW="100%">
+              <Box gridColumn="2" maxW="100%">
                 <SpatialMapImageStrip node={props.item.node} variant="tree" />
               </Box>
             </Show>
-            <Box
-              display="flex"
-              flexWrap="wrap"
-              gap="6px"
-              color="#303b34"
-              fontSize="10px"
-              fontWeight="600"
-              letterSpacing="0.08em"
-              textTransform="none"
-            >
-              <SpatialMapNodeStatusMenu
-                node={nodeWithOptimisticStatus()}
-                pending={props.statusPending}
-                variant="tree"
-                onChange={(status) => {
-                  void props.onStatusChange(props.item.node.id, status);
-                }}
-              />
-              <SpatialMapNodeTypePicker
-                project={props.project}
-                type={nodeWithOptimisticType().type}
-                pending={props.typePending}
-                variant="tree"
-                onChange={(type) => {
-                  void props.onTypeChange(props.item.node.id, type);
-                }}
-              />
-              <Box
-                as="span"
-                display="inline-flex"
-                alignItems="center"
-                minH="21px"
-                p="0 8px"
-                border="1px solid rgba(44, 52, 46, 0.34)"
-                borderRadius="4px"
-                background="rgba(246, 248, 244, 0.94)"
-                color="#303b34"
-                boxShadow="inset 0 1px 0 rgba(255, 255, 255, 0.28)"
-              >
-                {children().length}{" "}
-                {children().length === 1 ? "child" : "children"}
-              </Box>
-            </Box>
             <Show when={context().length > 0}>
-              <TreeContext content={context()} nodeLabel={props.item.node.label} />
+              <Box gridColumn="2" minW="0">
+                <TreeContext content={context()} nodeLabel={props.item.node.label} />
+              </Box>
             </Show>
             <Show when={metadataEntries().length > 0}>
-              <Box maxW="100%" overflowX="auto">
+              <Box gridColumn="2" maxW="100%" overflowX="auto">
                 <table class="spatial-map-tree-metadata">
                   <tbody>
                     <For each={metadataEntries()}>
@@ -543,17 +627,16 @@ function SpatialMapTreeNode(props: {
         </Box>
       </SpatialMapImageDropTarget>
 
-      <Show when={children().length > 0}>
+      <Show when={children().length > 0 && !isCollapsed()}>
         <VStack
           alignItems="stretch"
-          gap="1"
+          gap="0"
           class="spatial-map-tree-children"
           position="relative"
           w="100%"
           maxW="100%"
           minW="0"
           mt="0"
-          pt="6px"
           role="group"
         >
           <For each={children()}>
@@ -575,8 +658,12 @@ function SpatialMapTreeNode(props: {
                   typePending={props.typePending}
                   optimisticStatus={props.optimisticStatus}
                   optimisticType={props.optimisticType}
+                  collapsedPaths={props.collapsedPaths}
+                  showPriority={props.showPriority}
+                  onToggleCollapsed={props.onToggleCollapsed}
                   onStatusChange={props.onStatusChange}
                   onTypeChange={props.onTypeChange}
+                  onProjectUpdated={props.onProjectUpdated}
                 />
               );
             }}
@@ -609,10 +696,10 @@ function TreeContext(props: { content: string; nodeLabel: string }) {
       <Box
         ref={contentRef}
         class="spatial-map-tree-context spatial-map-tree-context--collapsed"
-        color="#202622"
-        fontSize="1.02rem"
-        lineHeight="1.7"
-        maxH="200px"
+        color="var(--spatial-map-copy-muted)"
+        fontSize="13px"
+        lineHeight="1.55"
+        maxH="160px"
         overflow="hidden"
       >
         <MarkdownRenderer>{props.content}</MarkdownRenderer>
@@ -620,17 +707,17 @@ function TreeContext(props: { content: string; nodeLabel: string }) {
       <Show when={canExpand()}>
         <TreeContextButton
           type="button"
-          mt="8px"
+          mt="4px"
           p="0"
           border="0"
           background="transparent"
-          color="#3e6950"
+          color="var(--spatial-map-accent)"
           cursor="pointer"
           fontFamily="inherit"
-          fontSize="0.88rem"
-          fontWeight="700"
+          fontSize="12px"
+          fontWeight="600"
           lineHeight="1.2"
-          _hover={{ color: "#244b35", textDecoration: "underline" }}
+          _hover={{ color: "var(--spatial-map-accent-strong)", textDecoration: "underline" }}
           _focusVisible={{
             outline: "2px solid rgba(45, 111, 72, 0.42)",
             outlineOffset: "3px",
@@ -646,8 +733,8 @@ function TreeContext(props: { content: string; nodeLabel: string }) {
       <SimpleDialog
         open={isDialogOpen()}
         onOpenChange={setIsDialogOpen}
-        title={`${props.nodeLabel} Context`}
-        description="Large markdown view for longer context notes and working material."
+        title={props.nodeLabel}
+        description="Context"
         maxW="min(800px, 90vw)"
         contentClass={treeContextDialogClass}
       >
@@ -666,34 +753,43 @@ function getRailLevels(depth: number) {
 function NodeHeading(props: { node: MapNode; depth: number }) {
   const level = createMemo(() => Math.min(props.depth + 1, 6));
   const headingTag = createMemo(() => `h${level()}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6");
-  const size = () =>
-    level() === 1
-      ? "clamp(1.9rem, 4vw, 2.65rem)"
-      : level() === 2
-        ? "1.7rem"
-        : level() === 3
-          ? "1.36rem"
-          : "1.1rem";
-  const lineHeight = () =>
-    level() === 1 ? "1.05" : level() === 2 ? "1.1" : level() === 3 ? "1.16" : "1.18";
-  const fontWeight = () =>
-    level() === 1 ? "800" : level() === 2 ? "760" : level() === 3 ? "720" : "700";
 
+  // Sizes are written as inline literals: Panda only emits CSS for values it
+  // can read statically, so a helper that returns the size produces no style.
   return (
     <Box
       as={headingTag()}
       class={`spatial-map-tree-heading spatial-map-tree-heading--${level()}`}
       m="0"
-      color="#111714"
-      fontSize={size()}
-      lineHeight={lineHeight()}
-      fontWeight={fontWeight()}
-      letterSpacing="0"
+      color="var(--spatial-map-copy)"
+      fontSize={level() === 1 ? "20px" : level() === 2 ? "17px" : level() === 3 ? "15px" : "13px"}
+      lineHeight="1.3"
+      fontWeight={level() <= 2 ? "700" : "600"}
+      letterSpacing={level() === 1 ? "-0.02em" : "0"}
       textWrap="pretty"
     >
       {props.node.label}
     </Box>
   );
+}
+
+// Every path that has children, for "Collapse all".
+function collectParentPaths(tree: SpatialMapTree) {
+  const paths: string[] = [];
+  const visit = (nodeId: string, path: string, ancestry: Set<string>) => {
+    const childIds = (tree.items.get(nodeId)?.childNodeIds ?? []).filter(
+      (childId) => !ancestry.has(childId) && tree.items.has(childId),
+    );
+    if (childIds.length === 0) return;
+    paths.push(path);
+    for (const childId of childIds) {
+      visit(childId, `${path}/${childId}`, new Set([...ancestry, childId]));
+    }
+  };
+  for (const rootId of tree.roots) {
+    visit(rootId, rootId, new Set([rootId]));
+  }
+  return paths;
 }
 
 function getTreeToneStyle(type: string) {

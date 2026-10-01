@@ -36,11 +36,6 @@ const CommandResultButton = styled("button");
 const commandMenuDialogClass = css({
   w: "min(600px, calc(100dvw - 32px)) !important",
   maxW: "min(600px, calc(100dvw - 32px)) !important",
-  border: "1px solid rgba(96, 101, 95, 0.62) !important",
-  borderRadius: "10px !important",
-  background: "linear-gradient(90deg, rgba(35, 42, 37, 0.035) 1px, transparent 1px), linear-gradient(rgba(35, 42, 37, 0.035) 1px, transparent 1px), rgba(252, 253, 252, 0.96) !important",
-  backgroundSize: "40px 40px, 40px 40px, auto !important",
-  boxShadow: "0 28px 70px rgba(29, 33, 28, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88) !important",
   "& .dialog__body": {
     alignItems: "stretch",
     p: "0",
@@ -157,13 +152,12 @@ export function SpatialMapCommandMenu() {
       <VStack alignItems="stretch" gap="0" w="100%" minW="0">
         <HStack
           gap="2"
-          minH="54px"
-          p="9px 12px"
-          borderBottom="1px solid rgba(96, 101, 95, 0.28)"
-          background="rgba(248, 250, 248, 0.9)"
+          minH="40px"
+          p="4px 12px"
+          borderBottom="1px solid var(--spatial-map-panel-divider)"
           color="var(--spatial-map-copy-dim)"
         >
-          <SearchIcon size={17} aria-hidden="true" />
+          <SearchIcon size={14} aria-hidden="true" />
           <Input
             ref={inputRef}
             variant="spatial"
@@ -171,8 +165,7 @@ export function SpatialMapCommandMenu() {
             border="0"
             bg="transparent"
             boxShadow="none"
-            fontSize="0.95rem"
-            fontWeight="650"
+            fontSize="13px"
             aria-label="Search nodes and projects"
             placeholder="Search nodes or switch project..."
             value={query()}
@@ -204,7 +197,7 @@ export function SpatialMapCommandMenu() {
           <Kbd>⌘K</Kbd>
         </HStack>
 
-        <Box w="100%" maxH="min(440px, 58vh)" p="5px" overflowY="auto" role="listbox">
+        <Box w="100%" maxH="min(440px, 58vh)" p="4px" overflowY="auto" role="listbox">
           <Switch>
             <Match when={results().length > 0}>
               <For each={results()}>

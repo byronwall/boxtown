@@ -138,12 +138,14 @@ export interface SpatialMapCanvasController {
     value: boolean | ((current: boolean) => boolean),
   ) => void;
   setGlobalFilterEnabled: (value: boolean | ((current: boolean) => boolean)) => void;
+  setGlobalFilter: (value: SpatialMapGlobalFilterState) => void;
   setGlobalFilterIncludeParents: (
     value: boolean | ((current: boolean) => boolean),
   ) => void;
   setGlobalFilterIncludeChildren: (
     value: boolean | ((current: boolean) => boolean),
   ) => void;
+  resetFilters: () => void;
   showArchived: Accessor<boolean>;
   setShowArchived: (value: boolean) => void;
   toggleGlobalFilterType: (type: string) => void;

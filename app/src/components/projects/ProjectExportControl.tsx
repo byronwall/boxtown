@@ -1,36 +1,39 @@
 import { Download } from "lucide-solid";
-import { Box } from "styled-system/jsx";
 import { css } from "styled-system/css";
+import { Tooltip } from "~/components/ui/tooltip";
 
 type ProjectExportControlProps = {
   projectId: string;
   projectName: string;
 };
 
+// A download link has to stay an anchor, so it is styled with a class to match
+// the plain 24px icon buttons beside it.
+const exportLinkClass = css({
+  alignItems: "center",
+  borderRadius: "4px",
+  color: "var(--spatial-map-copy-dim)",
+  display: "inline-flex",
+  h: "24px",
+  justifyContent: "center",
+  w: "24px",
+  transition: "background-color 120ms ease, color 120ms ease, transform 160ms cubic-bezier(0.23, 1, 0.32, 1)",
+  _hover: { bg: "rgba(34, 41, 36, 0.08)", color: "var(--spatial-map-copy)" },
+  _active: { transform: "scale(0.97)" },
+  _focusVisible: { outline: "2px solid var(--spatial-map-accent)", outlineOffset: "2px" },
+});
+
 export function ProjectExportControl(props: ProjectExportControlProps) {
   return (
-    <a
-      href={`/api/projects/${encodeURIComponent(props.projectId)}/export`}
-      download=""
-      aria-label={`Download ${props.projectName} archive`}
-      class={css({
-        alignItems: "center",
-        bg: "rgba(229, 239, 229, 0.86)",
-        borderColor: "var(--spatial-map-panel-border-strong)",
-        borderRadius: "4px",
-        borderWidth: "1px",
-        color: "var(--spatial-map-accent-strong)",
-        display: "inline-flex",
-        h: "30px",
-        justifyContent: "center",
-        minW: "30px",
-        px: "0",
-        transition: "background-color 140ms ease, border-color 140ms ease",
-        _hover: { bg: "rgba(214, 229, 214, 0.95)", borderColor: "var(--spatial-map-accent)" },
-        _focusVisible: { outline: "2px solid var(--spatial-map-accent)", outlineOffset: "2px" },
-      })}
-    >
-      <Box as={Download} boxSize="4" />
-    </a>
+    <Tooltip content="Download archive" openDelay={150} closeDelay={80}>
+      <a
+        href={`/api/projects/${encodeURIComponent(props.projectId)}/export`}
+        download=""
+        aria-label={`Download ${props.projectName} archive`}
+        class={exportLinkClass}
+      >
+        <Download size={14} />
+      </a>
+    </Tooltip>
   );
 }

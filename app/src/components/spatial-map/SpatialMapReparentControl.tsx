@@ -98,18 +98,17 @@ export function SpatialMapReparentControl(props: SpatialMapReparentControlProps)
           right="0"
           bottom="74px"
           w="min(420px, calc(100vw - 20px))"
-          border="1px solid rgba(24, 29, 26, 0.34)"
-          borderRadius="8px"
-          background="rgba(250, 252, 247, 0.98)"
-          boxShadow="0 16px 34px rgba(20, 25, 22, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.58)"
+          border="1px solid var(--spatial-map-panel-border)"
+          borderRadius="6px"
+          background="#fbfcfb"
+          boxShadow="0 8px 24px rgba(24, 32, 24, 0.15)"
           overflow="hidden"
         >
           <HStack
             gap="2"
-            minH="42px"
-            p="7px 9px"
-            borderBottom="1px solid rgba(96, 101, 95, 0.22)"
-            background="rgba(248, 250, 248, 0.9)"
+            minH="36px"
+            p="4px 9px"
+            borderBottom="1px solid var(--spatial-map-panel-divider)"
           >
             <SearchIcon size={15} aria-hidden="true" />
             <Input
@@ -119,8 +118,7 @@ export function SpatialMapReparentControl(props: SpatialMapReparentControlProps)
               border="0"
               bg="transparent"
               boxShadow="none"
-              fontSize="13px"
-              fontWeight="650"
+              fontSize="12px"
               aria-label="Search parent nodes"
               placeholder="Search parent nodes..."
               value={query()}
@@ -220,25 +218,22 @@ export function SpatialMapReparentControl(props: SpatialMapReparentControlProps)
       <VStack
         alignItems="stretch"
         gap="1"
-        p="8px 9px 7px"
+        p="6px 8px"
         w="max-content"
         maxW="calc(100vw - 20px)"
-        border="1px solid rgba(24, 29, 26, 0.34)"
-        borderRadius="8px"
-        background="rgba(250, 252, 247, 0.98)"
-        boxShadow="0 12px 28px rgba(20, 25, 22, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.58)"
+        border="1px solid var(--spatial-map-panel-border)"
+        borderRadius="6px"
+        background="#fbfcfb"
+        boxShadow="0 8px 24px rgba(24, 32, 24, 0.15)"
       >
         <HStack gap="1" alignItems="flex-start" minW="0">
           <Box flex="none">
             <Button
               variant="outline"
-              size="xs"
-              minH="28px"
+              size="2xs"
               minW="134px"
               justifyContent="flex-start"
-              borderColor={searchOpen() ? "rgba(45, 111, 72, 0.44)" : "rgba(96, 101, 95, 0.34)"}
-              borderRadius="4px"
-              background={searchOpen() ? "rgba(229, 239, 229, 0.42)" : "rgba(255, 255, 255, 0.46)"}
+              background={searchOpen() ? "rgba(229, 239, 229, 0.96)" : "transparent"}
               color="var(--spatial-map-copy-dim)"
               disabled={props.movePending}
               onClick={() => setSearchOpen((open) => !open)}
@@ -250,11 +245,7 @@ export function SpatialMapReparentControl(props: SpatialMapReparentControlProps)
           <Button
             colorPalette="green"
             variant="plain"
-            size="xs"
-            minH="28px"
-            border="0"
-            borderRadius="4px"
-            background="transparent"
+            size="2xs"
             loading={props.movePending}
             onClick={() => props.onMove(null)}
           >

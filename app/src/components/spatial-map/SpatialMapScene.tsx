@@ -1,7 +1,7 @@
 import { useAction } from "@solidjs/router";
-import { createMemo, createSignal, For, Show } from "solid-js";
+import { createMemo, createSignal, For, Show, type JSX } from "solid-js";
 import { css } from "styled-system/css";
-import { Box, styled } from "styled-system/jsx";
+import { Box } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import { toaster } from "~/components/ui/toast";
 import { moveProjectNode } from "~/lib/projects/data";
@@ -25,6 +25,7 @@ import { SpatialMapChildNodePlaceholder } from "./SpatialMapChildNodePlaceholder
 import { getImageFilesFromDataTransfer, useSpatialMapImages } from "./SpatialMapImages";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapReparentControl } from "./SpatialMapReparentControl";
+import { SpatialMapSegmentedControl, type SpatialMapSegmentedOption } from "./SpatialMapSegmentedControl";
 
 const NODE_TYPE_FALLBACK_TONES = [
   {
@@ -139,7 +140,10 @@ const NODE_STATUS_LABEL_GAP = 5;
 const NODE_STATUS_LABEL_WIDTH_FACTOR = 6.2;
 const NODE_DESCENDANT_COUNT_MARGIN = 8;
 
-const SpatialMapButton = styled("button");
+const NODE_COLOR_MODE_OPTIONS: SpatialMapSegmentedOption<SpatialMapNodeColorMode>[] = [
+  { value: "type", label: "Type" },
+  { value: "status", label: "Status" },
+];
 
 // SVG hover state crosses from the node group into child rect/text elements, so
 // it stays as a local selector instead of a global CSS file rule.
@@ -256,13 +260,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       position="relative"
       overflow="hidden"
       minH="0"
-      border="1px solid rgba(96, 101, 95, 0.46)"
-      borderRadius={{ base: "6px", md: "8px" }}
-      background="linear-gradient(180deg, rgba(248, 250, 248, 0.88), rgba(235, 239, 233, 0.96))"
-      boxShadow={`
-        inset 0 1px 0 rgba(255, 255, 255, 0.64),
-        0 12px 30px rgba(29, 33, 28, 0.06)
-      `}
+      background="rgba(240, 243, 238, 1)"
       cursor={controller.isPanning() ? "grabbing" : "grab"}
       touchAction="none"
       userSelect="none"
@@ -273,183 +271,59 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       onPointerCancel={controller.viewportHandlers.onPointerCancel}
       onWheel={controller.viewportHandlers.onWheel}
     >
+      {/* Canvas controls float in the corner as one compact bar of 24px controls. */}
       <Box
         position="absolute"
-        top="0"
-        right="0"
+        top="8px"
+        right="8px"
         zIndex="2"
         display="inline-flex"
-        alignItems="stretch"
+        alignItems="center"
+        flexWrap="wrap"
+        justifyContent="flex-end"
         gap="6px"
+        maxW="calc(100% - 16px)"
+        p="3px 4px 3px 8px"
+        border="1px solid var(--spatial-map-panel-border)"
+        borderRadius="6px"
+        background="var(--spatial-map-panel-strong)"
+        cursor="default"
         pointerEvents="auto"
+        onPointerDown={(event) => event.stopPropagation()}
       >
         <Box
-          display="inline-flex"
-          alignItems="stretch"
-          border="1px solid rgba(24, 29, 26, 0.34)"
-          borderTop="0"
-          borderRadius="0 0 6px 6px"
-          background="rgba(227, 231, 225, 0.94)"
-          boxShadow={`
-            inset 0 1px 0 rgba(255, 255, 255, 0.32),
-            inset 0 -1px 0 rgba(44, 52, 46, 0.14)
-          `}
+          as="span"
+          color="var(--spatial-map-copy-dim)"
+          fontSize="11px"
+          fontVariantNumeric="tabular-nums"
+          minW="34px"
+          title="Zoom level"
         >
-          <Box
-            as="span"
-            display="inline-flex"
-            alignItems="center"
-            minH="28px"
-            p="0 8px"
-            borderRight="1px solid rgba(24, 29, 26, 0.22)"
-            color="var(--spatial-map-copy-muted)"
-            fontFamily={`"SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace`}
-            fontSize="12px"
-            lineHeight="1.1"
-            fontWeight="600"
-            letterSpacing="0.05em"
-            textTransform="none"
-            whiteSpace="nowrap"
-            pointerEvents="none"
-          >
-            Zoom {controller.zoomPercent()}
-          </Box>
-          <Button
-            colorPalette="green"
-            variant="plain"
-            size="xs"
-            minH="28px"
-            border="0"
-            borderRadius="4px"
-            background="transparent"
-            transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease"
-            _active={{ transform: "scale(0.97)" }}
-            onClick={() => controller.fitCameraToNodes()}
-          >
-            Fit View
-          </Button>
-          <Button
-            colorPalette="green"
-            variant="plain"
-            size="xs"
-            class={`spatial-map-viewport-button spatial-map-viewport-toggle${controller.showEdges() ? " is-active" : ""}`}
-            minH="28px"
-            border="0"
-            borderLeft="1px solid rgba(24, 29, 26, 0.22)"
-            borderRadius="4px"
-            background={controller.showEdges() ? "rgba(229, 239, 229, 0.96)" : "transparent"}
-            color={controller.showEdges() ? "var(--spatial-map-accent-strong)" : undefined}
-            boxShadow={
-              controller.showEdges()
-                ? "inset 0 0 0 1px rgba(45, 111, 72, 0.42), inset 0 -2px 0 rgba(45, 111, 72, 0.86)"
-                : undefined
-            }
-            transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease"
-            _active={{ transform: "scale(0.97)" }}
-            aria-pressed={controller.showEdges()}
-            onClick={() => controller.toggleEdges()}
-          >
-            Show Edges
-          </Button>
-          <Show when={controller.isolationModeActive()}>
-            <Button
-              colorPalette="green"
-              variant="plain"
-              size="xs"
-              class={`spatial-map-viewport-button spatial-map-viewport-toggle${controller.showLinkedInIsolation() ? " is-active" : ""}`}
-              minH="28px"
-              border="0"
-              borderLeft="1px solid rgba(24, 29, 26, 0.22)"
-              borderRadius="4px"
-              background={controller.showLinkedInIsolation() ? "rgba(229, 239, 229, 0.96)" : "transparent"}
-              color={controller.showLinkedInIsolation() ? "var(--spatial-map-accent-strong)" : undefined}
-              boxShadow={
-                controller.showLinkedInIsolation()
-                  ? "inset 0 0 0 1px rgba(45, 111, 72, 0.42), inset 0 -2px 0 rgba(45, 111, 72, 0.86)"
-                  : undefined
-              }
-              transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease"
-              _active={{ transform: "scale(0.97)" }}
-              aria-pressed={controller.showLinkedInIsolation()}
-              onClick={() => controller.toggleLinkedInIsolation()}
-            >
-              Show Links
-            </Button>
-          </Show>
+          {controller.zoomPercent()}
         </Box>
-        <Box
-          display="inline-flex"
-          alignItems="stretch"
-          overflow="hidden"
-          border="1px solid rgba(24, 29, 26, 0.34)"
-          borderTop="0"
-          borderRight="0"
-          borderRadius="0 0 0 6px"
-          background="rgba(227, 231, 225, 0.94)"
-          boxShadow={`
-            inset 0 1px 0 rgba(255, 255, 255, 0.32),
-            inset 0 -1px 0 rgba(44, 52, 46, 0.14)
-          `}
-          pointerEvents="auto"
-          role="group"
-          aria-label="Node color mode"
-        >
-          <SpatialMapButton
-            type="button"
-            display="inline-flex"
-            alignItems="center"
-            justifyContent="center"
-            minW="58px"
-            minH="28px"
-            p="0 10px"
-            border="0"
-            borderRight="1px solid rgba(24, 29, 26, 0.22)"
-            background={props.nodeColorMode === "type" ? "rgba(37, 95, 58, 0.16)" : "transparent"}
-            color={props.nodeColorMode === "type" ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy)"}
-            boxShadow={props.nodeColorMode === "type" ? "inset 0 -2px 0 rgba(23, 62, 39, 0.86)" : undefined}
-            fontFamily="inherit"
-            fontSize="12px"
-            lineHeight="1"
-            fontWeight="700"
-            letterSpacing="0.02em"
-            whiteSpace="nowrap"
-            appearance="none"
-            cursor="pointer"
-            _hover={{ background: "rgba(255, 255, 255, 0.28)", outline: "none" }}
-            _focusVisible={{ background: "rgba(255, 255, 255, 0.28)", outline: "none" }}
-            aria-pressed={props.nodeColorMode === "type"}
-            onClick={() => props.onNodeColorModeChange("type")}
+        <Button variant="outline" size="2xs" onClick={() => controller.fitCameraToNodes()}>
+          Fit
+        </Button>
+        <CanvasToggle pressed={controller.showEdges()} onClick={() => controller.toggleEdges()}>
+          Edges
+        </CanvasToggle>
+        <Show when={controller.isolationModeActive()}>
+          <CanvasToggle
+            pressed={controller.showLinkedInIsolation()}
+            onClick={() => controller.toggleLinkedInIsolation()}
           >
-            Type
-          </SpatialMapButton>
-          <SpatialMapButton
-            type="button"
-            display="inline-flex"
-            alignItems="center"
-            justifyContent="center"
-            minW="58px"
-            minH="28px"
-            p="0 10px"
-            border="0"
-            background={props.nodeColorMode === "status" ? "rgba(37, 95, 58, 0.16)" : "transparent"}
-            color={props.nodeColorMode === "status" ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy)"}
-            boxShadow={props.nodeColorMode === "status" ? "inset 0 -2px 0 rgba(23, 62, 39, 0.86)" : undefined}
-            fontFamily="inherit"
-            fontSize="12px"
-            lineHeight="1"
-            fontWeight="700"
-            letterSpacing="0.02em"
-            whiteSpace="nowrap"
-            appearance="none"
-            cursor="pointer"
-            _hover={{ background: "rgba(255, 255, 255, 0.28)", outline: "none" }}
-            _focusVisible={{ background: "rgba(255, 255, 255, 0.28)", outline: "none" }}
-            aria-pressed={props.nodeColorMode === "status"}
-            onClick={() => props.onNodeColorModeChange("status")}
-          >
-            Status
-          </SpatialMapButton>
+            Linked
+          </CanvasToggle>
+        </Show>
+        <Box as="span" color="var(--spatial-map-copy-dim)" fontSize="11px">
+          Color
         </Box>
+        <SpatialMapSegmentedControl
+          ariaLabel="Node color mode"
+          value={props.nodeColorMode}
+          options={NODE_COLOR_MODE_OPTIONS}
+          onChange={(mode) => props.onNodeColorModeChange(mode)}
+        />
       </Box>
       <svg
         ref={controller.setSvgRef}
@@ -564,6 +438,23 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
         />
       </Show>
     </Box>
+  );
+}
+
+// An on/off control for the canvas bar: fill plus text weight when on.
+function CanvasToggle(props: { pressed: boolean; onClick: () => void; children: JSX.Element }) {
+  return (
+    <Button
+      variant="outline"
+      size="2xs"
+      background={props.pressed ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+      color={props.pressed ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
+      fontWeight={props.pressed ? "700" : "500"}
+      aria-pressed={props.pressed}
+      onClick={() => props.onClick()}
+    >
+      {props.children}
+    </Button>
   );
 }
 
