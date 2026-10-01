@@ -678,8 +678,15 @@ export function useSpatialMapCanvasController(
 
   const openChildNodeDraft = (
     parentNodeId: string | null = selectedNodeId() ?? isolatedNodeId(),
+    options: { anchorToParent?: boolean } = {},
   ) => {
-    setChildNodeDraft({ parentNodeId, ...clampChildNodeDraftPoint(getDraftWorldPoint()) });
+    // Buttons outside the canvas have no meaningful pointer position, so they
+    // place the draft beside the parent node instead of at the last pointer.
+    const parent = options.anchorToParent && parentNodeId ? nodesById().get(parentNodeId) : undefined;
+    const point = parent
+      ? { x: parent.x + parent.width, y: parent.y }
+      : getDraftWorldPoint();
+    setChildNodeDraft({ parentNodeId, ...clampChildNodeDraftPoint(point) });
   };
 
   const handleWindowKeyDown = (event: KeyboardEvent) => {
