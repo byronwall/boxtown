@@ -2,6 +2,12 @@
 
 Notable changes to Product Grid Management, newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
 
+## 2026-10-01
+
+### Added
+
+- The map filter menu has a Reset filters action that clears every filter and hides archived nodes again. It stays available when no nodes match.
+
 ## 2026-09-30
 
 ### Changed
@@ -33,7 +39,6 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Added
 
-- A Reset filters action stays available in the map filter menu, even when no nodes match.
 - Every button has a pressed state: a slight scale-down while held, with a smaller scale and a darker fill on full-width rows.
 - Tooltips on the inspector's icon-only buttons (archive, delete, copy agent prompt, project activity).
 - `DESIGN.md` gained "Density and Cleanup Principles", "Press feedback", "Activity lists", and "Pane resize handle" sections, and the inspector rail section now describes the current layout.
