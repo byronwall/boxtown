@@ -8,11 +8,13 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 - The map filter menu has a Reset filters action that clears every filter and hides archived nodes again. It stays available when no nodes match.
 
+### Changed
+
+- Node filters and the grid name filter now stay in the URL, so a link or a refresh restores the same view.
+
 ## 2026-09-30
 
 ### Changed
-
-- Node filters and grid text search now stay in the URL, so links, refresh, and browser history restore the same view.
 
 - The inspector sidebar is rebuilt for density. Under the title it shows the node id (click to copy), one row of status, priority, and type chips, and one compact action row. Context comes first, then images, then Metadata, Connections, and Activity as collapsible one-line groups that open on their own only when they have content.
 - Node context is edited in place: click the rendered markdown, type, and click away or press Cmd/Ctrl+Enter to save. Esc cancels. The Edit, Save, and Cancel buttons are gone, and routine saves no longer show a toast.

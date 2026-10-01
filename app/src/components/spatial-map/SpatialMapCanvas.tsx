@@ -20,6 +20,7 @@ import { SpatialMapImageProvider, useSpatialMapImages } from "./SpatialMapImages
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { SpatialMapCommandMenu } from "./SpatialMapCommandMenu";
 import { SpatialMapGridView } from "./SpatialMapGridView";
+import { priorityMenuItems } from "./SpatialMapNodePriorityMenu";
 import { SpatialMapScene } from "./SpatialMapScene";
 import { SpatialMapToolbar } from "./SpatialMapToolbar";
 import { SpatialMapTreeView } from "./SpatialMapTreeView";
@@ -529,7 +530,7 @@ function SpatialMapUrlSync() {
       return;
     }
 
-    setSearchParams(nextParams);
+    setSearchParams(nextParams, { replace: true });
   });
 
   return null;
@@ -633,7 +634,7 @@ function parseGlobalFilter(params: SpatialMapSearchParams) {
     (value): value is MapNodeStatus => (mapNodeStatuses as readonly string[]).includes(value),
   );
   const priorities = getStringParams(params.priorities).filter((value) =>
-    ["urgent", "high", "medium", "low", "none"].includes(value),
+    priorityMenuItems.some((item) => item.value === value),
   );
   return {
     enabled: parseBooleanParam(getStringParam(params.filter)) ?? false,
