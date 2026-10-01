@@ -255,6 +255,7 @@ export function SpatialMapGridView(props: {
     const checked = checkedNodeIds();
     return checked.size === 0 ? [] : nodes().map((node) => node.id).filter((id) => checked.has(id));
   });
+  const bulkSelectionActive = () => mode() === "nodes" && visibleCheckedNodeIds().length > 0;
   const filteredNodes = createMemo(() => {
     const query = normalizeSearchQuery(nodeSearchQuery());
     if (!query) {
@@ -320,13 +321,33 @@ export function SpatialMapGridView(props: {
       background="var(--spatial-map-panel-strong)"
     >
       <Box display="grid" gridTemplateRows="auto minmax(0, 1fr)" w="100%" h="100%" minH="100%" color="var(--spatial-map-copy)">
-        <Box zIndex="3" borderBottom="1px solid var(--spatial-map-panel-border)">
-          <HStack justifyContent="space-between" gap="12px" minH="36px" p="5px 10px">
-            <Box flexShrink="0" color="var(--spatial-map-copy-dim)" fontSize="12px" lineHeight="1.2" fontVariantNumeric="tabular-nums">
-              {mode() === "nodes"
-                ? getNodesSummary(filteredNodes().length, nodes().length, nodeSearchQuery())
-                : `${links().length} visible non-hierarchy links`}
-            </Box>
+        {/* Above the sticky table cells (z-index up to 3) so the bulk status menu is not covered. */}
+        <Box zIndex="4" borderBottom="1px solid var(--spatial-map-panel-border)">
+          <HStack
+            justifyContent="space-between"
+            gap="12px"
+            minH="36px"
+            p="5px 10px"
+            background={bulkSelectionActive() ? "rgba(229, 239, 229, 0.6)" : "transparent"}
+          >
+            {/* Bulk actions take the summary's place so selecting rows never moves the table. */}
+            <Show
+              when={bulkSelectionActive()}
+              fallback={
+                <Box flexShrink="0" color="var(--spatial-map-copy-dim)" fontSize="12px" lineHeight="1.2" fontVariantNumeric="tabular-nums">
+                  {mode() === "nodes"
+                    ? getNodesSummary(filteredNodes().length, nodes().length, nodeSearchQuery())
+                    : `${links().length} visible non-hierarchy links`}
+                </Box>
+              }
+            >
+              <SpatialMapGridBulkBar
+                project={props.project}
+                nodeIds={visibleCheckedNodeIds()}
+                onClear={() => setCheckedNodeIds(new Set<string>())}
+                onProjectUpdated={props.onProjectUpdated}
+              />
+            </Show>
             <HStack gap="8px" flex="0 1 auto" justifyContent="flex-end" minW="0">
               <Show when={mode() === "nodes"}>
                 <MetadataKeyPicker
@@ -379,15 +400,6 @@ export function SpatialMapGridView(props: {
             />
           }
         >
-          <Box display="grid" gridTemplateRows="auto minmax(0, 1fr)" minH="0">
-          <Show when={visibleCheckedNodeIds().length > 0} fallback={<Box />}>
-            <SpatialMapGridBulkBar
-              project={props.project}
-              nodeIds={visibleCheckedNodeIds()}
-              onClear={() => setCheckedNodeIds(new Set<string>())}
-              onProjectUpdated={props.onProjectUpdated}
-            />
-          </Show>
           <NodesGrid
             checkedNodeIds={checkedNodeIds()}
             onCheckedNodeIdsChange={setCheckedNodeIds}
@@ -401,7 +413,6 @@ export function SpatialMapGridView(props: {
             onSelectNode={spatialMap.setSelectedNodeId}
             onProjectUpdated={props.onProjectUpdated}
           />
-          </Box>
         </Show>
       </Box>
     </Box>

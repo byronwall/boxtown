@@ -12,6 +12,10 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 - Node filters and the grid name filter now stay in the URL, so a link or a refresh restores the same view.
 
+### Fixed
+
+- Selecting nodes in the metadata grid no longer shifts the table. The bulk actions now take the place of the count summary in the grid header instead of adding a row, and Set status is a menu.
+
 ## 2026-09-30
 
 ### Changed
