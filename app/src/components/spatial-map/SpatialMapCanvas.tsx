@@ -5,7 +5,7 @@ import { css } from "styled-system/css";
 import { Box, styled } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import type { ProjectRecord } from "~/lib/projects/types";
-import type { MapNode } from "~/lib/spatial-map/types";
+import { mapNodeStatuses, type MapNode, type MapNodeStatus } from "~/lib/spatial-map/types";
 
 import type {
   SpatialMapDepthLevel,
@@ -541,6 +541,12 @@ type SpatialMapSearchParams = {
   inspector?: string;
   isolate?: string;
   linked?: string;
+  filter?: string;
+  parents?: string;
+  types?: string[];
+  statuses?: string[];
+  priorities?: string[];
+  q?: string;
 };
 
 interface SpatialMapUrlState {
@@ -551,6 +557,7 @@ interface SpatialMapUrlState {
   inspectorOpen: boolean | null;
   isolatedNodeId: string | null;
   showLinked: boolean | null;
+  globalFilter: ReturnType<typeof parseGlobalFilter>;
 }
 
 interface SpatialMapNodeLookup {
@@ -572,6 +579,7 @@ function SpatialMapUrlSync() {
     );
     const isolatedNodeId = getStringParam(searchParams.isolate) ?? null;
     const showLinked = parseBooleanParam(getStringParam(searchParams.linked));
+    const globalFilter = parseGlobalFilter(searchParams);
     const nodeIds = controller.sourceNodesById();
 
     untrack(() => {
@@ -583,6 +591,7 @@ function SpatialMapUrlSync() {
         inspectorOpen,
         isolatedNodeId,
         showLinked,
+        globalFilter,
       });
     });
   });
@@ -595,6 +604,7 @@ function SpatialMapUrlSync() {
     const inspectorOpen = controller.inspectorOpen();
     const isolatedNodeId = controller.isolatedNodeId();
     const showLinked = controller.showLinkedInIsolation();
+    const globalFilter = controller.globalFilter();
 
     const nextParams = {
       node: selectedNodeId,
@@ -605,6 +615,11 @@ function SpatialMapUrlSync() {
       inspector: inspectorOpen ? null : "closed",
       isolate: isolatedNodeId,
       linked: isolatedNodeId && showLinked ? "1" : null,
+      filter: globalFilter.enabled ? "1" : null,
+      parents: globalFilter.includeParents ? null : "0",
+      types: globalFilter.selectedTypes.length ? globalFilter.selectedTypes : undefined,
+      statuses: globalFilter.selectedStatuses.length ? globalFilter.selectedStatuses : undefined,
+      priorities: globalFilter.selectedPriorities.length ? globalFilter.selectedPriorities : undefined,
     };
 
     if (
@@ -614,12 +629,17 @@ function SpatialMapUrlSync() {
       getNullableStringParam(searchParams.edges) === nextParams.edges &&
       getNullableStringParam(searchParams.inspector) === nextParams.inspector &&
       getNullableStringParam(searchParams.isolate) === nextParams.isolate &&
-      getNullableStringParam(searchParams.linked) === nextParams.linked
+      getNullableStringParam(searchParams.linked) === nextParams.linked &&
+      getNullableStringParam(searchParams.filter) === nextParams.filter &&
+      getNullableStringParam(searchParams.parents) === nextParams.parents &&
+      sameStringParams(searchParams.types, nextParams.types) &&
+      sameStringParams(searchParams.statuses, nextParams.statuses) &&
+      sameStringParams(searchParams.priorities, nextParams.priorities)
     ) {
       return;
     }
 
-    setSearchParams(nextParams, { replace: true });
+    setSearchParams(nextParams);
   });
 
   return null;
@@ -659,6 +679,18 @@ function syncControllerFromUrlState(
     controller.setShowLinkedInIsolation(state.showLinked);
   }
 
+  const currentFilter = controller.globalFilter();
+  const nextFilter = { ...state.globalFilter, includeChildren: currentFilter.includeChildren };
+  if (
+    currentFilter.enabled !== nextFilter.enabled ||
+    currentFilter.includeParents !== nextFilter.includeParents ||
+    !sameValues(currentFilter.selectedTypes, nextFilter.selectedTypes) ||
+    !sameValues(currentFilter.selectedStatuses, nextFilter.selectedStatuses) ||
+    !sameValues(currentFilter.selectedPriorities, nextFilter.selectedPriorities)
+  ) {
+    controller.setGlobalFilter(nextFilter);
+  }
+
   const nextSelectedNodeId =
     state.nodeId && nodeIds.has(state.nodeId) ? state.nodeId : null;
   if (controller.selectedNodeId() !== nextSelectedNodeId) {
@@ -689,6 +721,38 @@ function getStringParam(value: string | string[] | undefined) {
 
 function getNullableStringParam(value: string | string[] | undefined) {
   return getStringParam(value) ?? null;
+}
+
+function getStringParams(value: string | string[] | undefined) {
+  return value === undefined ? [] : Array.isArray(value) ? value : [value];
+}
+
+function sameStringParams(left: string | string[] | undefined, right: string[] | undefined) {
+  const a = getStringParams(left);
+  const b = right ?? [];
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+function sameValues(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function parseGlobalFilter(params: SpatialMapSearchParams) {
+  const types = getStringParams(params.types);
+  const statuses = getStringParams(params.statuses).filter(
+    (value): value is MapNodeStatus => (mapNodeStatuses as readonly string[]).includes(value),
+  );
+  const priorities = getStringParams(params.priorities).filter((value) =>
+    ["urgent", "high", "medium", "low", "none"].includes(value),
+  );
+  return {
+    enabled: parseBooleanParam(getStringParam(params.filter)) ?? false,
+    includeParents: parseBooleanParam(getStringParam(params.parents)) ?? true,
+    includeChildren: false,
+    selectedTypes: types,
+    selectedStatuses: statuses,
+    selectedPriorities: priorities,
+  };
 }
 
 function parseViewMode(value: string | undefined): SpatialMapViewMode | null {
