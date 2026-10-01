@@ -4,6 +4,10 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ## 2026-09-30
 
+### Added
+
+- The node grid can archive every unarchived implemented node in the project with one action.
+
 ### Changed
 
 - The inspector sidebar is rebuilt for density. Under the title it shows the node id (click to copy), one row of status, priority, and type chips, and one compact action row. Context comes first, then images, then Metadata, Connections, and Activity as collapsible one-line groups that open on their own only when they have content.

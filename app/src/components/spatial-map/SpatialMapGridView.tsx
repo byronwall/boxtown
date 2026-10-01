@@ -41,6 +41,7 @@ import {
   getMapNodeStatusLabel,
 } from "~/lib/spatial-map/node-status";
 import type { MapLink, MapNode, MapNodeStatus } from "~/lib/spatial-map/types";
+import { SpatialMapArchiveImplementedButton } from "./SpatialMapArchiveImplementedButton";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapGridBulkBar } from "./SpatialMapGridBulkBar";
@@ -289,6 +290,12 @@ export function SpatialMapGridView(props: {
               </Box>
             </Box>
             <HStack gap="12px" flex="0 1 auto" justifyContent="flex-end" minW="0">
+              <Show when={mode() === "nodes"}>
+                <SpatialMapArchiveImplementedButton
+                  project={props.project}
+                  onProjectUpdated={props.onProjectUpdated}
+                />
+              </Show>
               <Show when={mode() === "nodes"}>
                 <MetadataKeyPicker
                   fields={props.project.nodeMetadataSchema}
