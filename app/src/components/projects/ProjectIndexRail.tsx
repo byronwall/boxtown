@@ -1,6 +1,6 @@
 import { Archive, Plus } from "lucide-solid";
 import type { Component } from "solid-js";
-import { Box, HStack, VStack } from "styled-system/jsx";
+import { Box, HStack, VStack, styled } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
 import * as Field from "~/components/ui/field";
 import { Heading } from "~/components/ui/heading";
@@ -24,9 +24,17 @@ export function ProjectIndexRail(props: ProjectIndexRailProps) {
       bg="rgba(248, 250, 248, 0.9)"
     >
       <Box px="16px" py="14px" borderBottom="1px solid var(--spatial-map-panel-border)">
-        <Heading as="h2" fontSize="22px" lineHeight="1.05" letterSpacing="0">
-          Project index
-        </Heading>
+        <HStack gap="3">
+          <styled.img
+            src={`${import.meta.env.SERVER_BASE_URL || ""}/logo.svg`}
+            alt=""
+            boxSize="8"
+            flexShrink="0"
+          />
+          <Heading as="h2" fontSize="22px" lineHeight="1.05" letterSpacing="0">
+            Project index
+          </Heading>
+        </HStack>
         <Text mt="8px" color="var(--spatial-map-copy-muted)" fontSize="12px" lineHeight="1.55">
           Create, import, or open product grids.
         </Text>
