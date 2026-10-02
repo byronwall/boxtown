@@ -11,6 +11,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 - The map filter menu can filter by who last edited a node (Human or Agent), combined with type, status, and priority. A node whose edit history has rolled out of the project log matches neither.
 - An optional Overlap toggle in the canvas controls stacks nodes by depth like Mahjong tiles: children overlap their parent, deeper tiles sit on top with a thicker tile edge. The regular layout stays the default, and the choice is kept in the URL.
 - A structure peek button in the inspector header shows where the selected node sits: its ancestors, the node, and up to three levels of children with status and child counts. Opening or closing it leaves the selection and the map view alone; clicking a row selects that node.
+- The tree view's table of contents highlights the heading you are currently scrolled to (the same one the breadcrumb shows), marks it as the current location for screen readers, and scrolls it into view when the contents open. Keyboard focus now uses a ring, so it is distinct from the current row.
 
 ### Changed
 

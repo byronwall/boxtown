@@ -193,7 +193,7 @@ export function SpatialMapTreeNavigation(props: TreeNavigationProps) {
       >
         <Box as="nav" display="grid" gap="2px" maxH="min(56vh, 26rem)" overflow="auto" p="2px" aria-label="Tree table of contents">
           <For each={entries()}>
-            {(entry) => <TocEntry entry={entry} onNavigate={navigate} />}
+            {(entry) => <TocEntry entry={entry} activePath={activePath()} onNavigate={navigate} />}
           </For>
         </Box>
       </PanelPopover>
@@ -244,8 +244,12 @@ export function SpatialMapTreeNavigation(props: TreeNavigationProps) {
 
 function TocEntry(props: {
   entry: TreeNavigationEntry;
+  activePath: string;
   onNavigate: (path: string) => void;
 }) {
+  // The heading the tree is scrolled to, as tracked for the breadcrumb.
+  const isCurrent = () => props.entry.path === props.activePath;
+
   return (
     <Box display="grid" gap="2px" minW="0">
       <TreeNavigationButton
@@ -259,13 +263,18 @@ function TocEntry(props: {
         p="2px 8px 2px calc(8px + (var(--spatial-map-tree-toc-depth) * 14px))"
         border="0"
         borderRadius="4px"
-        background="transparent"
+        background={isCurrent() ? "rgba(34, 41, 36, 0.1)" : "transparent"}
         color="var(--spatial-map-copy)"
         fontFamily="inherit"
         textAlign="left"
         cursor="pointer"
-        _hover={{ background: "rgba(34, 41, 36, 0.06)", outline: "none" }}
-        _focusVisible={{ background: "rgba(34, 41, 36, 0.06)", outline: "none" }}
+        _hover={{ background: isCurrent() ? "rgba(34, 41, 36, 0.12)" : "rgba(34, 41, 36, 0.06)", outline: "none" }}
+        _focusVisible={{ boxShadow: "inset 0 0 0 1px rgba(34, 41, 36, 0.5)", outline: "none" }}
+        aria-current={isCurrent() ? "location" : undefined}
+        ref={(element) => {
+          // Bring the current heading into view when the contents open.
+          if (isCurrent()) queueMicrotask(() => element.scrollIntoView({ block: "nearest" }));
+        }}
         style={{ "--spatial-map-tree-toc-depth": String(props.entry.depth) }}
         onClick={() => props.onNavigate(props.entry.path)}
       >
@@ -273,10 +282,10 @@ function TocEntry(props: {
           as="span"
           minW="0"
           overflow="hidden"
-          color="var(--spatial-map-copy)"
+          color={isCurrent() ? "#141816" : "var(--spatial-map-copy)"}
           fontSize="12px"
           lineHeight="1.3"
-          fontWeight={props.entry.depth === 0 ? "700" : "500"}
+          fontWeight={isCurrent() || props.entry.depth === 0 ? "700" : "500"}
           textOverflow="ellipsis"
           whiteSpace="nowrap"
         >
@@ -289,7 +298,7 @@ function TocEntry(props: {
       <Show when={props.entry.childEntries.length > 0}>
         <Box display="grid" gap="2px" minW="0">
           <For each={props.entry.childEntries}>
-            {(entry) => <TocEntry entry={entry} onNavigate={props.onNavigate} />}
+            {(entry) => <TocEntry entry={entry} activePath={props.activePath} onNavigate={props.onNavigate} />}
           </For>
         </Box>
       </Show>
