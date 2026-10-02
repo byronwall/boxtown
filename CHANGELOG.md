@@ -2,6 +2,12 @@
 
 Notable changes to Product Grid Management, newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
 
+## 2026-10-02
+
+### Added
+
+- The node type picker (inspector, tree, and grid) has a filter field: start typing to narrow the types, use the arrow keys and Enter to choose, and an empty search says nothing matches.
+
 ## 2026-10-01
 
 ### Added
