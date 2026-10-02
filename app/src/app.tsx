@@ -11,6 +11,7 @@ import {
 import { AppShellFallback } from "./components/app-shell/AppHeader";
 import { ConsoleLogCaptureProvider } from "./components/console-log-capture";
 import { GlobalErrorOverlay } from "./components/errors/GlobalErrorOverlay";
+import { Toaster } from "./components/ui/toast";
 
 import "./index.css";
 
@@ -185,6 +186,7 @@ export default function App() {
       >
         <FileRoutes />
         <ConsoleLogCaptureProvider />
+        <Toaster />
       </Router>
     </MetaProvider>
   );

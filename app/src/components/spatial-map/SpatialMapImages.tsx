@@ -234,7 +234,7 @@ export function SpatialMapImageProvider(props: {
         clientMutationId,
       );
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       setPendingDeleteImageId(null);
       toaster.error({
         title: "Delete failed",

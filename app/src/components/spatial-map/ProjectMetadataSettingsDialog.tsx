@@ -121,7 +121,7 @@ export function ProjectMetadataSettingsDialog(
         description: "Project details and metadata settings were saved.",
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Settings were not saved",
         description:

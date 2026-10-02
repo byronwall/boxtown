@@ -83,7 +83,7 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
     try {
       result = await submitDeleteNode(appendClientMutationId(formData, clientMutationId));
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Delete failed",
         description: error instanceof Error ? error.message : "The node could not be deleted.",

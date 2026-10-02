@@ -144,7 +144,7 @@ export function SpatialMapChildNodePlaceholder(props: {
       props.onProjectUpdated?.(result.project, { clientMutationId, phase: "server" });
       queueMicrotask(() => controller.setSelectedNodeId(result.nodeId));
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Child node was not created",
         description:

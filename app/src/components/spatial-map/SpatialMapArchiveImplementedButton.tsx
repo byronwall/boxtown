@@ -56,7 +56,7 @@ export function SpatialMapArchiveImplementedButton(props: {
         description: `Archived ${targetIds.length} implemented node${targetIds.length === 1 ? "" : "s"} in this project.`,
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Archive failed",
         description: error instanceof Error ? error.message : "Implemented nodes could not be archived.",

@@ -1080,7 +1080,7 @@ function LinkActionsCell(props: {
         description: `${props.source.label} -> ${props.target.label} was removed.`,
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Delete failed",
         description:
@@ -1192,7 +1192,7 @@ function NodeNameCell(props: {
       props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       toaster.success({ title: "Node renamed", description: `${title} is now shown in the grid.` });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Rename failed",
         description: error instanceof Error ? error.message : "The node title could not be updated.",
@@ -1531,7 +1531,7 @@ async function submitNodePatch(input: {
       description: input.successDescription,
     });
   } catch (error) {
-    input.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+    input.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
     toaster.error({
       title: input.errorTitle,
       description: error instanceof Error ? error.message : "The grid value could not be updated.",

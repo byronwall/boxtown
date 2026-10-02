@@ -58,7 +58,7 @@ export function SpatialMapNodePriorityMenu(props: {
       const result = await submitPriority({ projectId: props.project.id, nodeId, priority, clientMutationId });
       props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Priority update failed",
         description: error instanceof Error ? error.message : "The node priority could not be updated.",

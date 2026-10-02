@@ -52,7 +52,7 @@ export function SpatialMapGridBulkBar(props: {
         props.onClear();
       }
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Bulk update failed",
         description: error instanceof Error ? error.message : "The selected nodes could not be updated.",
