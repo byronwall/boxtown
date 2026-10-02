@@ -318,7 +318,20 @@ export async function readProjectByIdFromDisk(
   return parsed.record;
 }
 
-export async function createProjectOnDisk(
+// ponytail: one global queue; use per-project queues only if throughput matters.
+let mutationTail = Promise.resolve();
+
+export function serializedMutation<Args extends unknown[], Result>(
+  mutate: (...args: Args) => Promise<Result>,
+) {
+  return (...args: Args): Promise<Result> => {
+    const result = mutationTail.then(() => mutate(...args));
+    mutationTail = result.then(() => undefined, () => undefined);
+    return result;
+  };
+}
+
+export const createProjectOnDisk = serializedMutation(async function createProjectOnDisk(
   input: CreateProjectInput = {},
 ): Promise<ProjectRecord> {
   const records = await readProjectRecordsFromDisk();
@@ -355,9 +368,9 @@ export async function createProjectOnDisk(
   await writeProjectAndPublish(nextRecord);
 
   return nextRecord;
-}
+});
 
-export async function deleteProjectOnDisk(projectId: string): Promise<void> {
+export const deleteProjectOnDisk = serializedMutation(async function deleteProjectOnDisk(projectId: string): Promise<void> {
   const records = await readProjectRecordsFromDisk();
   const nextRecords = records.filter((record) => record.id !== projectId);
 
@@ -366,9 +379,9 @@ export async function deleteProjectOnDisk(projectId: string): Promise<void> {
   }
 
   await writeProjectRecordsAndPublishDeletion(nextRecords, projectId);
-}
+});
 
-export async function updateProjectNodeContextOnDisk(
+export const updateProjectNodeContextOnDisk = serializedMutation(async function updateProjectNodeContextOnDisk(
   input: UpdateProjectNodeContextInput,
 ): Promise<ProjectRecord> {
   const current = await readProjectByIdFromDisk(input.projectId);
@@ -403,9 +416,9 @@ export async function updateProjectNodeContextOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodeTitleOnDisk(
+export const updateProjectNodeTitleOnDisk = serializedMutation(async function updateProjectNodeTitleOnDisk(
   input: UpdateProjectNodeTitleInput,
 ): Promise<ProjectRecord> {
   const current = await readProjectByIdFromDisk(input.projectId);
@@ -441,9 +454,9 @@ export async function updateProjectNodeTitleOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodeStatusOnDisk(
+export const updateProjectNodeStatusOnDisk = serializedMutation(async function updateProjectNodeStatusOnDisk(
   input: UpdateProjectNodeStatusInput,
 ): Promise<ProjectRecord> {
   if (!isMapNodeStatus(input.status)) {
@@ -482,9 +495,9 @@ export async function updateProjectNodeStatusOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodeArchivedOnDisk(
+export const updateProjectNodeArchivedOnDisk = serializedMutation(async function updateProjectNodeArchivedOnDisk(
   input: UpdateProjectNodeArchivedInput,
 ): Promise<ProjectRecord> {
   const current = await readProjectByIdFromDisk(input.projectId);
@@ -523,9 +536,9 @@ export async function updateProjectNodeArchivedOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodesBulkOnDisk(
+export const updateProjectNodesBulkOnDisk = serializedMutation(async function updateProjectNodesBulkOnDisk(
   input: BulkNodeUpdate & {
     projectId: string;
     actor?: ProjectOperationActor;
@@ -565,9 +578,9 @@ export async function updateProjectNodesBulkOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodePriorityOnDisk(input: {
+export const updateProjectNodePriorityOnDisk = serializedMutation(async function updateProjectNodePriorityOnDisk(input: {
   projectId: string;
   nodeId: string;
   priority: MapNodePriority | null;
@@ -610,9 +623,9 @@ export async function updateProjectNodePriorityOnDisk(input: {
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodeTypeOnDisk(
+export const updateProjectNodeTypeOnDisk = serializedMutation(async function updateProjectNodeTypeOnDisk(
   input: UpdateProjectNodeTypeInput,
 ): Promise<ProjectRecord> {
   const nextType = normalizeProjectNodeTypeName(input.type);
@@ -656,9 +669,9 @@ export async function updateProjectNodeTypeOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodeMetadataOnDisk(
+export const updateProjectNodeMetadataOnDisk = serializedMutation(async function updateProjectNodeMetadataOnDisk(
   input: UpdateProjectNodeMetadataInput,
 ): Promise<ProjectRecord> {
   const current = await readProjectByIdFromDisk(input.projectId);
@@ -700,9 +713,9 @@ export async function updateProjectNodeMetadataOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectMetadataSchemaOnDisk(
+export const updateProjectMetadataSchemaOnDisk = serializedMutation(async function updateProjectMetadataSchemaOnDisk(
   input: UpdateProjectMetadataSchemaInput,
 ): Promise<ProjectRecord> {
   const current = await readProjectByIdFromDisk(input.projectId);
@@ -737,9 +750,9 @@ export async function updateProjectMetadataSchemaOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function addProjectNodeImagesOnDisk(
+export const addProjectNodeImagesOnDisk = serializedMutation(async function addProjectNodeImagesOnDisk(
   input: AddProjectNodeImagesInput,
 ): Promise<ProjectRecord> {
   const imageFiles = input.images.filter((file) => file.size > 0);
@@ -802,9 +815,9 @@ export async function addProjectNodeImagesOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function deleteProjectNodeImageOnDisk(
+export const deleteProjectNodeImageOnDisk = serializedMutation(async function deleteProjectNodeImageOnDisk(
   input: DeleteProjectNodeImageInput,
 ): Promise<ProjectRecord> {
   const current = await readProjectByIdFromDisk(input.projectId);
@@ -858,9 +871,9 @@ export async function deleteProjectNodeImageOnDisk(
   );
 
   return nextRecord;
-}
+});
 
-export async function createContextNodeOnDisk(
+export const createContextNodeOnDisk = serializedMutation(async function createContextNodeOnDisk(
   input: CreateContextNodeInput,
 ): Promise<{
   nodeId: string;
@@ -921,9 +934,9 @@ export async function createContextNodeOnDisk(
     createdNodeCount: createdNodes.nodes.length,
     createdLinks: createdNodes.links,
   };
-}
+});
 
-export async function createChildNodeOnDisk(
+export const createChildNodeOnDisk = serializedMutation(async function createChildNodeOnDisk(
   input: CreateChildNodeInput,
 ): Promise<{ nodeId: string; project: ProjectRecord }> {
   const current = await readProjectByIdFromDisk(input.projectId);
@@ -987,7 +1000,7 @@ export async function createChildNodeOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return { nodeId, project: nextRecord };
-}
+});
 
 function createSingleContextNode(input: {
   label: string;
@@ -1089,7 +1102,7 @@ function createContextNoteNode(input: {
   };
 }
 
-export async function deleteProjectNodeOnDisk(
+export const deleteProjectNodeOnDisk = serializedMutation(async function deleteProjectNodeOnDisk(
   input: DeleteProjectNodeInput,
 ): Promise<ProjectRecord> {
   const current = await readProjectByIdFromDisk(input.projectId);
@@ -1129,9 +1142,9 @@ export async function deleteProjectNodeOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function deleteProjectLinkOnDisk(
+export const deleteProjectLinkOnDisk = serializedMutation(async function deleteProjectLinkOnDisk(
   input: DeleteProjectLinkInput,
 ): Promise<ProjectRecord> {
   const current = await readProjectByIdFromDisk(input.projectId);
@@ -1169,9 +1182,9 @@ export async function deleteProjectLinkOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function moveProjectNodeOnDisk(
+export const moveProjectNodeOnDisk = serializedMutation(async function moveProjectNodeOnDisk(
   input: MoveProjectNodeInput,
 ): Promise<ProjectRecord> {
   const current = await readProjectByIdFromDisk(input.projectId);
@@ -1230,7 +1243,7 @@ export async function moveProjectNodeOnDisk(
 
   await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
 function getDescendantNodeIds(data: SpatialMapData, nodeId: string) {
   const childrenByParent = new Map<string, string[]>();
