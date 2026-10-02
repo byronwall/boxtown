@@ -34,7 +34,12 @@ import {
   addProjectNodeImages,
   deleteProjectNodeImage,
 } from "~/lib/projects/data";
-import { appendClientMutationId, createClientMutationId } from "~/lib/projects/optimistic";
+import {
+  appendClientMutationId,
+  createClientMutationId,
+  createProjectNodeFormData,
+  updateProjectNode,
+} from "~/lib/projects/optimistic";
 import type { ProjectRecord } from "~/lib/projects/types";
 import type {
   MapLink,
@@ -48,6 +53,7 @@ import {
   copyImageTargetToClipboard,
   downloadImageTarget,
 } from "./image-viewer-actions";
+import { removeViewerImage, syncViewerImages, type ImageViewerState } from "./image-viewer-state";
 import { isEditableTarget } from "./spatial-map-dom";
 import { useSpatialMap } from "./SpatialMapContext";
 import { createContainedImageViewport } from "./use-contained-image-viewport";
@@ -69,12 +75,6 @@ interface SpatialMapImageContextValue {
     options?: { canDelete?: boolean },
   ) => void;
   uploadImages: (nodeId: string, files: File[]) => Promise<void>;
-}
-
-interface ImageViewerState {
-  items: SpatialMapImageTarget[];
-  index: number;
-  canDelete: boolean;
 }
 
 interface ViewerPanSession {
@@ -128,31 +128,11 @@ export function SpatialMapImageProvider(props: {
 
   const applyDeletedImageResult = (result: ProjectRecord, clientMutationId: string) => {
     props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
-    setViewerState((state) => {
-      if (!state) return state;
-      const nodesById = new Map(
-        result.spatialMap.nodes.map((node) => [node.id, node]),
-      );
-      const items = state.items.flatMap((item) => {
-        const node = nodesById.get(item.node.id);
-        const image = node?.images?.find(
-          (nodeImage) => nodeImage.id === item.image.id,
-        );
-        return node && image ? [{ node, image }] : [];
-      });
-      if (items.length === 0) return null;
-
-      return {
-        items,
-        index: Math.min(state.index, items.length - 1),
-        canDelete: state.canDelete,
-      };
-    });
+    setViewerState((state) => syncViewerImages(state, result.spatialMap.nodes));
     toaster.success({
       title: "Image deleted",
       description: "The image was removed from this node.",
     });
-    setPendingDeleteImageId(null);
   };
 
   const uploadImages = async (nodeId: string, files: File[]) => {
@@ -207,35 +187,34 @@ export function SpatialMapImageProvider(props: {
     }
   };
 
+  // The project and the open viewer drop the image together right away. A
+  // failed delete restores the viewer it replaced so the user can retry.
   const deleteImage = async (nodeId: string, imageId: string) => {
+    if (pendingDeleteImageId() === imageId) return;
     const clientMutationId = createClientMutationId();
     const previousProject = props.project;
+    const previousViewer = viewerState();
+    const nextViewer = removeViewerImage(previousViewer, imageId);
+    setPendingDeleteImageId(imageId);
+    setViewerState(nextViewer);
+    props.onProjectUpdated?.(
+      updateProjectNode(props.project, nodeId, (node) => ({
+        ...node,
+        images: (node.images ?? []).filter((image) => image.id !== imageId),
+      })),
+      { clientMutationId, phase: "optimistic" },
+    );
+
+    let result: ProjectRecord;
     try {
-      setPendingDeleteImageId(imageId);
-      const optimisticProject = {
-        ...props.project,
-        updatedAt: new Date().toISOString(),
-        spatialMap: {
-          ...props.project.spatialMap,
-          nodes: props.project.spatialMap.nodes.map((node) =>
-            node.id === nodeId
-              ? { ...node, images: (node.images ?? []).filter((image) => image.id !== imageId) }
-              : node,
-          ),
-        },
-      } satisfies ProjectRecord;
-      props.onProjectUpdated?.(optimisticProject, { clientMutationId, phase: "optimistic" });
-      const formData = new FormData();
-      formData.set("projectId", props.project.id);
-      formData.set("nodeId", nodeId);
-      formData.set("imageId", imageId);
-      applyDeletedImageResult(
-        await submitDeleteProjectNodeImage(appendClientMutationId(formData, clientMutationId)),
-        clientMutationId,
+      result = await submitDeleteProjectNodeImage(
+        appendClientMutationId(createProjectNodeFormData(props.project.id, nodeId, { imageId }), clientMutationId),
       );
+      // A failed transport can resolve without a project instead of rejecting.
+      if (!result?.spatialMap) throw new Error("The server did not confirm the delete.");
     } catch (error) {
       props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
-      setPendingDeleteImageId(null);
+      setViewerState((state) => (state === nextViewer ? previousViewer : state));
       toaster.error({
         title: "Delete failed",
         description:
@@ -243,7 +222,11 @@ export function SpatialMapImageProvider(props: {
             ? error.message
             : "The image could not be deleted.",
       });
+      return;
+    } finally {
+      setPendingDeleteImageId((current) => (current === imageId ? null : current));
     }
+    applyDeletedImageResult(result, clientMutationId);
   };
 
   const handlePaste = (event: ClipboardEvent) => {

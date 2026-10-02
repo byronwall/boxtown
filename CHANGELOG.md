@@ -17,6 +17,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 - Overlapping saves (for example a title and a status changed back to back, or an agent editing while you edit) no longer overwrite each other on the server.
 - Edits stay on screen while they save, even when another save finishes, another tab saves, or the server pushes an update. A failed save rolls back only that edit, and a successful save is kept even if the follow-up refresh fails.
 - Success and error notifications appear again. The notification area was never mounted, so failures were silent.
+- Deleting an image in the image viewer updates the viewer immediately: it moves to the next image, or closes when the last image is deleted. A failed delete puts the image back in the viewer with an error so you can retry.
 
 ## 2026-10-01
 
