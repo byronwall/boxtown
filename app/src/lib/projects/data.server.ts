@@ -272,10 +272,7 @@ function mergeMutationMetadata(
   return mutationMetadata || metadata ? { ...metadata, ...mutationMetadata } : undefined;
 }
 
-async function writeProjectRecordsAndPublishProject(
-  _records: ProjectRecord[],
-  project: ProjectRecord,
-) {
+async function writeProjectAndPublish(project: ProjectRecord) {
   await writeProjectRecordToDisk(project);
   publishProjectRecordChanged(project);
 }
@@ -321,7 +318,20 @@ export async function readProjectByIdFromDisk(
   return parsed.record;
 }
 
-export async function createProjectOnDisk(
+// ponytail: one global queue; use per-project queues only if throughput matters.
+let mutationTail = Promise.resolve();
+
+export function serializedMutation<Args extends unknown[], Result>(
+  mutate: (...args: Args) => Promise<Result>,
+) {
+  return (...args: Args): Promise<Result> => {
+    const result = mutationTail.then(() => mutate(...args));
+    mutationTail = result.then(() => undefined, () => undefined);
+    return result;
+  };
+}
+
+export const createProjectOnDisk = serializedMutation(async function createProjectOnDisk(
   input: CreateProjectInput = {},
 ): Promise<ProjectRecord> {
   const records = await readProjectRecordsFromDisk();
@@ -355,13 +365,12 @@ export async function createProjectOnDisk(
     ],
   };
 
-  records.push(nextRecord);
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
 
   return nextRecord;
-}
+});
 
-export async function deleteProjectOnDisk(projectId: string): Promise<void> {
+export const deleteProjectOnDisk = serializedMutation(async function deleteProjectOnDisk(projectId: string): Promise<void> {
   const records = await readProjectRecordsFromDisk();
   const nextRecords = records.filter((record) => record.id !== projectId);
 
@@ -370,19 +379,16 @@ export async function deleteProjectOnDisk(projectId: string): Promise<void> {
   }
 
   await writeProjectRecordsAndPublishDeletion(nextRecords, projectId);
-}
+});
 
-export async function updateProjectNodeContextOnDisk(
+export const updateProjectNodeContextOnDisk = serializedMutation(async function updateProjectNodeContextOnDisk(
   input: UpdateProjectNodeContextInput,
 ): Promise<ProjectRecord> {
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
 
   if (nodeIndex === -1) {
@@ -408,22 +414,18 @@ export async function updateProjectNodeContextOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodeTitleOnDisk(
+export const updateProjectNodeTitleOnDisk = serializedMutation(async function updateProjectNodeTitleOnDisk(
   input: UpdateProjectNodeTitleInput,
 ): Promise<ProjectRecord> {
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
 
   if (nodeIndex === -1) {
@@ -450,26 +452,22 @@ export async function updateProjectNodeTitleOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodeStatusOnDisk(
+export const updateProjectNodeStatusOnDisk = serializedMutation(async function updateProjectNodeStatusOnDisk(
   input: UpdateProjectNodeStatusInput,
 ): Promise<ProjectRecord> {
   if (!isMapNodeStatus(input.status)) {
     throw new Error("Invalid node status.");
   }
 
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
 
   if (nodeIndex === -1) {
@@ -495,22 +493,18 @@ export async function updateProjectNodeStatusOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodeArchivedOnDisk(
+export const updateProjectNodeArchivedOnDisk = serializedMutation(async function updateProjectNodeArchivedOnDisk(
   input: UpdateProjectNodeArchivedInput,
 ): Promise<ProjectRecord> {
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const currentNode = current.spatialMap.nodes.find((node) => node.id === input.nodeId);
 
   if (!currentNode) {
@@ -540,12 +534,11 @@ export async function updateProjectNodeArchivedOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodesBulkOnDisk(
+export const updateProjectNodesBulkOnDisk = serializedMutation(async function updateProjectNodesBulkOnDisk(
   input: BulkNodeUpdate & {
     projectId: string;
     actor?: ProjectOperationActor;
@@ -559,14 +552,11 @@ export async function updateProjectNodesBulkOnDisk(
     throw new Error("A bulk update needs a status or archive change.");
   }
 
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));
   const nodeIds = [...new Set(input.nodeIds)].filter((nodeId) => existingIds.has(nodeId));
   if (nodeIds.length === 0) {
@@ -586,12 +576,11 @@ export async function updateProjectNodesBulkOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodePriorityOnDisk(input: {
+export const updateProjectNodePriorityOnDisk = serializedMutation(async function updateProjectNodePriorityOnDisk(input: {
   projectId: string;
   nodeId: string;
   priority: MapNodePriority | null;
@@ -602,14 +591,11 @@ export async function updateProjectNodePriorityOnDisk(input: {
     throw new Error("Invalid node priority.");
   }
 
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const currentNode = current.spatialMap.nodes.find((node) => node.id === input.nodeId);
 
   if (!currentNode) {
@@ -635,12 +621,11 @@ export async function updateProjectNodePriorityOnDisk(input: {
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodeTypeOnDisk(
+export const updateProjectNodeTypeOnDisk = serializedMutation(async function updateProjectNodeTypeOnDisk(
   input: UpdateProjectNodeTypeInput,
 ): Promise<ProjectRecord> {
   const nextType = normalizeProjectNodeTypeName(input.type);
@@ -648,14 +633,11 @@ export async function updateProjectNodeTypeOnDisk(
     throw new Error("A valid node type is required.");
   }
 
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   if (!current.nodeTypeSchema.some((item) => item.name === nextType)) {
     throw new Error("Node type is not defined in project settings.");
   }
@@ -685,22 +667,18 @@ export async function updateProjectNodeTypeOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectNodeMetadataOnDisk(
+export const updateProjectNodeMetadataOnDisk = serializedMutation(async function updateProjectNodeMetadataOnDisk(
   input: UpdateProjectNodeMetadataInput,
 ): Promise<ProjectRecord> {
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
 
   if (nodeIndex === -1) {
@@ -733,22 +711,18 @@ export async function updateProjectNodeMetadataOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function updateProjectMetadataSchemaOnDisk(
+export const updateProjectMetadataSchemaOnDisk = serializedMutation(async function updateProjectMetadataSchemaOnDisk(
   input: UpdateProjectMetadataSchemaInput,
 ): Promise<ProjectRecord> {
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const nextSchema = normalizeProjectMetadataSchemaRows(input.fields);
   const nextNodeTypeSchema = normalizeProjectNodeTypeSchema(input.nodeTypes);
   const nextNodes = current.spatialMap.nodes.map((node) => ({
@@ -774,12 +748,11 @@ export async function updateProjectMetadataSchemaOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function addProjectNodeImagesOnDisk(
+export const addProjectNodeImagesOnDisk = serializedMutation(async function addProjectNodeImagesOnDisk(
   input: AddProjectNodeImagesInput,
 ): Promise<ProjectRecord> {
   const imageFiles = input.images.filter((file) => file.size > 0);
@@ -787,14 +760,11 @@ export async function addProjectNodeImagesOnDisk(
     throw new Error("At least one image file is required.");
   }
 
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
 
   if (nodeIndex === -1) {
@@ -843,22 +813,18 @@ export async function addProjectNodeImagesOnDisk(
     metadata: mergeMutationMetadata(input, { imageCount: String(storedImages.length) }),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function deleteProjectNodeImageOnDisk(
+export const deleteProjectNodeImageOnDisk = serializedMutation(async function deleteProjectNodeImageOnDisk(
   input: DeleteProjectNodeImageInput,
 ): Promise<ProjectRecord> {
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const nodeIndex = current.spatialMap.nodes.findIndex((node) => node.id === input.nodeId);
 
   if (nodeIndex === -1) {
@@ -893,8 +859,7 @@ export async function deleteProjectNodeImageOnDisk(
     metadata: mergeMutationMetadata(input, { imageId: input.imageId }),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
 
   await rm(
     getProjectNodeImageFilePath({
@@ -906,9 +871,9 @@ export async function deleteProjectNodeImageOnDisk(
   );
 
   return nextRecord;
-}
+});
 
-export async function createContextNodeOnDisk(
+export const createContextNodeOnDisk = serializedMutation(async function createContextNodeOnDisk(
   input: CreateContextNodeInput,
 ): Promise<{
   nodeId: string;
@@ -917,14 +882,11 @@ export async function createContextNodeOnDisk(
   createdNodeCount: number;
   createdLinks: SpatialMapData["links"];
 }> {
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));
   const baseLabel = input.label.trim();
   const metadata = sanitizeNodeMetadata(input.metadata, current.nodeMetadataSchema, {
@@ -964,8 +926,7 @@ export async function createContextNodeOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return {
     nodeId: createdNodes.rootNodeId,
     createdNodeIds: createdNodes.nodes.map((node) => node.id),
@@ -973,19 +934,16 @@ export async function createContextNodeOnDisk(
     createdNodeCount: createdNodes.nodes.length,
     createdLinks: createdNodes.links,
   };
-}
+});
 
-export async function createChildNodeOnDisk(
+export const createChildNodeOnDisk = serializedMutation(async function createChildNodeOnDisk(
   input: CreateChildNodeInput,
 ): Promise<{ nodeId: string; project: ProjectRecord }> {
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const parentNode = input.parentNodeId
     ? current.spatialMap.nodes.find((node) => node.id === input.parentNodeId) ?? null
     : null;
@@ -1040,10 +998,9 @@ export async function createChildNodeOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return { nodeId, project: nextRecord };
-}
+});
 
 function createSingleContextNode(input: {
   label: string;
@@ -1145,17 +1102,14 @@ function createContextNoteNode(input: {
   };
 }
 
-export async function deleteProjectNodeOnDisk(
+export const deleteProjectNodeOnDisk = serializedMutation(async function deleteProjectNodeOnDisk(
   input: DeleteProjectNodeInput,
 ): Promise<ProjectRecord> {
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const nodeExists = current.spatialMap.nodes.some((node) => node.id === input.nodeId);
 
   if (!nodeExists) {
@@ -1186,22 +1140,18 @@ export async function deleteProjectNodeOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function deleteProjectLinkOnDisk(
+export const deleteProjectLinkOnDisk = serializedMutation(async function deleteProjectLinkOnDisk(
   input: DeleteProjectLinkInput,
 ): Promise<ProjectRecord> {
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const relationship = input.relationship.trim() || "related";
   const nextLinks = current.spatialMap.links.filter(
     (link) =>
@@ -1230,22 +1180,18 @@ export async function deleteProjectLinkOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
-export async function moveProjectNodeOnDisk(
+export const moveProjectNodeOnDisk = serializedMutation(async function moveProjectNodeOnDisk(
   input: MoveProjectNodeInput,
 ): Promise<ProjectRecord> {
-  const records = await readProjectRecordsFromDisk();
-  const recordIndex = records.findIndex((record) => record.id === input.projectId);
+  const current = await readProjectByIdFromDisk(input.projectId);
 
-  if (recordIndex === -1) {
+  if (!current) {
     throw new Error("Project not found.");
   }
-
-  const current = records[recordIndex];
   const nodeExists = current.spatialMap.nodes.some((node) => node.id === input.nodeId);
   const parentNodeExists = input.parentNodeId
     ? current.spatialMap.nodes.some((node) => node.id === input.parentNodeId)
@@ -1295,10 +1241,9 @@ export async function moveProjectNodeOnDisk(
     metadata: getMutationMetadata(input),
   });
 
-  records[recordIndex] = nextRecord;
-  await writeProjectRecordsAndPublishProject(records, nextRecord);
+  await writeProjectAndPublish(nextRecord);
   return nextRecord;
-}
+});
 
 function getDescendantNodeIds(data: SpatialMapData, nodeId: string) {
   const childrenByParent = new Map<string, string[]>();

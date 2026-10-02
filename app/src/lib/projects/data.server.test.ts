@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -15,6 +15,7 @@ import {
   readProjectSummariesFromDisk,
   updateProjectNodeArchivedOnDisk,
   updateProjectNodeContextOnDisk,
+  updateProjectNodeTitleOnDisk,
   updateProjectNodeMetadataOnDisk,
   updateProjectMetadataSchemaOnDisk,
 } from "./data.server";
@@ -207,7 +208,7 @@ describe("deleteProjectOnDisk", () => {
 });
 
 describe("context node persistence", () => {
-  it("updates node context on disk", async () => {
+  it("updates node context without parsing unrelated project records", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-update-"));
     const dataDir = path.join(tempRoot, "app", "data");
@@ -227,6 +228,15 @@ describe("context node persistence", () => {
         links: [],
       },
     }));
+    writeProjectFixture(dataDir, {
+      ...buildProjectFixture({
+        id: "corrupt-project",
+        spatialMap: { nodes: [], links: [] },
+      }),
+      operationLog: {},
+    });
+    const corruptFile = path.join(dataDir, "projects", "corrupt-project", "project.json");
+    const corruptJson = readFileSync(corruptFile, "utf8");
 
     try {
       process.chdir(tempRoot);
@@ -240,6 +250,7 @@ describe("context node persistence", () => {
       const persisted = await readProjectByIdFromDisk("context-project");
       expect(persisted?.spatialMap.nodes[0]?.context).toBe("# Stored context");
       expect(persisted?.spatialMap.nodes[0]?.rawContext).toBe("");
+      expect(readFileSync(corruptFile, "utf8")).toBe(corruptJson);
     } finally {
       process.chdir(originalCwd);
     }
@@ -1070,6 +1081,50 @@ describe("context node persistence", () => {
       expect(existsSync(imagePath)).toBe(false);
     } finally {
       process.chdir(originalCwd);
+    }
+  });
+});
+
+describe("project mutations", () => {
+  it("preserves overlapping edits and continues after a rejected mutation", async () => {
+    const originalDataDir = process.env.APP_DATA_DIR;
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-overlapping-edits-"));
+
+    try {
+      process.env.APP_DATA_DIR = tempRoot;
+      const project = await createProjectOnDisk({ name: "Overlapping Edits" });
+      const { nodeId } = await createChildNodeOnDisk({
+        projectId: project.id,
+        parentNodeId: null,
+        title: "Original",
+      });
+      const input = { projectId: project.id, nodeId };
+
+      await Promise.all([
+        updateProjectNodeTitleOnDisk({ ...input, title: "New title", clientMutationId: "title-edit" }),
+        updateProjectNodeContextOnDisk({ ...input, context: "New context", clientMutationId: "context-edit" }),
+      ]);
+
+      const persisted = await readProjectByIdFromDisk(project.id);
+      expect(persisted?.spatialMap.nodes[0]).toMatchObject({ label: "New title", context: "New context" });
+      expect(persisted?.operationLog.map((entry) => entry.metadata?.clientMutationId))
+        .toEqual(expect.arrayContaining(["title-edit", "context-edit"]));
+
+      const [rejected, recovered] = await Promise.allSettled([
+        updateProjectNodeContextOnDisk({ ...input, nodeId: "missing", context: "Rejected" }),
+        updateProjectNodeTitleOnDisk({ ...input, title: "After rejection", clientMutationId: "recovered-edit" }),
+      ]);
+      expect(rejected).toMatchObject({ status: "rejected", reason: new Error("Node not found.") });
+      expect(recovered.status).toBe("fulfilled");
+
+      const reloaded = await readProjectByIdFromDisk(project.id);
+      expect(reloaded?.spatialMap.nodes[0]).toMatchObject({ label: "After rejection", context: "New context" });
+      expect(reloaded?.operationLog.map((entry) => entry.metadata?.clientMutationId))
+        .toEqual(expect.arrayContaining(["title-edit", "context-edit", "recovered-edit"]));
+    } finally {
+      if (originalDataDir === undefined) delete process.env.APP_DATA_DIR;
+      else process.env.APP_DATA_DIR = originalDataDir;
+      rmSync(tempRoot, { recursive: true, force: true });
     }
   });
 });

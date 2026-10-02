@@ -9,6 +9,7 @@ import {
   readProjectByIdFromDisk,
   readProjectRecordsFromDisk,
   safePathSegment,
+  serializedMutation,
   writeProjectRecordsToDisk,
 } from "./data.server";
 import { parseStoredProjectRecord } from "./project-record-format";
@@ -60,7 +61,7 @@ export async function exportProjectArchiveOnDisk(projectId: string) {
   };
 }
 
-export async function importProjectArchiveOnDisk(file: File) {
+export const importProjectArchiveOnDisk = serializedMutation(async function importProjectArchiveOnDisk(file: File) {
   if (file.size === 0) throw new Error("Choose a project archive to import.");
 
   const entries = readZip(Buffer.from(await file.arrayBuffer()));
@@ -94,7 +95,7 @@ export async function importProjectArchiveOnDisk(file: File) {
   publishProjectRecordChanged(project);
 
   return project;
-}
+});
 
 function jsonEntry(name: string, value: unknown): ZipEntry {
   return { name, data: Buffer.from(`${JSON.stringify(value, null, 2)}\n`) };
