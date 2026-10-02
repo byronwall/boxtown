@@ -19,12 +19,23 @@ interface SpatialMapInspectorHeaderProps {
 
 export function SpatialMapInspectorHeader(props: SpatialMapInspectorHeaderProps) {
   return (
+    // Sticky inside the inspector scroll area. The negative offsets cancel the
+    // aside padding so the opaque band covers content scrolling underneath.
     <Box
-      w="100%"
+      position="sticky"
+      top="-10px"
+      zIndex="2"
+      w="auto"
+      mt="-10px"
+      mx="-12px"
+      p="10px 12px 6px"
       display="grid"
       gridTemplateColumns="minmax(0, 1fr) auto"
       alignItems="start"
       gap="8px"
+      // The panel tint is translucent, so layer it over white to stay opaque.
+      background="linear-gradient(var(--spatial-map-panel-strong), var(--spatial-map-panel-strong)), white"
+      boxShadow="0 1px 0 var(--spatial-map-panel-border)"
     >
       <VStack alignItems="start" gap="1" minW="0">
         <Show when={props.kicker}>

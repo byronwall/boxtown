@@ -2,6 +2,16 @@
 
 Notable changes to Product Grid Management, newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
 
+## 2026-10-02
+
+### Added
+
+- The inspector header has an Archive implemented action (archive icon with a count) in canvas, tree, and grid, with or without a selected node.
+
+### Changed
+
+- The inspector title and its header actions stay pinned at the top while the inspector body scrolls.
+
 ## 2026-10-01
 
 ### Added

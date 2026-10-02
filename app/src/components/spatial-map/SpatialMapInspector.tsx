@@ -26,6 +26,7 @@ import { Text } from "~/components/ui/text";
 import { getMapNodeStatusLabel } from "~/lib/spatial-map/node-status";
 import { type MapNode, type MapNodeStatus } from "~/lib/spatial-map/types";
 import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
+import { SpatialMapArchiveImplementedButton } from "./SpatialMapArchiveImplementedButton";
 import { SpatialMapArchiveNodeControl } from "./SpatialMapArchiveNodeControl";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapCopyAgentPromptButton } from "./SpatialMapCopyAgentPromptButton";
@@ -590,6 +591,13 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
               title={headerTitle()}
               actions={
                 <>
+                  <Show when={inspectorView() === "details"}>
+                    <SpatialMapArchiveImplementedButton
+                      project={props.project}
+                      compact
+                      onProjectUpdated={props.onProjectUpdated}
+                    />
+                  </Show>
                   <Show when={inspectorView() === "details" && selectedNode()}>
                     {(node) => (
                       <SpatialMapCopyAgentPromptButton project={props.project} nodeId={node().id} />
