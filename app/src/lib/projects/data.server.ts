@@ -41,6 +41,7 @@ import type {
   ProjectRecord,
   ProjectSummary,
 } from "./types";
+import { serializeProjectWrite } from "./project-write-lock.server";
 
 interface CreateProjectInput {
   name?: string;
@@ -321,7 +322,7 @@ export async function readProjectByIdFromDisk(
   return parsed.record;
 }
 
-export async function createProjectOnDisk(
+async function createProjectOnDiskUnlocked(
   input: CreateProjectInput = {},
 ): Promise<ProjectRecord> {
   const records = await readProjectRecordsFromDisk();
@@ -361,7 +362,7 @@ export async function createProjectOnDisk(
   return nextRecord;
 }
 
-export async function deleteProjectOnDisk(projectId: string): Promise<void> {
+async function deleteProjectOnDiskUnlocked(projectId: string): Promise<void> {
   const records = await readProjectRecordsFromDisk();
   const nextRecords = records.filter((record) => record.id !== projectId);
 
@@ -372,7 +373,7 @@ export async function deleteProjectOnDisk(projectId: string): Promise<void> {
   await writeProjectRecordsAndPublishDeletion(nextRecords, projectId);
 }
 
-export async function updateProjectNodeContextOnDisk(
+async function updateProjectNodeContextOnDiskUnlocked(
   input: UpdateProjectNodeContextInput,
 ): Promise<ProjectRecord> {
   const records = await readProjectRecordsFromDisk();
@@ -413,7 +414,7 @@ export async function updateProjectNodeContextOnDisk(
   return nextRecord;
 }
 
-export async function updateProjectNodeTitleOnDisk(
+async function updateProjectNodeTitleOnDiskUnlocked(
   input: UpdateProjectNodeTitleInput,
 ): Promise<ProjectRecord> {
   const records = await readProjectRecordsFromDisk();
@@ -455,7 +456,7 @@ export async function updateProjectNodeTitleOnDisk(
   return nextRecord;
 }
 
-export async function updateProjectNodeStatusOnDisk(
+async function updateProjectNodeStatusOnDiskUnlocked(
   input: UpdateProjectNodeStatusInput,
 ): Promise<ProjectRecord> {
   if (!isMapNodeStatus(input.status)) {
@@ -500,7 +501,7 @@ export async function updateProjectNodeStatusOnDisk(
   return nextRecord;
 }
 
-export async function updateProjectNodeArchivedOnDisk(
+async function updateProjectNodeArchivedOnDiskUnlocked(
   input: UpdateProjectNodeArchivedInput,
 ): Promise<ProjectRecord> {
   const records = await readProjectRecordsFromDisk();
@@ -545,7 +546,7 @@ export async function updateProjectNodeArchivedOnDisk(
   return nextRecord;
 }
 
-export async function updateProjectNodesBulkOnDisk(
+async function updateProjectNodesBulkOnDiskUnlocked(
   input: BulkNodeUpdate & {
     projectId: string;
     actor?: ProjectOperationActor;
@@ -591,7 +592,7 @@ export async function updateProjectNodesBulkOnDisk(
   return nextRecord;
 }
 
-export async function updateProjectNodePriorityOnDisk(input: {
+async function updateProjectNodePriorityOnDiskUnlocked(input: {
   projectId: string;
   nodeId: string;
   priority: MapNodePriority | null;
@@ -640,7 +641,7 @@ export async function updateProjectNodePriorityOnDisk(input: {
   return nextRecord;
 }
 
-export async function updateProjectNodeTypeOnDisk(
+async function updateProjectNodeTypeOnDiskUnlocked(
   input: UpdateProjectNodeTypeInput,
 ): Promise<ProjectRecord> {
   const nextType = normalizeProjectNodeTypeName(input.type);
@@ -690,7 +691,7 @@ export async function updateProjectNodeTypeOnDisk(
   return nextRecord;
 }
 
-export async function updateProjectNodeMetadataOnDisk(
+async function updateProjectNodeMetadataOnDiskUnlocked(
   input: UpdateProjectNodeMetadataInput,
 ): Promise<ProjectRecord> {
   const records = await readProjectRecordsFromDisk();
@@ -738,7 +739,7 @@ export async function updateProjectNodeMetadataOnDisk(
   return nextRecord;
 }
 
-export async function updateProjectMetadataSchemaOnDisk(
+async function updateProjectMetadataSchemaOnDiskUnlocked(
   input: UpdateProjectMetadataSchemaInput,
 ): Promise<ProjectRecord> {
   const records = await readProjectRecordsFromDisk();
@@ -779,7 +780,7 @@ export async function updateProjectMetadataSchemaOnDisk(
   return nextRecord;
 }
 
-export async function addProjectNodeImagesOnDisk(
+async function addProjectNodeImagesOnDiskUnlocked(
   input: AddProjectNodeImagesInput,
 ): Promise<ProjectRecord> {
   const imageFiles = input.images.filter((file) => file.size > 0);
@@ -848,7 +849,7 @@ export async function addProjectNodeImagesOnDisk(
   return nextRecord;
 }
 
-export async function deleteProjectNodeImageOnDisk(
+async function deleteProjectNodeImageOnDiskUnlocked(
   input: DeleteProjectNodeImageInput,
 ): Promise<ProjectRecord> {
   const records = await readProjectRecordsFromDisk();
@@ -908,7 +909,7 @@ export async function deleteProjectNodeImageOnDisk(
   return nextRecord;
 }
 
-export async function createContextNodeOnDisk(
+async function createContextNodeOnDiskUnlocked(
   input: CreateContextNodeInput,
 ): Promise<{
   nodeId: string;
@@ -975,7 +976,7 @@ export async function createContextNodeOnDisk(
   };
 }
 
-export async function createChildNodeOnDisk(
+async function createChildNodeOnDiskUnlocked(
   input: CreateChildNodeInput,
 ): Promise<{ nodeId: string; project: ProjectRecord }> {
   const records = await readProjectRecordsFromDisk();
@@ -1145,7 +1146,7 @@ function createContextNoteNode(input: {
   };
 }
 
-export async function deleteProjectNodeOnDisk(
+async function deleteProjectNodeOnDiskUnlocked(
   input: DeleteProjectNodeInput,
 ): Promise<ProjectRecord> {
   const records = await readProjectRecordsFromDisk();
@@ -1191,7 +1192,7 @@ export async function deleteProjectNodeOnDisk(
   return nextRecord;
 }
 
-export async function deleteProjectLinkOnDisk(
+async function deleteProjectLinkOnDiskUnlocked(
   input: DeleteProjectLinkInput,
 ): Promise<ProjectRecord> {
   const records = await readProjectRecordsFromDisk();
@@ -1235,7 +1236,7 @@ export async function deleteProjectLinkOnDisk(
   return nextRecord;
 }
 
-export async function moveProjectNodeOnDisk(
+async function moveProjectNodeOnDiskUnlocked(
   input: MoveProjectNodeInput,
 ): Promise<ProjectRecord> {
   const records = await readProjectRecordsFromDisk();
@@ -1711,3 +1712,23 @@ export function getProjectDataDir(projectId: string) {
 export function getProjectJsonFilePath(projectId: string) {
   return path.join(getProjectDataDir(projectId), "project.json");
 }
+
+// Mutations are serialized so overlapping requests cannot overwrite each other.
+export const createProjectOnDisk = serializeProjectWrite(createProjectOnDiskUnlocked);
+export const deleteProjectOnDisk = serializeProjectWrite(deleteProjectOnDiskUnlocked);
+export const updateProjectNodeContextOnDisk = serializeProjectWrite(updateProjectNodeContextOnDiskUnlocked);
+export const updateProjectNodeTitleOnDisk = serializeProjectWrite(updateProjectNodeTitleOnDiskUnlocked);
+export const updateProjectNodeStatusOnDisk = serializeProjectWrite(updateProjectNodeStatusOnDiskUnlocked);
+export const updateProjectNodeArchivedOnDisk = serializeProjectWrite(updateProjectNodeArchivedOnDiskUnlocked);
+export const updateProjectNodesBulkOnDisk = serializeProjectWrite(updateProjectNodesBulkOnDiskUnlocked);
+export const updateProjectNodePriorityOnDisk = serializeProjectWrite(updateProjectNodePriorityOnDiskUnlocked);
+export const updateProjectNodeTypeOnDisk = serializeProjectWrite(updateProjectNodeTypeOnDiskUnlocked);
+export const updateProjectNodeMetadataOnDisk = serializeProjectWrite(updateProjectNodeMetadataOnDiskUnlocked);
+export const updateProjectMetadataSchemaOnDisk = serializeProjectWrite(updateProjectMetadataSchemaOnDiskUnlocked);
+export const addProjectNodeImagesOnDisk = serializeProjectWrite(addProjectNodeImagesOnDiskUnlocked);
+export const deleteProjectNodeImageOnDisk = serializeProjectWrite(deleteProjectNodeImageOnDiskUnlocked);
+export const createContextNodeOnDisk = serializeProjectWrite(createContextNodeOnDiskUnlocked);
+export const createChildNodeOnDisk = serializeProjectWrite(createChildNodeOnDiskUnlocked);
+export const deleteProjectNodeOnDisk = serializeProjectWrite(deleteProjectNodeOnDiskUnlocked);
+export const deleteProjectLinkOnDisk = serializeProjectWrite(deleteProjectLinkOnDiskUnlocked);
+export const moveProjectNodeOnDisk = serializeProjectWrite(moveProjectNodeOnDiskUnlocked);

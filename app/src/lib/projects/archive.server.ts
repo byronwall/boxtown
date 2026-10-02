@@ -12,6 +12,7 @@ import {
   writeProjectRecordsToDisk,
 } from "./data.server";
 import { parseStoredProjectRecord } from "./project-record-format";
+import { withProjectWriteLock } from "./project-write-lock.server";
 import type { ProjectRecord } from "./types";
 
 const FORMAT = "product-grid-project-archive";
@@ -84,12 +85,15 @@ export async function importProjectArchiveOnDisk(file: File) {
     throw new Error("Archive manifest does not match project payload.");
   }
 
-  const records = await readProjectRecordsFromDisk();
-  const projectId = uniqueImportedProjectId(archivedProject.id, records);
-  const project = normalizeImportedProject(archivedProject, projectId);
+  const project = await withProjectWriteLock(async () => {
+    const records = await readProjectRecordsFromDisk();
+    const projectId = uniqueImportedProjectId(archivedProject.id, records);
+    const imported = normalizeImportedProject(archivedProject, projectId);
 
-  assertArchivedImagesExist(project, entries);
-  await writeProjectRecordsToDisk([...records, project]);
+    assertArchivedImagesExist(imported, entries);
+    await writeProjectRecordsToDisk([...records, imported]);
+    return imported;
+  });
   await writeImportedImages(project, entries);
   publishProjectRecordChanged(project);
 

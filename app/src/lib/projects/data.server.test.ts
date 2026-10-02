@@ -16,6 +16,8 @@ import {
   updateProjectNodeArchivedOnDisk,
   updateProjectNodeContextOnDisk,
   updateProjectNodeMetadataOnDisk,
+  updateProjectNodeStatusOnDisk,
+  updateProjectNodeTitleOnDisk,
   updateProjectMetadataSchemaOnDisk,
 } from "./data.server";
 import {
@@ -278,6 +280,41 @@ describe("context node persistence", () => {
         context: "# Checkout\n\nContext",
         rawContext: "# Checkout\n\nContext",
         metadata: { purpose: "Checkout entry" },
+      });
+    } finally {
+      process.chdir(originalCwd);
+    }
+  });
+
+  it("keeps both edits when two node updates overlap", async () => {
+    const originalCwd = process.cwd();
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-concurrent-"));
+    const dataDir = path.join(tempRoot, "app", "data");
+    mkdirSync(dataDir, { recursive: true });
+    writeFileSync(path.join(dataDir, "projects.json"), "[]\n", "utf8");
+
+    try {
+      process.chdir(tempRoot);
+
+      const project = await createProjectOnDisk({ name: "Concurrent Edits" });
+      const created = await createChildNodeOnDisk({
+        projectId: project.id,
+        parentNodeId: null,
+        title: "Root",
+        type: "page",
+        status: "planned",
+      });
+      await Promise.all([
+        updateProjectNodeTitleOnDisk({ projectId: project.id, nodeId: created.nodeId, title: "Renamed" }),
+        updateProjectNodeStatusOnDisk({ projectId: project.id, nodeId: created.nodeId, status: "implemented" }),
+        updateProjectNodeContextOnDisk({ projectId: project.id, nodeId: created.nodeId, context: "Ctx" }),
+      ]);
+
+      const persisted = await readProjectByIdFromDisk(project.id);
+      expect(persisted?.spatialMap.nodes[0]).toMatchObject({
+        label: "Renamed",
+        status: "implemented",
+        context: "Ctx",
       });
     } finally {
       process.chdir(originalCwd);
