@@ -207,7 +207,7 @@ describe("deleteProjectOnDisk", () => {
 });
 
 describe("context node persistence", () => {
-  it("updates node context on disk", async () => {
+  it("updates node context without parsing unrelated project records", async () => {
     const originalCwd = process.cwd();
     const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-context-update-"));
     const dataDir = path.join(tempRoot, "app", "data");
@@ -227,6 +227,15 @@ describe("context node persistence", () => {
         links: [],
       },
     }));
+    writeProjectFixture(dataDir, {
+      ...buildProjectFixture({
+        id: "corrupt-project",
+        spatialMap: { nodes: [], links: [] },
+      }),
+      operationLog: {},
+    });
+    const corruptFile = path.join(dataDir, "projects", "corrupt-project", "project.json");
+    const corruptJson = readFileSync(corruptFile, "utf8");
 
     try {
       process.chdir(tempRoot);
@@ -240,6 +249,7 @@ describe("context node persistence", () => {
       const persisted = await readProjectByIdFromDisk("context-project");
       expect(persisted?.spatialMap.nodes[0]?.context).toBe("# Stored context");
       expect(persisted?.spatialMap.nodes[0]?.rawContext).toBe("");
+      expect(readFileSync(corruptFile, "utf8")).toBe(corruptJson);
     } finally {
       process.chdir(originalCwd);
     }

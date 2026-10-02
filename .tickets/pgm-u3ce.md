@@ -1,6 +1,6 @@
 ---
 id: pgm-u3ce
-status: in_progress
+status: closed
 deps: []
 links: []
 created: 2026-10-02T01:12:46Z
@@ -77,3 +77,9 @@ Evidence: `tmp/mutation-investigation.md`; repository baseline `5c19677` on `cod
 Concurrent server writes, pending client edit reconciliation, camera movement, and immediate viewer deletion remain separate work. No browser proof or new infrastructure is required for this backend slice.
 
 
+
+## Notes
+
+**2026-10-02T01:17:32Z**
+
+Reviewed: all sixteen scoped reads use the existing targeted reader. Corrupt-neighbor regression failed before, then 22 tests passed. Type-check and diff check passed. Public writes/events and image-delete ordering are unchanged.
