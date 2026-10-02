@@ -11,6 +11,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 ### Changed
 
 - The inspector title and its header actions stay pinned at the top while the inspector body scrolls.
+- Canvas image previews follow the image's shape. Portrait and square images get a taller centered frame instead of a thin cropped strip, and wide images use a shorter band that leaves more room for the node title. Node sizes and positions are unchanged.
 
 ### Fixed
 

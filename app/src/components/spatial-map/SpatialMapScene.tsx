@@ -23,6 +23,7 @@ import type {
 } from "./spatial-map-canvas.types";
 import { SpatialMapChildNodePlaceholder } from "./SpatialMapChildNodePlaceholder";
 import { getImageFilesFromDataTransfer, useSpatialMapImages } from "./SpatialMapImages";
+import { getNodeImageFrame } from "./spatial-map-image-frame";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapReparentControl } from "./SpatialMapReparentControl";
 import { SpatialMapSegmentedControl, type SpatialMapSegmentedOption } from "./SpatialMapSegmentedControl";
@@ -608,7 +609,21 @@ function SpatialMapNode(props: {
   const nodeImages = () => props.item.node.images ?? [];
   const firstImage = () => nodeImages()[0];
   const hasImages = () => nodeImages().length > 0;
-  const imageHeight = () => (hasImages() ? Math.min(86, props.item.node.height * 0.45) : 0);
+  // Natural aspect of the preview image, known only after it loads in the browser.
+  const [imageAspect, setImageAspect] = createSignal<{ src: string; aspect: number } | null>(null);
+  const imageFrame = createMemo(() =>
+    getNodeImageFrame({
+      nodeWidth: props.item.node.width,
+      nodeHeight: props.item.node.height,
+      aspect: imageAspect()?.src === firstImage()?.src ? imageAspect()?.aspect : null,
+    }),
+  );
+  const imageHeight = () => (hasImages() ? imageFrame().height : 0);
+  const readImageAspect = (element: HTMLImageElement, src: string) => {
+    if (element.naturalWidth > 0 && element.naturalHeight > 0) {
+      setImageAspect({ src, aspect: element.naturalWidth / element.naturalHeight });
+    }
+  };
   const fallbackTone = () =>
     getNodeTypeTone(props.project.nodeTypeSchema, props.item.node.type);
   const nodeTone = () =>
@@ -795,9 +810,9 @@ function SpatialMapNode(props: {
         {(image) => (
           <foreignObject
             class="spatial-map-node-image-frame"
-            x="8"
+            x={imageFrame().x}
             y="8"
-            width={props.item.node.width - 16}
+            width={imageFrame().width}
             height={imageHeight()}
           >
             <button
@@ -826,6 +841,13 @@ function SpatialMapNode(props: {
                 src={image().src}
                 alt={image().originalName}
                 loading="lazy"
+                ref={(element) => {
+                  // A hydrated image can finish loading before onLoad is attached.
+                  queueMicrotask(() => {
+                    if (element.complete) readImageAspect(element, image().src);
+                  });
+                }}
+                onLoad={(event) => readImageAspect(event.currentTarget, image().src)}
                 style={{
                   width: "100%",
                   height: "100%",
