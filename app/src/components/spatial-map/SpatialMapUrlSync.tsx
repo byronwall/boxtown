@@ -1,12 +1,15 @@
 import { useSearchParams } from "@solidjs/router";
-import { createEffect, untrack } from "solid-js";
+import { createEffect, createSignal, onCleanup, onMount, untrack } from "solid-js";
 import { mapNodeStatuses, type MapNodeStatus } from "~/lib/spatial-map/types";
 import type { SpatialMapDepthLevel, SpatialMapViewMode } from "./spatial-map-canvas.types";
+import { formatCameraParam, parseCameraParam } from "./spatial-map-camera";
 import { useSpatialMap } from "./SpatialMapContext";
 import { priorityMenuItems } from "./SpatialMapNodePriorityMenu";
 
 // Keeps view state (selection, view mode, depth, filters, isolation) in the
 // URL so a refresh or a shared link restores the same view.
+
+const CAMERA_URL_SETTLE_MS = 250;
 type SpatialMapSearchParams = {
   node?: string;
   view?: SpatialMapViewMode;
@@ -21,6 +24,7 @@ type SpatialMapSearchParams = {
   statuses?: string[];
   priorities?: string[];
   q?: string;
+  cam?: string;
 };
 
 interface SpatialMapUrlState {
@@ -42,6 +46,27 @@ export function SpatialMapUrlSync() {
   const controller = useSpatialMap();
   const [searchParams, setSearchParams] =
     useSearchParams<SpatialMapSearchParams>();
+  const [cameraUrlReady, setCameraUrlReady] = createSignal(false);
+
+  // The camera is read once on load; later URL writes come from the camera.
+  onMount(() => {
+    const view = parseCameraParam(getStringParam(untrack(() => searchParams.cam)));
+    if (view) controller.restoreCameraView(view);
+    setCameraUrlReady(true);
+  });
+
+  // Pans, zooms, and tweens update the camera every frame, so the URL only
+  // follows once the camera settles.
+  createEffect(() => {
+    if (!cameraUrlReady()) return;
+    const cam = formatCameraParam(controller.camera());
+    const timer = setTimeout(() => {
+      if (getStringParam(untrack(() => searchParams.cam)) !== cam) {
+        setSearchParams({ cam }, { replace: true });
+      }
+    }, CAMERA_URL_SETTLE_MS);
+    onCleanup(() => clearTimeout(timer));
+  });
 
   createEffect(() => {
     const nodeId = getStringParam(searchParams.node) ?? null;

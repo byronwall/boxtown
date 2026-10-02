@@ -1,5 +1,5 @@
 import { useAction } from "@solidjs/router";
-import { createMemo, createSignal, For, Show, type JSX } from "solid-js";
+import { createEffect, createMemo, createSignal, For, Show, type JSX } from "solid-js";
 import { css } from "styled-system/css";
 import { Box } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
@@ -345,6 +345,13 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
         }}
       >
         <g
+          ref={(element) => {
+            // The attribute binding caches the value it computed while
+            // hydrating even though hydration skipped the write, so a camera
+            // fit during hydration would never reach the DOM. Apply it from an
+            // effect that runs after hydration instead.
+            createEffect(() => element.setAttribute("transform", controller.sceneTransform()));
+          }}
           class="spatial-map-scene-layer"
           transform={controller.sceneTransform()}
           style={{ "transform-box": "view-box" }}

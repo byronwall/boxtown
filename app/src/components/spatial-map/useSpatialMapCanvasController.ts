@@ -30,8 +30,10 @@ import type {
 import {
   clampValue,
   createDefaultCamera,
+  getCameraFromView,
   getFitCamera,
   preserveCameraCenter,
+  type CameraView,
 } from "./spatial-map-camera";
 import {
   isEditableTarget,
@@ -184,6 +186,9 @@ export function useSpatialMapCanvasController(
   let suppressNodeClick = false;
   let viewportFitFrame: number | undefined;
   let viewportSizedFitApplied = false;
+  // A camera restored from the URL holds through load-time fits and data
+  // refreshes until the user first interacts or asks for a fit.
+  let restoredCameraView: CameraView | null = null;
   let lastViewportClientPoint: { x: number; y: number } | undefined;
   const viewportSize: ViewportSize = {
     width: VIEWPORT_WIDTH,
@@ -226,9 +231,14 @@ export function useSpatialMapCanvasController(
 
     return Math.min(scaleX, scaleY);
   });
+  // Camera fits that land while the page hydrates are not written to the DOM,
+  // and later identical fits would not change this memo. Re-emitting it once
+  // after hydration (and never deduping) keeps the zoom label on the real camera.
+  const [hydrated, setHydrated] = createSignal(false);
   const zoomPercent = createMemo(() => {
+    hydrated();
     return `${Math.round(zoomScale() * 100)}%`;
-  });
+  }, undefined, { equals: false });
   const viewportScale = createMemo(() => {
     return (viewportSize.height / VIEWPORT_HEIGHT) * zoomScale();
   });
@@ -377,11 +387,34 @@ export function useSpatialMapCanvasController(
     });
   };
 
-  const fitCameraToNodes = () => {
+  const applyRestoredCamera = () => {
+    if (!restoredCameraView) return false;
+    setCameraImmediate(getCameraFromView(restoredCameraView, getViewportAspectRatio()));
+    return true;
+  };
+
+  const restoreCameraView = (view: CameraView) => {
+    restoredCameraView = view;
+    applyRestoredCamera();
+  };
+
+  const releaseRestoredCamera = () => {
+    restoredCameraView = null;
+  };
+
+  const fitCameraToCurrentNodes = () => {
+    if (applyRestoredCamera()) return;
     setCameraImmediate(getFitCamera(positionedNodes(), getViewportAspectRatio()));
   };
 
+  // Explicit fit (Fit button, F key) always wins over a restored camera.
+  const fitCameraToNodes = () => {
+    releaseRestoredCamera();
+    fitCameraToCurrentNodes();
+  };
+
   const fitCameraToLayout = (nodes: PositionedMapNode[]) => {
+    if (applyRestoredCamera()) return;
     setCameraImmediate(getFitCamera(nodes, getViewportAspectRatio()));
   };
 
@@ -465,6 +498,7 @@ export function useSpatialMapCanvasController(
     durationMs: number,
   ) => {
     cancelCameraTween();
+    if (applyRestoredCamera()) return;
 
     const startCamera = cameraSnapshot;
     const targetCamera = getFitCamera(nodes, getViewportAspectRatio());
@@ -793,7 +827,7 @@ export function useSpatialMapCanvasController(
     updateViewportSize();
     if (!viewportSizedFitApplied) {
       viewportSizedFitApplied = true;
-      fitCameraToNodes();
+      fitCameraToCurrentNodes();
       return;
     }
     setCameraImmediate(preserveCameraCenter(cameraSnapshot, getViewportAspectRatio()));
@@ -811,7 +845,7 @@ export function useSpatialMapCanvasController(
     viewportRef = element;
     updateViewportSize();
     resizeObserver?.observe(element);
-    fitCameraToNodes();
+    fitCameraToCurrentNodes();
     scheduleViewportFit();
   };
 
@@ -1106,12 +1140,19 @@ export function useSpatialMapCanvasController(
       resizeObserver = new ResizeObserver(handleResize);
       resizeObserver.observe(viewportRef);
     }
-    fitCameraToNodes();
+    fitCameraToCurrentNodes();
     scheduleViewportFit();
+    requestAnimationFrame(() => setHydrated(true));
     window.addEventListener("keydown", handleWindowKeyDown);
     window.addEventListener("resize", handleResize);
+    for (const type of ["pointerdown", "wheel", "keydown"] as const) {
+      window.addEventListener(type, releaseRestoredCamera, { capture: true, passive: true });
+    }
 
     onCleanup(() => {
+      for (const type of ["pointerdown", "wheel", "keydown"] as const) {
+        window.removeEventListener(type, releaseRestoredCamera, { capture: true });
+      }
       window.removeEventListener("keydown", handleWindowKeyDown);
       window.removeEventListener("resize", handleResize);
     });
@@ -1222,6 +1263,7 @@ export function useSpatialMapCanvasController(
       transitionToLayout(nextLayout, selectedNodeId());
     },
     fitCameraToNodes,
+    restoreCameraView,
     setViewportRef: setViewportElement,
     setSvgRef: (element) => {
       svgRef = element;

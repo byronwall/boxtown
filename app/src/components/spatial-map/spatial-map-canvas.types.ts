@@ -1,4 +1,5 @@
 import type { Accessor, JSX } from "solid-js";
+import type { CameraView } from "./spatial-map-camera";
 import type {
   MapNodeStatus,
   MapNode,
@@ -159,6 +160,7 @@ export interface SpatialMapCanvasController {
   unstashNode: (nodeId: string) => void;
   reflowLayout: () => void;
   fitCameraToNodes: () => void;
+  restoreCameraView: (view: CameraView) => void;
   openChildNodeDraft: (
     parentNodeId?: string | null,
     options?: { anchorToParent?: boolean },

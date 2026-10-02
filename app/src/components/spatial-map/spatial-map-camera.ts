@@ -62,3 +62,48 @@ export function preserveCameraCenter(
 export function clampValue(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
+
+// The URL keeps the camera as its world-space center and width. Height follows
+// the viewport aspect ratio on restore, so a different window size keeps the
+// same focus and zoom.
+export interface CameraView {
+  centerX: number;
+  centerY: number;
+  width: number;
+}
+
+// Matches the manual zoom-in limit. Fit can be wider than the zoom-out limit
+// on large maps, so the upper bound only rejects absurd values.
+export const MIN_CAMERA_WIDTH = 220;
+const MAX_CAMERA_COORDINATE = 1_000_000;
+
+export function formatCameraParam(camera: CameraState) {
+  const round = (value: number) => Math.round(value * 10) / 10;
+  return [
+    round(camera.x + camera.width / 2),
+    round(camera.y + camera.height / 2),
+    round(camera.width),
+  ].join(",");
+}
+
+export function parseCameraParam(value: string | undefined): CameraView | null {
+  if (!value) return null;
+  const parts = value.split(",");
+  if (parts.length !== 3 || parts.some((part) => part.trim() === "")) return null;
+  const [centerX, centerY, width] = parts.map(Number);
+  if (![centerX, centerY, width].every(Number.isFinite)) return null;
+  if (Math.abs(centerX) > MAX_CAMERA_COORDINATE || Math.abs(centerY) > MAX_CAMERA_COORDINATE) return null;
+  if (width < MIN_CAMERA_WIDTH || width > MAX_CAMERA_COORDINATE) return null;
+  return { centerX, centerY, width };
+}
+
+export function getCameraFromView(view: CameraView, aspectRatio: number): CameraState {
+  const safeAspect = Number.isFinite(aspectRatio) && aspectRatio > 0 ? aspectRatio : VIEWPORT_WIDTH / VIEWPORT_HEIGHT;
+  const height = view.width / safeAspect;
+  return {
+    x: view.centerX - view.width / 2,
+    y: view.centerY - height / 2,
+    width: view.width,
+    height,
+  };
+}

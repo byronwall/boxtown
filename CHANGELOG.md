@@ -7,6 +7,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 ### Added
 
 - The inspector header has an Archive implemented action (archive icon with a count) in canvas, tree, and grid, with or without a selected node.
+- Canvas zoom and pan are kept in the URL (`cam`), so a refresh, a shared link, or Back returns to the same view. Fit, F, and the first pan or zoom take over as usual.
 
 ### Changed
 
@@ -18,6 +19,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 - Overlapping saves (for example a title and a status changed back to back, or an agent editing while you edit) no longer overwrite each other on the server.
 - Edits stay on screen while they save, even when another save finishes, another tab saves, or the server pushes an update. A failed save rolls back only that edit, and a successful save is kept even if the follow-up refresh fails.
 - Success and error notifications appear again. The notification area was never mounted, so failures were silent.
+- The canvas no longer opens stretched. On first load the map now uses the real canvas proportions instead of waiting for a window resize, and the zoom readout shows the actual zoom.
 
 ## 2026-10-01
 
