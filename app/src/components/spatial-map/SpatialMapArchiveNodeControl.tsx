@@ -59,7 +59,7 @@ export function SpatialMapArchiveNodeControl(props: SpatialMapArchiveNodeControl
           : `${nodeLabel} is visible again.`,
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: archived ? "Archive failed" : "Unarchive failed",
         description: error instanceof Error ? error.message : "The node could not be updated.",

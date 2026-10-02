@@ -240,7 +240,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       toaster.success({ title: "Node moved" });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Node was not moved",
         description:

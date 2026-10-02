@@ -12,6 +12,12 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 - The inspector title and its header actions stay pinned at the top while the inspector body scrolls.
 
+### Fixed
+
+- Overlapping saves (for example a title and a status changed back to back, or an agent editing while you edit) no longer overwrite each other on the server.
+- Edits stay on screen while they save, even when another save finishes, another tab saves, or the server pushes an update. A failed save rolls back only that edit, and a successful save is kept even if the follow-up refresh fails.
+- Success and error notifications appear again. The notification area was never mounted, so failures were silent.
+
 ## 2026-10-01
 
 ### Added

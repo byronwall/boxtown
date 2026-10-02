@@ -276,7 +276,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
       const result = await submitSaveContext(appendClientMutationId(formData, clientMutationId));
       props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Context was not saved",
         description:
@@ -320,7 +320,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
       });
       return true;
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Metadata was not saved",
         description:
@@ -392,7 +392,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         description: `${label ?? "This node"} is now the selected node title.`,
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       setOptimisticTitle((current) => (current?.nodeId === node.id ? null : current));
       toaster.error({
         title: "Rename failed",
@@ -447,7 +447,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         description: `${updatedNode?.label ?? "This node"} is now ${getMapNodeStatusLabel(updatedNode?.status ?? status)}.`,
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Status update failed",
         description:
@@ -486,7 +486,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         description: `${node.label} is now a ${type} node.`,
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Type update failed",
         description:

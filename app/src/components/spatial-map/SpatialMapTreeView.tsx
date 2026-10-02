@@ -162,7 +162,7 @@ export function SpatialMapTreeView(props: {
         ...projectNode,
         status: optimistic.previousStatus,
       })),
-      { clientMutationId: optimistic.clientMutationId, phase: "server" },
+      { clientMutationId: optimistic.clientMutationId, phase: "failed" },
     );
     setOptimisticStatus(null);
     toaster.error({
@@ -185,7 +185,7 @@ export function SpatialMapTreeView(props: {
         ...projectNode,
         type: optimistic.previousType,
       })),
-      { clientMutationId: optimistic.clientMutationId, phase: "server" },
+      { clientMutationId: optimistic.clientMutationId, phase: "failed" },
     );
     setOptimisticType(null);
     toaster.error({
