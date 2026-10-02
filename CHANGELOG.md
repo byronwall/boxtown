@@ -26,6 +26,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 - The canvas no longer opens stretched. On first load the map now uses the real canvas proportions instead of waiting for a window resize, and the zoom readout shows the actual zoom.
 - Include all children and Show archived now stay in the URL with the other filters, so a refresh or a shared link keeps them.
 - Cmd+K search highlights no longer add space inside words; a match in the middle of a word now reads as one word.
+- Deleting an image in the image viewer updates the viewer immediately: it moves to the next image, or closes when the last image is deleted. A failed delete puts the image back in the viewer with an error so you can retry.
 
 ## 2026-10-01
 
