@@ -38,6 +38,7 @@ import { SpatialMapInspectorHeader } from "./SpatialMapInspectorHeader";
 import { SpatialMapNodePriorityMenu } from "./SpatialMapNodePriorityMenu";
 import { SpatialMapNodeStatusMenu } from "./SpatialMapNodeStatusMenu";
 import { SpatialMapNodeTypePicker } from "./SpatialMapNodeTypePicker";
+import { SpatialMapStructurePeek } from "./SpatialMapStructurePeek";
 import {
   SpatialMapCollapsibleGroup,
   SpatialMapEmptyState,
@@ -600,7 +601,10 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                   </Show>
                   <Show when={inspectorView() === "details" && selectedNode()}>
                     {(node) => (
-                      <SpatialMapCopyAgentPromptButton project={props.project} nodeId={node().id} />
+                      <>
+                        <SpatialMapStructurePeek nodeId={node().id} />
+                        <SpatialMapCopyAgentPromptButton project={props.project} nodeId={node().id} />
+                      </>
                     )}
                   </Show>
                   <Tooltip
