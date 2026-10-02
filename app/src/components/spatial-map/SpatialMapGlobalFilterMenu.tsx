@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import * as Menu from "~/components/ui/menu";
 import * as Switch from "~/components/ui/switch";
 import { Text } from "~/components/ui/text";
+import { lastEditorKinds } from "~/lib/projects/last-editor";
 import type { MapNodeStatus } from "~/lib/spatial-map/types";
 
 import type { SpatialMapGlobalFilterState } from "./spatial-map-canvas.types";
@@ -110,6 +111,18 @@ export function SpatialMapGlobalFilterMenu() {
                   </FilterToggleButton>
                 );
               }}
+            </For>
+          </FilterToggleSection>
+          <FilterToggleSection label="Last edited by">
+            <For each={lastEditorKinds}>
+              {(editor) => (
+                <FilterToggleButton
+                  selected={spatialMap.globalFilter().selectedEditors.includes(editor)}
+                  onClick={() => spatialMap.toggleGlobalFilterEditor(editor)}
+                >
+                  {editor === "human" ? "Human" : "Agent"}
+                </FilterToggleButton>
+              )}
             </For>
           </FilterToggleSection>
           <Box h="1px" my="10px" background="rgba(32, 38, 34, 0.12)" />
@@ -257,7 +270,8 @@ function getGlobalFilterSelectionCount(filter: SpatialMapGlobalFilterState) {
   return (
     filter.selectedTypes.length +
     filter.selectedStatuses.length +
-    filter.selectedPriorities.length
+    filter.selectedPriorities.length +
+    filter.selectedEditors.length
   );
 }
 
