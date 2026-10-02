@@ -164,7 +164,7 @@ function SpatialMapCanvasLayout(props: {
                   Create the first node here, or add nodes with the CLI.
                 </Box>
                 <Button
-                  colorPalette="green"
+                  colorPalette="gray"
                   variant="surface"
                   size="2xs"
                   mt="8px"
@@ -300,7 +300,7 @@ function StashedNodeCard(props: {
       p="6px"
       borderTop="1px solid var(--spatial-map-panel-divider)"
       borderRadius="4px"
-      background={isSelected() ? "rgba(229, 239, 229, 0.8)" : "transparent"}
+      background={isSelected() ? "rgba(233, 235, 232, 0.8)" : "transparent"}
     >
       <StashCardButton
         type="button"

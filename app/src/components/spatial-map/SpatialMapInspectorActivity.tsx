@@ -79,13 +79,13 @@ export function SpatialMapActivityList(props: {
                     p="0"
                     border="0"
                     borderRadius="4px"
-                    background={isCurrent() ? "rgba(229, 239, 229, 0.8)" : "transparent"}
+                    background={isCurrent() ? "rgba(233, 235, 232, 0.8)" : "transparent"}
                     color="inherit"
                     font="inherit"
                     textAlign="left"
                     cursor="pointer"
                     _hover={{ background: "rgba(34, 41, 36, 0.06)" }}
-                    _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(37, 95, 58, 0.56)" }}
+                    _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(60, 66, 62, 0.56)" }}
                     onClick={() => props.onSelect(node().id)}
                     aria-pressed={props.showNode ? isCurrent() : undefined}
                   >

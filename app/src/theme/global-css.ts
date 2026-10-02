@@ -38,17 +38,19 @@ export const globalCss = {
       "--spatial-map-amber-fill-hover": "#d8caa8",
       "--spatial-map-amber-stroke": "#806c47",
       "--spatial-map-amber-stroke-hover": "#6b5937",
-      "--spatial-map-accent": "#2d6f48",
-      "--spatial-map-accent-strong": "#173e27",
+      "--spatial-map-accent": "#3d4540",
+      "--spatial-map-accent-strong": "#1f2421",
     },
     html: {
-      colorPalette: "green",
+      // Neutral default palette for workspace chrome; semantic node type and
+      // status colors are set explicitly where they are used.
+      colorPalette: "gray",
       backgroundColor: "colors.gray.2",
     },
     body: {
       minHeight: "100vh",
       background:
-        "radial-gradient(circle at top, token(colors.green.a3) 0%, transparent 30%), linear-gradient(180deg, token(colors.gray.1) 0%, token(colors.olive.2) 100%)",
+        "radial-gradient(circle at top, token(colors.gray.a3) 0%, transparent 30%), linear-gradient(180deg, token(colors.gray.1) 0%, token(colors.olive.2) 100%)",
       color: "fg.default",
       // Overlays are portalled to body, so the workspace mono stack is set here
       // rather than on each page shell.

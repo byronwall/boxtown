@@ -17,6 +17,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 - The inspector title and its header actions stay pinned at the top while the inspector body scrolls.
 - Canvas image previews follow the image's shape. Portrait and square images get a taller centered frame instead of a thin cropped strip, and wide images use a shorter band that leaves more room for the node title. Node sizes and positions are unchanged.
+- Workspace chrome (toolbar, canvas controls, filter menu, inspector, tree, grid, and menus) uses neutral grays instead of green. Node type and status colors are unchanged.
 
 ### Fixed
 
@@ -25,6 +26,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 - Success and error notifications appear again. The notification area was never mounted, so failures were silent.
 - The canvas no longer opens stretched. On first load the map now uses the real canvas proportions instead of waiting for a window resize, and the zoom readout shows the actual zoom.
 - Include all children and Show archived now stay in the URL with the other filters, so a refresh or a shared link keeps them.
+- Cmd+K search highlights no longer add space inside words; a match in the middle of a word now reads as one word.
 
 ## 2026-10-01
 

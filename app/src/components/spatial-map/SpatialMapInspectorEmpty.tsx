@@ -153,7 +153,7 @@ function ActionRow(props: { icon?: JSX.Element; label: string; hint?: string; on
         textAlign="left"
         cursor="pointer"
         _hover={{ background: "rgba(34, 41, 36, 0.06)" }}
-        _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(37, 95, 58, 0.56)" }}
+        _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(60, 66, 62, 0.56)" }}
         onClick={() => props.onClick?.()}
       >
         {content()}

@@ -25,7 +25,7 @@ export function SpatialMapInspectorSection(props: {
       pt="8px"
       borderTop="1px solid"
       style={{ gap: props.gap ?? "6px" }}
-      borderColor={props.error ? "rgba(126, 41, 41, 0.28)" : props.dragging ? "rgba(23, 62, 39, 0.62)" : "var(--spatial-map-panel-divider)"}
+      borderColor={props.error ? "rgba(126, 41, 41, 0.28)" : props.dragging ? "rgba(33, 38, 35, 0.62)" : "var(--spatial-map-panel-divider)"}
       borderStyle={props.dragging ? "dashed" : "solid"}
       background={props.error ? "rgba(246, 235, 235, 0.82)" : props.dragging ? "rgba(218, 229, 216, 0.96)" : "transparent"}
       minH={props.minH}
@@ -113,7 +113,7 @@ export function SpatialMapCollapsibleGroup(props: {
         textAlign="left"
         cursor="pointer"
         _hover={{ background: "rgba(34, 41, 36, 0.06)" }}
-        _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(37, 95, 58, 0.56)" }}
+        _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(60, 66, 62, 0.56)" }}
         aria-expanded={props.open}
         onClick={() => props.onToggle()}
       >

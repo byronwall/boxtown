@@ -45,9 +45,9 @@ export function SpatialMapInspectorHeader(props: SpatialMapInspectorHeaderProps)
               textStyle="xs"
               display="inline-flex"
               p="3px 6px"
-              border="1px solid rgba(45, 111, 72, 0.34)"
+              border="1px solid rgba(84, 90, 86, 0.34)"
               borderRadius="4px"
-              background="rgba(229, 239, 229, 0.74)"
+              background="rgba(233, 235, 232, 0.74)"
               color="var(--spatial-map-accent-strong)"
               fontSize="11px"
               lineHeight="1"
@@ -138,14 +138,14 @@ export function InspectorToggle(props: {
       flexShrink="0"
       transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease"
       _hover={{
-        background: "rgba(229, 239, 229, 0.72)",
+        background: "rgba(233, 235, 232, 0.72)",
         color: "var(--spatial-map-accent-strong)",
       }}
       _active={{ transform: "scale(0.97)" }}
       _focusVisible={{
         outline: "none",
-        background: "rgba(229, 239, 229, 0.72)",
-        boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.28)",
+        background: "rgba(233, 235, 232, 0.72)",
+        boxShadow: "inset 0 0 0 1px rgba(33, 38, 35, 0.28)",
       }}
       onClick={props.onClick ?? (() => spatialMap.setInspectorOpen((current) => !current))}
       aria-expanded={expanded()}
