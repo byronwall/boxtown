@@ -106,6 +106,7 @@ export interface SpatialMapCanvasController {
   stashedNodeIds: Accessor<string[]>;
   stashedNodes: Accessor<MapNode[]>;
   showEdges: Accessor<boolean>;
+  depthOverlap: Accessor<boolean>;
   showLinkedInIsolation: Accessor<boolean>;
   globalFilter: Accessor<SpatialMapGlobalFilterState>;
   globalFilterActive: Accessor<boolean>;
@@ -138,6 +139,7 @@ export interface SpatialMapCanvasController {
     value: string | null | ((current: string | null) => string | null),
   ) => void;
   setShowEdges: (value: boolean | ((current: boolean) => boolean)) => void;
+  setDepthOverlap: (value: boolean) => void;
   setShowLinkedInIsolation: (
     value: boolean | ((current: boolean) => boolean),
   ) => void;
@@ -160,6 +162,7 @@ export interface SpatialMapCanvasController {
   setVisibleDepthLevel: (value: SpatialMapDepthLevel) => void;
   toggleLinkedInIsolation: () => void;
   toggleEdges: () => void;
+  toggleDepthOverlap: () => void;
   toggleNodeStash: (nodeId: string) => void;
   unstashNode: (nodeId: string) => void;
   reflowLayout: () => void;

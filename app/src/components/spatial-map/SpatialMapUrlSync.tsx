@@ -27,6 +27,7 @@ type SpatialMapSearchParams = {
   editors?: string[];
   children?: string;
   archived?: string;
+  overlap?: string;
   q?: string;
   cam?: string;
 };
@@ -40,6 +41,7 @@ interface SpatialMapUrlState {
   isolatedNodeId: string | null;
   showLinked: boolean | null;
   showArchived: boolean;
+  depthOverlap: boolean;
   globalFilter: ReturnType<typeof parseGlobalFilter>;
 }
 
@@ -85,6 +87,7 @@ export function SpatialMapUrlSync() {
     const showLinked = parseBooleanParam(getStringParam(searchParams.linked));
     const globalFilter = parseGlobalFilter(searchParams);
     const showArchived = parseBooleanParam(getStringParam(searchParams.archived)) ?? false;
+    const depthOverlap = parseBooleanParam(getStringParam(searchParams.overlap)) ?? false;
     const nodeIds = controller.sourceNodesById();
 
     untrack(() => {
@@ -97,6 +100,7 @@ export function SpatialMapUrlSync() {
         isolatedNodeId,
         showLinked,
         showArchived,
+        depthOverlap,
         globalFilter,
       });
     });
@@ -112,6 +116,7 @@ export function SpatialMapUrlSync() {
     const showLinked = controller.showLinkedInIsolation();
     const globalFilter = controller.globalFilter();
     const showArchived = controller.showArchived();
+    const depthOverlap = controller.depthOverlap();
 
     const nextParams = {
       node: selectedNodeId,
@@ -130,6 +135,7 @@ export function SpatialMapUrlSync() {
       editors: globalFilter.selectedEditors.length ? globalFilter.selectedEditors : undefined,
       children: globalFilter.includeChildren ? "1" : null,
       archived: showArchived ? "1" : null,
+      overlap: depthOverlap ? "1" : null,
     };
 
     if (
@@ -147,7 +153,8 @@ export function SpatialMapUrlSync() {
       sameStringParams(searchParams.priorities, nextParams.priorities) &&
       sameStringParams(searchParams.editors, nextParams.editors) &&
       getNullableStringParam(searchParams.children) === nextParams.children &&
-      getNullableStringParam(searchParams.archived) === nextParams.archived
+      getNullableStringParam(searchParams.archived) === nextParams.archived &&
+      getNullableStringParam(searchParams.overlap) === nextParams.overlap
     ) {
       return;
     }
@@ -190,6 +197,10 @@ function syncControllerFromUrlState(
     controller.showLinkedInIsolation() !== state.showLinked
   ) {
     controller.setShowLinkedInIsolation(state.showLinked);
+  }
+
+  if (controller.depthOverlap() !== state.depthOverlap) {
+    controller.setDepthOverlap(state.depthOverlap);
   }
 
   if (controller.showArchived() !== state.showArchived) {

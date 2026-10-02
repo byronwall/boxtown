@@ -16,6 +16,7 @@ import {
   VIEWPORT_WIDTH,
 } from "~/lib/spatial-map/layout";
 import type { LastEditorKind } from "~/lib/projects/last-editor";
+import { applyDepthOverlap } from "~/lib/spatial-map/depth-overlap";
 import { calculateNodeDepths } from "~/lib/spatial-map/depth";
 import { hideArchivedNodes } from "~/lib/spatial-map/archive";
 import type { MapNodeStatus, PositionedMapNode, SpatialMapData } from "~/lib/spatial-map/types";
@@ -113,6 +114,12 @@ export function useSpatialMapCanvasController(
     ...DEFAULT_GLOBAL_FILTER,
   });
   const [showEdges, setShowEdges] = createSignal(false);
+  // Optional Mahjong-style view; the regular layout stays the default.
+  const [depthOverlap, setDepthOverlap] = createSignal(false);
+  const layoutFor = (nextData: SpatialMapData) => {
+    const layout = createInitialLayout(nextData);
+    return depthOverlap() ? applyDepthOverlap(layout, nextData.links) : layout;
+  };
   const [inspectorOpen, setInspectorOpen] = createSignal(true);
   const [contextPreviewRequest, setContextPreviewRequest] = createSignal<{
     nodeId: string;
@@ -285,7 +292,7 @@ export function useSpatialMapCanvasController(
   createEffect(() => {
     const nextData = visibleData();
     const sourceData = data();
-    const nextLayout = createInitialLayout(nextData);
+    const nextLayout = layoutFor(nextData);
     const previousLayout = untrack(positionedNodes);
     const anchorNodeId =
       pendingTransitionAnchorId ??
@@ -1216,6 +1223,7 @@ export function useSpatialMapCanvasController(
     stashedNodeIds,
     stashedNodes,
     showEdges,
+    depthOverlap,
     showLinkedInIsolation,
     globalFilter,
     globalFilterActive,
@@ -1254,6 +1262,7 @@ export function useSpatialMapCanvasController(
     setInspectorOpen,
     setSelectedNodeId,
     setShowEdges,
+    setDepthOverlap,
     setShowLinkedInIsolation,
     setGlobalFilterEnabled,
     setGlobalFilter: setGlobalFilterState,
@@ -1275,10 +1284,14 @@ export function useSpatialMapCanvasController(
     setVisibleDepthLevel,
     toggleLinkedInIsolation: toggleLinkedIsolation,
     toggleEdges: () => setShowEdges((current) => !current),
+    toggleDepthOverlap: () => {
+      pendingTransitionAnchorId = selectedNodeId();
+      setDepthOverlap((current) => !current);
+    },
     toggleNodeStash,
     unstashNode,
     reflowLayout: () => {
-      const nextLayout = createInitialLayout(visibleData());
+      const nextLayout = untrack(() => layoutFor(visibleData()));
       transitionToLayout(nextLayout, selectedNodeId());
     },
     fitCameraToNodes,
