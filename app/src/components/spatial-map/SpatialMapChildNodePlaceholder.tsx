@@ -310,7 +310,7 @@ export function SpatialMapChildNodePlaceholder(props: {
         </Button>
         <Button
           size="2xs"
-          colorPalette="green"
+          colorPalette="gray"
           disabled={!title().trim()}
           loading={pending()}
           type="submit"

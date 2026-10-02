@@ -141,7 +141,7 @@ export function SpatialMapCreateContextNodeDialog(
         props.trigger(() => handleOpenChange(true))
       ) : (
         <Button
-          colorPalette="green"
+          colorPalette="gray"
           variant="surface"
           size="xs"
           onClick={() => handleOpenChange(true)}
@@ -165,7 +165,7 @@ export function SpatialMapCreateContextNodeDialog(
             <Button
               type="submit"
               form={formId}
-              colorPalette="green"
+              colorPalette="gray"
               loading={pending()}
             >
               Create

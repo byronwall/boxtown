@@ -382,7 +382,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                   d={path()}
                   fill="none"
                   pointer-events="none"
-                  stroke="rgba(23, 62, 39, 0.68)"
+                  stroke="rgba(33, 38, 35, 0.68)"
                   stroke-width="2"
                   stroke-dasharray="8 7"
                   stroke-linecap="round"
@@ -460,7 +460,7 @@ function CanvasToggle(props: { pressed: boolean; onClick: () => void; children: 
     <Button
       variant="outline"
       size="2xs"
-      background={props.pressed ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+      background={props.pressed ? "rgba(233, 235, 232, 0.96)" : "transparent"}
       color={props.pressed ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
       fontWeight={props.pressed ? "700" : "500"}
       aria-pressed={props.pressed}
@@ -803,7 +803,7 @@ function SpatialMapNode(props: {
         )`}
         stroke={
           props.item.isSelected
-            ? "#0f2f1d"
+            ? "#1a1f1c"
             : props.isIsolationTarget
               ? "#245d7e"
               : `color-mix(
@@ -829,7 +829,7 @@ function SpatialMapNode(props: {
           ry="0"
           fill="none"
           pointer-events="none"
-          stroke="#173e27"
+          stroke="#1f2421"
           stroke-width="2.6"
           shape-rendering="crispEdges"
           style={{ filter: "none" }}
@@ -853,7 +853,7 @@ function SpatialMapNode(props: {
                 height: "100%",
                 display: "block",
                 padding: "0",
-                border: "1px solid rgba(15, 47, 29, 0.38)",
+                border: "1px solid rgba(24, 28, 26, 0.38)",
                 "border-radius": "0",
                 background: "rgba(18, 22, 19, 0.1)",
                 cursor: "zoom-in",

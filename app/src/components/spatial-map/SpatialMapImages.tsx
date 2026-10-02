@@ -386,8 +386,8 @@ export function SpatialMapImageStrip(props: {
               background={props.variant === "inspector" ? "rgba(214, 220, 212, 0.92)" : "rgba(249, 250, 247, 0.92)"}
               cursor="zoom-in"
               overflow="hidden"
-              _hover={{ borderColor: "rgba(23, 62, 39, 0.62)", boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.42)", outline: "none" }}
-              _focusVisible={{ borderColor: "rgba(23, 62, 39, 0.62)", boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.42)", outline: "none" }}
+              _hover={{ borderColor: "rgba(33, 38, 35, 0.62)", boxShadow: "inset 0 0 0 1px rgba(33, 38, 35, 0.42)", outline: "none" }}
+              _focusVisible={{ borderColor: "rgba(33, 38, 35, 0.62)", boxShadow: "inset 0 0 0 1px rgba(33, 38, 35, 0.42)", outline: "none" }}
               aria-label={`Open ${image.originalName}`}
               title={image.originalName}
               onClick={(event) => {
@@ -423,7 +423,7 @@ export function SpatialMapImageDropTarget(props: {
       gap={props.variant === "tree" ? "0" : "8px"}
       pt={props.variant === "tree" ? "0" : "12px"}
       borderTop={props.variant === "tree" ? "0" : "1px solid"}
-      borderColor={isDraggingImage() ? "rgba(23, 62, 39, 0.62)" : "var(--spatial-map-panel-divider)"}
+      borderColor={isDraggingImage() ? "rgba(33, 38, 35, 0.62)" : "var(--spatial-map-panel-divider)"}
       borderStyle={isDraggingImage() ? "dashed" : "solid"}
       background={isDraggingImage() ? "rgba(218, 229, 216, 0.96)" : "transparent"}
       onDragEnter={(event) => {
@@ -872,13 +872,13 @@ function ImageViewerContent(props: {
                 h={{ base: "150px", md: "112px" }}
                 p="0"
                 border="1px solid"
-                borderColor={index() === props.activeIndex ? "rgba(23, 62, 39, 0.62)" : "rgba(34, 41, 36, 0.18)"}
+                borderColor={index() === props.activeIndex ? "rgba(33, 38, 35, 0.62)" : "rgba(34, 41, 36, 0.18)"}
                 borderRadius="6px"
                 background="rgba(232, 236, 230, 0.78)"
                 cursor="pointer"
                 overflow="hidden"
                 position="relative"
-                boxShadow={index() === props.activeIndex ? "inset 0 0 0 1px rgba(23, 62, 39, 0.42)" : undefined}
+                boxShadow={index() === props.activeIndex ? "inset 0 0 0 1px rgba(33, 38, 35, 0.42)" : undefined}
                 aria-label={`Show ${image.originalName}`}
                 aria-current={
                   index() === props.activeIndex ? "true" : undefined

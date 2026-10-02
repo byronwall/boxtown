@@ -25,14 +25,14 @@ export function SpatialMapGlobalFilterMenu() {
         asChild={(triggerProps) => (
           <Button
             {...triggerProps()}
-            colorPalette="green"
+            colorPalette="gray"
             variant={spatialMap.globalFilterActive() ? "surface" : "outline"}
             size="2xs"
             aria-label="Filter visible nodes"
             title="Filter visible nodes"
             background={
               spatialMap.globalFilterActive()
-                ? "rgba(229, 239, 229, 0.96)"
+                ? "rgba(233, 235, 232, 0.96)"
                 : undefined
             }
             color={
@@ -170,7 +170,7 @@ function FilterToggleButton(props: {
 }) {
   return (
     <Button
-      colorPalette="green"
+      colorPalette="gray"
       variant={props.selected ? "surface" : "outline"}
       size="2xs"
       aria-pressed={props.selected}
@@ -179,7 +179,7 @@ function FilterToggleButton(props: {
         props.onClick();
       }}
       borderRadius="4px"
-      background={props.selected ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+      background={props.selected ? "rgba(233, 235, 232, 0.96)" : "transparent"}
       color={props.selected ? "var(--spatial-map-accent-strong)" : undefined}
     >
       {props.children}
@@ -195,7 +195,7 @@ function FilterSwitchRow(props: {
 }) {
   return (
     <Switch.Root
-      colorPalette="green"
+      colorPalette="gray"
       size="sm"
       checked={props.checked}
       disabled={props.disabled}

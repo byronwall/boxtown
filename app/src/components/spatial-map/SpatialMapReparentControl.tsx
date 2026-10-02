@@ -168,20 +168,20 @@ export function SpatialMapReparentControl(props: SpatialMapReparentControlProps)
                       w="100%"
                       p="7px 8px"
                       border="1px solid"
-                      borderColor={index() === activeIndex() ? "rgba(45, 111, 72, 0.38)" : "transparent"}
+                      borderColor={index() === activeIndex() ? "rgba(84, 90, 86, 0.38)" : "transparent"}
                       borderRadius="6px"
-                      background={index() === activeIndex() ? "rgba(229, 239, 229, 0.52)" : "transparent"}
+                      background={index() === activeIndex() ? "rgba(233, 235, 232, 0.52)" : "transparent"}
                       color="var(--spatial-map-copy)"
                       cursor={props.movePending ? "default" : "pointer"}
                       textAlign="left"
                       transition="background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease"
                       disabled={props.movePending}
                       _hover={{
-                        borderColor: "rgba(45, 111, 72, 0.38)",
-                        background: "rgba(229, 239, 229, 0.52)",
-                        boxShadow: "inset 0 0 0 1px rgba(45, 111, 72, 0.08)",
+                        borderColor: "rgba(84, 90, 86, 0.38)",
+                        background: "rgba(233, 235, 232, 0.52)",
+                        boxShadow: "inset 0 0 0 1px rgba(84, 90, 86, 0.08)",
                       }}
-                      _focusVisible={{ outline: "2px solid rgba(45, 111, 72, 0.7)", outlineOffset: "2px" }}
+                      _focusVisible={{ outline: "2px solid rgba(84, 90, 86, 0.7)", outlineOffset: "2px" }}
                       onMouseEnter={() => setActiveIndex(index())}
                       onClick={() => selectResult(result)}
                     >
@@ -233,7 +233,7 @@ export function SpatialMapReparentControl(props: SpatialMapReparentControlProps)
               size="2xs"
               minW="134px"
               justifyContent="flex-start"
-              background={searchOpen() ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+              background={searchOpen() ? "rgba(233, 235, 232, 0.96)" : "transparent"}
               color="var(--spatial-map-copy-dim)"
               disabled={props.movePending}
               onClick={() => setSearchOpen((open) => !open)}
@@ -243,7 +243,7 @@ export function SpatialMapReparentControl(props: SpatialMapReparentControlProps)
             </Button>
           </Box>
           <Button
-            colorPalette="green"
+            colorPalette="gray"
             variant="plain"
             size="2xs"
             loading={props.movePending}

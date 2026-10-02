@@ -109,7 +109,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
                   <Tooltip content="Create" openDelay={150} closeDelay={80}>
                     <Button
                       {...triggerProps()}
-                      colorPalette="green"
+                      colorPalette="gray"
                       variant="surface"
                       size="2xs"
                       px="0"
