@@ -1,5 +1,6 @@
 import { useSearchParams } from "@solidjs/router";
 import { createEffect, createSignal, onCleanup, onMount, untrack } from "solid-js";
+import { isLastEditorKind } from "~/lib/projects/last-editor";
 import { mapNodeStatuses, type MapNodeStatus } from "~/lib/spatial-map/types";
 import type { SpatialMapDepthLevel, SpatialMapViewMode } from "./spatial-map-canvas.types";
 import { formatCameraParam, parseCameraParam } from "./spatial-map-camera";
@@ -23,6 +24,9 @@ type SpatialMapSearchParams = {
   types?: string[];
   statuses?: string[];
   priorities?: string[];
+  editors?: string[];
+  children?: string;
+  archived?: string;
   q?: string;
   cam?: string;
 };
@@ -35,6 +39,7 @@ interface SpatialMapUrlState {
   inspectorOpen: boolean | null;
   isolatedNodeId: string | null;
   showLinked: boolean | null;
+  showArchived: boolean;
   globalFilter: ReturnType<typeof parseGlobalFilter>;
 }
 
@@ -79,6 +84,7 @@ export function SpatialMapUrlSync() {
     const isolatedNodeId = getStringParam(searchParams.isolate) ?? null;
     const showLinked = parseBooleanParam(getStringParam(searchParams.linked));
     const globalFilter = parseGlobalFilter(searchParams);
+    const showArchived = parseBooleanParam(getStringParam(searchParams.archived)) ?? false;
     const nodeIds = controller.sourceNodesById();
 
     untrack(() => {
@@ -90,6 +96,7 @@ export function SpatialMapUrlSync() {
         inspectorOpen,
         isolatedNodeId,
         showLinked,
+        showArchived,
         globalFilter,
       });
     });
@@ -104,6 +111,7 @@ export function SpatialMapUrlSync() {
     const isolatedNodeId = controller.isolatedNodeId();
     const showLinked = controller.showLinkedInIsolation();
     const globalFilter = controller.globalFilter();
+    const showArchived = controller.showArchived();
 
     const nextParams = {
       node: selectedNodeId,
@@ -119,6 +127,9 @@ export function SpatialMapUrlSync() {
       types: globalFilter.selectedTypes.length ? globalFilter.selectedTypes : undefined,
       statuses: globalFilter.selectedStatuses.length ? globalFilter.selectedStatuses : undefined,
       priorities: globalFilter.selectedPriorities.length ? globalFilter.selectedPriorities : undefined,
+      editors: globalFilter.selectedEditors.length ? globalFilter.selectedEditors : undefined,
+      children: globalFilter.includeChildren ? "1" : null,
+      archived: showArchived ? "1" : null,
     };
 
     if (
@@ -133,7 +144,10 @@ export function SpatialMapUrlSync() {
       getNullableStringParam(searchParams.parents) === nextParams.parents &&
       sameStringParams(searchParams.types, nextParams.types) &&
       sameStringParams(searchParams.statuses, nextParams.statuses) &&
-      sameStringParams(searchParams.priorities, nextParams.priorities)
+      sameStringParams(searchParams.priorities, nextParams.priorities) &&
+      sameStringParams(searchParams.editors, nextParams.editors) &&
+      getNullableStringParam(searchParams.children) === nextParams.children &&
+      getNullableStringParam(searchParams.archived) === nextParams.archived
     ) {
       return;
     }
@@ -178,11 +192,17 @@ function syncControllerFromUrlState(
     controller.setShowLinkedInIsolation(state.showLinked);
   }
 
+  if (controller.showArchived() !== state.showArchived) {
+    controller.setShowArchived(state.showArchived);
+  }
+
   const currentFilter = controller.globalFilter();
-  const nextFilter = { ...state.globalFilter, includeChildren: currentFilter.includeChildren };
+  const nextFilter = state.globalFilter;
   if (
     currentFilter.enabled !== nextFilter.enabled ||
     currentFilter.includeParents !== nextFilter.includeParents ||
+    currentFilter.includeChildren !== nextFilter.includeChildren ||
+    !sameValues(currentFilter.selectedEditors, nextFilter.selectedEditors) ||
     !sameValues(currentFilter.selectedTypes, nextFilter.selectedTypes) ||
     !sameValues(currentFilter.selectedStatuses, nextFilter.selectedStatuses) ||
     !sameValues(currentFilter.selectedPriorities, nextFilter.selectedPriorities)
@@ -247,10 +267,11 @@ function parseGlobalFilter(params: SpatialMapSearchParams) {
   return {
     enabled: parseBooleanParam(getStringParam(params.filter)) ?? false,
     includeParents: parseBooleanParam(getStringParam(params.parents)) ?? true,
-    includeChildren: false,
+    includeChildren: parseBooleanParam(getStringParam(params.children)) ?? false,
     selectedTypes: types,
     selectedStatuses: statuses,
     selectedPriorities: priorities,
+    selectedEditors: getStringParams(params.editors).filter(isLastEditorKind),
   };
 }
 

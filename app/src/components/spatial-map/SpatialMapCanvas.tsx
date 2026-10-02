@@ -37,7 +37,7 @@ interface SpatialMapCanvasProps {
 
 export function SpatialMapCanvas(props: SpatialMapCanvasProps) {
   return (
-    <SpatialMapProvider data={props.project.spatialMap}>
+    <SpatialMapProvider data={props.project.spatialMap} operationLog={props.project.operationLog}>
       <SpatialMapCanvasLayout
         header={props.header}
         project={props.project}

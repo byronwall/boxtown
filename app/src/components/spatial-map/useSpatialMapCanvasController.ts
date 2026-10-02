@@ -15,6 +15,7 @@ import {
   VIEWPORT_HEIGHT,
   VIEWPORT_WIDTH,
 } from "~/lib/spatial-map/layout";
+import type { LastEditorKind } from "~/lib/projects/last-editor";
 import { calculateNodeDepths } from "~/lib/spatial-map/depth";
 import { hideArchivedNodes } from "~/lib/spatial-map/archive";
 import type { MapNodeStatus, PositionedMapNode, SpatialMapData } from "~/lib/spatial-map/types";
@@ -77,10 +78,12 @@ const DEFAULT_GLOBAL_FILTER: SpatialMapGlobalFilterState = {
   selectedTypes: [],
   selectedStatuses: [],
   selectedPriorities: [],
+  selectedEditors: [],
 };
 
 export function useSpatialMapCanvasController(
   projectData: Accessor<SpatialMapData>,
+  lastEditors: Accessor<Map<string, LastEditorKind>> = () => new Map(),
 ): SpatialMapCanvasController {
   // Archived subtrees are removed before anything else so every view (canvas,
   // tree, grid, command menu) treats them as absent unless explicitly shown.
@@ -141,7 +144,7 @@ export function useSpatialMapCanvasController(
     }),
   );
   const globalFilteredData = createMemo(() =>
-    filterSpatialMapDataByGlobalFilter(isolatedData(), globalFilter()),
+    filterSpatialMapDataByGlobalFilter(isolatedData(), globalFilter(), lastEditors()),
   );
   const globalFilterActive = createMemo(() => isGlobalFilterActive(globalFilter()));
   const globalFilterMatchedCount = createMemo(() => globalFilteredData().nodes.length);
@@ -1106,6 +1109,21 @@ export function useSpatialMapCanvasController(
     });
   };
 
+  const toggleGlobalFilterEditor = (editor: LastEditorKind) => {
+    pendingTransitionAnchorId = selectedNodeId() ?? isolatedNodeId();
+    setGlobalFilter((current) => {
+      const selectedEditors = current.selectedEditors.includes(editor)
+        ? current.selectedEditors.filter((item) => item !== editor)
+        : [...current.selectedEditors, editor];
+
+      return {
+        ...current,
+        enabled: hasAnyGlobalFilterSelection({ ...current, selectedEditors }),
+        selectedEditors,
+      };
+    });
+  };
+
   const handleBackgroundClick: SpatialMapCanvasController["sceneHandlers"]["onBackgroundClick"] = (event) => {
     if (suppressNodeClick) {
       return;
@@ -1247,6 +1265,7 @@ export function useSpatialMapCanvasController(
     toggleGlobalFilterType,
     toggleGlobalFilterStatus,
     toggleGlobalFilterPriority,
+    toggleGlobalFilterEditor,
     setViewMode: (value) => {
       setViewMode(value);
       if (value === "canvas") {
@@ -1544,6 +1563,7 @@ function inferNewNodeTransitionAnchorId(
 export function filterSpatialMapDataByGlobalFilter(
   data: SpatialMapData,
   filter: SpatialMapGlobalFilterState,
+  lastEditors: Map<string, LastEditorKind> = new Map(),
 ): SpatialMapData {
   if (!isGlobalFilterActive(filter)) {
     return data;
@@ -1560,8 +1580,12 @@ export function filterSpatialMapDataByGlobalFilter(
         const priorityMatches =
           filter.selectedPriorities.length === 0 ||
           filter.selectedPriorities.includes(node.priority ?? "none");
+        const lastEditor = lastEditors.get(node.id);
+        const editorMatches =
+          filter.selectedEditors.length === 0 ||
+          (lastEditor !== undefined && filter.selectedEditors.includes(lastEditor));
 
-        return typeMatches && statusMatches && priorityMatches;
+        return typeMatches && statusMatches && priorityMatches && editorMatches;
       })
       .map((node) => node.id),
   );
@@ -1591,7 +1615,8 @@ function hasAnyGlobalFilterSelection(filter: SpatialMapGlobalFilterState) {
   return (
     filter.selectedTypes.length > 0 ||
     filter.selectedStatuses.length > 0 ||
-    filter.selectedPriorities.length > 0
+    filter.selectedPriorities.length > 0 ||
+    filter.selectedEditors.length > 0
   );
 }
 
