@@ -655,6 +655,12 @@
       "event": "Implementation accepted",
       "reason": "All milestones proven on final source and installed artifact, with hosted baseline preserved. Planning retained; no retirement requested.",
       "status": "completed"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Release workflow integrated before PR",
+      "reason": "Main gained Changesets release workflow during implementation. Kept its version/metadata, added feature changeset, installed app dependencies in CI, and passed final release check/external package proof.",
+      "status": "completed"
     }
   ],
   "closure": {
@@ -665,7 +671,8 @@
       "CLI39/39, storage+identity26/26, app type-check and installed package check passed.",
       "Final pnpm local:smoke passed; log tmp/local-viewer-final-smoke.log and fixtures tmp/local-viewer-smoke-1790998520166.",
       "Independent local/hosted browser actions, live CLI events and local restart passed. Screenshots retained under tmp for PR.",
-      "Offline network simulation unavailable; complete installed artifact and browser asset inventory had no external origins. Existing UI has no reparent control; existing CLI/API move passed."
+      "Offline network simulation unavailable; complete installed artifact and browser asset inventory had no external origins. Existing UI has no reparent control; existing CLI/API move passed.",
+      "Latest release workflow integrated from origin/main; release:check passed39CLItests and final0.1.9 package check. External0.1.9 viewer/local create/shutdown/persistence passed; no runtime/UI source changes or dependency changes."
     ],
     "reconciliation": [
       {
