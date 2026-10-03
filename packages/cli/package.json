@@ -1,6 +1,6 @@
 {
   "name": "@byronwallrus/product-grid-cli",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "CLI for Product Grid Management.",
   "type": "module",
   "bin": {
@@ -26,5 +26,10 @@
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/byronwall/prod-mgmt-grid.git",
+    "directory": "packages/cli"
   }
 }
