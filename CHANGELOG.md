@@ -14,6 +14,10 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 - The tree view's table of contents highlights the heading you are currently scrolled to (the same one the breadcrumb shows), marks it as the current location for screen readers, and scrolls it into view when the contents open. Keyboard focus now uses a ring, so it is distinct from the current row.
 - The node type picker (inspector, tree, and grid) has a filter field: start typing to narrow the types, use the arrow keys and Enter to choose, and an empty search says nothing matches.
 
+### Removed
+
+- Removed the Overlap canvas mode, its URL setting, and its depth-based tile layout.
+
 ### Changed
 
 - The inspector title and its header actions stay pinned at the top while the inspector body scrolls.
