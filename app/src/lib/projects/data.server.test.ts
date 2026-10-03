@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   createContextNodeOnDisk,
   createChildNodeOnDisk,
@@ -26,6 +26,29 @@ import {
 } from "./node-metadata";
 import { createDefaultProjectNodeTypeSchema } from "./node-types";
 import type { MapNodeImage } from "~/lib/spatial-map/types";
+
+const readBarrier = vi.hoisted(() => ({
+  target: "",
+  remaining: 0,
+  entered: () => {},
+  wait: Promise.resolve(),
+}));
+
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const original = await importOriginal<typeof import("node:fs/promises")>();
+  return {
+    ...original,
+    readFile: async (...args: Parameters<typeof original.readFile>) => {
+      const value = await original.readFile(...args);
+      if (String(args[0]) === readBarrier.target && readBarrier.remaining > 0) {
+        readBarrier.remaining -= 1;
+        readBarrier.entered();
+        await readBarrier.wait;
+      }
+      return value;
+    },
+  };
+});
 
 const defaultSchema = createDefaultProjectNodeMetadataSchema();
 const defaultTypeSchema = createDefaultProjectNodeTypeSchema();
@@ -178,6 +201,54 @@ describe("createProjectOnDisk", () => {
       expect(unsafeBackupFile).toBeNull();
     } finally {
       process.chdir(originalCwd);
+    }
+  });
+});
+
+describe("serialized read normalization", () => {
+  it("does not overwrite a mutation that follows a captured legacy record", async () => {
+    const originalDataDir = process.env.APP_DATA_DIR;
+    const tempRoot = mkdtempSync(path.join(os.tmpdir(), "project-grid-normalize-race-"));
+    const dataDir = path.join(tempRoot, "data");
+    const projectId = "normalization-race";
+    const projectFile = path.join(dataDir, "projects", projectId, "project.json");
+    mkdirSync(path.dirname(projectFile), { recursive: true });
+    writeProjectFixture(dataDir, buildProjectFixture({
+      id: projectId,
+      spatialMap: { nodes: [buildNode({ id: "node-1", label: "Before mutation", type: "task", depth: 1 })], links: [] },
+    }));
+
+    let capturedResolve!: () => void;
+    let releaseResolve!: () => void;
+    const captured = new Promise<void>((resolve) => { capturedResolve = resolve; });
+    const wait = new Promise<void>((resolve) => { releaseResolve = resolve; });
+    process.env.APP_DATA_DIR = dataDir;
+    readBarrier.target = projectFile;
+    readBarrier.remaining = 1;
+    readBarrier.entered = capturedResolve;
+    readBarrier.wait = wait;
+
+    try {
+      const delayedRead = readProjectByIdFromDisk(projectId);
+      await captured;
+      await updateProjectNodeTitleOnDisk({ projectId, nodeId: "node-1", title: "After mutation" });
+      releaseResolve();
+      await delayedRead;
+
+      const stored = JSON.parse(readFileSync(projectFile, "utf8")) as {
+        operationLog: Array<{ payload?: { state?: { spatialMap?: { nodes?: Array<{ label?: string }> } } } }>;
+      };
+      expect(stored.operationLog[0]?.payload?.state?.spatialMap?.nodes?.[0]?.label).toBe("After mutation");
+      expect((await readProjectByIdFromDisk(projectId))?.spatialMap.nodes[0]?.label).toBe("After mutation");
+    } finally {
+      releaseResolve();
+      readBarrier.target = "";
+      readBarrier.remaining = 0;
+      readBarrier.wait = Promise.resolve();
+      readBarrier.entered = () => {};
+      if (originalDataDir === undefined) delete process.env.APP_DATA_DIR;
+      else process.env.APP_DATA_DIR = originalDataDir;
+      rmSync(tempRoot, { recursive: true, force: true });
     }
   });
 });
