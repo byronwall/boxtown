@@ -7,6 +7,13 @@
     "app:test": "pnpm --dir app test",
     "app:type-check": "pnpm --dir app type-check",
     "cli:test": "node --test packages/cli/test/*.test.mjs",
-    "cli:pack-check": "cd packages/cli && npm_config_cache=/private/tmp/product-grid-npm-cache npm pack --dry-run"
+    "cli:pack-check": "pnpm --dir packages/cli pack --out /private/tmp/product-grid-cli-pack-check",
+    "changeset:add": "node scripts/add-changeset.ts",
+    "changeset:status": "changeset status",
+    "release:check": "pnpm cli:test && pnpm cli:pack-check",
+    "release": "pnpm release:check && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.8"
   }
 }
