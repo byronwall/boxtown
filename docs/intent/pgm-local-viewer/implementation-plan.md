@@ -1,0 +1,110 @@
+---
+title: "PGM local viewer — implementation plan"
+slug: "pgm-local-viewer"
+phase: plan
+status: current
+last_updated: "2026-10-02"
+---
+
+# PGM local viewer — implementation plan
+
+## Plan at a glance
+
+Build local mode around the existing app. `pgm` starts a bundled Node server, opens the current viewer, and selects a local data folder. CLI commands use that server’s current API. Project files and images remain outside the installed package.
+
+First prove that a fresh production app build works after relocation. This tests the largest uncertainty: whether server modules, browser assets, image handling, and routes travel together. A launcher cannot fix an incomplete artifact.
+
+Next deliver a foreground viewer command from a locally installed package. Users can create and edit projects, attach images, stop the command, and reopen saved data. This is a useful intermediate product even before automatic server reuse exists.
+
+Finally connect local CLI commands to the same runtime. A command reuses an open viewer server or starts a temporary server when needed. A small ownership mechanism prevents two processes from writing the same folder. Keep this mechanism specific to local startup.
+
+You approved the managed local server. No further product decision blocks this plan. Command spelling and folder defaults are reversible implementation choices. No implementation, publication, or data migration has started.
+
+## Implementation strategy
+
+**Reuse the complete application.** Keep viewer components, SolidStart actions, `/api/projects`, `/api/v1`, and `/ws/jobs`. Keep the current record reader, serializer, operation history, images, and archives. Do not extract a new storage layer.
+
+**Add startup at the CLI boundary.** Resolve local or remote mode before constructing `ProductGridClient` in `packages/cli/src/main.mjs`. Put new launcher, target, and packaging code in small TypeScript modules. Compile those modules to JavaScript for the existing Node CLI. Avoid converting unrelated CLI code.
+
+**Select local data explicitly.** Proposed interface:
+
+```sh
+pgm viewer --data-dir ./product-grid-data
+pgm node list --local ./product-grid-data --project demo --json
+pgm node create --local ./product-grid-data --project demo --title Example --json
+```
+
+The viewer command stays in the foreground. Print its URL and absolute data path. Open the browser after readiness; provide `--no-open` for terminal use. Local mode rejects conflicting remote flags and ignores remote server/token defaults. Initially require an explicit project for project-scoped local commands. Add folder-local linking only if the current command flow needs it.
+
+**Use production settings.** Start with `NODE_ENV=production`, an absolute `APP_DATA_DIR`, and a loopback host. Use an app build with root `BASE_PATH`. Override inherited Nitro host/port settings and clear socket/SSL settings that change startup. Generate a local API token with the existing scopes. Keep it out of terminal output and browser URLs.
+
+**Keep the development loop local.** Add a focused `pnpm local:smoke` script that builds, relocates, starts, checks, and stops the artifact. Use a new folder under repo-root `tmp/` for each run. Disable update checks with `PGM_NO_UPDATE_CHECK=1`. Use real HTTP calls and real disposable files. Inject failures with an occupied port, malformed fixture, or non-writable folder.
+
+The existing `app/data` contains user data. Existing tickets identify port 3000 as the user server. Neither is a test target. There is no need for cloud access, an emulator, or Docker. Manual browser checks use the disposable runtime; browser automation remains outside this plan unless requested.
+
+The proof order is: relocated app → installed package → shared CLI/viewer writes → manual viewer parity. Preserve explicit remote mode throughout. Disable local startup to bypass the new code. Never migrate or modify remote data during these checks.
+
+## Milestone 1: A relocated app edits disposable local projects
+
+Build current source with `pnpm --dir app build` and root `BASE_PATH`. Copy the complete `.output` to a disposable runtime directory. Start its server entry with a separate empty data folder and an unused loopback port.
+
+- **Change — Add one reproducible artifact smoke script.** Create a project and node through the existing CLI/API. Change the node title and context. Fetch the project through the viewer’s read route. Upload an image, download it through the image route, and compare bytes. Stop and restart the runtime, then verify saved state.
+- **Change — Prove artifact closure.** Launch with a working directory outside the checkout. Check module resolution, symlinks, static script URLs, CSS, and runtime dependency paths. No import may resolve back into the checkout. Retain required server dependencies and public assets.
+- **Spike — Resolve output packaging.** Determine whether `.output` is complete for the installed Vinxi/Nitro versions. If modules are missing, adjust tracing or stage the exact required runtime dependencies. Do not ship all development dependencies or change frameworks.
+
+Use real production API authentication. Fetch HTML and asset bytes as the initial operator proof. This does not prove hydration, server-action transport, or visual parity; those checks belong in the next milestone.
+
+### Desired end state
+
+- A relocated production artifact creates, edits, and reloads local projects.
+- Image bytes survive the API round-trip and runtime restart.
+- One focused command repeats the proof without touching user data.
+
+## Milestone 2: Installed pgm opens the existing editable viewer
+
+Package the proven output with the CLI and add the foreground viewer command. Resolve packaged files relative to the installed module, not the current working directory.
+
+- **Change — Package one complete app build.** Update `packages/cli/package.json` and build scripts to stage the app under a package-owned runtime directory. Build before packing. Include server modules, public assets, and required runtime dependencies. Pack with pnpm; inspect the actual tarball, not only the staging folder. Install it in a disposable prefix outside the checkout. Confirm nested dependencies survived packaging.
+- **Change — Add the viewer launcher.** Resolve the data directory, select a port, spawn with `process.execPath`, and wait for a bounded readiness check. Then open the browser. Show startup errors. A browser-open failure should leave the printed URL usable. Forward termination and wait for the owned child to stop.
+- **Change — Verify the real viewer manually.** On the disposable server, create and edit nodes, move a node, change status and metadata, upload/view/remove an image, and save project settings. Check the spatial map, tree, inspector, Markdown, and image viewer. Exercise actual server actions and deep-link refresh. Reopen the folder and confirm saved state.
+
+Start only one viewer runtime for a folder in this intermediate slice. Introduce the folder ownership guard here; duplicate startup must fail clearly until reuse is added. Keep mutable records outside the installed package.
+
+### Desired end state
+
+- `pgm viewer --data-dir <folder>` works from an installed package.
+- The same app components and routes provide local editing and image management.
+- Ctrl+C stops the owned server. Restart retains local state.
+- Manual checks establish viewer parity. Local assets work with internet access unavailable.
+
+## Milestone 3: CLI commands share the local viewer’s write authority
+
+Extend local target selection to all project, node, and image commands that currently use `ProductGridClient`. Keep their API payloads and output formats.
+
+- **Change — Reuse or start the folder runtime.** Store a small private ownership record for the canonical data path. Acquire ownership atomically before starting a writer. Record the local URL and token after readiness. Verify a live server identifies the same folder and runtime before reuse. Add a narrow local identity endpoint if existing routes cannot prove this. Keep that endpoint inactive in remote mode.
+- **Change — Handle process ownership directly.** A command reuses an active runtime. Without one, it starts a temporary runtime, performs the operation, and stops the child in `finally`. Remove a stale record only after confirming its owner is gone. A second caller waits briefly for startup or receives a clear retry error. Do not infer ownership from an open port alone.
+- **Change — Preserve target separation.** Reject mixed local and remote flags. Do not use global remote project selection for a local folder. Keep server diagnostics on stderr so `--json` stdout contains only command results. Skip remote update checks before local operations.
+- **Change — Verify shared writes and events.** With the viewer open, make CLI edits and confirm the viewer receives them without reload. Send concurrent edits to different node fields through the one server and confirm both persist. Start two local commands against a stopped folder and prove only one writer starts. Check stale ownership, startup failure, command failure, and shutdown. Confirm commands never stop a server they reused.
+
+Add a few focused lifecycle tests for duplicate writers, target selection, and cleanup. Reuse existing disk/API tests. Inspect read-time normalization: it can write outside `serializedMutation`. Reproduce overlap with a mutation before changing it. If the overlap loses changes, put that specific write inside the shared queue without nesting queued calls.
+
+### Desired end state
+
+- Local CLI commands work with and without an open viewer.
+- A folder has one runtime writer. CLI edits reach the open viewer through existing events.
+- Failed commands preserve data and clean up only their owned processes.
+- Remote commands retain their current explicit path.
+
+## Open decisions and spikes
+
+1. **Artifact closure and package contents.** Inspect the relocated build and installed tarball. Repair tracing or dependency staging if files are missing.
+2. **Port selection.** The inspected output treats port `0` as port 3000. Use a selected free port with bounded bind retries. Recheck fresh output before relying on that behavior.
+3. **Read normalization during writes.** Reproduce concurrent access with a legacy disposable record. Repair only a demonstrated queue gap.
+
+## Below the cut line
+
+- Native single-file executable, Electron, and a separate viewer build.
+- Cloud sync, automated remote downloads, and data migration.
+- Operating-system service registration and automatic background startup.
+- Watching arbitrary external file edits or multiple app versions sharing one folder.
+- New databases, generic adapters, and a broad project-service refactor.

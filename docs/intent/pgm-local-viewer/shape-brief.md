@@ -14,7 +14,7 @@ Package the existing SolidStart app with `pgm`. Add a local command that starts 
 
 The app already uses disk storage. The main change is how users install and start it. Replacing server actions with browser file access would create a much larger change and threaten viewer parity.
 
-Use one local process as the writer for a folder. Local CLI commands should call its existing `/api/v1` routes. This keeps the current mutation queue and event system effective. This recommendation remains provisional until you settle whether a managed local server meets your goal.
+Use one local process as the writer for a folder. Local CLI commands call its existing `/api/v1` routes. This keeps the current mutation queue and event system effective. You confirmed that a managed local server meets your goal.
 
 ## Problem and appetite
 
@@ -92,14 +92,6 @@ SolidStart v1 exposes Nitro deployment settings. Nitro documents standalone Node
 - Do not add an always-running daemon before the foreground path works.
 - Do not copy existing live data into a local mode automatically.
 
-## Serious alternative
-
-Extract shared project services into a runtime-independent package. CLI commands could call those services directly; the viewer would still need a local server. This can support server-free CLI use. It also requires cross-process write coordination and a way to notify the viewer of CLI changes. Choose it only if server-free commands are a firm requirement.
-
-## What still needs your input
-
-Confirm whether a local server managed by `pgm` satisfies the intended local mode. The direct-file alternative changes the implementation path.
-
 ## Plan handoff
 
-Produce the plan after the runtime decision. Prove relocation first, then a packaged foreground viewer, then CLI reuse and restart behavior. Keep command names, default folder location, and port selection provisional.
+Follow the implementation plan. Prove relocation first, then a packaged foreground viewer, then CLI reuse and restart behavior. Keep command names, default folder location, and port selection provisional.

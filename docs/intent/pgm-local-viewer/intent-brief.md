@@ -16,7 +16,7 @@ This is a second operating mode for the same tool. Today, the CLI connects to an
 
 “Exact same viewer” is a strong requirement. A simplified export, read-only preview, or separate local interface would miss the goal. The recommended approach should reuse the app source, routes, actions, image handling, and project change events. Changes to the viewer should reach both modes through the same release build.
 
-A local HTTP runtime may satisfy this intent while keeping the current application structure. The runtime would be started by `pgm` and would read and write the selected folder. This is a recommendation, not a confirmed requirement. Whether CLI commands must work directly on files without any server remains open.
+You confirmed that `pgm` can manage a local server. The runtime will serve the current viewer and read and write the selected folder. CLI commands can use that same runtime. They do not need a separate direct-file implementation.
 
 ## What matters most
 
@@ -56,10 +56,6 @@ The app already persists projects under `APP_DATA_DIR/projects/<project-id>/proj
 
 The viewer reads through app routes and writes through SolidStart server actions. CLI commands use `/api/v1`. Both reach the same disk services. The missing pieces are packaged app output, local startup, and local CLI target selection.
 
-## What still needs your input
-
-Can `pgm` manage a local HTTP runtime, or must CLI commands work directly on files with no server? The provisional recommendation uses a managed local runtime.
-
 ## Next step after confirmation
 
-Confirm the runtime boundary, then produce the implementation plan. First prove that a relocated app build can edit disposable local data. Then package that build with `pgm`.
+The runtime boundary is confirmed. Follow the implementation plan in this folder. First prove that a relocated app build can edit disposable local data. Then package that build with `pgm` and connect local CLI commands to it.
