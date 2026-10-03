@@ -9,6 +9,8 @@
   "files": [
     "bin",
     "src",
+    "build",
+    "runtime",
     "skills",
     "README.md"
   ],
@@ -18,7 +20,8 @@
   "scripts": {
     "dev": "node ./bin/pgm.mjs",
     "test": "node --test test/*.test.mjs",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "pnpm pack --json --pack-destination ../../tmp/cli-dist",
+    "prepack": "pnpm --dir ../.. cli:prepare-package"
   },
   "publishConfig": {
     "access": "public",

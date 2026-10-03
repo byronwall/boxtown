@@ -46,6 +46,15 @@ test("parseArgs handles project create name and link flag", () => {
   assert.equal(parsed.options.json, true);
 });
 
+test("parseArgs handles local viewer options", () => {
+  const parsed = parseArgs(["viewer", "--data-dir", "./product-grid-data", "--no-open", "--port", "43210"]);
+
+  assert.deepEqual(parsed.command, ["viewer"]);
+  assert.equal(parsed.options.dataDir, "./product-grid-data");
+  assert.equal(parsed.options.noOpen, true);
+  assert.equal(parsed.options.port, "43210");
+});
+
 test("parseArgs does not let boolean flags consume following positionals", () => {
   const linkedCreate = parseArgs(["project", "create", "--link", "New", "Product", "Site"]);
   assert.deepEqual(linkedCreate.command, ["project", "create"]);

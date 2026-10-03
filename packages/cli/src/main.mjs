@@ -40,6 +40,15 @@ export async function main(argv = process.argv, io = defaultIo()) {
     return;
   }
 
+  if (parsed.command[0] === "viewer") {
+    if (parsed.command.length !== 1 || parsed.positionals.length > 0) {
+      throw new CliError("Usage: pgm viewer --data-dir <folder> [--no-open] [--port <port>]", exitCodes.usage);
+    }
+    const { runViewer } = await import("../build/local-runtime.mjs");
+    await runViewer(parsed.options, io);
+    return;
+  }
+
   if (!parsed.options.json) {
     await notifyIfUpdateAvailable(io);
   }
@@ -1020,6 +1029,7 @@ const booleanOptionNames = new Set([
   "split-headings",
   "with-ancestors",
   "with-context",
+  "no-open",
 ]);
 
 function parseOptionValue(rawKey, inlineValue, nextValue) {
@@ -1471,6 +1481,7 @@ function helpText() {
   return `Product Grid CLI
 
 Usage:
+  pgm viewer --data-dir <folder> [--no-open] [--port <port>]
   pgm auth login --token <token> [--server http://localhost:3000]
   pgm auth status [--json]
   pgm project list [--json]

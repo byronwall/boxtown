@@ -108,3 +108,5 @@ Run inside `app/`:
 - The app does not call LLM providers. Create content with external tools and write it through the CLI.
 - Keep `/api/v1`, `lib/agent-api`, and project events. The CLI uses these modules.
 - Keep `zod` for node metadata validation.
+- CLI packaging includes a production app build. Use `pnpm cli:pack` to stage and pack it; generated `packages/cli/runtime/` and `packages/cli/build/` are ignored.
+- Use `pnpm local:smoke` for relocated runtime checks. Keep fixtures under `tmp/`; never use `app/data` or port 3000.

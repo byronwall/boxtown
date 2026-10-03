@@ -400,7 +400,7 @@
       {
         "id": "M-2",
         "title": "Installed pgm opens the existing editable viewer",
-        "status": "planned",
+        "status": "completed",
         "outcome": "Packed CLI launches the complete current viewer over a selected disk folder.",
         "proof": "Install tarball outside checkout; manually exercise server actions, views, images, settings, offline assets, deep link and restart. Repeat relevant baseline checks against a separate normal production runtime with disposable data.",
         "valid_intermediate_state": "Foreground viewer works from installed pgm; duplicate runtime fails clearly; automatic CLI reuse follows. Hosted behavior retains its current baseline.",
@@ -409,7 +409,10 @@
         "depends_on": [
           "M-1"
         ],
-        "evidence": [],
+        "evidence": [
+          "Installed pnpm tarball outside checkout; HTTP/assets/auth/edit/restart/lifecycle and launcher errors passed. See pgm-c2o7.",
+          "Independent browser local and hosted node/status/metadata/context/settings/images/deep-link checks passed with zero console errors. Asset inventory contains no external origins. Shared absence of a reparent control and unavailable offline switch recorded."
+        ],
         "ticket_id": "pgm-c2o7"
       },
       {
@@ -654,6 +657,13 @@
       "event": "Relocation milestone accepted",
       "reason": "Real HTTP/assets/auth/project-node-image/event and restart proofs passed on fresh output outside checkout; startup/data failure cases and type-check passed.",
       "ticket": "pgm-yg33",
+      "status": "active"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Installed viewer milestone accepted",
+      "reason": "External installation, launcher failures, restart persistence and independent local/hosted browser proof passed. Shared reparent-control absence is unchanged; API move proof continues in M3.",
+      "ticket": "pgm-c2o7",
       "status": "active"
     }
   ],

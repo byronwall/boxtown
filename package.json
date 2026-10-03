@@ -7,7 +7,9 @@
     "app:test": "pnpm --dir app test",
     "app:type-check": "pnpm --dir app type-check",
     "cli:test": "node --test packages/cli/test/*.test.mjs",
-    "cli:pack-check": "cd packages/cli && npm_config_cache=/private/tmp/product-grid-npm-cache npm pack --dry-run",
+    "cli:pack-check": "pnpm --dir packages/cli pack --json --pack-destination ../../tmp/cli-dist",
+    "cli:pack": "pnpm --dir packages/cli pack --pack-destination ../../tmp/cli-dist",
+    "cli:prepare-package": "pnpm --dir app exec tsc ../scripts/prepare-cli-package.mts --target ES2022 --module NodeNext --moduleResolution NodeNext --types node --typeRoots ./node_modules/@types --skipLibCheck --outDir ../scripts && node scripts/prepare-cli-package.mjs",
     "local:smoke": "pnpm --dir app exec tsc ../scripts/local-viewer-smoke.ts --target ES2022 --module NodeNext --moduleResolution NodeNext --types node --typeRoots ./node_modules/@types --skipLibCheck --outDir ../tmp/local-viewer-smoke-build && node tmp/local-viewer-smoke-build/local-viewer-smoke.js"
   }
 }

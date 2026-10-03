@@ -7,7 +7,7 @@ Local first-slice CLI for Product Grid Management.
 From the repo root:
 
 ```bash
-npm install -g ./packages/cli
+pnpm add --global ./packages/cli
 ```
 
 Then use `pgm` from any terminal:
@@ -23,6 +23,24 @@ When `pgm` reports that a newer CLI version is available, run:
 ```bash
 pgm update
 ```
+
+## Local Viewer
+
+Start the packaged viewer with an explicit data folder:
+
+```bash
+pgm viewer --data-dir ./product-grid-data
+```
+
+The command opens the viewer in your browser and stays open in the terminal. It prints the local URL and data folder. Press Ctrl+C to stop it; project files and images stay in the folder.
+
+For terminal use, pass `--no-open`. Pass `--port <port>` to choose a loopback port:
+
+```bash
+pgm viewer --data-dir ./product-grid-data --no-open --port 43210
+```
+
+Use a separate folder for each set of local projects. One viewer process can own a folder at a time.
 
 ## Local Dev Server
 
