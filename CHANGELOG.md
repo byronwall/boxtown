@@ -6,6 +6,8 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Added
 
+- CLI releases use a Version Packages PR to update the npm package, package changelog, and GitHub release.
+
 - The inspector header has an Archive implemented action (archive icon with a count) in canvas, tree, and grid, with or without a selected node.
 - Canvas zoom and pan are kept in the URL (`cam`), so a refresh, a shared link, or Back returns to the same view. Fit, F, and the first pan or zoom take over as usual.
 - The map filter menu can filter by who last edited a node (Human or Agent), combined with type, status, and priority. A node whose edit history has rolled out of the project log matches neither.

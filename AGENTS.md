@@ -108,3 +108,17 @@ Run inside `app/`:
 - The app does not call LLM providers. Create content with external tools and write it through the CLI.
 - Keep `/api/v1`, `lib/agent-api`, and project events. The CLI uses these modules.
 - Keep `zod` for node metadata validation.
+
+## npm Releases
+
+- Add a changeset when a change affects the published CLI, including its bundled skill.
+- Run `pnpm changeset:add <patch|minor|major> "summary"`. Do not use the interactive changeset prompt.
+- Use `patch` for fixes and `minor` for features. Use `major` only when Byron requests it.
+- For breaking changes while the version is 0.x, use `minor`.
+- Write one or two short sentences for CLI users. Use one changeset per change and update it when scope changes.
+- Skip changesets for app-only, test-only, and release-tooling-only changes.
+- Do not change package versions or the CLI changelog by hand. The Version Packages PR manages them.
+- Keep the dated root changelog for app changes, as required above.
+- Use `release.yml` and npm trusted publishing. Do not add `NPM_TOKEN`.
+- Run `pnpm release:check` to check the public package before release.
+- See [release setup](README.md#release) for the GitHub and npm settings.

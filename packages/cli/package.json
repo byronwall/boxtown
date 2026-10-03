@@ -18,10 +18,15 @@
   "scripts": {
     "dev": "node ./bin/pgm.mjs",
     "test": "node --test test/*.test.mjs",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "pnpm pack --out /private/tmp/product-grid-cli-pack-check"
   },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/byronwall/prod-mgmt-grid.git",
+    "directory": "packages/cli"
   }
 }

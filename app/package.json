@@ -51,5 +51,6 @@
       "vinxi@0.5.10": "patches/vinxi@0.5.10.patch",
       "@pandacss/generator@1.7.2": "patches/@pandacss__generator@1.7.2.patch"
     }
-  }
+  },
+  "private": true
 }
