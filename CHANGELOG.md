@@ -2,6 +2,37 @@
 
 Notable changes to Product Grid Management, newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
 
+## 2026-10-02
+
+### Added
+
+- The inspector header has an Archive implemented action (archive icon with a count) in canvas, tree, and grid, with or without a selected node.
+- Canvas zoom and pan are kept in the URL (`cam`), so a refresh, a shared link, or Back returns to the same view. Fit, F, and the first pan or zoom take over as usual.
+- The map filter menu can filter by who last edited a node (Human or Agent), combined with type, status, and priority. A node whose edit history has rolled out of the project log matches neither.
+- An optional Overlap toggle in the canvas controls stacks nodes by depth like Mahjong tiles: children overlap their parent, deeper tiles sit on top with a thicker tile edge. The regular layout stays the default, and the choice is kept in the URL.
+- A structure peek button in the inspector header shows where the selected node sits: its ancestors, the node, and up to three levels of children with status and child counts. Opening or closing it leaves the selection and the map view alone; clicking a row selects that node.
+- The tree view's table of contents highlights the heading you are currently scrolled to (the same one the breadcrumb shows), marks it as the current location for screen readers, and scrolls it into view when the contents open. Keyboard focus now uses a ring, so it is distinct from the current row.
+- The node type picker (inspector, tree, and grid) has a filter field: start typing to narrow the types, use the arrow keys and Enter to choose, and an empty search says nothing matches.
+
+### Removed
+
+- Removed the Overlap canvas mode, its URL setting, and its depth-based tile layout.
+
+### Changed
+
+- The inspector title and its header actions stay pinned at the top while the inspector body scrolls.
+- Canvas image previews follow the image's shape. Portrait and square images get a taller centered frame instead of a thin cropped strip, and wide images use a shorter band that leaves more room for the node title. Node sizes and positions are unchanged.
+- Workspace chrome (toolbar, canvas controls, filter menu, inspector, tree, grid, and menus) uses neutral grays instead of green. Node type and status colors are unchanged.
+
+### Fixed
+
+- Edits stay on screen while they save, even when another save finishes, another tab saves, or the server pushes an update. A failed save rolls back only that edit, and a successful save is kept even if the follow-up refresh fails.
+- Success and error notifications appear again. The notification area was never mounted, so failures were silent.
+- The canvas no longer opens stretched. On first load the map now uses the real canvas proportions instead of waiting for a window resize, and the zoom readout shows the actual zoom.
+- Include all children and Show archived now stay in the URL with the other filters, so a refresh or a shared link keeps them.
+- Cmd+K search highlights no longer add space inside words; a match in the middle of a word now reads as one word.
+- Deleting an image in the image viewer updates the viewer immediately: it moves to the next image, or closes when the last image is deleted. A failed delete puts the image back in the viewer with an error so you can retry.
+
 ## 2026-10-01
 
 ### Added

@@ -26,6 +26,7 @@ import { Text } from "~/components/ui/text";
 import { getMapNodeStatusLabel } from "~/lib/spatial-map/node-status";
 import { type MapNode, type MapNodeStatus } from "~/lib/spatial-map/types";
 import { SpatialMapImageDropTarget, SpatialMapImageStrip } from "./SpatialMapImages";
+import { SpatialMapArchiveImplementedButton } from "./SpatialMapArchiveImplementedButton";
 import { SpatialMapArchiveNodeControl } from "./SpatialMapArchiveNodeControl";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapCopyAgentPromptButton } from "./SpatialMapCopyAgentPromptButton";
@@ -37,6 +38,7 @@ import { SpatialMapInspectorHeader } from "./SpatialMapInspectorHeader";
 import { SpatialMapNodePriorityMenu } from "./SpatialMapNodePriorityMenu";
 import { SpatialMapNodeStatusMenu } from "./SpatialMapNodeStatusMenu";
 import { SpatialMapNodeTypePicker } from "./SpatialMapNodeTypePicker";
+import { SpatialMapStructurePeek } from "./SpatialMapStructurePeek";
 import {
   SpatialMapCollapsibleGroup,
   SpatialMapEmptyState,
@@ -275,7 +277,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
       const result = await submitSaveContext(appendClientMutationId(formData, clientMutationId));
       props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Context was not saved",
         description:
@@ -319,7 +321,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
       });
       return true;
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Metadata was not saved",
         description:
@@ -391,7 +393,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         description: `${label ?? "This node"} is now the selected node title.`,
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       setOptimisticTitle((current) => (current?.nodeId === node.id ? null : current));
       toaster.error({
         title: "Rename failed",
@@ -446,7 +448,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         description: `${updatedNode?.label ?? "This node"} is now ${getMapNodeStatusLabel(updatedNode?.status ?? status)}.`,
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Status update failed",
         description:
@@ -485,7 +487,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         description: `${node.label} is now a ${type} node.`,
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Type update failed",
         description:
@@ -523,14 +525,14 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         alignSelf="stretch"
         p="0"
         border="0"
-        background={resizingInspector() ? "rgba(45, 111, 72, 0.18)" : "transparent"}
+        background={resizingInspector() ? "rgba(84, 90, 86, 0.18)" : "transparent"}
         color={resizingInspector() ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
         cursor="col-resize"
         _active={{ transform: "none" }}
         touchAction="none"
         transition="background-color 120ms ease, color 120ms ease"
         _hover={{ background: "rgba(96, 101, 95, 0.18)", color: "var(--spatial-map-copy)" }}
-        _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(37, 95, 58, 0.56)" }}
+        _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(60, 66, 62, 0.56)" }}
         style={{ width: `${RESIZE_GUTTER_WIDTH}px` }}
         onPointerDown={startInspectorResize}
         onMouseDown={startInspectorMouseResize}
@@ -570,7 +572,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
             type="button"
             size="xs"
             variant="plain"
-            colorPalette="green"
+            colorPalette="gray"
             minW="24px"
             w="24px"
             h="24px"
@@ -590,9 +592,19 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
               title={headerTitle()}
               actions={
                 <>
+                  <Show when={inspectorView() === "details"}>
+                    <SpatialMapArchiveImplementedButton
+                      project={props.project}
+                      compact
+                      onProjectUpdated={props.onProjectUpdated}
+                    />
+                  </Show>
                   <Show when={inspectorView() === "details" && selectedNode()}>
                     {(node) => (
-                      <SpatialMapCopyAgentPromptButton project={props.project} nodeId={node().id} />
+                      <>
+                        <SpatialMapStructurePeek nodeId={node().id} />
+                        <SpatialMapCopyAgentPromptButton project={props.project} nodeId={node().id} />
+                      </>
                     )}
                   </Show>
                   <Tooltip
@@ -608,7 +620,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                     h="24px"
                     p="0"
                     color={inspectorView() === "activity" ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
-                    background={inspectorView() === "activity" ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+                    background={inspectorView() === "activity" ? "rgba(233, 235, 232, 0.96)" : "transparent"}
                     aria-label="Project activity"
                     aria-pressed={inspectorView() === "activity"}
                     onClick={() => setInspectorView((view) => (view === "activity" ? "details" : "activity"))}
@@ -689,7 +701,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                       <HStack gap="1">
                         <Button
                           size="2xs"
-                          colorPalette="green"
+                          colorPalette="gray"
                           variant="surface"
                           title="Add a child node (C)"
                           onClick={() => openAddChildDraft(node().id)}
@@ -906,7 +918,7 @@ function InspectorRelationList(props: {
                 textAlign="left"
                 cursor="pointer"
                 _hover={{ background: "rgba(34, 41, 36, 0.06)" }}
-                _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(37, 95, 58, 0.56)" }}
+                _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(60, 66, 62, 0.56)" }}
                 title={`${item.direction === "outgoing" ? "Links to" : "Linked from"} ${node().label}`}
                 onClick={() => props.onSelect(node().id)}
               >

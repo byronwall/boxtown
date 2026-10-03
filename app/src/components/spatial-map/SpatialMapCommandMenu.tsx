@@ -211,19 +211,19 @@ export function SpatialMapCommandMenu() {
                     w="100%"
                     p="8px 10px"
                     border="1px solid"
-                    borderColor={index() === activeIndex() ? "rgba(45, 111, 72, 0.38)" : "transparent"}
+                    borderColor={index() === activeIndex() ? "rgba(84, 90, 86, 0.38)" : "transparent"}
                     borderRadius="6px"
-                    background={index() === activeIndex() ? "rgba(229, 239, 229, 0.52)" : "transparent"}
+                    background={index() === activeIndex() ? "rgba(233, 235, 232, 0.52)" : "transparent"}
                     color="var(--spatial-map-copy)"
                     cursor="pointer"
                     textAlign="left"
                     transition="background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease"
                     _hover={{
-                      borderColor: "rgba(45, 111, 72, 0.38)",
-                      background: "rgba(229, 239, 229, 0.52)",
-                      boxShadow: "inset 0 0 0 1px rgba(45, 111, 72, 0.08)",
+                      borderColor: "rgba(84, 90, 86, 0.38)",
+                      background: "rgba(233, 235, 232, 0.52)",
+                      boxShadow: "inset 0 0 0 1px rgba(84, 90, 86, 0.08)",
                     }}
-                    _focusVisible={{ outline: "2px solid rgba(45, 111, 72, 0.7)", outlineOffset: "2px" }}
+                    _focusVisible={{ outline: "2px solid rgba(84, 90, 86, 0.7)", outlineOffset: "2px" }}
                     onMouseEnter={() => setActiveIndex(index())}
                     onClick={() => selectResult(result)}
                   >
@@ -481,8 +481,9 @@ function HighlightedText(props: {
         {(match) => (
           <Box
             as="mark"
-            p="0 2px"
-            borderRadius="3px"
+            // No horizontal padding: a match inside a word must not open gaps.
+            p="0"
+            borderRadius="2px"
             background="rgba(250, 204, 21, 0.56)"
             color="#2f2a12"
             boxShadow="inset 0 -1px 0 rgba(154, 117, 0, 0.32)"

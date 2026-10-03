@@ -121,7 +121,7 @@ export function ProjectMetadataSettingsDialog(
         description: "Project details and metadata settings were saved.",
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Settings were not saved",
         description:
@@ -138,7 +138,7 @@ export function ProjectMetadataSettingsDialog(
         props.trigger(() => setOpen(true))
       ) : (
         <Button
-          colorPalette="green"
+          colorPalette="gray"
           variant="outline"
           size="xs"
           onClick={() => setOpen(true)}
@@ -163,7 +163,7 @@ export function ProjectMetadataSettingsDialog(
             <Button
               type="submit"
               form={formId}
-              colorPalette="green"
+              colorPalette="gray"
               loading={pending()}
             >
               Save
@@ -380,7 +380,7 @@ export function ProjectMetadataSettingsDialog(
                 type="button"
                 size="2xs"
                 variant="surface"
-                colorPalette="green"
+                colorPalette="gray"
                 onClick={() =>
                   setRows((current) => [
                     ...current,
@@ -514,7 +514,7 @@ export function ProjectMetadataSettingsDialog(
                 type="button"
                 size="2xs"
                 variant="surface"
-                colorPalette="green"
+                colorPalette="gray"
                 onClick={() =>
                   setTypeRows((current) => [
                     ...current,
@@ -627,13 +627,13 @@ function SettingsSectionButton(props: {
       p="6px 8px"
       border="0"
       borderRadius="4px"
-      background={props.selected ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+      background={props.selected ? "rgba(233, 235, 232, 0.96)" : "transparent"}
       color="#171c19"
       cursor="pointer"
       font="inherit"
       textAlign="left"
       _hover={{
-        background: props.selected ? "rgba(229, 239, 229, 0.96)" : "rgba(34, 41, 36, 0.06)",
+        background: props.selected ? "rgba(233, 235, 232, 0.96)" : "rgba(34, 41, 36, 0.06)",
       }}
     >
       <Text as="span" fontSize="12px" fontWeight={props.selected ? "700" : "500"} lineHeight="1.3">

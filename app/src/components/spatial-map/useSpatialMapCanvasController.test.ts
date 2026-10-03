@@ -20,6 +20,43 @@ const data: SpatialMapData = {
 };
 
 describe("filterSpatialMapDataByGlobalFilter", () => {
+  it("filters by last editor kind, combined with type, and never matches unknown history", () => {
+    const lastEditors = new Map([
+      ["task-planned", "agent" as const],
+      ["task-working", "human" as const],
+      ["page-planned", "agent" as const],
+    ]);
+
+    expect(filterSpatialMapDataByGlobalFilter(data, createFilter({
+      selectedEditors: ["agent"],
+      selectedTypes: ["task"],
+    }), lastEditors).nodes.map((node) => node.id)).toEqual(["task-planned"]);
+    // page-working has no retained history, so it is neither human nor agent.
+    expect(filterSpatialMapDataByGlobalFilter(data, createFilter({
+      selectedEditors: ["human"],
+    }), lastEditors).nodes.map((node) => node.id)).toEqual(["task-working"]);
+  });
+
+  it("adds descendants and ancestors of last-editor matches when asked", () => {
+    const lastEditors = new Map([["page-working", "human" as const]]);
+    const withChildren = filterSpatialMapDataByGlobalFilter(data, createFilter({
+      selectedEditors: ["human"],
+      includeChildren: true,
+    }), lastEditors);
+    expect(withChildren.nodes.map((node) => node.id)).toEqual(["task-working", "page-working"]);
+
+    const withParents = filterSpatialMapDataByGlobalFilter(data, createFilter({
+      selectedEditors: ["agent"],
+      includeParents: true,
+    }), new Map([["task-planned", "agent" as const]]));
+    expect(withParents.nodes.map((node) => node.id)).toEqual(["task-planned", "page-planned"]);
+  });
+
+  it("returns no nodes when nothing matches", () => {
+    expect(filterSpatialMapDataByGlobalFilter(data, createFilter({ selectedEditors: ["agent"] })).nodes).toEqual([]);
+  });
+
+
   it("filters by a selected type when no status is selected", () => {
     const filtered = filterSpatialMapDataByGlobalFilter(data, createFilter({
       selectedTypes: ["task"],
@@ -142,6 +179,7 @@ function createFilter(
     selectedTypes: [],
     selectedPriorities: [],
     selectedStatuses: [],
+    selectedEditors: [],
     ...overrides,
   };
 }

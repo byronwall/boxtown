@@ -1,5 +1,5 @@
 import { useAction } from "@solidjs/router";
-import { createMemo, createSignal, For, Show, type JSX } from "solid-js";
+import { createEffect, createMemo, createSignal, For, Show, type JSX } from "solid-js";
 import { css } from "styled-system/css";
 import { Box } from "styled-system/jsx";
 import { Button } from "~/components/ui/button";
@@ -23,6 +23,7 @@ import type {
 } from "./spatial-map-canvas.types";
 import { SpatialMapChildNodePlaceholder } from "./SpatialMapChildNodePlaceholder";
 import { getImageFilesFromDataTransfer, useSpatialMapImages } from "./SpatialMapImages";
+import { getNodeImageFrame } from "./spatial-map-image-frame";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapReparentControl } from "./SpatialMapReparentControl";
 import { SpatialMapSegmentedControl, type SpatialMapSegmentedOption } from "./SpatialMapSegmentedControl";
@@ -240,7 +241,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       toaster.success({ title: "Node moved" });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Node was not moved",
         description:
@@ -344,6 +345,13 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
         }}
       >
         <g
+          ref={(element) => {
+            // The attribute binding caches the value it computed while
+            // hydrating even though hydration skipped the write, so a camera
+            // fit during hydration would never reach the DOM. Apply it from an
+            // effect that runs after hydration instead.
+            createEffect(() => element.setAttribute("transform", controller.sceneTransform()));
+          }}
           class="spatial-map-scene-layer"
           transform={controller.sceneTransform()}
           style={{ "transform-box": "view-box" }}
@@ -370,7 +378,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                   d={path()}
                   fill="none"
                   pointer-events="none"
-                  stroke="rgba(23, 62, 39, 0.68)"
+                  stroke="rgba(33, 38, 35, 0.68)"
                   stroke-width="2"
                   stroke-dasharray="8 7"
                   stroke-linecap="round"
@@ -447,7 +455,7 @@ function CanvasToggle(props: { pressed: boolean; onClick: () => void; children: 
     <Button
       variant="outline"
       size="2xs"
-      background={props.pressed ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+      background={props.pressed ? "rgba(233, 235, 232, 0.96)" : "transparent"}
       color={props.pressed ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
       fontWeight={props.pressed ? "700" : "500"}
       aria-pressed={props.pressed}
@@ -608,7 +616,21 @@ function SpatialMapNode(props: {
   const nodeImages = () => props.item.node.images ?? [];
   const firstImage = () => nodeImages()[0];
   const hasImages = () => nodeImages().length > 0;
-  const imageHeight = () => (hasImages() ? Math.min(86, props.item.node.height * 0.45) : 0);
+  // Natural aspect of the preview image, known only after it loads in the browser.
+  const [imageAspect, setImageAspect] = createSignal<{ src: string; aspect: number } | null>(null);
+  const imageFrame = createMemo(() =>
+    getNodeImageFrame({
+      nodeWidth: props.item.node.width,
+      nodeHeight: props.item.node.height,
+      aspect: imageAspect()?.src === firstImage()?.src ? imageAspect()?.aspect : null,
+    }),
+  );
+  const imageHeight = () => (hasImages() ? imageFrame().height : 0);
+  const readImageAspect = (element: HTMLImageElement, src: string) => {
+    if (element.naturalWidth > 0 && element.naturalHeight > 0) {
+      setImageAspect({ src, aspect: element.naturalWidth / element.naturalHeight });
+    }
+  };
   const fallbackTone = () =>
     getNodeTypeTone(props.project.nodeTypeSchema, props.item.node.type);
   const nodeTone = () =>
@@ -759,7 +781,7 @@ function SpatialMapNode(props: {
         )`}
         stroke={
           props.item.isSelected
-            ? "#0f2f1d"
+            ? "#1a1f1c"
             : props.isIsolationTarget
               ? "#245d7e"
               : `color-mix(
@@ -785,7 +807,7 @@ function SpatialMapNode(props: {
           ry="0"
           fill="none"
           pointer-events="none"
-          stroke="#173e27"
+          stroke="#1f2421"
           stroke-width="2.6"
           shape-rendering="crispEdges"
           style={{ filter: "none" }}
@@ -795,9 +817,9 @@ function SpatialMapNode(props: {
         {(image) => (
           <foreignObject
             class="spatial-map-node-image-frame"
-            x="8"
+            x={imageFrame().x}
             y="8"
-            width={props.item.node.width - 16}
+            width={imageFrame().width}
             height={imageHeight()}
           >
             <button
@@ -809,7 +831,7 @@ function SpatialMapNode(props: {
                 height: "100%",
                 display: "block",
                 padding: "0",
-                border: "1px solid rgba(15, 47, 29, 0.38)",
+                border: "1px solid rgba(24, 28, 26, 0.38)",
                 "border-radius": "0",
                 background: "rgba(18, 22, 19, 0.1)",
                 cursor: "zoom-in",
@@ -826,6 +848,13 @@ function SpatialMapNode(props: {
                 src={image().src}
                 alt={image().originalName}
                 loading="lazy"
+                ref={(element) => {
+                  // A hydrated image can finish loading before onLoad is attached.
+                  queueMicrotask(() => {
+                    if (element.complete) readImageAspect(element, image().src);
+                  });
+                }}
+                onLoad={(event) => readImageAspect(event.currentTarget, image().src)}
                 style={{
                   width: "100%",
                   height: "100%",

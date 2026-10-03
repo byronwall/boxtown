@@ -12,6 +12,8 @@ import type { ProjectRecord } from "~/lib/projects/types";
 
 export function SpatialMapArchiveImplementedButton(props: {
   project: ProjectRecord;
+  // Compact renders an icon + count for tight chrome such as the inspector header.
+  compact?: boolean;
   onProjectUpdated?: (project: ProjectRecord, options?: ProjectUpdateOptions) => void;
 }) {
   const [pending, setPending] = createSignal(false);
@@ -54,7 +56,7 @@ export function SpatialMapArchiveImplementedButton(props: {
         description: `Archived ${targetIds.length} implemented node${targetIds.length === 1 ? "" : "s"} in this project.`,
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Archive failed",
         description: error instanceof Error ? error.message : "Implemented nodes could not be archived.",
@@ -72,15 +74,19 @@ export function SpatialMapArchiveImplementedButton(props: {
       <Tooltip content={description()} openDelay={150} closeDelay={80}>
         <Button
           size="2xs"
-          variant="outline"
+          variant={props.compact ? "plain" : "outline"}
           flexShrink="0"
+          h={props.compact ? "24px" : undefined}
+          px={props.compact ? "6px" : undefined}
+          gap={props.compact ? "4px" : undefined}
+          color={props.compact ? "var(--spatial-map-copy-dim)" : undefined}
           loading={pending()}
-          loadingText={`Archiving ${count()}…`}
+          loadingText={props.compact ? undefined : `Archiving ${count()}…`}
           aria-label={description()}
           onClick={() => void archiveImplemented()}
         >
           <ArchiveIcon size={13} aria-hidden="true" />
-          Archive implemented
+          <Show when={!props.compact}>Archive implemented</Show>
           <Box as="span" color="var(--spatial-map-copy-dim)" fontVariantNumeric="tabular-nums">
             {count()}
           </Box>

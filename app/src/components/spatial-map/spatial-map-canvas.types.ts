@@ -1,4 +1,6 @@
 import type { Accessor, JSX } from "solid-js";
+import type { LastEditorKind } from "~/lib/projects/last-editor";
+import type { CameraView } from "./spatial-map-camera";
 import type {
   MapNodeStatus,
   MapNode,
@@ -18,6 +20,8 @@ export interface SpatialMapGlobalFilterState {
   selectedStatuses: MapNodeStatus[];
   // Priority values, plus "none" for unprioritized nodes.
   selectedPriorities: string[];
+  // Kind of the latest retained editor. Nodes with no retained history match neither.
+  selectedEditors: LastEditorKind[];
 }
 
 export interface CameraState {
@@ -151,6 +155,7 @@ export interface SpatialMapCanvasController {
   toggleGlobalFilterType: (type: string) => void;
   toggleGlobalFilterStatus: (status: MapNodeStatus) => void;
   toggleGlobalFilterPriority: (priority: string) => void;
+  toggleGlobalFilterEditor: (editor: LastEditorKind) => void;
   setViewMode: (value: SpatialMapViewMode) => void;
   setVisibleDepthLevel: (value: SpatialMapDepthLevel) => void;
   toggleLinkedInIsolation: () => void;
@@ -159,6 +164,7 @@ export interface SpatialMapCanvasController {
   unstashNode: (nodeId: string) => void;
   reflowLayout: () => void;
   fitCameraToNodes: () => void;
+  restoreCameraView: (view: CameraView) => void;
   openChildNodeDraft: (
     parentNodeId?: string | null,
     options?: { anchorToParent?: boolean },

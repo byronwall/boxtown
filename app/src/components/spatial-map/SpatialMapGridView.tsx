@@ -133,11 +133,11 @@ const gridStructureClass = css({
     "--grid-row-bg": "#f0f3ee",
   },
   "& .spatial-map-grid-table tbody tr.is-selected": {
-    "--grid-row-bg": "#e5efe5",
-    color: "#132017",
+    "--grid-row-bg": "#e9ebe8",
+    color: "#171c19",
   },
   "& .spatial-map-grid-table tbody tr:focus-visible": {
-    outline: "2px solid rgba(23, 62, 39, 0.48)",
+    outline: "2px solid rgba(33, 38, 35, 0.48)",
     outlineOffset: "-2px",
   },
   // The header row and the select + name columns stay in view while the rest scrolls.
@@ -210,8 +210,8 @@ const gridStructureClass = css({
   },
   "& .spatial-map-grid-node-title mark": {
     p: "0",
-    background: "rgba(37, 95, 58, 0.2)",
-    color: "#132017",
+    background: "rgba(60, 66, 62, 0.2)",
+    color: "#171c19",
     boxDecorationBreak: "clone",
   },
 });
@@ -329,7 +329,7 @@ export function SpatialMapGridView(props: {
             gap="12px"
             minH="36px"
             p="5px 10px"
-            background={bulkSelectionActive() ? "rgba(229, 239, 229, 0.6)" : "transparent"}
+            background={bulkSelectionActive() ? "rgba(233, 235, 232, 0.6)" : "transparent"}
           >
             {/* Bulk actions take the summary's place so selecting rows never moves the table. */}
             <Show
@@ -1005,7 +1005,7 @@ function MetadataKeyPicker(props: {
                 variant="outline"
                 size="2xs"
                 aria-pressed={selected()}
-                background={selected() ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+                background={selected() ? "rgba(233, 235, 232, 0.96)" : "transparent"}
                 color={selected() ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
                 fontWeight={selected() ? "700" : "500"}
                 onClick={() => props.onToggle(field.key)}
@@ -1080,7 +1080,7 @@ function LinkActionsCell(props: {
         description: `${props.source.label} -> ${props.target.label} was removed.`,
       });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Delete failed",
         description:
@@ -1192,7 +1192,7 @@ function NodeNameCell(props: {
       props.onProjectUpdated?.(result, { clientMutationId, phase: "server" });
       toaster.success({ title: "Node renamed", description: `${title} is now shown in the grid.` });
     } catch (error) {
-      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+      props.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
       toaster.error({
         title: "Rename failed",
         description: error instanceof Error ? error.message : "The node title could not be updated.",
@@ -1245,10 +1245,10 @@ function NodeNameCell(props: {
           p="0"
           border="0"
           background="transparent"
-          color="rgba(31, 72, 46, 0.78)"
+          color="rgba(40, 45, 42, 0.78)"
           cursor="pointer"
-          _hover={{ color: "var(--spatial-map-accent-strong)", outline: "2px solid rgba(23, 62, 39, 0.26)", outlineOffset: "-1px" }}
-          _focusVisible={{ color: "var(--spatial-map-accent-strong)", outline: "2px solid rgba(23, 62, 39, 0.26)", outlineOffset: "-1px" }}
+          _hover={{ color: "var(--spatial-map-accent-strong)", outline: "2px solid rgba(33, 38, 35, 0.26)", outlineOffset: "-1px" }}
+          _focusVisible={{ color: "var(--spatial-map-accent-strong)", outline: "2px solid rgba(33, 38, 35, 0.26)", outlineOffset: "-1px" }}
           aria-label={`${props.expanded ? "Collapse" : "Expand"} ${props.node.label}`}
           aria-expanded={props.expanded}
           onClick={(event) => {
@@ -1298,10 +1298,10 @@ function NodeNameCell(props: {
             p="0"
             border="1px solid rgba(44, 52, 46, 0.2)"
             background="rgba(252, 253, 252, 0.38)"
-            color="rgba(31, 72, 46, 0.62)"
+            color="rgba(40, 45, 42, 0.62)"
             cursor="pointer"
-            _hover={{ borderColor: "rgba(23, 62, 39, 0.34)", background: "rgba(229, 239, 229, 0.54)", color: "rgba(23, 62, 39, 0.78)", outline: "2px solid rgba(23, 62, 39, 0.2)", outlineOffset: "1px" }}
-            _focusVisible={{ borderColor: "rgba(23, 62, 39, 0.34)", background: "rgba(229, 239, 229, 0.54)", color: "rgba(23, 62, 39, 0.78)", outline: "2px solid rgba(23, 62, 39, 0.2)", outlineOffset: "1px" }}
+            _hover={{ borderColor: "rgba(33, 38, 35, 0.34)", background: "rgba(233, 235, 232, 0.54)", color: "rgba(33, 38, 35, 0.78)", outline: "2px solid rgba(33, 38, 35, 0.2)", outlineOffset: "1px" }}
+            _focusVisible={{ borderColor: "rgba(33, 38, 35, 0.34)", background: "rgba(233, 235, 232, 0.54)", color: "rgba(33, 38, 35, 0.78)", outline: "2px solid rgba(33, 38, 35, 0.2)", outlineOffset: "1px" }}
             aria-label={`Open context preview for ${props.node.label}`}
             onClick={(event) => {
               event.stopPropagation();
@@ -1531,7 +1531,7 @@ async function submitNodePatch(input: {
       description: input.successDescription,
     });
   } catch (error) {
-    input.onProjectUpdated?.(previousProject, { clientMutationId, phase: "server" });
+    input.onProjectUpdated?.(previousProject, { clientMutationId, phase: "failed" });
     toaster.error({
       title: input.errorTitle,
       description: error instanceof Error ? error.message : "The grid value could not be updated.",
@@ -1565,8 +1565,8 @@ function ImagePreviewCell(props: { node: MapNode }) {
           background="rgba(18, 22, 19, 0.08)"
           cursor="zoom-in"
           overflow="hidden"
-          _hover={{ outline: "none", borderColor: "rgba(23, 62, 39, 0.68)", boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.32)" }}
-          _focusVisible={{ outline: "none", borderColor: "rgba(23, 62, 39, 0.68)", boxShadow: "inset 0 0 0 1px rgba(23, 62, 39, 0.32)" }}
+          _hover={{ outline: "none", borderColor: "rgba(33, 38, 35, 0.68)", boxShadow: "inset 0 0 0 1px rgba(33, 38, 35, 0.32)" }}
+          _focusVisible={{ outline: "none", borderColor: "rgba(33, 38, 35, 0.68)", boxShadow: "inset 0 0 0 1px rgba(33, 38, 35, 0.32)" }}
           aria-label={`Open ${previewImage().originalName}`}
           title={previewImage().originalName}
           onClick={(event) => {

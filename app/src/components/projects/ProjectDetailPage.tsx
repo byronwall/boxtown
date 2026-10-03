@@ -2,11 +2,15 @@ import { createEffect, createSignal, onCleanup, onMount, untrack } from "solid-j
 import { SpatialMapCanvas } from "~/components/spatial-map/SpatialMapCanvas";
 import type { ProjectEventsConnection } from "~/lib/projects/project-events.client";
 import { connectProjectEvents } from "~/lib/projects/project-events.client";
+import type { ProjectUpdateOptions } from "~/lib/projects/optimistic";
 import {
-  getProjectClientMutationId,
-  hasSameProjectState,
-  type ProjectUpdateOptions,
-} from "~/lib/projects/optimistic";
+  acceptServerProject,
+  addLocalChange,
+  createProjectSyncState,
+  failLocalChange,
+  getVisibleProject,
+  type ProjectSyncState,
+} from "~/lib/projects/optimistic-sync";
 import type { ProjectRecord } from "~/lib/projects/types";
 
 interface ProjectDetailPageProps {
@@ -14,65 +18,24 @@ interface ProjectDetailPageProps {
 }
 
 export function ProjectDetailPage(props: ProjectDetailPageProps) {
+  let sync: ProjectSyncState = createProjectSyncState(untrack(() => props.project));
   const [project, setProject] = createSignal(untrack(() => props.project));
-  const pendingLocalMutations = new Map<string, ProjectRecord>();
-  const acknowledgedLocalMutations = new Map<string, ProjectRecord>();
   let eventsConnection: ProjectEventsConnection | null = null;
 
-  const rememberAcknowledgedLocalMutation = (
-    clientMutationId: string,
-    acknowledgedProject: ProjectRecord,
-  ) => {
-    acknowledgedLocalMutations.set(clientMutationId, acknowledgedProject);
-    window.setTimeout(() => {
-      if (acknowledgedLocalMutations.get(clientMutationId) === acknowledgedProject) {
-        acknowledgedLocalMutations.delete(clientMutationId);
-      }
-    }, 10000);
-  };
-
-  const isLocalMutationAcknowledgement = (
-    clientMutationId: string | undefined,
-    nextProject: ProjectRecord,
-  ) => {
-    if (!clientMutationId) {
-      return false;
-    }
-
-    const pendingProject = pendingLocalMutations.get(clientMutationId);
-    if (pendingProject && hasSameProjectState(pendingProject, nextProject)) {
-      pendingLocalMutations.delete(clientMutationId);
-      rememberAcknowledgedLocalMutation(clientMutationId, nextProject);
-      return true;
-    }
-
-    const acknowledgedProject = acknowledgedLocalMutations.get(clientMutationId);
-    return Boolean(acknowledgedProject && hasSameProjectState(acknowledgedProject, nextProject));
+  const updateSync = (next: ProjectSyncState) => {
+    sync = next;
+    setProject((previous) => getVisibleProject(sync, previous));
   };
 
   createEffect(() => {
     const routeProject = props.project;
-    const clientMutationId = getProjectClientMutationId(routeProject);
-    if (isLocalMutationAcknowledgement(clientMutationId, routeProject)) {
-      return;
-    }
-
-    setProject((currentProject) =>
-      routeProject.updatedAt > currentProject.updatedAt ? routeProject : currentProject,
-    );
+    untrack(() => updateSync(acceptServerProject(sync, routeProject)));
   });
 
   onMount(() => {
     eventsConnection = connectProjectEvents({
       projectId: props.project.id,
-      onProjectChanged: (nextProject) => {
-        const clientMutationId = getProjectClientMutationId(nextProject);
-        if (isLocalMutationAcknowledgement(clientMutationId, nextProject)) {
-          return;
-        }
-
-        setProject(nextProject);
-      },
+      onProjectChanged: (nextProject) => updateSync(acceptServerProject(sync, nextProject)),
       onProjectDeleted: () => {
         window.location.href = "/";
       },
@@ -88,24 +51,20 @@ export function ProjectDetailPage(props: ProjectDetailPageProps) {
     nextProject: ProjectRecord,
     options: ProjectUpdateOptions = {},
   ) => {
-    if (options.clientMutationId && options.phase === "optimistic") {
-      pendingLocalMutations.set(options.clientMutationId, nextProject);
-      setProject(nextProject);
-      eventsConnection?.publishLocalProjectChange(nextProject);
+    const { clientMutationId, phase } = options;
+    if (clientMutationId && phase === "optimistic") {
+      updateSync(addLocalChange(sync, clientMutationId, project(), nextProject));
       return;
     }
 
-    const clientMutationId = options.clientMutationId ?? getProjectClientMutationId(nextProject);
-    if (isLocalMutationAcknowledgement(clientMutationId, nextProject)) {
-      eventsConnection?.publishLocalProjectChange(nextProject);
+    // A missing project is never authoritative; treat it as a failed write.
+    if (clientMutationId && (phase === "failed" || !nextProject)) {
+      updateSync(failLocalChange(sync, clientMutationId));
       return;
     }
 
-    if (clientMutationId) {
-      pendingLocalMutations.delete(clientMutationId);
-      rememberAcknowledgedLocalMutation(clientMutationId, nextProject);
-    }
-    setProject(nextProject);
+    updateSync(acceptServerProject(sync, nextProject, clientMutationId));
+    // Other tabs only ever receive confirmed server results.
     eventsConnection?.publishLocalProjectChange(nextProject);
   };
 

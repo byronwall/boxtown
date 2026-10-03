@@ -29,6 +29,8 @@ export function SpatialMapNodeTypePicker(props: SpatialMapNodeTypePickerProps) {
       }))}
       label={props.showLabel ? "Type" : undefined}
       menuClass="spatial-map-type-menu"
+      searchable
+      searchPlaceholder="Filter types"
       pending={Boolean(props.pending)}
       variant={props.variant ?? "tree"}
       onChange={(value) => {

@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import * as Menu from "~/components/ui/menu";
 import * as Switch from "~/components/ui/switch";
 import { Text } from "~/components/ui/text";
+import { lastEditorKinds } from "~/lib/projects/last-editor";
 import type { MapNodeStatus } from "~/lib/spatial-map/types";
 
 import type { SpatialMapGlobalFilterState } from "./spatial-map-canvas.types";
@@ -24,14 +25,14 @@ export function SpatialMapGlobalFilterMenu() {
         asChild={(triggerProps) => (
           <Button
             {...triggerProps()}
-            colorPalette="green"
+            colorPalette="gray"
             variant={spatialMap.globalFilterActive() ? "surface" : "outline"}
             size="2xs"
             aria-label="Filter visible nodes"
             title="Filter visible nodes"
             background={
               spatialMap.globalFilterActive()
-                ? "rgba(229, 239, 229, 0.96)"
+                ? "rgba(233, 235, 232, 0.96)"
                 : undefined
             }
             color={
@@ -112,6 +113,18 @@ export function SpatialMapGlobalFilterMenu() {
               }}
             </For>
           </FilterToggleSection>
+          <FilterToggleSection label="Last edited by">
+            <For each={lastEditorKinds}>
+              {(editor) => (
+                <FilterToggleButton
+                  selected={spatialMap.globalFilter().selectedEditors.includes(editor)}
+                  onClick={() => spatialMap.toggleGlobalFilterEditor(editor)}
+                >
+                  {editor === "human" ? "Human" : "Agent"}
+                </FilterToggleButton>
+              )}
+            </For>
+          </FilterToggleSection>
           <Box h="1px" my="10px" background="rgba(32, 38, 34, 0.12)" />
           <FilterSwitchRow
             label="Include parent context"
@@ -157,7 +170,7 @@ function FilterToggleButton(props: {
 }) {
   return (
     <Button
-      colorPalette="green"
+      colorPalette="gray"
       variant={props.selected ? "surface" : "outline"}
       size="2xs"
       aria-pressed={props.selected}
@@ -166,7 +179,7 @@ function FilterToggleButton(props: {
         props.onClick();
       }}
       borderRadius="4px"
-      background={props.selected ? "rgba(229, 239, 229, 0.96)" : "transparent"}
+      background={props.selected ? "rgba(233, 235, 232, 0.96)" : "transparent"}
       color={props.selected ? "var(--spatial-map-accent-strong)" : undefined}
     >
       {props.children}
@@ -182,7 +195,7 @@ function FilterSwitchRow(props: {
 }) {
   return (
     <Switch.Root
-      colorPalette="green"
+      colorPalette="gray"
       size="sm"
       checked={props.checked}
       disabled={props.disabled}
@@ -257,7 +270,8 @@ function getGlobalFilterSelectionCount(filter: SpatialMapGlobalFilterState) {
   return (
     filter.selectedTypes.length +
     filter.selectedStatuses.length +
-    filter.selectedPriorities.length
+    filter.selectedPriorities.length +
+    filter.selectedEditors.length
   );
 }
 
