@@ -7,7 +7,7 @@
     "app:test": "pnpm --dir app test",
     "app:type-check": "pnpm --dir app type-check",
     "cli:test": "node --test packages/cli/test/*.test.mjs",
-    "cli:pack-check": "pnpm --dir packages/cli pack --out /private/tmp/product-grid-cli-pack-check",
+    "cli:pack-check": "pnpm --dir packages/cli pack --out ../../tmp/product-grid-cli-pack-check",
     "changeset:add": "node scripts/add-changeset.ts",
     "changeset:status": "changeset status",
     "release:check": "pnpm cli:test && pnpm cli:pack-check",

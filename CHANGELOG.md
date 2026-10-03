@@ -28,6 +28,8 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Fixed
 
+- CLI release package checks now work on the Linux GitHub Actions runner.
+
 - Edits stay on screen while they save, even when another save finishes, another tab saves, or the server pushes an update. A failed save rolls back only that edit, and a successful save is kept even if the follow-up refresh fails.
 - Success and error notifications appear again. The notification area was never mounted, so failures were silent.
 - The canvas no longer opens stretched. On first load the map now uses the real canvas proportions instead of waiting for a window resize, and the zoom readout shows the actual zoom.

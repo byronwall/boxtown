@@ -18,7 +18,7 @@
   "scripts": {
     "dev": "node ./bin/pgm.mjs",
     "test": "node --test test/*.test.mjs",
-    "pack:check": "pnpm pack --out /private/tmp/product-grid-cli-pack-check"
+    "pack:check": "pnpm pack --out ../../tmp/product-grid-cli-pack-check"
   },
   "publishConfig": {
     "access": "public",
