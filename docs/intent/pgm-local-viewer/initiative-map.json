@@ -4,11 +4,11 @@
     "title": "PGM local viewer",
     "slug": "pgm-local-viewer",
     "scale": "capability",
-    "current_phase": "plan",
+    "current_phase": "execution",
     "last_updated": "2026-10-02",
     "summary": "Include the existing editable viewer in pgm with project data and images stored locally.",
-    "status": "planned",
-    "next_action": "Refine frontier ticket pgm-yg33 before execution; implementation has not started."
+    "status": "active",
+    "next_action": "Execute the linked ticket graph and verify local plus hosted behavior; tickets own live status."
   },
   "artifacts": {
     "intent_brief": {
@@ -276,7 +276,7 @@
         "new CLI interface",
         "publishing"
       ],
-      "observed": false
+      "observed": true
     },
     "rabbit_holes": [
       "second viewer",
@@ -288,7 +288,7 @@
     "open_decisions": []
   },
   "implementation": {
-    "status": "planned",
+    "status": "active",
     "repository_snapshot": {
       "root": "/Users/byronwall/Projects/product-grid-mgmt",
       "revision": "5ceef90e8c4e814b87bb27321d22460072b0eed2",
@@ -369,7 +369,7 @@
     "fast_local_loop": {
       "command": "pnpm local:smoke (planned script): build, relocate, start, exercise API and assets, stop, restart, verify persistence",
       "network": "Loopback only after dependencies are installed. Disable CLI update checks through PGM_NO_UPDATE_CHECK=1 for offline proofs.",
-      "executed": false,
+      "executed": true,
       "failure_injection": [
         "occupied port",
         "non-writable folder",
@@ -381,7 +381,7 @@
       {
         "id": "M-1",
         "title": "A relocated app edits disposable local projects",
-        "status": "planned",
+        "status": "completed",
         "outcome": "Fresh app output creates and edits disk records and images outside the source checkout.",
         "proof": "CLI/API writes, viewer read route, HTML and assets, image byte comparison, restart persistence. Repeat relevant baseline checks against a separate normal production runtime with disposable data.",
         "valid_intermediate_state": "Reusable relocated runtime and one focused local smoke script; remote app and CLI remain runnable. Hosted behavior retains its current baseline.",
@@ -391,7 +391,10 @@
           "DEP-1",
           "DEP-2"
         ],
-        "evidence": [],
+        "evidence": [
+          "pgm-yg33 acceptance table: split relocated/hosted smoke passed at tmp/local-viewer-smoke-1790993866160; app type-check passed on changed config.",
+          "Production WebSocket upgrade missing at baseline; supported Nitro v2 experimental.websocket enabled and live events proven in both modes."
+        ],
         "ticket_id": "pgm-yg33"
       },
       {
@@ -595,10 +598,7 @@
         "M-2": "pgm-c2o7",
         "M-3": "pgm-gydq"
       },
-      "status": "coarse-open",
-      "frontier_roots": [
-        "pgm-yg33"
-      ]
+      "status": "execution-tracked-in-tickets"
     }
   },
   "history": [
@@ -642,6 +642,19 @@
         "M-3": "pgm-gydq"
       },
       "status": "planned"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Implementation authorized",
+      "reason": "User invoked steady-execution and requested all changes plus a PR with working proof. Current hosted main integrated before implementation. Root owns PR and acceptance; one bounded worker owns implementation.",
+      "status": "active"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Relocation milestone accepted",
+      "reason": "Real HTTP/assets/auth/project-node-image/event and restart proofs passed on fresh output outside checkout; startup/data failure cases and type-check passed.",
+      "ticket": "pgm-yg33",
+      "status": "active"
     }
   ],
   "closure": null

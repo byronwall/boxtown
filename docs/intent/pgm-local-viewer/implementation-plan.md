@@ -20,9 +20,9 @@ Next deliver a foreground viewer command from a locally installed package. Users
 
 Finally connect local CLI commands to the same runtime. A command reuses an open viewer server or starts a temporary server when needed. A small ownership mechanism prevents two processes from writing the same folder. Keep this mechanism specific to local startup.
 
-You approved the managed local server. No further product decision blocks this plan. Command spelling and folder defaults are reversible implementation choices. No implementation, publication, or data migration has started.
+You approved the managed local server. No further product decision blocks this plan. Command spelling and folder defaults are reversible implementation choices. Implementation is authorized. Registry publication and data migration remain outside the request.
 
-Local ticket graph: [epic pgm-9m5d](../../../.tickets/pgm-9m5d.md). All tickets are coarse and open. Refine each ticket before execution.
+Local ticket graph: [epic pgm-9m5d](../../../.tickets/pgm-9m5d.md). Ticket files own live refinement, status, and proof. Refine each ticket before execution.
 
 ## Implementation strategy
 
