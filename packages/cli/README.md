@@ -7,7 +7,7 @@ Local first-slice CLI for Product Grid Management.
 From the repo root:
 
 ```bash
-npm install -g ./packages/cli
+pnpm add --global ./packages/cli
 ```
 
 Then use `pgm` from any terminal:
@@ -23,6 +23,38 @@ When `pgm` reports that a newer CLI version is available, run:
 ```bash
 pgm update
 ```
+
+## Local Viewer
+
+Start the packaged viewer with an explicit data folder:
+
+```bash
+pgm viewer --data-dir ./product-grid-data
+```
+
+The command opens the viewer in your browser and stays open in the terminal. It prints the local URL and data folder. Press Ctrl+C to stop it; project files and images stay in the folder.
+
+For terminal use, pass `--no-open`. Pass `--port <port>` to choose a loopback port:
+
+```bash
+pgm viewer --data-dir ./product-grid-data --no-open --port 43210
+```
+
+Use a separate folder for each set of local projects. One viewer process can own a folder at a time.
+
+Project, node, and image commands use the same folder with `--local`. They reuse an open viewer. If no viewer is open, pgm starts a temporary local runtime and stops it after the command.
+
+```bash
+pgm project list --local ./product-grid-data --json
+pgm project create "New Product Site" --local ./product-grid-data --json
+pgm node list --local ./product-grid-data --project <project-id> --json
+pgm node update <node-id> --local ./product-grid-data --project <project-id> --title "Updated title" --json
+pgm image list <node-id> --local ./product-grid-data --project <project-id> --json
+```
+
+Use `--project <id>` for project-scoped local commands. Local mode does not use the remote project's saved default. Do not pass `--server` or `--token` with `--local`. Project linking changes the remote CLI setting, so use `--project` for local projects.
+
+If pgm cannot prove that a startup child stopped, it keeps the ownership record and refuses to start another writer. Check `<folder>/.pgm-local-runtime.json` and its recorded URL and process IDs. Stop the server only after you verify it belongs to that folder. Then remove that record and retry only after both recorded processes have stopped and the URL no longer responds.
 
 ## Local Dev Server
 

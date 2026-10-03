@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { copyFile, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
@@ -312,7 +313,7 @@ export async function readProjectByIdFromDisk(
   const storedProject = await readStoredProjectJson(projectFile);
   const parsed = parseStoredProjectRecord(storedProject.value);
   if (parsed.didNormalize || storedProject.didRecover) {
-    await writeProjectRecordToDisk(parsed.record);
+    await normalizeProjectRecordOnDisk(projectId);
   }
 
   return parsed.record;
@@ -320,16 +321,29 @@ export async function readProjectByIdFromDisk(
 
 // ponytail: one global queue; use per-project queues only if throughput matters.
 let mutationTail = Promise.resolve();
+const mutationContext = new AsyncLocalStorage<boolean>();
 
 export function serializedMutation<Args extends unknown[], Result>(
   mutate: (...args: Args) => Promise<Result>,
 ) {
   return (...args: Args): Promise<Result> => {
-    const result = mutationTail.then(() => mutate(...args));
+    if (mutationContext.getStore()) return mutate(...args);
+    const result = mutationTail.then(() => mutationContext.run(true, () => mutate(...args)));
     mutationTail = result.then(() => undefined, () => undefined);
     return result;
   };
 }
+
+const normalizeProjectRecordOnDisk = serializedMutation(async function normalizeProjectRecordOnDisk(
+  projectId: string,
+) {
+  const projectFile = getProjectJsonFilePath(projectId);
+  if (!existsSync(projectFile)) return;
+
+  const storedProject = await readStoredProjectJson(projectFile, false);
+  const parsed = parseStoredProjectRecord(storedProject.value);
+  if (parsed.didNormalize || storedProject.didRecover) await writeProjectRecordToDisk(parsed.record);
+});
 
 export const createProjectOnDisk = serializedMutation(async function createProjectOnDisk(
   input: CreateProjectInput = {},
@@ -1276,7 +1290,7 @@ export async function readProjectRecordsFromDisk(): Promise<ProjectRecord[]> {
 
   const entries = await readdir(projectsDir, { withFileTypes: true });
   const records: ProjectRecord[] = [];
-  let didNormalizeAnyRecord = false;
+  const recordsToNormalize: string[] = [];
 
   for (const entry of entries) {
     if (!entry.isDirectory()) {
@@ -1291,12 +1305,10 @@ export async function readProjectRecordsFromDisk(): Promise<ProjectRecord[]> {
     const storedProject = await readStoredProjectJson(projectFile);
     const parsed = parseStoredProjectRecord(storedProject.value);
     records.push(parsed.record);
-    didNormalizeAnyRecord ||= parsed.didNormalize || storedProject.didRecover;
+    if (parsed.didNormalize || storedProject.didRecover) recordsToNormalize.push(parsed.record.id);
   }
 
-  if (didNormalizeAnyRecord) {
-    await writeProjectRecordsToDisk(records);
-  }
+  await Promise.all(recordsToNormalize.map((projectId) => normalizeProjectRecordOnDisk(projectId)));
 
   return records;
 }
@@ -1400,7 +1412,7 @@ function isProjectBackupFilename(filename: string) {
   );
 }
 
-async function readStoredProjectJson(projectFile: string) {
+async function readStoredProjectJson(projectFile: string, backupOnRecovery = true) {
   const raw = await readFile(projectFile, "utf8");
   try {
     return { value: JSON.parse(raw) as unknown, didRecover: false };
@@ -1411,10 +1423,12 @@ async function readStoredProjectJson(projectFile: string) {
     }
 
     const recovered = JSON.parse(recoveredRaw) as unknown;
-    const backupFile = await backupCorruptProjectFile(projectFile);
-    console.warn(
-      `Recovered ${projectFile} from trailing JSON data. Original file was preserved at ${backupFile}.`,
-    );
+    if (backupOnRecovery) {
+      const backupFile = await backupCorruptProjectFile(projectFile);
+      console.warn(
+        `Recovered ${projectFile} from trailing JSON data. Original file was preserved at ${backupFile}.`,
+      );
+    }
     return { value: recovered, didRecover: true };
   }
 }

@@ -40,6 +40,33 @@ export async function main(argv = process.argv, io = defaultIo()) {
     return;
   }
 
+  if (parsed.command[0] === "viewer") {
+    if (parsed.command.length !== 1 || parsed.positionals.length > 0) {
+      throw new CliError("Usage: pgm viewer --data-dir <folder> [--no-open] [--port <port>]", exitCodes.usage);
+    }
+    const { runViewer } = await import("../build/local-runtime.mjs");
+    await runViewer(parsed.options, io);
+    return;
+  }
+
+  if (parsed.options.local !== undefined) {
+    const { dispatchLocal } = await import("../build/local-runtime-sharing.mjs");
+    await dispatchLocal(parsed, io, async (runtime) => {
+      const client = new ProductGridClient({ server: runtime.url, token: runtime.token });
+      const context = {
+        parsed,
+        config: null,
+        server: runtime.url,
+        token: runtime.token,
+        projectId: parsed.options.project ?? null,
+        client,
+        io,
+      };
+      await dispatch(context);
+    });
+    return;
+  }
+
   if (!parsed.options.json) {
     await notifyIfUpdateAvailable(io);
   }
@@ -1020,6 +1047,7 @@ const booleanOptionNames = new Set([
   "split-headings",
   "with-ancestors",
   "with-context",
+  "no-open",
 ]);
 
 function parseOptionValue(rawKey, inlineValue, nextValue) {
@@ -1471,6 +1499,10 @@ function helpText() {
   return `Product Grid CLI
 
 Usage:
+  pgm viewer --data-dir <folder> [--no-open] [--port <port>]
+  pgm project list --local <folder> [--json]
+  pgm node list --local <folder> --project <id> [--json]
+  pgm image list <node-id> --local <folder> --project <id> [--json]
   pgm auth login --token <token> [--server http://localhost:3000]
   pgm auth status [--json]
   pgm project list [--json]
@@ -1513,6 +1545,7 @@ Usage:
 Global options:
   --server <url>       Server URL. Defaults to PRODUCT_GRID_SERVER or http://localhost:3000.
   --project <id>       Project ID. Defaults to PRODUCT_GRID_PROJECT or linked project.
+  --local <folder>     Use projects in a local data folder. Requires an explicit --project for scoped commands.
   --token <token>      Bearer token. Defaults to PRODUCT_GRID_TOKEN or stored token.
   --json               Print machine-readable JSON to stdout.
 

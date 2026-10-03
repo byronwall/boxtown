@@ -29,6 +29,9 @@ const isPandaPureAnnotationWarning = (warning: {
 const app = defineConfig({
   server: {
     baseURL: normalizedBasePath,
+    experimental: {
+      websocket: true,
+    },
   },
   vite: {
     plugins: [

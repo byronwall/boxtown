@@ -3,3 +3,6 @@ llm_logs/
 tmp/
 node_modules/
 .pnpm-store/
+/scripts/prepare-cli-package.mjs
+/packages/cli/build/
+/packages/cli/runtime/

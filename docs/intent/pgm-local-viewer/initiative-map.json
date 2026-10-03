@@ -1,0 +1,720 @@
+{
+  "schema_version": "0.5.0",
+  "initiative": {
+    "title": "PGM local viewer",
+    "slug": "pgm-local-viewer",
+    "scale": "capability",
+    "current_phase": "reconciliation",
+    "last_updated": "2026-10-02",
+    "summary": "Include the existing editable viewer in pgm with project data and images stored locally.",
+    "status": "completed",
+    "next_action": "Review the implementation PR. Keep planning files until retirement is explicitly requested."
+  },
+  "artifacts": {
+    "intent_brief": {
+      "path": "intent-brief.md",
+      "status": "current",
+      "updated_at": "2026-10-02"
+    },
+    "brainstorm": {
+      "path": "brainstorm.md",
+      "status": "not-requested",
+      "updated_at": null
+    },
+    "shape_brief": {
+      "path": "shape-brief.md",
+      "status": "current",
+      "updated_at": "2026-10-02"
+    },
+    "implementation_plan": {
+      "path": "implementation-plan.md",
+      "status": "current",
+      "updated_at": "2026-10-02"
+    }
+  },
+  "sources": [
+    {
+      "id": "SRC-1",
+      "type": "user-request",
+      "location": "current conversation, 2026-10-02",
+      "anchor": "pgm executable include the viewer; EXACT SAME viewer; on disk updates; images stored on disk",
+      "authority": "current explicit user instruction"
+    },
+    {
+      "id": "SRC-2",
+      "type": "repository",
+      "location": "app/src/lib/server/data-dir.ts",
+      "anchor": "resolveAppDataDir, APP_DATA_DIR",
+      "authority": "current repository reality"
+    },
+    {
+      "id": "SRC-3",
+      "type": "repository",
+      "location": "app/src/lib/projects/data.server.ts",
+      "anchor": "serializedMutation; addProjectNodeImagesOnDisk; writeProjectRecordToDisk; getProjectsDirPath",
+      "authority": "current repository reality"
+    },
+    {
+      "id": "SRC-4",
+      "type": "repository",
+      "location": "app/src/lib/projects/data.ts",
+      "anchor": "getProjects; getProjectById; server actions",
+      "authority": "current repository reality"
+    },
+    {
+      "id": "SRC-5",
+      "type": "repository",
+      "location": "packages/cli/src/main.mjs",
+      "anchor": "main resolves server/token/project then constructs ProductGridClient",
+      "authority": "current repository reality"
+    },
+    {
+      "id": "SRC-6",
+      "type": "repository",
+      "location": "packages/cli/package.json",
+      "anchor": "files excludes app output; pgm bin; Node >=22",
+      "authority": "current repository reality"
+    },
+    {
+      "id": "SRC-7",
+      "type": "repository",
+      "location": "app/src/lib/agent-api/auth.server.ts",
+      "anchor": "production requires configured token; allDevScopes",
+      "authority": "current repository reality"
+    },
+    {
+      "id": "SRC-8",
+      "type": "repository",
+      "location": "app/src/ws/project-events.ts",
+      "anchor": "globalThis.__pgmProjectSocketEvents; publishProjectRecordChanged",
+      "authority": "current repository reality"
+    },
+    {
+      "id": "SRC-9",
+      "type": "repository",
+      "location": "app/src/lib/projects/project-record-format.ts",
+      "anchor": "serializeProjectRecord persists operationLog; parseStoredProjectRecord reconstructs state",
+      "authority": "current repository reality"
+    },
+    {
+      "id": "SRC-10",
+      "type": "primary-documentation",
+      "location": "https://nitro.build/deploy/runtimes/node",
+      "anchor": "standalone .output; server/index.mjs; NITRO_HOST and NITRO_PORT",
+      "authority": "provider documentation checked 2026-10-02"
+    },
+    {
+      "id": "SRC-11",
+      "type": "primary-documentation",
+      "location": "https://docs.solidjs.com/solid-start/v1/reference/config/define-config",
+      "anchor": "Configuring Nitro; Node preset; server functions",
+      "authority": "framework documentation checked 2026-10-02"
+    },
+    {
+      "id": "SRC-12",
+      "type": "user-decision",
+      "location": "current conversation, 2026-10-02",
+      "anchor": "pgm can manage a local server, that's OK.",
+      "authority": "current explicit user decision"
+    },
+    {
+      "id": "SRC-13",
+      "type": "repository",
+      "location": "app/.output/server/chunks/nitro/nitro.mjs",
+      "anchor": "port = destr(process.env.NITRO_PORT || process.env.PORT) || 3e3",
+      "authority": "inspected existing generated output; fresh build must confirm"
+    },
+    {
+      "id": "SRC-14",
+      "type": "user-requirement",
+      "location": "current conversation, 2026-10-02",
+      "anchor": "the web/hosted version needs to work just as well as today; produce tickets for the work",
+      "authority": "current explicit user requirement"
+    },
+    {
+      "id": "SRC-15",
+      "type": "repository",
+      "location": "app/docker-compose.yml; app/app.config.ts; packages/cli/src/config.mjs",
+      "anchor": "hosted host/port/base path/data settings; remote server/token/project precedence",
+      "authority": "repository settings inspected before ticket creation"
+    }
+  ],
+  "intent": {
+    "claims": [
+      {
+        "id": "INT-1",
+        "type": "outcome",
+        "statement": "Installed pgm includes the complete existing viewer.",
+        "commitment": "explicit",
+        "importance": "core",
+        "status": "active",
+        "time_horizon": "first release",
+        "source_anchors": [
+          "SRC-1"
+        ],
+        "confidence": "high"
+      },
+      {
+        "id": "INT-2",
+        "type": "required behavior",
+        "statement": "Viewer edits persist to local disk; image bytes are local too.",
+        "commitment": "explicit",
+        "importance": "core",
+        "status": "active",
+        "time_horizon": "first release",
+        "source_anchors": [
+          "SRC-1"
+        ],
+        "confidence": "high"
+      },
+      {
+        "id": "INT-3",
+        "type": "required behavior",
+        "statement": "Keep local operation as a separate mode alongside remote server access.",
+        "commitment": "explicit",
+        "importance": "core",
+        "status": "active",
+        "time_horizon": "first release",
+        "source_anchors": [
+          "SRC-1"
+        ],
+        "confidence": "high"
+      },
+      {
+        "id": "INT-4",
+        "type": "decision",
+        "statement": "pgm may manage a local server for viewer and CLI operation.",
+        "commitment": "explicit",
+        "importance": "core",
+        "status": "resolved",
+        "time_horizon": "proof",
+        "source_anchors": [
+          "SRC-12"
+        ],
+        "confidence": "high",
+        "notes": "User confirmed the recommended runtime boundary. Server-free CLI service extraction is not required."
+      },
+      {
+        "id": "INT-5",
+        "type": "derived implication",
+        "statement": "CLI and viewer should share one write authority and retain current event behavior.",
+        "commitment": "derived",
+        "importance": "supporting",
+        "status": "active",
+        "time_horizon": "first release",
+        "source_anchors": [
+          "SRC-1",
+          "SRC-3",
+          "SRC-8"
+        ],
+        "confidence": "high"
+      },
+      {
+        "id": "INT-6",
+        "type": "constraint",
+        "statement": "The web/hosted version retains current viewing, editing, images, events, auth, deployment settings, and remote CLI behavior.",
+        "commitment": "explicit",
+        "importance": "core",
+        "status": "active",
+        "time_horizon": "first release",
+        "source_anchors": [
+          "SRC-14"
+        ],
+        "confidence": "high"
+      }
+    ],
+    "themes": [
+      "same viewer",
+      "disk-owned data",
+      "CLI distribution",
+      "single write authority",
+      "hosted behavior preserved"
+    ],
+    "conflicts": [],
+    "human_questions": [
+      {
+        "id": "Q-1",
+        "question": "Can pgm manage a local server, or must CLI commands work directly on files with no server?",
+        "status": "resolved",
+        "impact": "Changes service extraction and cross-process coordination needs.",
+        "answer": "Managed local server is acceptable.",
+        "source_anchors": [
+          "SRC-12"
+        ]
+      }
+    ]
+  },
+  "brainstorm": {
+    "status": "not-requested",
+    "requested_count": 7,
+    "options": [],
+    "selected_option": null
+  },
+  "shape": {
+    "status": "plan-ready",
+    "appetite": "Reuse the current app and disk format. Limit new work to packaging, startup, and explicit local targeting.",
+    "problem": "Local use currently requires a separately running app service.",
+    "recommended_shape": {
+      "selection": "selected",
+      "description": "Bundle the complete app output with pgm and run it on loopback with an explicit APP_DATA_DIR. Route local CLI and browser operations through that process. Local mode is opt-in; hosted behavior and deployment settings retain their current baseline."
+    },
+    "success_moves": [
+      "Prove relocation before launcher work.",
+      "Keep CLI and viewer mutations in one process.",
+      "Ship server output and browser assets together from the same build.",
+      "Resolve an explicit absolute data folder outside installed code.",
+      "Prove production auth, images, persistence, and events against disposable data.",
+      "Capture and repeat representative normal production-mode checks after shared changes; keep local settings out of hosted operation."
+    ],
+    "first_proof": {
+      "question": "Can this app's current production output run from a relocated artifact without checkout dependencies?",
+      "artifact": "A fresh app build copied under tmp and started with a disposable APP_DATA_DIR, loopback host, and local API token.",
+      "decision_rule": "Accept bundling if project create/edit, asset resolution, image round-trip, and restart persistence work without checkout files. Otherwise correct output packaging before launcher work.",
+      "excludes": [
+        "browser automation",
+        "live user data",
+        "new CLI interface",
+        "publishing"
+      ],
+      "observed": true
+    },
+    "rabbit_holes": [
+      "second viewer",
+      "generic storage adapter",
+      "native binary",
+      "daemon management",
+      "cloud synchronization"
+    ],
+    "open_decisions": []
+  },
+  "implementation": {
+    "status": "active",
+    "repository_snapshot": {
+      "root": "/Users/byronwall/Projects/product-grid-mgmt",
+      "revision": "5ceef90e8c4e814b87bb27321d22460072b0eed2",
+      "worktree_status": "Existing edits in three spatial-map components and untracked .tickets are unrelated and preserved. Branch codex/grid-local-ready.",
+      "subsystems": [
+        "projects disk services",
+        "SolidStart server actions",
+        "agent API",
+        "CLI HTTP client",
+        "project WebSocket events",
+        "project archive"
+      ],
+      "test_commands": [
+        "pnpm --dir app type-check",
+        "pnpm --dir app exec vitest run src/lib/projects/data.server.test.ts",
+        "pnpm --dir packages/cli test"
+      ],
+      "deployment_surfaces": [
+        "app/Dockerfile runs .output/server/index.mjs",
+        "CLI package publishes bin/src/skills only"
+      ],
+      "data_target": "app/data contains user projects. Port 3000 is identified as user server in existing tickets. Do not use either for write proofs.",
+      "output_observation": "Existing .output has node-server metadata dated 2026-10-01. It is not verified against current source or proven relocatable."
+    },
+    "dependencies": [
+      {
+        "id": "DEP-1",
+        "name": "SolidStart/Vinxi/Nitro packaged runtime",
+        "material": true,
+        "application_seam": "Complete app build launched by pgm with process environment and existing HTTP routes.",
+        "first_proof_role": {
+          "mode": "real",
+          "rationale": "A fake cannot establish asset closure, server action routing, or output relocation."
+        },
+        "failure_modes": [
+          "omitted runtime modules",
+          "missing browser assets",
+          "compiled base path",
+          "failed WebSocket route",
+          "production auth rejection",
+          "inherited runtime environment changes binding"
+        ],
+        "proof_rungs": [
+          "fresh relocated build",
+          "installed package smoke",
+          "manual viewer parity"
+        ],
+        "local_proof": "Fresh build with root base path, disposable data, loopback host, and real HTTP calls. Verify current installed runtime behavior; newer docs are not an exact-version guarantee.",
+        "live_proof": "No cloud proof needed. Install a locally packed artifact outside the checkout. Publication is not authorized.",
+        "rollout": "Add explicit local selection; preserve existing remote selection without automatic fallback."
+      },
+      {
+        "id": "DEP-2",
+        "name": "Local filesystem and single writer",
+        "material": true,
+        "application_seam": "APP_DATA_DIR, existing projects disk services, and a small atomic local-runtime ownership record.",
+        "first_proof_role": {
+          "mode": "real",
+          "rationale": "Disk persistence and image bytes are the requested behavior; disposable real files are cheaper and more faithful than a fake."
+        },
+        "failure_modes": [
+          "read-only directory",
+          "malformed record",
+          "duplicate runtime",
+          "lost concurrent edit",
+          "read-time normalization overwrites"
+        ],
+        "proof_rungs": [
+          "disposable filesystem round-trip",
+          "single-runtime CLI/viewer mutation check",
+          "restart persistence"
+        ],
+        "local_proof": "Use a new tmp data root, check saved records and image bytes, restart, and verify concurrent CLI requests preserve changes. Never use app/data.",
+        "live_proof": "No shared infrastructure or production data required.",
+        "rollout": "User selects local folder explicitly. Installed package files never contain mutable user data."
+      }
+    ],
+    "fast_local_loop": {
+      "command": "pnpm local:smoke (planned script): build, relocate, start, exercise API and assets, stop, restart, verify persistence",
+      "network": "Loopback only after dependencies are installed. Disable CLI update checks through PGM_NO_UPDATE_CHECK=1 for offline proofs.",
+      "executed": true,
+      "failure_injection": [
+        "occupied port",
+        "non-writable folder",
+        "malformed disposable record",
+        "stale ownership record"
+      ]
+    },
+    "milestones": [
+      {
+        "id": "M-1",
+        "title": "A relocated app edits disposable local projects",
+        "status": "completed",
+        "outcome": "Fresh app output creates and edits disk records and images outside the source checkout.",
+        "proof": "CLI/API writes, viewer read route, HTML and assets, image byte comparison, restart persistence. Repeat relevant baseline checks against a separate normal production runtime with disposable data.",
+        "valid_intermediate_state": "Reusable relocated runtime and one focused local smoke script; remote app and CLI remain runnable. Hosted behavior retains its current baseline.",
+        "rollback": "Remove disposable runtime and data; revert only proof/build changes.",
+        "dependencies_introduced": [],
+        "dependencies_used": [
+          "DEP-1",
+          "DEP-2"
+        ],
+        "evidence": [
+          "pgm-yg33 acceptance table: split relocated/hosted smoke passed at tmp/local-viewer-smoke-1790993866160; app type-check passed on changed config.",
+          "Production WebSocket upgrade missing at baseline; supported Nitro v2 experimental.websocket enabled and live events proven in both modes."
+        ],
+        "ticket_id": "pgm-yg33"
+      },
+      {
+        "id": "M-2",
+        "title": "Installed pgm opens the existing editable viewer",
+        "status": "completed",
+        "outcome": "Packed CLI launches the complete current viewer over a selected disk folder.",
+        "proof": "Install tarball outside checkout; manually exercise server actions, views, images, settings, offline assets, deep link and restart. Repeat relevant baseline checks against a separate normal production runtime with disposable data.",
+        "valid_intermediate_state": "Foreground viewer works from installed pgm; duplicate runtime fails clearly; automatic CLI reuse follows. Hosted behavior retains its current baseline.",
+        "rollback": "Use explicit remote mode; remove local package artifact without deleting data.",
+        "dependencies_introduced": [],
+        "depends_on": [
+          "M-1"
+        ],
+        "evidence": [
+          "Installed pnpm tarball outside checkout; HTTP/assets/auth/edit/restart/lifecycle and launcher errors passed. See pgm-c2o7.",
+          "Independent browser local and hosted node/status/metadata/context/settings/images/deep-link checks passed with zero console errors. Asset inventory contains no external origins. Shared absence of a reparent control and unavailable offline switch recorded."
+        ],
+        "ticket_id": "pgm-c2o7"
+      },
+      {
+        "id": "M-3",
+        "title": "CLI commands share the local viewer write authority",
+        "status": "completed",
+        "outcome": "Local commands reuse a viewer server or temporarily start one with one writer per folder.",
+        "proof": "Concurrent independent edits retained; WebSocket updates reach viewer; duplicate launch, stale owner, target isolation and cleanup checks. Repeat relevant baseline checks against a separate normal production runtime with disposable data.",
+        "valid_intermediate_state": "Complete explicit local mode and existing remote mode operate independently. Hosted behavior retains its current baseline.",
+        "rollback": "Bypass local target selection with explicit remote mode; stop owned local process, retain data.",
+        "dependencies_introduced": [],
+        "depends_on": [
+          "M-2"
+        ],
+        "evidence": [
+          "Final installed tarball: local and remote CLI edits and moves appear in both open viewers without reload; independent title/priority edits and image survive restart. See pgm-gydq.",
+          "Temporary success/failure cleanup, duplicate starts, verified orphan recovery, canonical identity, target isolation and atomic record proofs passed; CLI39/39, storage+identity26/26, type-check and final local:smoke passed."
+        ],
+        "ticket_id": "pgm-gydq"
+      }
+    ],
+    "cut_line": [
+      "cloud sync",
+      "native binary",
+      "desktop shell",
+      "external file watchers",
+      "OS service",
+      "new storage engine"
+    ],
+    "open_decisions": [],
+    "hosted_preservation": {
+      "requirement": "Hosted web and remote CLI operation must work as well as today.",
+      "boundaries": [
+        "normal app build/start and Docker deployment remain supported",
+        "configured hosted base path, host/port, data directory and production token rules remain unchanged",
+        "local identity endpoint and ownership rules are inactive in hosted mode",
+        "no live service writes or deployment for proof"
+      ],
+      "proof": "Capture normal production baseline on disposable data; repeat API/assets/auth/events checks in M-1, viewer/actions/deployment checks in M-2, and remote CLI/shared-write checks in M-3."
+    },
+    "ticket_coverage": [
+      {
+        "context": "INT-1 exact same editable viewer; shared source, actions, API, events, images, archives; no second UI/storage layer",
+        "affected_milestones": [
+          "M-1",
+          "M-2",
+          "M-3"
+        ],
+        "affected_tickets": [
+          "pgm-yg33",
+          "pgm-c2o7",
+          "pgm-gydq"
+        ]
+      },
+      {
+        "context": "INT-2 disk records, operation-log serializer, image bytes, restart, separate package/data folders",
+        "affected_milestones": [
+          "M-1",
+          "M-2",
+          "M-3"
+        ],
+        "affected_tickets": [
+          "pgm-yg33",
+          "pgm-c2o7",
+          "pgm-gydq"
+        ]
+      },
+      {
+        "context": "INT-3 explicit local/remote separation and INT-6 hosted behavior/settings/auth/CLI preservation",
+        "affected_milestones": [
+          "M-1",
+          "M-2",
+          "M-3"
+        ],
+        "affected_tickets": [
+          "pgm-yg33",
+          "pgm-c2o7",
+          "pgm-gydq"
+        ]
+      },
+      {
+        "context": "INT-4 accepted local server; INT-5 one write authority; in-process queue/events; duplicate ownership, stale owner and normalization gap",
+        "affected_milestones": [
+          "M-2",
+          "M-3"
+        ],
+        "affected_tickets": [
+          "pgm-c2o7",
+          "pgm-gydq"
+        ]
+      },
+      {
+        "context": "DEP-1 output relocation, assets/module closure, root local base path, real production token, loopback; current build unverified; port 0 observation",
+        "affected_milestones": [
+          "M-1",
+          "M-2",
+          "M-3"
+        ],
+        "affected_tickets": [
+          "pgm-yg33",
+          "pgm-c2o7",
+          "pgm-gydq"
+        ]
+      },
+      {
+        "context": "Disposable tmp data, no app/data or port 3000, no live writes/migration/deploy; malformed and non-writable folders, occupied ports",
+        "affected_milestones": [
+          "M-1",
+          "M-2",
+          "M-3"
+        ],
+        "affected_tickets": [
+          "pgm-yg33",
+          "pgm-c2o7",
+          "pgm-gydq"
+        ]
+      },
+      {
+        "context": "Foreground runtime readiness/errors/browser-open failure/no-open/termination; packed tarball outside checkout and offline assets",
+        "affected_milestones": [
+          "M-2"
+        ],
+        "affected_tickets": [
+          "pgm-c2o7"
+        ]
+      },
+      {
+        "context": "CLI transient runtime/reuse; identity proof; mixed flags; stdout JSON/stderr; remote config precedence; no update requests locally; events and concurrent writes",
+        "affected_milestones": [
+          "M-3"
+        ],
+        "affected_tickets": [
+          "pgm-gydq"
+        ]
+      },
+      {
+        "context": "Cut line: native executable/Electron/second viewer, cloud sync/migration, daemon/service, external watchers/version coexistence, database/adapter/refactor",
+        "affected_milestones": [
+          "M-1",
+          "M-2",
+          "M-3"
+        ],
+        "affected_tickets": [
+          "pgm-yg33",
+          "pgm-c2o7",
+          "pgm-gydq"
+        ]
+      },
+      {
+        "context": "Checks: pnpm, relevant type/build/API/disk/CLI verification; manual disposable viewer proof, no browser automation unless requested; preserve existing edits",
+        "affected_milestones": [
+          "M-1",
+          "M-2",
+          "M-3"
+        ],
+        "affected_tickets": [
+          "pgm-yg33",
+          "pgm-c2o7",
+          "pgm-gydq"
+        ]
+      }
+    ],
+    "tickets": {
+      "tracker": "tk",
+      "destination": ".tickets",
+      "mode": "tickets",
+      "epic": "pgm-9m5d",
+      "milestone_tickets": {
+        "M-1": "pgm-yg33",
+        "M-2": "pgm-c2o7",
+        "M-3": "pgm-gydq"
+      },
+      "status": "execution-tracked-in-tickets"
+    }
+  },
+  "history": [
+    {
+      "date": "2026-10-02",
+      "event": "Initiative created",
+      "reason": "User requested design exploration for pgm local viewer.",
+      "status": "planned"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Intent and provisional shape written",
+      "reason": "Current app already has disk persistence. Packaging and local runtime reuse are the smallest credible approach. Runtime boundary remains a human decision; detailed plan is deferred."
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Managed local runtime accepted; plan written",
+      "reason": "User confirmed pgm can manage a local server. Intent and shape updated in place; no implementation has started.",
+      "source_anchors": [
+        "SRC-12"
+      ],
+      "status": "planned"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Hosted preservation clarified before ticket fan-out",
+      "reason": "User explicitly requires hosted mode to retain current behavior. Intent, shape, and plan rewritten in place with normal production regression checks in each affected milestone.",
+      "source_anchors": [
+        "SRC-14"
+      ],
+      "status": "planned"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Coarse local ticket graph created",
+      "reason": "User requested ticket-fan-out. One epic and three open outcome tickets; dependencies follow real artifact/runtime prerequisites. Every child includes hosted preservation and safe proof boundaries.",
+      "tickets": {
+        "epic": "pgm-9m5d",
+        "M-1": "pgm-yg33",
+        "M-2": "pgm-c2o7",
+        "M-3": "pgm-gydq"
+      },
+      "status": "planned"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Implementation authorized",
+      "reason": "User invoked steady-execution and requested all changes plus a PR with working proof. Current hosted main integrated before implementation. Root owns PR and acceptance; one bounded worker owns implementation.",
+      "status": "active"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Relocation milestone accepted",
+      "reason": "Real HTTP/assets/auth/project-node-image/event and restart proofs passed on fresh output outside checkout; startup/data failure cases and type-check passed.",
+      "ticket": "pgm-yg33",
+      "status": "active"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Installed viewer milestone accepted",
+      "reason": "External installation, launcher failures, restart persistence and independent local/hosted browser proof passed. Shared reparent-control absence is unchanged; API move proof continues in M3.",
+      "ticket": "pgm-c2o7",
+      "status": "active"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Implementation accepted",
+      "reason": "All milestones proven on final source and installed artifact, with hosted baseline preserved. Planning retained; no retirement requested.",
+      "status": "completed"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Release workflow integrated before PR",
+      "reason": "Main gained Changesets release workflow during implementation. Kept its version/metadata, added feature changeset, installed app dependencies in CI, and passed final release check/external package proof.",
+      "status": "completed"
+    }
+  ],
+  "closure": {
+    "summary": "Delivered the complete editable local viewer and shared local CLI runtime. Hosted behavior matches the checked baseline.",
+    "reason": "User authorized implementation and a PR with working proof. All three ticket outcomes are accepted.",
+    "evidence": [
+      "Tickets pgm-yg33, pgm-c2o7 and pgm-gydq record accepted checks.",
+      "CLI39/39, storage+identity26/26, app type-check and installed package check passed.",
+      "Final pnpm local:smoke passed; log tmp/local-viewer-final-smoke.log and fixtures tmp/local-viewer-smoke-1790998520166.",
+      "Independent local/hosted browser actions, live CLI events and local restart passed. Screenshots retained under tmp for PR.",
+      "Offline network simulation unavailable; complete installed artifact and browser asset inventory had no external origins. Existing UI has no reparent control; existing CLI/API move passed.",
+      "Latest release workflow integrated from origin/main; release:check passed39CLItests and final0.1.9 package check. External0.1.9 viewer/local create/shutdown/persistence passed; no runtime/UI source changes or dependency changes."
+    ],
+    "reconciliation": [
+      {
+        "claim_id": "INT-1",
+        "disposition": "delivered",
+        "evidence": "Complete production app packed and installed outside checkout. Independent local and hosted browser parity passed. packages/cli/runtime is package-owned build output."
+      },
+      {
+        "claim_id": "INT-2",
+        "disposition": "delivered",
+        "evidence": "Viewer/API/CLI edits and image bytes persisted in the selected folder. Final restart retained moved parent, concurrent fields, context and image."
+      },
+      {
+        "claim_id": "INT-3",
+        "disposition": "delivered",
+        "evidence": "Explicit --local rejects remote flags and ignores remote defaults. Remote CLI proof against normal production passed."
+      },
+      {
+        "claim_id": "INT-4",
+        "disposition": "delivered",
+        "evidence": "Foreground viewer manages packaged Node server; temporary CLI mode starts and stops only its owned server."
+      },
+      {
+        "claim_id": "INT-5",
+        "disposition": "delivered",
+        "evidence": "Authenticated canonical identity, atomic records and OS-released admission guard protect one writer. Concurrent edits, browser events, stale owner cleanup and focused storage races passed."
+      },
+      {
+        "claim_id": "INT-6",
+        "disposition": "delivered",
+        "evidence": "Normal production API/actions/images/auth/assets/events and remote CLI/browser checks passed. Deployment files unchanged. Non-root API fallback matches archived pre-change b59e671; limitation retained."
+      }
+    ],
+    "documentation": [
+      "packages/cli/README.md",
+      "AGENTS.md",
+      "CHANGELOG.md"
+    ],
+    "follow_ups": [
+      "Existing non-root BASE_PATH API fallback remains unchanged from b59e671; outside this local-mode change.",
+      "Unknown-child interrupted startup uses conservative manual recovery documented in CLI README."
+    ],
+    "retirement_files": []
+  }
+}

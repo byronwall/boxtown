@@ -6,6 +6,8 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Added
 
+- `pgm viewer --data-dir <folder>` starts the editable viewer with project files and images saved in that folder.
+- Project, node, and image CLI commands accept `--local <folder>` and share that folder's viewer or start a temporary local runtime.
 - CLI releases use a Version Packages PR to update the npm package, package changelog, and GitHub release.
 
 - The inspector header has an Archive implemented action (archive icon with a count) in canvas, tree, and grid, with or without a selected node.
@@ -28,6 +30,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Fixed
 
+- Legacy project-file repair no longer overwrites edits made while a project is being read.
 - CLI release package checks now work on the Linux GitHub Actions runner.
 
 - Edits stay on screen while they save, even when another save finishes, another tab saves, or the server pushes an update. A failed save rolls back only that edit, and a successful save is kept even if the follow-up refresh fails.
@@ -36,6 +39,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 - Include all children and Show archived now stay in the URL with the other filters, so a refresh or a shared link keeps them.
 - Cmd+K search highlights no longer add space inside words; a match in the middle of a word now reads as one word.
 - Deleting an image in the image viewer updates the viewer immediately: it moves to the next image, or closes when the last image is deleted. A failed delete puts the image back in the viewer with an error so you can retry.
+- Project changes from CLI commands now reach an open viewer through production WebSocket events.
 
 ## 2026-10-01
 
