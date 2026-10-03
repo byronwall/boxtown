@@ -1,6 +1,6 @@
 ---
 id: pgm-9m5d
-status: open
+status: closed
 deps: [pgm-yg33, pgm-c2o7, pgm-gydq]
 links: []
 created: 2026-10-03T01:52:41Z
@@ -41,3 +41,15 @@ Baseline on integrated hosted main b59e671, before runtime source changes: pnpm 
 **2026-10-03T02:06:46Z**
 
 Independent storage review reproduced an existing same-process lost update on disposable legacy data: pause readProjectByIdFromDisk after capturing bytes, complete queued title mutation, release read; normalization writes stale label. One temporary Vitest passed (904 ms); harness removed. Writer must add a focused shared-queue repair/regression in the local-runtime ticket while preserving hosted normalization and recovery.
+
+**2026-10-03T02:58:14Z**
+
+M2 accepted on f9f6ed8. External installed tarball, restart, duplicate launch, signal cleanup, missing runtime, occupied port, and browser-open failure passed. Independent local and hosted browser checks covered nodes, status, metadata, context Markdown, project settings, images upload/view/delete, Canvas/Tree/Grid, navigation, deep-link reload, and local restart; zero console errors. Resource inventory had no external origins. Shared UI has no reparent control; existing CLI/API move proof remains in M3. Browser offline switch unavailable; complete package closure and local asset origins proved. Screenshots saved under tmp for PR. M3 owns final shared-runtime CLI/browser proof and storage race repair.
+
+**2026-10-03T03:30:55Z**
+
+Configured-base-path comparison: BASE_PATH=/pgm-proof build succeeded. Current normal production and archived pre-change b59e671 both returned HTML200 for /api/v1/projects and /pgm-proof/api/v1/projects; prefixed HTML and CSS returned200 in both. This is an existing hosted base-path API limitation, not a local-mode regression. The optional prefixed local:smoke failed its expected401 assertion, honestly retained under tmp/local-viewer-smoke-1790997768903. Default-root production API/viewer/auth/events proofs passed earlier and are repeated on final source. Baseline build log tmp/hosted-basepath-baseline-build.log. No deployment-config change or live write.
+
+**2026-10-03T03:37:35Z**
+
+Final acceptance: installed final tarball outside checkout; both local and normal hosted browser edits/settings/Markdown/images/deep-links passed. CLI moves and concurrent title/priority edits reached both open viewers without reload; zero console errors. Local restart retained title, priority, parent, context, image; HTTP image bytes match disk (56,794 bytes). Installed lifecycle proof passed temp success/failure cleanup, active reuse, simultaneous temp creates, production auth401, exact identity, stale-parent verified orphan cleanup, and target isolation. CLI39/39 (also without bundled runtime), storage+identity26/26, type-check passed. Final default-root pnpm local:smoke passed hosted and relocated assets/auth/project-node-image/events/restart/failures; tmp/local-viewer-final-smoke.log, fixtures tmp/local-viewer-smoke-1790998520166. Final screenshots tmp/local-viewer-cli-live-update.png, hosted-viewer-cli-live-update.png, local-viewer-final-restart.png. Existing BASE_PATH API limitation, absent viewer reparent control, and unavailable offline switch recorded honestly. Conservative unknown-child startup requires safe manual recovery per README. Next: commit and create requested PR with attachments.

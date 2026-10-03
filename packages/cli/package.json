@@ -19,7 +19,7 @@
   },
   "scripts": {
     "dev": "node ./bin/pgm.mjs",
-    "test": "node --test test/*.test.mjs",
+    "test": "pnpm --dir ../.. cli:compile && node --test test/*.test.mjs",
     "pack:check": "pnpm pack --json --pack-destination ../../tmp/cli-dist",
     "prepack": "pnpm --dir ../.. cli:prepare-package"
   },

@@ -20,6 +20,7 @@ await run("pnpm", [
   "exec",
   "tsc",
   "../packages/cli/src/local-runtime.mts",
+  "../packages/cli/src/local-runtime-sharing.mts",
   "--target",
   "ES2022",
   "--module",

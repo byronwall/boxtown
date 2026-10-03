@@ -42,6 +42,20 @@ pgm viewer --data-dir ./product-grid-data --no-open --port 43210
 
 Use a separate folder for each set of local projects. One viewer process can own a folder at a time.
 
+Project, node, and image commands use the same folder with `--local`. They reuse an open viewer. If no viewer is open, pgm starts a temporary local runtime and stops it after the command.
+
+```bash
+pgm project list --local ./product-grid-data --json
+pgm project create "New Product Site" --local ./product-grid-data --json
+pgm node list --local ./product-grid-data --project <project-id> --json
+pgm node update <node-id> --local ./product-grid-data --project <project-id> --title "Updated title" --json
+pgm image list <node-id> --local ./product-grid-data --project <project-id> --json
+```
+
+Use `--project <id>` for project-scoped local commands. Local mode does not use the remote project's saved default. Do not pass `--server` or `--token` with `--local`. Project linking changes the remote CLI setting, so use `--project` for local projects.
+
+If pgm cannot prove that a startup child stopped, it keeps the ownership record and refuses to start another writer. Check `<folder>/.pgm-local-runtime.json` and its recorded URL and process IDs. Stop the server only after you verify it belongs to that folder. Then remove that record and retry only after both recorded processes have stopped and the URL no longer responds.
+
 ## Local Dev Server
 
 In another terminal:

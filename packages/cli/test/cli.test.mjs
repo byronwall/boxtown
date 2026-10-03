@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { EventEmitter } from "node:events";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { ProductGridClient } from "../src/client.mjs";
+import { createOwnership, getFolderGuardPort, getPortCandidates, writeOwnership } from "../build/local-runtime.mjs";
 import { defaultServer, resolveProjectId, resolveServer, resolveToken } from "../src/config.mjs";
 import { getUpdateCommand, main, parseArgs } from "../src/main.mjs";
 import { writeJson } from "../src/output.mjs";
@@ -53,6 +55,182 @@ test("parseArgs handles local viewer options", () => {
   assert.equal(parsed.options.dataDir, "./product-grid-data");
   assert.equal(parsed.options.noOpen, true);
   assert.equal(parsed.options.port, "43210");
+});
+
+test("parseArgs preserves the local folder and explicit project selection", () => {
+  const parsed = parseArgs(["node", "move", "child", "--local", "./data", "--project", "demo"]);
+
+  assert.deepEqual(parsed.command, ["node", "move"]);
+  assert.deepEqual(parsed.positionals, ["child"]);
+  assert.equal(parsed.options.local, "./data");
+  assert.equal(parsed.options.project, "demo");
+});
+
+test("local commands reject remote selectors and remote project linking", async () => {
+  const io = {
+    stdout: createWritableBuffer(),
+    stderr: createWritableBuffer(),
+    env: { PGM_NO_UPDATE_CHECK: "1" },
+    cwd: "/tmp",
+  };
+
+  await assert.rejects(
+    main(["node", "pgm", "node", "list", "--local", "./data", "--server", "https://example.test"], io),
+    /Use --local or remote --server\/--token options, not both/,
+  );
+  await assert.rejects(
+    main(["node", "pgm", "project", "create", "--local", "./data", "--link"], io),
+    /--link changes the remote project selection/,
+  );
+});
+
+test("local commands refuse a copied ownership record for a different folder", async () => {
+  const tempRoot = path.join(process.cwd(), "tmp", `pgm-local-record-${process.pid}`);
+  const requested = path.join(tempRoot, "requested");
+  const recorded = path.join(tempRoot, "recorded");
+  const recordPath = path.join(requested, ".pgm-local-runtime.json");
+  await mkdir(requested, { recursive: true });
+  await mkdir(recorded, { recursive: true });
+  const record = {
+    id: "runtime-other-folder",
+    pid: process.pid,
+    childPid: process.pid,
+    dataDir: recorded,
+    token: "private-test-token",
+    url: "http://127.0.0.1:43249",
+    mode: "viewer",
+    state: "ready",
+  };
+  await writeFile(recordPath, JSON.stringify(record));
+
+  try {
+    await assert.rejects(
+      main(["node", "pgm", "project", "list", "--local", requested], {
+        stdout: createWritableBuffer(),
+        stderr: createWritableBuffer(),
+        env: { PGM_NO_UPDATE_CHECK: "1" },
+        cwd: process.cwd(),
+      }),
+      /points to a different folder/,
+    );
+    assert.deepEqual(JSON.parse(await readFile(recordPath, "utf8")), record);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("local commands keep an unverified stale startup record", async () => {
+  const tempRoot = path.join(process.cwd(), "tmp", `pgm-local-stale-${process.pid}`);
+  const recordPath = path.join(tempRoot, ".pgm-local-runtime.json");
+  await mkdir(tempRoot, { recursive: true });
+  const record = {
+    id: "unknown-startup-child",
+    pid: 2147483647,
+    dataDir: tempRoot,
+    token: "private-test-token",
+    url: "http://127.0.0.1:43249",
+    mode: "viewer",
+    state: "starting",
+  };
+  await writeFile(recordPath, JSON.stringify(record));
+
+  try {
+    await assert.rejects(
+      main(["node", "pgm", "project", "list", "--local", tempRoot], {
+        stdout: createWritableBuffer(),
+        stderr: createWritableBuffer(),
+        env: { PGM_NO_UPDATE_CHECK: "1" },
+        cwd: process.cwd(),
+      }),
+      /has no saved child identity/,
+    );
+    assert.deepEqual(JSON.parse(await readFile(recordPath, "utf8")), record);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("folder admission guard releases when its owner process dies", async () => {
+  const tempRoot = path.join(process.cwd(), "tmp", `pgm-local-guard-${process.pid}`);
+  await mkdir(tempRoot, { recursive: true });
+  const moduleUrl = new URL("../build/local-runtime.mjs", import.meta.url).href;
+  const script = `
+    const runtime = await import(${JSON.stringify(moduleUrl)});
+    await runtime.withFolderGuard(${JSON.stringify(tempRoot)}, async () => {
+      process.stdout.write("guard-held\\n");
+      await new Promise(() => {});
+    });
+  `;
+  const child = spawn(process.execPath, ["--input-type=module", "-e", script], {
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+
+  try {
+    await new Promise((resolve, reject) => {
+      let output = "";
+      child.stdout.on("data", (chunk) => {
+        output += chunk.toString();
+        if (output.includes("guard-held")) resolve();
+      });
+      child.once("error", reject);
+      child.once("close", (code) => reject(new Error(`guard owner exited early: ${code}`)));
+    });
+    child.kill("SIGKILL");
+    await new Promise((resolve) => child.once("close", resolve));
+
+    const { withFolderGuard } = await import("../build/local-runtime.mjs");
+    let acquired = false;
+    await withFolderGuard(tempRoot, async () => { acquired = true; });
+    assert.equal(acquired, true);
+  } finally {
+    if (child.exitCode === null) child.kill("SIGKILL");
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("viewer port selection rejects the folder's reserved ownership port", async () => {
+  const dataDir = path.join(process.cwd(), "tmp", `pgm-local-port-${process.pid}`);
+  const reservedPort = getFolderGuardPort(dataDir);
+
+  await assert.rejects(getPortCandidates(String(reservedPort), reservedPort), /reserved for local runtime ownership/);
+});
+
+test("runtime ownership records publish complete JSON and update atomically", async () => {
+  const tempRoot = path.join(process.cwd(), "tmp", `pgm-local-record-atomic-${process.pid}`);
+  const recordPath = path.join(tempRoot, ".pgm-local-runtime.json");
+  await mkdir(tempRoot, { recursive: true });
+  const record = {
+    id: "runtime-atomic",
+    pid: process.pid,
+    childPid: 12345,
+    dataDir: tempRoot,
+    token: "private-test-token",
+    url: "http://127.0.0.1:43249",
+    mode: "command",
+    state: "starting",
+  };
+
+  try {
+    await createOwnership(recordPath, record);
+    assert.deepEqual(JSON.parse(await readFile(recordPath, "utf8")), record);
+    await assert.rejects(createOwnership(recordPath, record), { code: "EEXIST" });
+
+    let done = false;
+    const observed = [];
+    const reader = (async () => {
+      while (!done) observed.push(JSON.parse(await readFile(recordPath, "utf8")).id);
+    })();
+    for (let index = 0; index < 50; index += 1) {
+      await writeOwnership(recordPath, { ...record, id: `runtime-${index}` });
+    }
+    done = true;
+    await reader;
+    assert.ok(observed.length > 0);
+    assert.ok(observed.every((id) => id.startsWith("runtime-")));
+    assert.deepEqual((await readdir(tempRoot)).sort(), [".pgm-local-runtime.json"]);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
 });
 
 test("parseArgs does not let boolean flags consume following positionals", () => {

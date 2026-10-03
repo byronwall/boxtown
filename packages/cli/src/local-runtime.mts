@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import { mkdir, open, readFile, realpath, stat, unlink, writeFile } from "node:fs/promises";
+import { createHash, randomUUID } from "node:crypto";
+import { link, mkdir, readFile, realpath, rename, stat, unlink, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -19,13 +19,15 @@ type RuntimeOptions = {
   port?: string | boolean;
 };
 
-type RuntimeRecord = {
+export type RuntimeRecord = {
   id: string;
   pid: number;
+  childPid?: number;
   dataDir: string;
   token: string;
   url: string;
-  state: "starting" | "ready";
+  mode: "viewer" | "command";
+  state: "starting" | "ready" | "stopping";
 };
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -44,22 +46,11 @@ export async function runViewer(options: RuntimeOptions, io: Io) {
   await mkdir(requestedPath, { recursive: true });
   const dataDir = await realpath(requestedPath);
   const recordPath = path.join(dataDir, lockName);
-  const ports = await getPortCandidates(options.port);
+  const ports = await getPortCandidates(options.port, getFolderGuardPort(dataDir));
   const runtimeId = randomUUID();
   const token = randomUUID();
-  let lock;
-  try {
-    lock = await open(recordPath, "wx", 0o600);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "EEXIST") {
-      throw new Error(`A PGM viewer already owns ${dataDir}. Stop it before starting another viewer.`);
-    }
-    throw error;
-  }
-
   let child;
   let activeSignal: NodeJS.Signals | null = null;
-  let recordWritten = false;
   const onSignal = (signal: NodeJS.Signals) => {
     activeSignal = signal;
     child?.kill("SIGTERM");
@@ -68,16 +59,29 @@ export async function runViewer(options: RuntimeOptions, io: Io) {
   const onTerminate = () => onSignal("SIGTERM");
   process.on("SIGINT", onInterrupt);
   process.on("SIGTERM", onTerminate);
+  let recordWritten = false;
   const record: RuntimeRecord = {
     id: runtimeId,
     pid: process.pid,
+    childPid: undefined,
     dataDir,
     token,
     url: "",
+    mode: "viewer",
     state: "starting",
   };
 
   try {
+    try {
+      await withFolderGuard(dataDir, () => createOwnership(recordPath, record));
+      recordWritten = true;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+        throw new Error(`A PGM viewer already owns ${dataDir}. Stop it before starting another viewer.`);
+      }
+      throw error;
+    }
+
     let startupError: Error | null = null;
 
     for (const port of ports) {
@@ -86,7 +90,9 @@ export async function runViewer(options: RuntimeOptions, io: Io) {
       await writeOwnership(recordPath, record);
       recordWritten = true;
       if (activeSignal) throw new Error("Local viewer startup was interrupted.");
-      child = startRuntime(runtimeEntry, dataDir, token, port, io);
+      child = startRuntime(runtimeEntry, dataDir, token, port, runtimeId, io);
+      record.childPid = child.pid ?? undefined;
+      await writeOwnership(recordPath, record);
       try {
         await waitUntilReady(record.url, child, io.stderr);
         startupError = null;
@@ -105,7 +111,6 @@ export async function runViewer(options: RuntimeOptions, io: Io) {
 
     record.state = "ready";
     await writeOwnership(recordPath, record);
-    await lock.sync();
     io.stdout.write(`Viewer: ${record.url}/\nData folder: ${dataDir}\n`);
 
     if (!options.noOpen) {
@@ -125,14 +130,16 @@ export async function runViewer(options: RuntimeOptions, io: Io) {
   } finally {
     process.off("SIGINT", onInterrupt);
     process.off("SIGTERM", onTerminate);
+    if (child) {
+      record.state = "stopping";
+      await writeOwnership(recordPath, record).catch(() => {});
+    }
     if (child && child.exitCode === null) await stopChild(child);
-    await lock.close();
     if (recordWritten) await removeOwnedRecord(recordPath, runtimeId);
-    else await unlink(recordPath).catch(() => {});
   }
 }
 
-function startRuntime(entry: string, dataDir: string, token: string, port: number, io: Io) {
+export function startRuntime(entry: string, dataDir: string, token: string, port: number, runtimeId: string, io: Io) {
   const env = { ...io.env };
   for (const key of [
     "HOST",
@@ -148,6 +155,7 @@ function startRuntime(entry: string, dataDir: string, token: string, port: numbe
     NODE_ENV: "production",
     BASE_PATH: "/",
     APP_DATA_DIR: dataDir,
+    PGM_LOCAL_RUNTIME_ID: runtimeId,
     AGENT_API_TOKENS: `${token}:${tokenScopes}`,
     NITRO_HOST: "127.0.0.1",
     NITRO_PORT: String(port),
@@ -163,7 +171,7 @@ function startRuntime(entry: string, dataDir: string, token: string, port: numbe
   return child;
 }
 
-async function getPortCandidates(requested: string | boolean | undefined) {
+export async function getPortCandidates(requested: string | boolean | undefined, reservedPort?: number) {
   if (requested !== undefined) {
     if (typeof requested !== "string") throw new Error("Pass a port number after --port.");
     const port = /^\d+$/.test(requested) ? Number(requested) : Number.NaN;
@@ -171,6 +179,7 @@ async function getPortCandidates(requested: string | boolean | undefined) {
       throw new Error("--port must be an integer from 1 to 65535. Nitro uses port 3000 when the port is zero.");
     }
     if (port === 3000) throw new Error("Port 3000 is reserved for the existing app server.");
+    if (port === reservedPort) throw new Error("This port is reserved for local runtime ownership. Choose another port.");
     if (!(await isPortFree(port))) throw new Error(`Port ${port} is already in use.`);
     return [port];
   }
@@ -191,7 +200,7 @@ function isPortFree(port: number) {
   });
 }
 
-async function waitUntilReady(url: string, child: ReturnType<typeof spawn>, stderr: Io["stderr"]) {
+export async function waitUntilReady(url: string, child: ReturnType<typeof spawn>, stderr: Io["stderr"]) {
   let output = "";
   const collect = (chunk: Buffer) => { output = `${output}${chunk.toString()}`.slice(-8000); };
   child.stdout?.on("data", collect);
@@ -216,14 +225,23 @@ async function waitForChild(child: ReturnType<typeof spawn>) {
   });
 }
 
-async function stopChild(child: ReturnType<typeof spawn>) {
+export async function stopChild(child: ReturnType<typeof spawn>) {
   if (child.exitCode !== null) return;
   child.kill("SIGTERM");
-  await Promise.race([
-    waitForChild(child).catch(() => undefined),
-    new Promise((resolve) => setTimeout(resolve, 4000)),
-  ]);
-  if (child.exitCode === null) child.kill("SIGKILL");
+  let timeout: NodeJS.Timeout | undefined;
+  const exited = waitForChild(child).catch(() => undefined);
+  const timedOut = new Promise<"timeout">((resolve) => {
+    timeout = setTimeout(() => resolve("timeout"), 4000);
+    timeout.unref();
+  });
+  try {
+    if (await Promise.race([exited, timedOut]) === "timeout" && child.exitCode === null) {
+      child.kill("SIGKILL");
+      await exited;
+    }
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 async function openBrowser(url: string, env: NodeJS.ProcessEnv) {
@@ -239,17 +257,58 @@ async function openBrowser(url: string, env: NodeJS.ProcessEnv) {
   });
 }
 
-async function removeOwnedRecord(recordPath: string, runtimeId: string) {
+export async function removeOwnedRecord(recordPath: string, runtimeId: string) {
+  await withFolderGuard(path.dirname(recordPath), async () => {
+    try {
+      const current = JSON.parse(await readFile(recordPath, "utf8")) as Partial<RuntimeRecord>;
+      if (current.id === runtimeId) await unlink(recordPath);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    }
+  });
+}
+
+export async function createOwnership(recordPath: string, record: RuntimeRecord) {
+  const tempPath = `${recordPath}.${process.pid}.${randomUUID()}.tmp`;
   try {
-    const current = JSON.parse(await readFile(recordPath, "utf8")) as Partial<RuntimeRecord>;
-    if (current.id === runtimeId) await unlink(recordPath);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    await writeFile(tempPath, JSON.stringify(record), { flag: "wx", mode: 0o600 });
+    await link(tempPath, recordPath);
+  } finally {
+    await unlink(tempPath).catch(() => {});
   }
 }
 
-function writeOwnership(recordPath: string, record: RuntimeRecord) {
-  return writeFile(recordPath, JSON.stringify(record), { mode: 0o600 });
+export async function writeOwnership(recordPath: string, record: RuntimeRecord) {
+  const tempPath = `${recordPath}.${process.pid}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(tempPath, JSON.stringify(record), { flag: "wx", mode: 0o600 });
+    await rename(tempPath, recordPath);
+  } finally {
+    await unlink(tempPath).catch(() => {});
+  }
+}
+
+export async function withFolderGuard<T>(dataDir: string, action: () => Promise<T>): Promise<T> {
+  const port = getFolderGuardPort(dataDir);
+  const guard = net.createServer();
+  await new Promise<void>((resolve, reject) => {
+    guard.once("error", (error) => reject(
+      (error as NodeJS.ErrnoException).code === "EADDRINUSE"
+        ? new Error("Another local runtime is changing folder ownership. Retry shortly.")
+        : error,
+    ));
+    guard.listen(port, "127.0.0.1", resolve);
+  });
+  try {
+    return await action();
+  } finally {
+    await new Promise<void>((resolve) => guard.close(() => resolve()));
+  }
+}
+
+export function getFolderGuardPort(dataDir: string) {
+  const digest = createHash("sha256").update(dataDir).digest();
+  return 44000 + digest.readUInt32BE(0) % 1000;
 }
 
 function requireString(value: string | boolean | undefined, message: string) {

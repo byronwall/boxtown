@@ -1,6 +1,6 @@
 ---
 id: pgm-gydq
-status: in_progress
+status: closed
 deps: [pgm-c2o7]
 links: []
 created: 2026-10-03T01:52:41Z
@@ -72,3 +72,14 @@ Project, node, and image CLI commands can use `--local <folder>` to call the sam
 ### Provenance
 
 M3 of the approved implementation plan. Authorization covers local CLI/runtime source changes and disposable installed-package/browser proof. No publication, deployment, live service writes, or data migration.
+
+### Accepted proof
+
+- Installed tarball: `tmp/cli-dist/byronwallrus-product-grid-cli-0.1.8.tgz`. The external install at `/private/tmp/pgm-local-install-m3-final` reused an open viewer, ignored invalid remote defaults in local mode, wrote projects and nodes, moved a node, uploaded and listed an image, and preserved concurrent title and status edits.
+- Production auth returned 401 for missing and invalid tokens. The identity route returned the runtime ID and canonical folder only with the local scoped token.
+- A failed local command stopped its temporary child and removed its record. Successful temporary commands did the same. Two concurrent local project commands completed in sequence and left two saved projects.
+- Killing a disposable viewer parent left its child active. The next local command verified the runtime identity, stopped that orphan, recovered project data, and removed the stale record. Unknown-child startup records remain in place for manual verification.
+- Atomic ownership tests cover exclusive record creation, valid JSON during updates, reserved-port rejection, and admission-lock release after process death. `pnpm cli:test` passed 39/39, including with the packaged runtime absent. Storage and identity route tests passed 26/26; app type-check passed.
+- Root accepted browser proof that CLI title, priority, and node move updates reached local and hosted viewers without reload. Restart retained local edits, image, and context; both modes had zero console errors. Screenshots: `tmp/local-viewer-cli-live-update.png`, `tmp/hosted-viewer-cli-live-update.png`, and `tmp/local-viewer-final-restart.png`.
+- Final `pnpm local:smoke` passed for hosted and relocated output, including HTML, assets, auth, project/node edits, images, events, restart, and failure checks. Log: `tmp/local-viewer-final-smoke.log`; fixture: `tmp/local-viewer-smoke-1790998520166`.
+- The existing app has no reparent control in either mode; the move proof used the existing CLI/API. Prefixed `/api/v1` HTML fallback was reproduced on the pre-change base and remains outside this change.

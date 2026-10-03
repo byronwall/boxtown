@@ -7,6 +7,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 ### Added
 
 - `pgm viewer --data-dir <folder>` starts the editable viewer with project files and images saved in that folder.
+- Project, node, and image CLI commands accept `--local <folder>` and share that folder's viewer or start a temporary local runtime.
 - The inspector header has an Archive implemented action (archive icon with a count) in canvas, tree, and grid, with or without a selected node.
 - Canvas zoom and pan are kept in the URL (`cam`), so a refresh, a shared link, or Back returns to the same view. Fit, F, and the first pan or zoom take over as usual.
 - The map filter menu can filter by who last edited a node (Human or Agent), combined with type, status, and priority. A node whose edit history has rolled out of the project log matches neither.
@@ -27,6 +28,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Fixed
 
+- Legacy project-file repair no longer overwrites edits made while a project is being read.
 - Edits stay on screen while they save, even when another save finishes, another tab saves, or the server pushes an update. A failed save rolls back only that edit, and a successful save is kept even if the follow-up refresh fails.
 - Success and error notifications appear again. The notification area was never mounted, so failures were silent.
 - The canvas no longer opens stretched. On first load the map now uses the real canvas proportions instead of waiting for a window resize, and the zoom readout shows the actual zoom.

@@ -113,11 +113,11 @@ Add a few focused lifecycle tests for duplicate writers, target selection, and c
 - Remote commands retain their current explicit path.
 - The normal web/hosted app passes the representative regression checks for shared data services, auth, actions, and events.
 
-## Open decisions and spikes
+## Resolved spikes
 
-1. **Artifact closure and package contents.** Inspect the relocated build and installed tarball. Repair tracing or dependency staging if files are missing.
-2. **Port selection.** The inspected output treats port `0` as port 3000. Use a selected free port with bounded bind retries. Recheck fresh output before relying on that behavior.
-3. **Read normalization during writes.** Reproduce concurrent access with a legacy disposable record. Repair only a demonstrated queue gap.
+1. **Artifact closure and package contents.** Complete output relocated and installed successfully. The tarball includes server dependencies and browser assets. See pgm-yg33 and pgm-c2o7.
+2. **Port selection.** Fresh output still maps port zero to 3000. The launcher selects a loopback port and rejects port zero, user port 3000, and its ownership guard port.
+3. **Read normalization during writes.** Reproduced lost edits and stale list cleanup. Fresh per-record repair now runs inside the shared queue. Regression and independent race checks passed. See pgm-gydq.
 
 ## Below the cut line
 

@@ -4,11 +4,11 @@
     "title": "PGM local viewer",
     "slug": "pgm-local-viewer",
     "scale": "capability",
-    "current_phase": "execution",
+    "current_phase": "reconciliation",
     "last_updated": "2026-10-02",
     "summary": "Include the existing editable viewer in pgm with project data and images stored locally.",
-    "status": "active",
-    "next_action": "Execute the linked ticket graph and verify local plus hosted behavior; tickets own live status."
+    "status": "completed",
+    "next_action": "Review the implementation PR. Keep planning files until retirement is explicitly requested."
   },
   "artifacts": {
     "intent_brief": {
@@ -418,7 +418,7 @@
       {
         "id": "M-3",
         "title": "CLI commands share the local viewer write authority",
-        "status": "planned",
+        "status": "completed",
         "outcome": "Local commands reuse a viewer server or temporarily start one with one writer per folder.",
         "proof": "Concurrent independent edits retained; WebSocket updates reach viewer; duplicate launch, stale owner, target isolation and cleanup checks. Repeat relevant baseline checks against a separate normal production runtime with disposable data.",
         "valid_intermediate_state": "Complete explicit local mode and existing remote mode operate independently. Hosted behavior retains its current baseline.",
@@ -427,7 +427,10 @@
         "depends_on": [
           "M-2"
         ],
-        "evidence": [],
+        "evidence": [
+          "Final installed tarball: local and remote CLI edits and moves appear in both open viewers without reload; independent title/priority edits and image survive restart. See pgm-gydq.",
+          "Temporary success/failure cleanup, duplicate starts, verified orphan recovery, canonical identity, target isolation and atomic record proofs passed; CLI39/39, storage+identity26/26, type-check and final local:smoke passed."
+        ],
         "ticket_id": "pgm-gydq"
       }
     ],
@@ -439,26 +442,7 @@
       "OS service",
       "new storage engine"
     ],
-    "open_decisions": [
-      {
-        "id": "SPIKE-1",
-        "decision_output": "Complete app artifact and tarball closure",
-        "evidence": "Relocated fresh build and installed tarball with no checkout dependencies",
-        "fallback": "Repair runtime tracing or stage only required dependencies"
-      },
-      {
-        "id": "SPIKE-2",
-        "decision_output": "Working port selection for the installed runtime",
-        "evidence": "Fresh output semantics and occupied-port smoke",
-        "fallback": "Select unused port with bounded bind retries; do not use port 3000"
-      },
-      {
-        "id": "SPIKE-3",
-        "decision_output": "Whether read normalization needs shared queue protection",
-        "evidence": "Concurrent mutation plus legacy-record read in disposable data",
-        "fallback": "Serialize only the demonstrated normalization write without nested queue calls"
-      }
-    ],
+    "open_decisions": [],
     "hosted_preservation": {
       "requirement": "Hosted web and remote CLI operation must work as well as today.",
       "boundaries": [
@@ -665,7 +649,65 @@
       "reason": "External installation, launcher failures, restart persistence and independent local/hosted browser proof passed. Shared reparent-control absence is unchanged; API move proof continues in M3.",
       "ticket": "pgm-c2o7",
       "status": "active"
+    },
+    {
+      "date": "2026-10-02",
+      "event": "Implementation accepted",
+      "reason": "All milestones proven on final source and installed artifact, with hosted baseline preserved. Planning retained; no retirement requested.",
+      "status": "completed"
     }
   ],
-  "closure": null
+  "closure": {
+    "summary": "Delivered the complete editable local viewer and shared local CLI runtime. Hosted behavior matches the checked baseline.",
+    "reason": "User authorized implementation and a PR with working proof. All three ticket outcomes are accepted.",
+    "evidence": [
+      "Tickets pgm-yg33, pgm-c2o7 and pgm-gydq record accepted checks.",
+      "CLI39/39, storage+identity26/26, app type-check and installed package check passed.",
+      "Final pnpm local:smoke passed; log tmp/local-viewer-final-smoke.log and fixtures tmp/local-viewer-smoke-1790998520166.",
+      "Independent local/hosted browser actions, live CLI events and local restart passed. Screenshots retained under tmp for PR.",
+      "Offline network simulation unavailable; complete installed artifact and browser asset inventory had no external origins. Existing UI has no reparent control; existing CLI/API move passed."
+    ],
+    "reconciliation": [
+      {
+        "claim_id": "INT-1",
+        "disposition": "delivered",
+        "evidence": "Complete production app packed and installed outside checkout. Independent local and hosted browser parity passed. packages/cli/runtime is package-owned build output."
+      },
+      {
+        "claim_id": "INT-2",
+        "disposition": "delivered",
+        "evidence": "Viewer/API/CLI edits and image bytes persisted in the selected folder. Final restart retained moved parent, concurrent fields, context and image."
+      },
+      {
+        "claim_id": "INT-3",
+        "disposition": "delivered",
+        "evidence": "Explicit --local rejects remote flags and ignores remote defaults. Remote CLI proof against normal production passed."
+      },
+      {
+        "claim_id": "INT-4",
+        "disposition": "delivered",
+        "evidence": "Foreground viewer manages packaged Node server; temporary CLI mode starts and stops only its owned server."
+      },
+      {
+        "claim_id": "INT-5",
+        "disposition": "delivered",
+        "evidence": "Authenticated canonical identity, atomic records and OS-released admission guard protect one writer. Concurrent edits, browser events, stale owner cleanup and focused storage races passed."
+      },
+      {
+        "claim_id": "INT-6",
+        "disposition": "delivered",
+        "evidence": "Normal production API/actions/images/auth/assets/events and remote CLI/browser checks passed. Deployment files unchanged. Non-root API fallback matches archived pre-change b59e671; limitation retained."
+      }
+    ],
+    "documentation": [
+      "packages/cli/README.md",
+      "AGENTS.md",
+      "CHANGELOG.md"
+    ],
+    "follow_ups": [
+      "Existing non-root BASE_PATH API fallback remains unchanged from b59e671; outside this local-mode change.",
+      "Unknown-child interrupted startup uses conservative manual recovery documented in CLI README."
+    ],
+    "retirement_files": []
+  }
 }
