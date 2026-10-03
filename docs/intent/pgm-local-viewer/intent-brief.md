@@ -24,6 +24,7 @@ You confirmed that `pgm` can manage a local server. The runtime will serve the c
 - Store projects and image bytes in a selected local folder.
 - Make local use available through the installed `pgm` package.
 - Keep one source of truth for CLI and viewer changes.
+- Keep the web/hosted app working as well as it does today.
 
 ## The experience or behavior you appear to want
 
@@ -39,6 +40,7 @@ The package should carry the runtime assets needed for this experience. A source
 - Local edits and images survive a restart.
 - The selected folder is separate from installed program files.
 - Remote server use remains available as a separate mode.
+- Hosted viewing, editing, images, live updates, and remote CLI access retain their current behavior.
 
 ### Must be avoided
 
@@ -49,6 +51,8 @@ The package should carry the runtime assets needed for this experience. A source
 ## What seems settled
 
 This request is about finding a buildable approach. It does not request implementation, deployment, publication, or migration of existing data. The initial audience is Byron and existing CLI users. No shared editing, cloud synchronization, or background service is required by the request.
+
+Local mode is an addition. It must not reduce hosted features or make the hosted app depend on local startup. Local folder selection, process ownership, loopback binding, and local credentials apply only to local mode.
 
 ## Current reality that matters
 

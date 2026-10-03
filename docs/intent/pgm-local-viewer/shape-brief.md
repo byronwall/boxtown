@@ -16,6 +16,8 @@ The app already uses disk storage. The main change is how users install and star
 
 Use one local process as the writer for a folder. Local CLI commands call its existing `/api/v1` routes. This keeps the current mutation queue and event system effective. You confirmed that a managed local server meets your goal.
 
+The hosted version must work as well as it does today. Keep its viewer, writes, images, events, production auth, deployment settings, and remote CLI behavior. Local startup is opt-in. Its folder ownership and credentials must not affect hosted requests.
+
 ## Problem and appetite
 
 - **Problem:** Local projects require a separately running app service today.
@@ -75,6 +77,7 @@ SolidStart v1 exposes Nitro deployment settings. Nitro documents standalone Node
 - **Ship one app build.** Include server output, browser assets, and required runtime dependencies together. Do not build a second viewer.
 - **Make the folder explicit.** Pass an absolute `APP_DATA_DIR`. Keep package upgrades separate from user data.
 - **Test production behavior locally.** Use production auth, app routes, image routes, and WebSocket updates against disposable files.
+- **Protect hosted behavior.** Capture a normal production-mode baseline on disposable data. Repeat the same workflows after shared changes.
 
 ## First proof
 
@@ -91,7 +94,10 @@ SolidStart v1 exposes Nitro deployment settings. Nitro documents standalone Node
 - Do not treat a static client bundle as the complete app; server actions and events must remain available.
 - Do not add an always-running daemon before the foreground path works.
 - Do not copy existing live data into a local mode automatically.
+- Do not change hosted defaults to loopback-only binding or require local ownership records for hosted writes.
 
 ## Plan handoff
 
 Follow the implementation plan. Prove relocation first, then a packaged foreground viewer, then CLI reuse and restart behavior. Keep command names, default folder location, and port selection provisional.
+
+Each milestone also verifies normal hosted operation where it changes shared code or packaging. Completion requires both operating modes to retain the complete viewer.
