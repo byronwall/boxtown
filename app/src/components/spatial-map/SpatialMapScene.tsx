@@ -24,7 +24,6 @@ import type {
 import { SpatialMapChildNodePlaceholder } from "./SpatialMapChildNodePlaceholder";
 import { getImageFilesFromDataTransfer, useSpatialMapImages } from "./SpatialMapImages";
 import { getNodeImageFrame } from "./spatial-map-image-frame";
-import { getDepthOverlapEdge } from "~/lib/spatial-map/depth-overlap";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapReparentControl } from "./SpatialMapReparentControl";
 import { SpatialMapSegmentedControl, type SpatialMapSegmentedOption } from "./SpatialMapSegmentedControl";
@@ -309,9 +308,6 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
         <CanvasToggle pressed={controller.showEdges()} onClick={() => controller.toggleEdges()}>
           Edges
         </CanvasToggle>
-        <CanvasToggle pressed={controller.depthOverlap()} onClick={() => controller.toggleDepthOverlap()}>
-          Overlap
-        </CanvasToggle>
         <Show when={controller.isolationModeActive()}>
           <CanvasToggle
             pressed={controller.showLinkedInIsolation()}
@@ -410,7 +406,6 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                   }}
                   onDoubleClick={controller.sceneHandlers.onNodeDoubleClick}
                   isIsolationTarget={controller.isolatedNodeId() === item.node.id}
-                  overlapEdge={controller.depthOverlap() ? getDepthOverlapEdge(item.node.depth) : 0}
                   onPointerDown={(nodeId) => {
                     if (controller.reparentingNodeId()) {
                       return;
@@ -607,8 +602,6 @@ function SpatialMapNode(props: {
   onClick: (nodeId: string) => void;
   onDoubleClick: (nodeId: string) => void;
   isIsolationTarget: boolean;
-  // Thickness of the raised tile edge in the depth overlap view; 0 hides it.
-  overlapEdge: number;
   onPointerDown: (nodeId: string) => void;
   onPointerEnter: (nodeId: string) => void;
   onPointerLeave: (nodeId: string) => void;
@@ -771,21 +764,6 @@ function SpatialMapNode(props: {
         void imageUi.uploadImages(props.item.node.id, files);
       }}
     >
-      <Show when={props.overlapEdge > 0}>
-        {/* Plain offset geometry (no filters) reads as a raised tile edge. */}
-        <rect
-          class="spatial-map-node-tile-edge"
-          x={props.overlapEdge}
-          y={props.overlapEdge}
-          width={props.item.node.width}
-          height={props.item.node.height}
-          shape-rendering="crispEdges"
-          fill="color-mix(in srgb, var(--spatial-map-node-fill, var(--spatial-map-neutral-fill)) 55%, #1d241f)"
-          stroke="rgba(18, 24, 20, 0.45)"
-          stroke-width="1"
-          pointer-events="none"
-        />
-      </Show>
       <rect
         class="spatial-map-node-body"
         width={props.item.node.width}
