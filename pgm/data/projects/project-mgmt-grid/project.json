@@ -3,23 +3,21 @@
   "name": "Project Mgmt Grid",
   "description": "Blank project ready for grid editing, structure mapping, and future AI-assisted details.",
   "createdAt": "2026-04-29T15:53:08.833Z",
-  "updatedAt": "2026-10-02T03:17:13.368Z",
+  "updatedAt": "2026-10-06T03:52:33.536Z",
   "operationLog": [
     {
-      "id": "60d2c45a-44d7-4572-a998-b3a91df538a2",
-      "kind": "node.images.added",
+      "id": "5a558d31-a39d-4a17-be2d-183990a62fdc",
+      "kind": "node.metadata.updated",
       "actor": {
-        "kind": "human"
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
       },
-      "createdAt": "2026-10-02T03:17:13.370Z",
-      "summary": "Added 1 images to \"Reorder `new node` so type is under context\".",
+      "createdAt": "2026-10-06T03:52:33.536Z",
+      "summary": "Updated metadata for \"Zoom resets when tab gets focus again\".",
       "nodeIds": [
-        "feature-reorder-new-node-so-type-is-under-context"
+        "feature-zoom-resets-when-tab-gets-focus-again"
       ],
-      "metadata": {
-        "imageCount": "1",
-        "clientMutationId": "fbb8ba88-0ae6-49eb-b3de-6813d2f32603"
-      },
       "payload": {
         "state": {
           "nodeMetadataSchema": [
@@ -113,8 +111,10 @@
                 "id": "page-deleting-an-image-seemed-to-hang",
                 "label": "Deleting an image seemed to hang?",
                 "type": "task",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: SpatialMapImages removes an image from the project and open viewer immediately. The viewer advances or closes, and a failed delete restores it with an error. Commit cd4d582b is merged; image-viewer checks passed."
+                },
                 "context": "",
                 "rawContext": "",
                 "images": []
@@ -252,9 +252,9 @@
                 "id": "page-need-some-sense-of-relevance-so-most-important-stuff-is-visible",
                 "label": "Need some sense of \"relevance\" so most important stuff is visible",
                 "type": "page",
-                "status": "needs-review",
+                "status": "implemented",
                 "metadata": {
-                  "implementation": "Fix in PR https://github.com/byronwall/prod-mgmt-grid/pull/11 (open, not merged)."
+                  "implementation": "Reconciled 2026-10-05: Nodes support urgent, high, medium, low, and no priority. Priority controls and the global priority filter let users focus on important work. Commit 36851546 and PR #11 are merged; priority-filter checks passed."
                 },
                 "context": "",
                 "rawContext": "",
@@ -264,8 +264,10 @@
                 "id": "page-breadcrumb-is-really-nice-in-the-tree-view",
                 "label": "Breadcrumb is really nice in the tree view",
                 "type": "page",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: This feedback describes an existing feature. SpatialMapTreeNavigation tracks the current heading on scroll and displays its ancestor trail in the sticky breadcrumb."
+                },
                 "context": "",
                 "rawContext": "",
                 "images": []
@@ -274,8 +276,10 @@
                 "id": "page-show-active-header-in-toc-view",
                 "label": "Show active header in TOC view",
                 "type": "task",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: SpatialMapTreeNavigation uses the breadcrumb's active path to mark the current contents row with a subtle fill and aria-current. It scrolls that row into view when contents open. Commit 64a0f95a is merged."
+                },
                 "context": "",
                 "rawContext": "",
                 "images": []
@@ -284,8 +288,10 @@
                 "id": "page-i-really-want-to-type-to-filter-in-here",
                 "label": "I really want to type to filter in here",
                 "type": "task",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: SpatialMapNodeTypePicker uses the searchable attribute menu. Its input filters types and supports arrow keys and Enter. Commit d42806c2 is merged; attribute-filter checks passed."
+                },
                 "context": "",
                 "rawContext": "",
                 "images": []
@@ -307,8 +313,10 @@
                 "id": "page-really-want-to-be-able-to-peek-at-structure",
                 "label": "Really want to be able to \"peek\" at structure",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: SpatialMapStructurePeek shows the selected node, its ancestors, and three descendant levels. Opening it keeps the selection and camera; choosing a row selects that node. Commit 619a3577 is merged."
+                },
                 "context": "",
                 "rawContext": "",
                 "images": []
@@ -317,9 +325,9 @@
                 "id": "page-allow-setting-the-default-type",
                 "label": "Allow setting the default type",
                 "type": "task",
-                "status": "needs-review",
+                "status": "implemented",
                 "metadata": {
-                  "implementation": "Fix in PR https://github.com/byronwall/prod-mgmt-grid/pull/7 (open, not merged)."
+                  "implementation": "Reconciled 2026-10-05: Project settings select or clear one default node type. resolveNewNodeType uses that default before the parent type. Commit 8d3e39fc and PR #7 are merged; default-type checks passed."
                 },
                 "context": "",
                 "rawContext": "",
@@ -340,8 +348,10 @@
                 "id": "page-revise-highlight-to-avoid-extra-padding",
                 "label": "Revise highlight to avoid extra padding",
                 "type": "task",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: Cmd+K renders matches with an inline mark and zero padding, so matches inside words do not add gaps. Commit 56674013 is merged."
+                },
                 "context": "",
                 "rawContext": "",
                 "images": [
@@ -444,9 +454,9 @@
                 "id": "page-allow-for-multiple-selection",
                 "label": "Allow for multiple selection",
                 "type": "task",
-                "status": "needs-review",
+                "status": "implemented",
                 "metadata": {
-                  "implementation": "Fix in PR https://github.com/byronwall/prod-mgmt-grid/pull/10 (open, not merged)."
+                  "implementation": "Reconciled 2026-10-05: Grid checkboxes support individual and select-all selection. SpatialMapGridBulkBar provides status, archive, and unarchive actions. Commit 7d54d75f and PR #10 are merged."
                 },
                 "context": "",
                 "rawContext": "",
@@ -467,9 +477,9 @@
                 "id": "task-add-a-quick-project-changer-to-cmd-k-or-top-near-the-back",
                 "label": "Add a quick project changer to CMD K or top near the \"back\"",
                 "type": "task",
-                "status": "needs-review",
+                "status": "implemented",
                 "metadata": {
-                  "implementation": "Fix in PR https://github.com/byronwall/prod-mgmt-grid/pull/9 (open, not merged)."
+                  "implementation": "Reconciled 2026-10-05: Cmd+K lists other projects and opens the selected project. SpatialMapCommandProjects.tsx and SpatialMapCommandMenu.tsx implement the switcher. Commit ba5f8b85 is merged; project-search checks passed."
                 },
                 "context": "",
                 "rawContext": "",
@@ -493,8 +503,10 @@
                 "id": "task-odd-animation-when-adding-a-node-things-move-too-much",
                 "label": "Odd animation when adding a node - things move too much - seems like we're missing an optimistic update",
                 "type": "task",
-                "status": "needs-review",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: Optimistic creation and the server use the same createUniqueNodeId function. Server confirmation reuses the visible graph when only default fields or history change, avoiding a second enter transition. Commit 46fb26ee is merged; the creation-acknowledgement check passed."
+                },
                 "context": "",
                 "rawContext": "",
                 "images": []
@@ -542,8 +554,10 @@
                 "id": "task-green-colors-are-not-helpful-need-to-go-more-neutral",
                 "label": "Green colors are not helpful - need to go more neutral",
                 "type": "task",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: Workspace controls, filters, menus, and inspector use neutral gray surfaces and accents. Node type and status colors remain semantic. Commit 56674013 is merged."
+                },
                 "context": "",
                 "rawContext": "",
                 "images": []
@@ -602,8 +616,10 @@
                 "id": "task-needs-to-make-the-title-sticky",
                 "label": "Needs to make the title sticky",
                 "type": "task",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: SpatialMapInspectorHeader uses a sticky opaque header inside the inspector scroll area. The title and actions stay visible while details scroll. Commit a1b1481e is merged."
+                },
                 "context": "",
                 "rawContext": "",
                 "images": []
@@ -675,8 +691,10 @@
                 "id": "task-allow-filtering-on-last-editor-human-vs-agent",
                 "label": "Allow filtering on last editor - human vs. agent",
                 "type": "task",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: The filter menu includes Human and Agent under Last edited by. History supplies each node's editor, and the controller combines this filter with type, status, and priority. Commit 9523a87c is merged; filter checks passed."
+                },
                 "context": "",
                 "rawContext": "",
                 "images": []
@@ -711,8 +729,10 @@
                 "id": "feature-mutations-are-too-slow-waiting-for-server-need-optimistic-that-syncs-bumplessly-with-websocket",
                 "label": "Mutations are too slow waiting for server... need optimistic that syncs bumplessly with websocket",
                 "type": "task",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: ProjectDetailPage keeps pending edits over server, route, and WebSocket updates. Mutation IDs settle each edit; failures remove only that edit. Stable graph identity avoids extra layout transitions. Commit 46fb26ee is merged; optimistic-sync checks passed."
+                },
                 "context": "",
                 "rawContext": "",
                 "images": []
@@ -760,9 +780,9 @@
                 "id": "feature-need-to-support-multi-select-so-bulk-archive-is-easier-or-bulk-archive-on-grid-view-or-checkboxes",
                 "label": "Need to support multi select so bulk archive is easier - or bulk archive on grid view - or checkboxes?",
                 "type": "feature",
-                "status": "needs-review",
+                "status": "implemented",
                 "metadata": {
-                  "implementation": "Fix in PR https://github.com/byronwall/prod-mgmt-grid/pull/10 (open, not merged)."
+                  "implementation": "Reconciled 2026-10-05: Grid row and select-all checkboxes feed SpatialMapGridBulkBar. It archives or restores the selected nodes with an optimistic update and error recovery. Commit 7d54d75f and PR #10 are merged."
                 },
                 "context": "",
                 "rawContext": "",
@@ -793,9 +813,9 @@
                 "id": "feature-ideally-all-filters-are-in-the-url-so-they-persist-through-refresh",
                 "label": "Ideally all filters are in the URL so they persist through refresh",
                 "type": "feature",
-                "status": "needs-review",
+                "status": "implemented",
                 "metadata": {
-                  "implementation": "PR: https://github.com/byronwall/prod-mgmt-grid/pull/12. Validation: git diff --check passed; type-check and changed-flow browser verification remain pending because dependencies are missing and the branch is not deployed."
+                  "implementation": "Reconciled 2026-10-05: SpatialMapUrlSync reads and writes type, status, priority, editor, parent, child, and archived filters. The grid name query uses q. Commits 3a7044a4 and 9523a87c are merged."
                 },
                 "context": "",
                 "rawContext": "",
@@ -805,9 +825,9 @@
                 "id": "feature-need-a-distinct-clear-filters-or-reset-option",
                 "label": "Need a distinct \"clear filters\" or \"reset\" option",
                 "type": "feature",
-                "status": "needs-review",
+                "status": "implemented",
                 "metadata": {
-                  "implementation": "PR: https://github.com/byronwall/prod-mgmt-grid/pull/16. Verified reset after archiving all matching nodes; selected map view stayed unchanged."
+                  "implementation": "Reconciled 2026-10-05: The global filter menu has a Reset filters action even when no nodes match. It clears selections and hides archived nodes. Commit a7e2e8cb and PR #16 are merged."
                 },
                 "context": "When I archived all filtered items, the filter did not show in the list.",
                 "rawContext": "When I archived all filtered items, the filter did not show in the list.",
@@ -853,9 +873,9 @@
                 "id": "feature-add-an-archive-implemented-button-somewhere",
                 "label": "Add an \"archive implemented\" button somewhere",
                 "type": "feature",
-                "status": "needs-review",
+                "status": "implemented",
                 "metadata": {
-                  "implementation": "PR #13: https://github.com/byronwall/prod-mgmt-grid/pull/13. Validation: pnpm type-check and browser flow passed; ESLint could not start because @eslint/js is missing."
+                  "implementation": "Reconciled 2026-10-05: SpatialMapArchiveImplementedButton archives all unarchived implemented nodes. It is used in the grid and inspector header. Commits 4e849acc and a1b1481e are merged."
                 },
                 "context": "This seems to be a very common action for me",
                 "rawContext": "This seems to be a very common action for me",
@@ -865,8 +885,10 @@
                 "id": "feature-grid-view-has-layout-shift-when-selecting-all",
                 "label": "Grid view has layout shift when selecting all",
                 "type": "feature",
-                "status": "needs-review",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: Grid bulk actions replace the count summary in the existing header instead of adding a row. The header stays above sticky cells, and Set status is a menu. Commits b8d12980 and 51999459, plus PR #14, are merged."
+                },
                 "context": "Really need a nice clean set of buttons that appear without a layout shfit. Find a way.\n\n## Review\n\nPR: https://github.com/byronwall/prod-mgmt-grid/pull/14\n\nValidation: Type-check and browser selection checks pass. Lint is blocked because `@eslint/js` is missing from app dependencies.\n",
                 "rawContext": "Really need a nice clean set of buttons that appear without a layout shfit.  Find a way.",
                 "images": [
@@ -885,8 +907,10 @@
                 "id": "feature-zoom-resets-when-tab-gets-focus-again",
                 "label": "Zoom resets when tab gets focus again",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: SpatialMapUrlSync saves camera center and width in cam and restores them on load. The controller holds the restored view through automatic fits and data refreshes. Stable graph identity avoids fits on bookkeeping updates. Commits 2f36553c and 46fb26ee are merged; camera checks passed."
+                },
                 "context": "Needs to be bumpless.  Ideally zoom and pan are also in the URL so there is no shift on reload.",
                 "rawContext": "Needs to be bumpless.  Ideally zoom and pan are also in the URL so there is no shift on reload.",
                 "images": []
@@ -918,8 +942,10 @@
                 "id": "feature-archive-implemented-should-in-the-side-bar-too",
                 "label": "Archive implemented should in the side bar too",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Reconciled 2026-10-05: SpatialMapInspector mounts the compact Archive implemented action in its header, with or without a selected node. The inspector is shared by canvas, tree, and grid. Commit a1b1481e is merged."
+                },
                 "context": "Currently only on the grid view?!?! We should generally have all functionality in all places.",
                 "rawContext": "",
                 "images": [
@@ -958,6 +984,624 @@
             "links": []
           }
         }
+      }
+    },
+    {
+      "id": "b51b6f94-ff94-4857-aef3-ec1595cc06ed",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.531Z",
+      "summary": "Changed \"Zoom resets when tab gets focus again\" status to implemented.",
+      "nodeIds": [
+        "feature-zoom-resets-when-tab-gets-focus-again"
+      ]
+    },
+    {
+      "id": "2919caeb-8352-4920-b3b5-13659c1f978b",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.525Z",
+      "summary": "Updated metadata for \"Show active header in TOC view\".",
+      "nodeIds": [
+        "page-show-active-header-in-toc-view"
+      ]
+    },
+    {
+      "id": "3a2d6ec5-ab36-4973-8e36-a5269d6cafad",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.521Z",
+      "summary": "Changed \"Show active header in TOC view\" status to implemented.",
+      "nodeIds": [
+        "page-show-active-header-in-toc-view"
+      ]
+    },
+    {
+      "id": "62f3f78c-742c-440a-a1a4-0ca7cd20762e",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.516Z",
+      "summary": "Updated metadata for \"Revise highlight to avoid extra padding\".",
+      "nodeIds": [
+        "page-revise-highlight-to-avoid-extra-padding"
+      ]
+    },
+    {
+      "id": "2e37b85d-0d52-4c00-9213-13916e3763a2",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.509Z",
+      "summary": "Changed \"Revise highlight to avoid extra padding\" status to implemented.",
+      "nodeIds": [
+        "page-revise-highlight-to-avoid-extra-padding"
+      ]
+    },
+    {
+      "id": "f7e2e38e-6505-4bfe-91c6-a6a961f467de",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.503Z",
+      "summary": "Updated metadata for \"Really want to be able to \"peek\" at structure\".",
+      "nodeIds": [
+        "page-really-want-to-be-able-to-peek-at-structure"
+      ]
+    },
+    {
+      "id": "63d6f0b6-9dae-483a-8bae-ba0cd29dc6c0",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.498Z",
+      "summary": "Changed \"Really want to be able to \"peek\" at structure\" status to implemented.",
+      "nodeIds": [
+        "page-really-want-to-be-able-to-peek-at-structure"
+      ]
+    },
+    {
+      "id": "8308997a-96e5-44cf-9f91-f45ed88cb43e",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.495Z",
+      "summary": "Updated metadata for \"Odd animation when adding a node - things move too much - seems like we're missing an optimistic update\".",
+      "nodeIds": [
+        "task-odd-animation-when-adding-a-node-things-move-too-much"
+      ]
+    },
+    {
+      "id": "355898ff-9dcc-4fa3-9a99-b4b874b9e425",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.491Z",
+      "summary": "Changed \"Odd animation when adding a node - things move too much - seems like we're missing an optimistic update\" status to implemented.",
+      "nodeIds": [
+        "task-odd-animation-when-adding-a-node-things-move-too-much"
+      ]
+    },
+    {
+      "id": "b4e0f27d-ccb5-49b4-ba44-94d10ac06c61",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.487Z",
+      "summary": "Updated metadata for \"Needs to make the title sticky\".",
+      "nodeIds": [
+        "task-needs-to-make-the-title-sticky"
+      ]
+    },
+    {
+      "id": "6c73f77a-5c88-47a0-8ad2-3fb82b57b3a2",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.481Z",
+      "summary": "Changed \"Needs to make the title sticky\" status to implemented.",
+      "nodeIds": [
+        "task-needs-to-make-the-title-sticky"
+      ]
+    },
+    {
+      "id": "8d24e31e-8eb5-4375-8b0e-63b0997765db",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.473Z",
+      "summary": "Updated metadata for \"Need to support multi select so bulk archive is easier - or bulk archive on grid view - or checkboxes?\".",
+      "nodeIds": [
+        "feature-need-to-support-multi-select-so-bulk-archive-is-easier-or-bulk-archive-on-grid-view-or-checkboxes"
+      ]
+    },
+    {
+      "id": "1ca40a5a-3577-47ba-944a-362e4ce500b8",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.468Z",
+      "summary": "Changed \"Need to support multi select so bulk archive is easier - or bulk archive on grid view - or checkboxes?\" status to implemented.",
+      "nodeIds": [
+        "feature-need-to-support-multi-select-so-bulk-archive-is-easier-or-bulk-archive-on-grid-view-or-checkboxes"
+      ]
+    },
+    {
+      "id": "3f6e8039-3645-4068-98d8-c3696d424f8d",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.464Z",
+      "summary": "Updated metadata for \"Need some sense of \"relevance\" so most important stuff is visible\".",
+      "nodeIds": [
+        "page-need-some-sense-of-relevance-so-most-important-stuff-is-visible"
+      ]
+    },
+    {
+      "id": "0d5841aa-ced2-4fa1-ba1a-7a767af5bd3a",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.460Z",
+      "summary": "Changed \"Need some sense of \"relevance\" so most important stuff is visible\" status to implemented.",
+      "nodeIds": [
+        "page-need-some-sense-of-relevance-so-most-important-stuff-is-visible"
+      ]
+    },
+    {
+      "id": "097649fe-9723-4b4c-8d2d-6e01074656df",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.458Z",
+      "summary": "Updated metadata for \"Need a distinct \"clear filters\" or \"reset\" option\".",
+      "nodeIds": [
+        "feature-need-a-distinct-clear-filters-or-reset-option"
+      ]
+    },
+    {
+      "id": "9c446c6a-9203-46ec-923d-5249a1bc8287",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.453Z",
+      "summary": "Changed \"Need a distinct \"clear filters\" or \"reset\" option\" status to implemented.",
+      "nodeIds": [
+        "feature-need-a-distinct-clear-filters-or-reset-option"
+      ]
+    },
+    {
+      "id": "911b40dc-9283-4bdd-9316-28a14ca1a79f",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.450Z",
+      "summary": "Updated metadata for \"Mutations are too slow waiting for server... need optimistic that syncs bumplessly with websocket\".",
+      "nodeIds": [
+        "feature-mutations-are-too-slow-waiting-for-server-need-optimistic-that-syncs-bumplessly-with-websocket"
+      ]
+    },
+    {
+      "id": "10942cdb-d7a0-4f44-bad2-0b9adc274027",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.438Z",
+      "summary": "Changed \"Mutations are too slow waiting for server... need optimistic that syncs bumplessly with websocket\" status to implemented.",
+      "nodeIds": [
+        "feature-mutations-are-too-slow-waiting-for-server-need-optimistic-that-syncs-bumplessly-with-websocket"
+      ]
+    },
+    {
+      "id": "dd3082ad-a992-442f-b83d-21800a6972fc",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.434Z",
+      "summary": "Updated metadata for \"Ideally all filters are in the URL so they persist through refresh\".",
+      "nodeIds": [
+        "feature-ideally-all-filters-are-in-the-url-so-they-persist-through-refresh"
+      ]
+    },
+    {
+      "id": "fe314f8f-7f89-4787-b2d3-b8867350768c",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.426Z",
+      "summary": "Changed \"Ideally all filters are in the URL so they persist through refresh\" status to implemented.",
+      "nodeIds": [
+        "feature-ideally-all-filters-are-in-the-url-so-they-persist-through-refresh"
+      ]
+    },
+    {
+      "id": "899b628e-29b2-441e-84e2-2ff59ccc2598",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.417Z",
+      "summary": "Updated metadata for \"I really want to type to filter in here\".",
+      "nodeIds": [
+        "page-i-really-want-to-type-to-filter-in-here"
+      ]
+    },
+    {
+      "id": "1be7091b-0da5-4d42-8325-ff378f668c89",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.408Z",
+      "summary": "Changed \"I really want to type to filter in here\" status to implemented.",
+      "nodeIds": [
+        "page-i-really-want-to-type-to-filter-in-here"
+      ]
+    },
+    {
+      "id": "7466bfde-4c5f-4e02-9c5a-59d6640db455",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.404Z",
+      "summary": "Updated metadata for \"Grid view has layout shift when selecting all\".",
+      "nodeIds": [
+        "feature-grid-view-has-layout-shift-when-selecting-all"
+      ]
+    },
+    {
+      "id": "4493928f-e316-4410-a750-cd23a145704b",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.399Z",
+      "summary": "Changed \"Grid view has layout shift when selecting all\" status to implemented.",
+      "nodeIds": [
+        "feature-grid-view-has-layout-shift-when-selecting-all"
+      ]
+    },
+    {
+      "id": "b57f2612-c9c1-45ac-a336-68c4d6c9d887",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.395Z",
+      "summary": "Updated metadata for \"Green colors are not helpful - need to go more neutral\".",
+      "nodeIds": [
+        "task-green-colors-are-not-helpful-need-to-go-more-neutral"
+      ]
+    },
+    {
+      "id": "a2c037ae-283f-4c24-bd72-a86db0856b94",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.374Z",
+      "summary": "Changed \"Green colors are not helpful - need to go more neutral\" status to implemented.",
+      "nodeIds": [
+        "task-green-colors-are-not-helpful-need-to-go-more-neutral"
+      ]
+    },
+    {
+      "id": "c6fe0b75-c4d7-4343-8be6-d218acae9547",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.366Z",
+      "summary": "Updated metadata for \"Deleting an image seemed to hang?\".",
+      "nodeIds": [
+        "page-deleting-an-image-seemed-to-hang"
+      ]
+    },
+    {
+      "id": "a8e2847e-a6bb-4c07-918d-ebbf13716fea",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.349Z",
+      "summary": "Changed \"Deleting an image seemed to hang?\" status to implemented.",
+      "nodeIds": [
+        "page-deleting-an-image-seemed-to-hang"
+      ]
+    },
+    {
+      "id": "1807a3e7-ef5f-4f4d-b91d-f1757c33761a",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.342Z",
+      "summary": "Updated metadata for \"Breadcrumb is really nice in the tree view\".",
+      "nodeIds": [
+        "page-breadcrumb-is-really-nice-in-the-tree-view"
+      ]
+    },
+    {
+      "id": "c1b04e96-f257-494a-9572-10ea1e3a01bb",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.330Z",
+      "summary": "Changed \"Breadcrumb is really nice in the tree view\" status to implemented.",
+      "nodeIds": [
+        "page-breadcrumb-is-really-nice-in-the-tree-view"
+      ]
+    },
+    {
+      "id": "2ee08932-42e0-4337-bd1e-eb7545d6c19e",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.323Z",
+      "summary": "Updated metadata for \"Archive implemented should in the side bar too\".",
+      "nodeIds": [
+        "feature-archive-implemented-should-in-the-side-bar-too"
+      ]
+    },
+    {
+      "id": "da1b1523-5977-42f9-bc1d-e56e99c50526",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.304Z",
+      "summary": "Changed \"Archive implemented should in the side bar too\" status to implemented.",
+      "nodeIds": [
+        "feature-archive-implemented-should-in-the-side-bar-too"
+      ]
+    },
+    {
+      "id": "ac0e4f6f-0b39-46e1-995b-f96d38cc4381",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.278Z",
+      "summary": "Updated metadata for \"Allow setting the default type\".",
+      "nodeIds": [
+        "page-allow-setting-the-default-type"
+      ]
+    },
+    {
+      "id": "bd39d843-280e-4e28-8341-c5b627df9f21",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.272Z",
+      "summary": "Changed \"Allow setting the default type\" status to implemented.",
+      "nodeIds": [
+        "page-allow-setting-the-default-type"
+      ]
+    },
+    {
+      "id": "2afb9ceb-1294-4460-bdc4-d638912d4dbd",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.266Z",
+      "summary": "Updated metadata for \"Allow for multiple selection\".",
+      "nodeIds": [
+        "page-allow-for-multiple-selection"
+      ]
+    },
+    {
+      "id": "dd4c68e0-70ac-4428-88e1-36dcf77b192b",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.255Z",
+      "summary": "Changed \"Allow for multiple selection\" status to implemented.",
+      "nodeIds": [
+        "page-allow-for-multiple-selection"
+      ]
+    },
+    {
+      "id": "410697b9-c3b4-4eff-84c9-c9144d60767e",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.251Z",
+      "summary": "Updated metadata for \"Allow filtering on last editor - human vs. agent\".",
+      "nodeIds": [
+        "task-allow-filtering-on-last-editor-human-vs-agent"
+      ]
+    },
+    {
+      "id": "4d8b4ca2-b785-48ba-9923-c34a13f7264c",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.246Z",
+      "summary": "Changed \"Allow filtering on last editor - human vs. agent\" status to implemented.",
+      "nodeIds": [
+        "task-allow-filtering-on-last-editor-human-vs-agent"
+      ]
+    },
+    {
+      "id": "84d0d6bf-0420-4e71-ac0a-d3ae47e42555",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.241Z",
+      "summary": "Updated metadata for \"Add an \"archive implemented\" button somewhere\".",
+      "nodeIds": [
+        "feature-add-an-archive-implemented-button-somewhere"
+      ]
+    },
+    {
+      "id": "d319c90e-c374-4269-bec4-ebab1fb77ddd",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.233Z",
+      "summary": "Changed \"Add an \"archive implemented\" button somewhere\" status to implemented.",
+      "nodeIds": [
+        "feature-add-an-archive-implemented-button-somewhere"
+      ]
+    },
+    {
+      "id": "4b3647ff-7fe4-457a-ab9e-b9980daffdb7",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.228Z",
+      "summary": "Updated metadata for \"Add a quick project changer to CMD K or top near the \"back\"\".",
+      "nodeIds": [
+        "task-add-a-quick-project-changer-to-cmd-k-or-top-near-the-back"
+      ]
+    },
+    {
+      "id": "6da349b7-c8e5-4b9f-80d7-3f64920e2d30",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.219Z",
+      "summary": "Changed \"Add a quick project changer to CMD K or top near the \"back\"\" status to implemented.",
+      "nodeIds": [
+        "task-add-a-quick-project-changer-to-cmd-k-or-top-near-the-back"
+      ]
+    },
+    {
+      "id": "60d2c45a-44d7-4572-a998-b3a91df538a2",
+      "kind": "node.images.added",
+      "actor": {
+        "kind": "human"
+      },
+      "createdAt": "2026-10-02T03:17:13.370Z",
+      "summary": "Added 1 images to \"Reorder `new node` so type is under context\".",
+      "nodeIds": [
+        "feature-reorder-new-node-so-type-is-under-context"
+      ],
+      "metadata": {
+        "imageCount": "1",
+        "clientMutationId": "fbb8ba88-0ae6-49eb-b3de-6813d2f32603"
       }
     },
     {
@@ -3851,569 +4495,6 @@
       },
       "createdAt": "2026-05-07T04:06:57.291Z",
       "summary": "Updated metadata for \"Allow filtering the canvas based on meta data or type\".",
-      "nodeIds": [
-        "task-allow-filtering-the-canvas-based-on-meta-data-or-type"
-      ]
-    },
-    {
-      "id": "2d8d36f7-a29c-4856-a5c2-62beb37f4057",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T04:01:23.965Z",
-      "summary": "Created \"Guidance from codex\" under \"Ingest via CLI\".",
-      "nodeIds": [
-        "page-guidance-from-codex",
-        "page-ingest-via-cli"
-      ]
-    },
-    {
-      "id": "e2658575-0592-4250-8cbc-da9bb5746e23",
-      "kind": "node.status.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-07T03:58:07.171Z",
-      "summary": "Changed \"Need to show depth and sort order to prefer top level nodes?\" status to implemented.",
-      "nodeIds": [
-        "page-need-to-show-depth-and-sort-order-to-prefer-top-level-nodes"
-      ]
-    },
-    {
-      "id": "9d840cab-d445-4044-b2f5-9a1a2f95d260",
-      "kind": "node.type.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T03:55:13.726Z",
-      "summary": "Changed \"Need to show depth and sort order to prefer top level nodes?\" type to task.",
-      "nodeIds": [
-        "page-need-to-show-depth-and-sort-order-to-prefer-top-level-nodes"
-      ]
-    },
-    {
-      "id": "6c71d7f7-eaa9-4284-8c09-b2cd731d0301",
-      "kind": "node.moved",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T03:00:35.296Z",
-      "summary": "Moved \"pgm CLI bug report: metadata persistence and stdout edge cases\" under \"Ingest via CLI\".",
-      "nodeIds": [
-        "task-pgm-cli-bug-report-metadata-persistence-and-stdout-edge-cases",
-        "page-ingest-via-cli"
-      ]
-    },
-    {
-      "id": "0d534288-25e8-4518-8e16-a4df3e60d196",
-      "kind": "node.type.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T03:00:07.197Z",
-      "summary": "Changed \"Bug report from Codex\" type to task.",
-      "nodeIds": [
-        "page-bug-report-from-codex"
-      ]
-    },
-    {
-      "id": "37430a57-7b01-4398-bd28-da1c75414a66",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T03:00:02.015Z",
-      "summary": "Created \"Bug report from Codex\" under \"Ingest via CLI\".",
-      "nodeIds": [
-        "page-bug-report-from-codex",
-        "page-ingest-via-cli"
-      ]
-    },
-    {
-      "id": "2fc1fae4-7336-43d3-809c-b1b1b67a2cb1",
-      "kind": "node.moved",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T02:50:59.422Z",
-      "summary": "Moved \"Green colors are not helpful - need to go more neutral\" under \"Global design\".",
-      "nodeIds": [
-        "task-green-colors-are-not-helpful-need-to-go-more-neutral",
-        "feature-global-design"
-      ]
-    },
-    {
-      "id": "3fc011c0-b106-43ac-882b-056717df544f",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T02:50:53.852Z",
-      "summary": "Created \"Global design\".",
-      "nodeIds": [
-        "feature-global-design"
-      ]
-    },
-    {
-      "id": "148b1c4a-dcbc-4943-bbd3-ade2a194e779",
-      "kind": "node.moved",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T02:50:35.634Z",
-      "summary": "Moved \"App should expose `copy as prompt` and things to paste into agents\" under \"Inspector side bar\".",
-      "nodeIds": [
-        "task-app-should-expose-prompts-and-things-to-paste-into-agents",
-        "page-inspector-side-bar"
-      ]
-    },
-    {
-      "id": "b8d6ff83-68e9-4940-90d8-f68c7360c646",
-      "kind": "node.moved",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T02:43:02.329Z",
-      "summary": "Moved \"Make `pgm` interactive so human can roughly get around without knowing commands\" under \"Ingest via CLI\".",
-      "nodeIds": [
-        "feature-make-pgm-interactive-so-human-can-roughly-get-around-without-knowing-commands",
-        "page-ingest-via-cli"
-      ]
-    },
-    {
-      "id": "d0b870e9-0605-4717-b00b-00289e2592de",
-      "kind": "node.type.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T02:42:22.219Z",
-      "summary": "Changed \"Meta data should edit in place\" type to task.",
-      "nodeIds": [
-        "note-meta-data-should-edit-in-place"
-      ]
-    },
-    {
-      "id": "d39ef622-c999-4eef-bd18-6b7c9a8cebca",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T02:37:17.894Z",
-      "summary": "Created \"Need to show depth and sort order to prefer top level nodes?\" under \"Activated via CMD K\".",
-      "nodeIds": [
-        "page-need-to-show-depth-and-sort-order-to-prefer-top-level-nodes",
-        "page-activated-via-cmd-k"
-      ]
-    },
-    {
-      "id": "6ddb705c-ab37-4db4-a7fa-e6fff69b2935",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T02:36:35.820Z",
-      "summary": "Created \"Need to provide a command to download image without curl\" under \"Ingest via CLI\".",
-      "nodeIds": [
-        "page-need-to-provide-a-command-to-download-image-without-curl",
-        "page-ingest-via-cli"
-      ]
-    },
-    {
-      "id": "d218573d-ad31-42ff-8a89-42c88a8adf55",
-      "kind": "node.title.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T04:24:03.401Z",
-      "summary": "Renamed \"App should expose prompts and things to paste into agents\" to \"App should expose `copy as prompt` and things to paste into agents\".",
-      "nodeIds": [
-        "task-app-should-expose-prompts-and-things-to-paste-into-agents"
-      ]
-    },
-    {
-      "id": "385b7752-85df-4fb0-9d80-c1d036f9bb7d",
-      "kind": "node.deleted",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T04:23:39.376Z",
-      "summary": "Deleted \"Some sense of \"quality\", like no top level tasks\".",
-      "nodeIds": [
-        "feature-some-sense-of-quality-like-no-top-level-tasks"
-      ]
-    },
-    {
-      "id": "ebd51654-c8d1-4759-9a45-ea8dd6f03bb5",
-      "kind": "node.moved",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T04:23:24.753Z",
-      "summary": "Moved \"Allow toggling on/off parent context on map\" under \"Canvas viewer\".",
-      "nodeIds": [
-        "task-allow-toggling-on-off-parent-context-on-map",
-        "page-canvas-viewer"
-      ]
-    },
-    {
-      "id": "aed2489b-382f-45d8-909c-574c51fdff9e",
-      "kind": "node.moved",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T04:17:24.033Z",
-      "summary": "Moved \"Odd animation when adding a node - things move too much - seems like we're missing an optimistic update\" under \"Canvas viewer\".",
-      "nodeIds": [
-        "task-odd-animation-when-adding-a-node-things-move-too-much",
-        "page-canvas-viewer"
-      ]
-    },
-    {
-      "id": "2c1341f8-076b-43a0-9058-aa512036a20f",
-      "kind": "node.title.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T04:17:18.383Z",
-      "summary": "Renamed \"Odd animation when adding a node - things move too much\" to \"Odd animation when adding a node - things move too much - seems like we're missing an optimistic update\".",
-      "nodeIds": [
-        "task-odd-animation-when-adding-a-node-things-move-too-much"
-      ]
-    },
-    {
-      "id": "5e5f8e57-1cd2-4435-be0c-7931b759c7d6",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T04:16:59.124Z",
-      "summary": "Created \"Add check for using latest version of CLI - show update command\" under \"Ingest via CLI\".",
-      "nodeIds": [
-        "page-add-check-for-using-latest-version-of-cli-show-update-command",
-        "page-ingest-via-cli"
-      ]
-    },
-    {
-      "id": "092e7b86-81e5-4aa7-baf2-26d5d947d54b",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T04:15:59.780Z",
-      "summary": "Created \"Needs to make the title sticky\" under \"Inspector side bar\".",
-      "nodeIds": [
-        "task-needs-to-make-the-title-sticky",
-        "page-inspector-side-bar"
-      ]
-    },
-    {
-      "id": "2af3a17e-0ac7-48ab-bdcc-0d55b5c7e0f7",
-      "kind": "node.moved",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T04:15:21.748Z",
-      "summary": "Moved \"New task mode should do button group instead of select menu\" under \"Canvas viewer\".",
-      "nodeIds": [
-        "task-new-task-mode-should-do-button-group-instead-of-select-menu",
-        "page-canvas-viewer"
-      ]
-    },
-    {
-      "id": "e08cdcbc-9a3a-41d9-a89d-0db34852c160",
-      "kind": "node.title.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T04:14:47.829Z",
-      "summary": "Renamed \"Error with web sockets?\" to \"Error with web sockets\".",
-      "nodeIds": [
-        "feature-error-with-web-sockets"
-      ]
-    },
-    {
-      "id": "e4c3b508-80ac-4c6a-a415-30b542f8b221",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T04:14:12.957Z",
-      "summary": "Created \"Project root picker (to reassign) should allow searching for a node by name, using similar interface to CMD K menu\" under \"Canvas viewer\".",
-      "nodeIds": [
-        "page-project-root-picker-to-reassign-should-allow-searching-for-a-node-by-name-using-similar-interface-to-cmd-k-menu",
-        "page-canvas-viewer"
-      ]
-    },
-    {
-      "id": "58e408c2-c891-4976-8da5-49c64af9023a",
-      "kind": "node.status.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-06T04:08:16.595Z",
-      "summary": "Changed \"Hover inspector is just too much - disable for now\" status to implemented.",
-      "nodeIds": [
-        "task-hover-inspector-is-just-too-much-disable-for-now"
-      ]
-    },
-    {
-      "id": "1d9bf8ef-be21-4776-a2aa-685cfc85a184",
-      "kind": "node.context.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-06T04:07:34.816Z",
-      "summary": "Updated context for \"Hover inspector is just too much - disable for now\".",
-      "nodeIds": [
-        "task-hover-inspector-is-just-too-much-disable-for-now"
-      ]
-    },
-    {
-      "id": "3a6f5477-fd76-4949-840b-fa93b5ed96a4",
-      "kind": "node.context.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-06T04:07:10.681Z",
-      "summary": "Updated context for \"Hover inspector is just too much - disable for now\".",
-      "nodeIds": [
-        "task-hover-inspector-is-just-too-much-disable-for-now"
-      ]
-    },
-    {
-      "id": "6b1fc643-33ff-482b-8882-45d7a05a6c34",
-      "kind": "node.context.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-06T04:07:08.909Z",
-      "summary": "Updated context for \"Skill needs to include install steps\".",
-      "nodeIds": [
-        "task-skill-needs-to-include-install-steps"
-      ]
-    },
-    {
-      "id": "2ea0d290-4d76-420b-a929-44a0b6a4fda4",
-      "kind": "node.context.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-06T04:03:00.021Z",
-      "summary": "Updated context for \"README should link to npm also\".",
-      "nodeIds": [
-        "task-readme-should-link-to-npm-also"
-      ]
-    },
-    {
-      "id": "aa90cf77-bca1-41fd-af71-517847d04e6a",
-      "kind": "node.metadata.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-06T04:02:35.405Z",
-      "summary": "Updated metadata for \"Skill needs to include install steps\".",
-      "nodeIds": [
-        "task-skill-needs-to-include-install-steps"
-      ]
-    },
-    {
-      "id": "6eee9dcc-34e0-48ed-bae9-a44df52fd4b2",
-      "kind": "node.metadata.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-06T04:02:33.248Z",
-      "summary": "Updated metadata for \"README should link to npm also\".",
-      "nodeIds": [
-        "task-readme-should-link-to-npm-also"
-      ]
-    },
-    {
-      "id": "c5531307-53c2-47e2-a6fc-4f5684dd4a4e",
-      "kind": "node.status.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-06T04:02:13.115Z",
-      "summary": "Changed \"Skill needs to include install steps\" status to implemented.",
-      "nodeIds": [
-        "task-skill-needs-to-include-install-steps"
-      ]
-    },
-    {
-      "id": "2e3f2cd6-bb08-47ed-9985-679eecc53533",
-      "kind": "node.status.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-06T04:02:11.155Z",
-      "summary": "Changed \"README should link to npm also\" status to implemented.",
-      "nodeIds": [
-        "task-readme-should-link-to-npm-also"
-      ]
-    },
-    {
-      "id": "7f7e0f0d-dde3-4797-8d43-9f0e27a8b162",
-      "kind": "node.type.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T03:57:53.129Z",
-      "summary": "Changed \"Error with web sockets?\" type to task.",
-      "nodeIds": [
-        "feature-error-with-web-sockets"
-      ]
-    },
-    {
-      "id": "3b3b60a1-e89e-4f78-8b7f-5c52f14f0844",
-      "kind": "node.context.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T03:57:41.600Z",
-      "summary": "Updated context for \"Error with web sockets?\".",
-      "nodeIds": [
-        "feature-error-with-web-sockets"
-      ]
-    },
-    {
-      "id": "92f117a0-fd20-4843-832c-a6cd562c1da5",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-06T03:57:28.156Z",
-      "summary": "Created \"Error with web sockets?\".",
-      "nodeIds": [
-        "feature-error-with-web-sockets"
-      ]
-    },
-    {
-      "id": "8b841b56-dafd-4d99-8591-6e3f734e7e47",
-      "kind": "node.type.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-05T13:48:45.614Z",
-      "summary": "Changed \"I want to resize columns and get longer name\" type to task.",
-      "nodeIds": [
-        "page-i-want-to-resize-columns-and-get-longer-name"
-      ]
-    },
-    {
-      "id": "acc4cb56-42ab-4efd-a506-602135663ded",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-05T13:48:41.997Z",
-      "summary": "Created \"I want to resize columns and get longer name\" under \"Grid view\".",
-      "nodeIds": [
-        "page-i-want-to-resize-columns-and-get-longer-name",
-        "page-grid-view"
-      ]
-    },
-    {
-      "id": "9a0b1f44-ae6a-4bd8-a19e-ba5f0d8dd918",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-04T20:02:21.938Z",
-      "summary": "Created \"Allow dragging an image on the image list to add one more\".",
-      "nodeIds": [
-        "task-allow-dragging-an-image-on-the-image-list-to-add-one-more"
-      ]
-    },
-    {
-      "id": "01a1f472-a4e1-46b1-a03f-a99a68c27041",
-      "kind": "node.type.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-04T14:54:42.420Z",
-      "summary": "Changed \"Some sense of \"quality\", like no top level tasks\" type to task.",
-      "nodeIds": [
-        "feature-some-sense-of-quality-like-no-top-level-tasks"
-      ]
-    },
-    {
-      "id": "7f60c68c-9b93-4886-9cb5-61197dc7eadf",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-04T14:54:38.465Z",
-      "summary": "Created \"Some sense of \"quality\", like no top level tasks\".",
-      "nodeIds": [
-        "feature-some-sense-of-quality-like-no-top-level-tasks"
-      ]
-    },
-    {
-      "id": "7a8c74b9-768d-4d20-aea3-dc76a37cf5f4",
-      "kind": "node.type.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-04T14:54:16.851Z",
-      "summary": "Changed \"Make `pgm` interactive so human can roughly get around without knowing commands\" type to task.",
-      "nodeIds": [
-        "feature-make-pgm-interactive-so-human-can-roughly-get-around-without-knowing-commands"
-      ]
-    },
-    {
-      "id": "cb5510be-d0a1-4154-b80a-6ff3ce0fab16",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-04T14:54:12.557Z",
-      "summary": "Created \"Make `pgm` interactive so human can roughly get around without knowing commands\".",
-      "nodeIds": [
-        "feature-make-pgm-interactive-so-human-can-roughly-get-around-without-knowing-commands"
-      ]
-    },
-    {
-      "id": "1e2f007c-af1c-4d77-96d5-27db3cb95c5d",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-04T14:46:53.444Z",
-      "summary": "Created \"Green colors are not helpful - need to go more neutral\".",
-      "nodeIds": [
-        "task-green-colors-are-not-helpful-need-to-go-more-neutral"
-      ]
-    },
-    {
-      "id": "8a7eac0c-4a74-4ae2-b038-9215f5d17ecd",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-04T13:25:44.649Z",
-      "summary": "Created \"Allow filtering the canvas based on meta data or type\".",
       "nodeIds": [
         "task-allow-filtering-the-canvas-based-on-meta-data-or-type"
       ]

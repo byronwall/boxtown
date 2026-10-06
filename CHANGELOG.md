@@ -10,6 +10,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Changed
 
+- The local Project Mgmt Grid marks 22 resolved issues as implemented, with current source evidence on each issue.
 - `pgm viewer` uses `./pgm/data` by default. Use `--data-dir` to select another folder.
 - The development app checks `pgm/data` before other default data folders. `APP_DATA_DIR` still takes priority.
 
