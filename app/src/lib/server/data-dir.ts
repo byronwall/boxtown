@@ -8,7 +8,13 @@ export function resolveAppDataDir() {
   }
 
   const cwd = process.cwd();
-  const candidates = [path.join(cwd, "data"), path.join(cwd, "app", "data")];
+  const projectDir = path.basename(cwd) === "app" ? path.dirname(cwd) : cwd;
+  const localDataDir = path.join(projectDir, "pgm", "data");
+  const candidates = [
+    localDataDir,
+    path.join(cwd, "data"),
+    path.join(cwd, "app", "data"),
+  ];
 
   for (const candidate of candidates) {
     if (existsSync(candidate)) {
@@ -16,5 +22,5 @@ export function resolveAppDataDir() {
     }
   }
 
-  return candidates[0];
+  return localDataDir;
 }

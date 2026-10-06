@@ -2,6 +2,17 @@
 
 Notable changes to Product Grid Management, newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
 
+## 2026-10-05
+
+### Added
+
+- The repo includes a cloud copy of Project Mgmt Grid, with archived nodes, history, and images, in `pgm/data`.
+
+### Changed
+
+- `pgm viewer` uses `./pgm/data` by default. Use `--data-dir` to select another folder.
+- The development app checks `pgm/data` before other default data folders. `APP_DATA_DIR` still takes priority.
+
 ## 2026-10-02
 
 ### Added

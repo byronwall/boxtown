@@ -42,7 +42,7 @@ export async function main(argv = process.argv, io = defaultIo()) {
 
   if (parsed.command[0] === "viewer") {
     if (parsed.command.length !== 1 || parsed.positionals.length > 0) {
-      throw new CliError("Usage: pgm viewer --data-dir <folder> [--no-open] [--port <port>]", exitCodes.usage);
+      throw new CliError("Usage: pgm viewer [--data-dir <folder>] [--no-open] [--port <port>]", exitCodes.usage);
     }
     const { runViewer } = await import("../build/local-runtime.mjs");
     await runViewer(parsed.options, io);
@@ -1499,7 +1499,7 @@ function helpText() {
   return `Product Grid CLI
 
 Usage:
-  pgm viewer --data-dir <folder> [--no-open] [--port <port>]
+  pgm viewer [--data-dir <folder>] [--no-open] [--port <port>]
   pgm project list --local <folder> [--json]
   pgm node list --local <folder> --project <id> [--json]
   pgm image list <node-id> --local <folder> --project <id> [--json]

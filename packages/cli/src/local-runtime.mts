@@ -36,7 +36,7 @@ const tokenScopes = "project:read|project:write|node:read|node:write|image:read|
 const lockName = ".pgm-local-runtime.json";
 
 export async function runViewer(options: RuntimeOptions, io: Io) {
-  const inputDataDir = requireString(options.dataDir, "Use --data-dir <folder> to select local project data.");
+  const inputDataDir = requireString(options.dataDir ?? "pgm/data", "Use --data-dir <folder> to select local project data.");
   const runtimeEntry = path.join(runtimeDir, "server", "index.mjs");
   await stat(runtimeEntry).catch(() => {
     throw new Error("The packaged viewer runtime is missing. Reinstall pgm or run `pnpm pack` from the PGM checkout.");

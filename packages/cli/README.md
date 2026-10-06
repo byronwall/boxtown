@@ -26,11 +26,13 @@ pgm update
 
 ## Local Viewer
 
-Start the packaged viewer with an explicit data folder:
+Start the packaged viewer from your project directory:
 
 ```bash
-pgm viewer --data-dir ./product-grid-data
+pgm viewer
 ```
+
+The viewer uses `./pgm/data` in the current directory and creates it if needed. Use `--data-dir <folder>` to select another folder.
 
 The command opens the viewer in your browser and stays open in the terminal. It prints the local URL and data folder. Press Ctrl+C to stop it; project files and images stay in the folder.
 
@@ -45,7 +47,7 @@ Use a separate folder for each set of local projects. One viewer process can own
 Project, node, and image commands use the same folder with `--local`. They reuse an open viewer. If no viewer is open, pgm starts a temporary local runtime and stops it after the command.
 
 ```bash
-pgm project list --local ./product-grid-data --json
+pgm project list --local ./pgm/data --json
 pgm project create "New Product Site" --local ./product-grid-data --json
 pgm node list --local ./product-grid-data --project <project-id> --json
 pgm node update <node-id> --local ./product-grid-data --project <project-id> --title "Updated title" --json
