@@ -625,7 +625,11 @@ function SpatialMapNode(props: {
       aspect: imageAspect()?.src === firstImage()?.src ? imageAspect()?.aspect : null,
     }),
   );
-  const imageHeight = () => (hasImages() ? imageFrame().height : 0);
+  const hasSideImage = () => hasImages() && imageFrame().placement === "side";
+  const hasTopImage = () => hasImages() && imageFrame().placement === "top";
+  // A side image moves the label and type into the column to its right.
+  const textLeft = () => (hasSideImage() ? imageFrame().x + imageFrame().width : 0);
+  const textCenterX = () => (textLeft() + props.item.node.width) / 2;
   const readImageAspect = (element: HTMLImageElement, src: string) => {
     if (element.naturalWidth > 0 && element.naturalHeight > 0) {
       setImageAspect({ src, aspect: element.naturalWidth / element.naturalHeight });
@@ -646,9 +650,11 @@ function SpatialMapNode(props: {
     props.item.node.height -
     Math.max(NODE_LABEL_MIN_BOTTOM_PADDING, props.item.node.height * NODE_LABEL_BOTTOM_PADDING_RATIO);
   const labelAreaTop = () =>
-    hasImages() ? NODE_LABEL_TOP_PADDING + imageHeight() + NODE_LABEL_IMAGE_GAP : NODE_LABEL_TOP_PADDING;
+    hasTopImage()
+      ? imageFrame().y + imageFrame().height + NODE_LABEL_IMAGE_GAP
+      : NODE_LABEL_TOP_PADDING;
   const labelMaxWidth = createMemo(() =>
-    Math.max(24, props.item.node.width - NODE_LABEL_HORIZONTAL_PADDING * 2),
+    Math.max(24, props.item.node.width - textLeft() - NODE_LABEL_HORIZONTAL_PADDING * 2),
   );
   const maxReadableTextScale = createMemo(() =>
     getMaxReadableTextScale({
@@ -667,11 +673,18 @@ function SpatialMapNode(props: {
     Math.max(1, labelAreaBottom() - labelAreaTop());
   const labelFontSize = createMemo(() => {
     const zoomAdjustedFontSize = props.item.node.fontSize * textScale();
-
-    return Math.min(
+    const oneLineFontSize = Math.min(
       zoomAdjustedFontSize,
       availableLabelHeight() / NODE_LABEL_LINE_HEIGHT,
     );
+    const oneLineCharacters = labelMaxWidth() / (oneLineFontSize * SVG_TEXT_WIDTH_FACTOR);
+    if (props.item.node.label.length <= oneLineCharacters) {
+      return oneLineFontSize;
+    }
+
+    // The label wraps to at least two lines, so size it for two lines instead
+    // of letting the second line run into the type text below.
+    return Math.min(oneLineFontSize, availableLabelHeight() / (NODE_LABEL_LINE_HEIGHT * 2));
   });
   const labelLineHeight = () => Math.ceil(labelFontSize() * NODE_LABEL_LINE_HEIGHT);
   const labelMaxLines = createMemo(() =>
@@ -818,9 +831,9 @@ function SpatialMapNode(props: {
           <foreignObject
             class="spatial-map-node-image-frame"
             x={imageFrame().x}
-            y="8"
+            y={imageFrame().y}
             width={imageFrame().width}
-            height={imageHeight()}
+            height={imageFrame().height}
           >
             <button
               type="button"
@@ -888,7 +901,7 @@ function SpatialMapNode(props: {
       </Show>
       <text
         class="label"
-        x={props.item.node.width / 2}
+        x={textCenterX()}
         y={labelStartY()}
         text-anchor="middle"
         font-size={String(labelFontSize())}
@@ -903,25 +916,25 @@ function SpatialMapNode(props: {
           "user-select": "none",
         }}
       >
-        <tspan x={props.item.node.width / 2} dy="0">
+        <tspan x={textCenterX()} dy="0">
           {labelLineAt(0)}
         </tspan>
-        <tspan x={props.item.node.width / 2} dy={labelLineHeight()}>
+        <tspan x={textCenterX()} dy={labelLineHeight()}>
           {labelLineAt(1)}
         </tspan>
-        <tspan x={props.item.node.width / 2} dy={labelLineHeight()}>
+        <tspan x={textCenterX()} dy={labelLineHeight()}>
           {labelLineAt(2)}
         </tspan>
-        <tspan x={props.item.node.width / 2} dy={labelLineHeight()}>
+        <tspan x={textCenterX()} dy={labelLineHeight()}>
           {labelLineAt(3)}
         </tspan>
-        <tspan x={props.item.node.width / 2} dy={labelLineHeight()}>
+        <tspan x={textCenterX()} dy={labelLineHeight()}>
           {labelLineAt(4)}
         </tspan>
       </text>
       <text
         class="meta"
-        x={props.item.node.width / 2}
+        x={textCenterX()}
         y={metaBaselineY()}
         text-anchor="middle"
         font-size={String(metaFontSize())}

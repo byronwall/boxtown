@@ -3,20 +3,20 @@
   "name": "Project Mgmt Grid",
   "description": "Blank project ready for grid editing, structure mapping, and future AI-assisted details.",
   "createdAt": "2026-04-29T15:53:08.833Z",
-  "updatedAt": "2026-10-07T02:17:29.703Z",
+  "updatedAt": "2026-10-07T02:19:48.880Z",
   "operationLog": [
     {
-      "id": "3300ec39-ed72-4215-838c-3cea11c330ce",
+      "id": "fcd48f08-0383-4ab7-ae1b-dab28ed62674",
       "kind": "node.metadata.updated",
       "actor": {
         "kind": "agent",
-        "id": "token:14bd4a",
-        "label": "Agent token ...14bd4a"
+        "id": "token:559011",
+        "label": "Agent token ...559011"
       },
-      "createdAt": "2026-10-07T02:17:29.703Z",
-      "summary": "Updated metadata for \"Reorder `new node` so type is under context\".",
+      "createdAt": "2026-10-07T02:19:48.880Z",
+      "summary": "Updated metadata for \"Consider showing image on left side to improve aspect ratio\".",
       "nodeIds": [
-        "feature-reorder-new-node-so-type-is-under-context"
+        "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
       ],
       "payload": {
         "state": {
@@ -991,8 +991,10 @@
                 "id": "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio",
                 "label": "Consider showing image on left side to improve aspect ratio",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Canvas nodes now choose between a top image band and a left image column (spatial-map-image-frame.ts). The layout with the larger preview wins, with a 1.25x bias toward top. Side images stop above the status badge, and the title and type center in the right column. Two-line titles also shrink to fit instead of overlapping the type text. Covered by spatial-map-image-frame.test.ts."
+                },
                 "context": "Basically two modes: top+bottom for image and text or left+right. Let image aspect ratio drive choice.  Goal is minimal whitespace and highest density possible.",
                 "rawContext": "Basically two modes: top+bottom for image and text or left+right. Let image aspect ratio drive choice.  Goal is minimal whitespace and highest density possible.",
                 "images": [
@@ -1012,6 +1014,34 @@
           }
         }
       }
+    },
+    {
+      "id": "4af21824-9933-462c-b9bd-3c889240b36e",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:559011",
+        "label": "Agent token ...559011"
+      },
+      "createdAt": "2026-10-07T02:19:48.864Z",
+      "summary": "Changed \"Consider showing image on left side to improve aspect ratio\" status to implemented.",
+      "nodeIds": [
+        "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
+      ]
+    },
+    {
+      "id": "3300ec39-ed72-4215-838c-3cea11c330ce",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:14bd4a",
+        "label": "Agent token ...14bd4a"
+      },
+      "createdAt": "2026-10-07T02:17:29.703Z",
+      "summary": "Updated metadata for \"Reorder `new node` so type is under context\".",
+      "nodeIds": [
+        "feature-reorder-new-node-so-type-is-under-context"
+      ]
     },
     {
       "id": "8406e1e0-94e3-4e42-8d4d-db8f9b00cbd2",
@@ -4545,32 +4575,6 @@
       "summary": "Created \"Mutations are too slow waiting for server... need optimistic that syncs bumplessly with websocket\".",
       "nodeIds": [
         "feature-mutations-are-too-slow-waiting-for-server-need-optimistic-that-syncs-bumplessly-with-websocket"
-      ]
-    },
-    {
-      "id": "1a96f959-5e07-4907-8736-cf83a4078dba",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T13:15:45.898Z",
-      "summary": "Created \"Provide option to show all children on filtered nodes too\" under \"Global data/view filters\".",
-      "nodeIds": [
-        "task-provide-option-to-show-all-children-on-filtered-nodes-too",
-        "page-view-filters"
-      ]
-    },
-    {
-      "id": "d1d484df-e493-4942-9363-b0a7d80b6e2c",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T12:55:38.557Z",
-      "summary": "Created \"Add command to update `pgm`\" under \"CLI and agent interaction\".",
-      "nodeIds": [
-        "task-add-command-to-update-pgm",
-        "page-ingest-via-cli"
       ]
     }
   ]

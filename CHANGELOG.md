@@ -6,6 +6,8 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Changed
 
+- Canvas nodes show a tall or square image on the left with the title beside it, and keep wide images on top. The image shape picks whichever layout gives the larger preview.
+- A node title that needs two lines shrinks to fit them instead of running into the node type below.
 - The new node form puts Context directly under the title and Type below it, so the field you fill in most often comes first.
 
 ## 2026-10-05
