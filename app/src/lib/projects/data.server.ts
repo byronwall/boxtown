@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { copyFile, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rename, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { resolveAppDataDir } from "~/lib/server/data-dir";
@@ -883,6 +883,7 @@ export const deleteProjectNodeImageOnDisk = serializedMutation(async function de
     }),
     { force: true },
   );
+  await removeDirIfEmpty(getProjectNodeImageDir(input.projectId, input.nodeId));
 
   return nextRecord;
 });
@@ -1155,8 +1156,36 @@ export const deleteProjectNodeOnDisk = serializedMutation(async function deleteP
   });
 
   await writeProjectAndPublish(nextRecord);
+  await removeNodeImageFiles(
+    input.projectId,
+    current.spatialMap.nodes.filter((node) => nodeIdsToDelete.has(node.id)),
+  );
   return nextRecord;
 });
+
+// Image files live in a folder per node, so a deleted node's files would
+// otherwise stay on disk with nothing pointing at them.
+async function removeNodeImageFiles(projectId: string, nodes: SpatialMapData["nodes"]) {
+  for (const node of nodes) {
+    const images = node.images ?? [];
+    if (images.length === 0) continue;
+    for (const image of images) {
+      await rm(
+        getProjectNodeImageFilePath({ projectId, nodeId: node.id, filename: image.filename }),
+        { force: true },
+      ).catch(() => {});
+    }
+    await removeDirIfEmpty(getProjectNodeImageDir(projectId, node.id));
+  }
+}
+
+export async function removeDirIfEmpty(dir: string) {
+  try {
+    if ((await readdir(dir)).length === 0) await rmdir(dir);
+  } catch {
+    // Missing or still-used folders are fine to leave alone.
+  }
+}
 
 export const deleteProjectLinkOnDisk = serializedMutation(async function deleteProjectLinkOnDisk(
   input: DeleteProjectLinkInput,

@@ -3,20 +3,20 @@
   "name": "Project Mgmt Grid",
   "description": "Blank project ready for grid editing, structure mapping, and future AI-assisted details.",
   "createdAt": "2026-04-29T15:53:08.833Z",
-  "updatedAt": "2026-10-07T02:19:48.880Z",
+  "updatedAt": "2026-10-07T02:22:47.906Z",
   "operationLog": [
     {
-      "id": "fcd48f08-0383-4ab7-ae1b-dab28ed62674",
+      "id": "64327f8b-ddc7-4786-82c2-e0acc027f2f6",
       "kind": "node.metadata.updated",
       "actor": {
         "kind": "agent",
-        "id": "token:559011",
-        "label": "Agent token ...559011"
+        "id": "token:85073b",
+        "label": "Agent token ...85073b"
       },
-      "createdAt": "2026-10-07T02:19:48.880Z",
-      "summary": "Updated metadata for \"Consider showing image on left side to improve aspect ratio\".",
+      "createdAt": "2026-10-07T02:22:47.906Z",
+      "summary": "Updated metadata for \"Need a button to remove all \"dead\" images\".",
       "nodeIds": [
-        "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
+        "feature-need-a-button-to-remove-all-dead-images"
       ],
       "payload": {
         "state": {
@@ -971,8 +971,10 @@
                 "id": "feature-deleting-a-node-should-delete-its-images-too",
                 "label": "Deleting a node should delete its images too",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "test"
+                },
                 "context": "",
                 "rawContext": "",
                 "images": []
@@ -981,8 +983,10 @@
                 "id": "feature-need-a-button-to-remove-all-dead-images",
                 "label": "Need a button to remove all \"dead\" images",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "The project list has a Remove unused images button (image-off icon) per project. The dialog counts image files that no node references, archived nodes included, with their size, and removes them after confirmation (image-cleanup.server.ts). Cleanup runs in the serialized mutation queue so in-flight uploads are never treated as unused."
+                },
                 "context": "There are images that are not linked anywhere else.",
                 "rawContext": "There are images that are not linked anywhere else.",
                 "images": []
@@ -1014,6 +1018,62 @@
           }
         }
       }
+    },
+    {
+      "id": "f2511a53-85a7-4460-b65c-e86d6d414baf",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:85073b",
+        "label": "Agent token ...85073b"
+      },
+      "createdAt": "2026-10-07T02:22:47.899Z",
+      "summary": "Changed \"Need a button to remove all \"dead\" images\" status to implemented.",
+      "nodeIds": [
+        "feature-need-a-button-to-remove-all-dead-images"
+      ]
+    },
+    {
+      "id": "4ed109bd-d486-4b10-91d5-5086fbcfc9cb",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:6cc4e1",
+        "label": "Agent token ...6cc4e1"
+      },
+      "createdAt": "2026-10-07T02:22:35.135Z",
+      "summary": "Updated metadata for \"Deleting a node should delete its images too\".",
+      "nodeIds": [
+        "feature-deleting-a-node-should-delete-its-images-too"
+      ]
+    },
+    {
+      "id": "a69f2038-d00d-46c2-9b63-620789b32737",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:6cc4e1",
+        "label": "Agent token ...6cc4e1"
+      },
+      "createdAt": "2026-10-07T02:22:35.127Z",
+      "summary": "Changed \"Deleting a node should delete its images too\" status to implemented.",
+      "nodeIds": [
+        "feature-deleting-a-node-should-delete-its-images-too"
+      ]
+    },
+    {
+      "id": "fcd48f08-0383-4ab7-ae1b-dab28ed62674",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:559011",
+        "label": "Agent token ...559011"
+      },
+      "createdAt": "2026-10-07T02:19:48.880Z",
+      "summary": "Updated metadata for \"Consider showing image on left side to improve aspect ratio\".",
+      "nodeIds": [
+        "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
+      ]
     },
     {
       "id": "4af21824-9933-462c-b9bd-3c889240b36e",
@@ -4525,56 +4585,6 @@
       "summary": "Deleted \"Add a `commands` view\".",
       "nodeIds": [
         "page-add-a-command-view"
-      ]
-    },
-    {
-      "id": "4dc2485d-540b-42cc-bf5e-df75d937602e",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T22:45:37.570Z",
-      "summary": "Created \"Filter needs to do an AND when combining status and type.\" under \"Global data/view filters\".",
-      "nodeIds": [
-        "task-filter-needs-to-do-an-and-when-combining-status-and-type",
-        "page-view-filters"
-      ]
-    },
-    {
-      "id": "6d9168bc-aa35-48e8-92e2-0c5ba3ac3a8d",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T14:47:17.120Z",
-      "summary": "Created \"Additional feedback from codex\" under \"CLI and agent interaction\".",
-      "nodeIds": [
-        "page-additional-feedback-from-codex",
-        "page-ingest-via-cli"
-      ]
-    },
-    {
-      "id": "f4b213e6-4cb1-4d2b-bd8d-b4392e178259",
-      "kind": "node.type.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T13:16:17.723Z",
-      "summary": "Changed \"Mutations are too slow waiting for server... need optimistic that syncs bumplessly with websocket\" type to task.",
-      "nodeIds": [
-        "feature-mutations-are-too-slow-waiting-for-server-need-optimistic-that-syncs-bumplessly-with-websocket"
-      ]
-    },
-    {
-      "id": "96f81a37-1b15-4d86-a907-a9608ae335bf",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T13:16:09.771Z",
-      "summary": "Created \"Mutations are too slow waiting for server... need optimistic that syncs bumplessly with websocket\".",
-      "nodeIds": [
-        "feature-mutations-are-too-slow-waiting-for-server-need-optimistic-that-syncs-bumplessly-with-websocket"
       ]
     }
   ]
