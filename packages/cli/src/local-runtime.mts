@@ -1,10 +1,33 @@
 import { spawn } from "node:child_process";
-import { createHash, randomUUID } from "node:crypto";
-import { link, mkdir, readFile, realpath, rename, stat, unlink, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, realpath, stat } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  clearStaleRecord,
+  createOwnership,
+  getFolderGuardPort,
+  isPidAlive,
+  lockName,
+  onShutdownSignal,
+  removeOwnedRecord,
+  signalExitCode,
+  tryReadRecord,
+  withFolderGuard,
+  writeOwnership,
+  type RuntimeRecord,
+} from "./local-runtime-records.mjs";
+
+export {
+  createOwnership,
+  getFolderGuardPort,
+  removeOwnedRecord,
+  withFolderGuard,
+  writeOwnership,
+  type RuntimeRecord,
+};
 
 type Io = {
   stdout: { write: (value: string) => void };
@@ -19,21 +42,9 @@ type RuntimeOptions = {
   port?: string | boolean;
 };
 
-export type RuntimeRecord = {
-  id: string;
-  pid: number;
-  childPid?: number;
-  dataDir: string;
-  token: string;
-  url: string;
-  mode: "viewer" | "command";
-  state: "starting" | "ready" | "stopping";
-};
-
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const runtimeDir = path.join(packageRoot, "runtime");
 const tokenScopes = "project:read|project:write|node:read|node:write|image:read|image:write";
-const lockName = ".pgm-local-runtime.json";
 
 export async function runViewer(options: RuntimeOptions, io: Io) {
   const inputDataDir = requireString(options.dataDir ?? "pgm/data", "Use --data-dir <folder> to select local project data.");
@@ -55,10 +66,7 @@ export async function runViewer(options: RuntimeOptions, io: Io) {
     activeSignal = signal;
     child?.kill("SIGTERM");
   };
-  const onInterrupt = () => onSignal("SIGINT");
-  const onTerminate = () => onSignal("SIGTERM");
-  process.on("SIGINT", onInterrupt);
-  process.on("SIGTERM", onTerminate);
+  const removeSignalHandlers = onShutdownSignal(onSignal);
   let recordWritten = false;
   const record: RuntimeRecord = {
     id: runtimeId,
@@ -72,15 +80,8 @@ export async function runViewer(options: RuntimeOptions, io: Io) {
   };
 
   try {
-    try {
-      await withFolderGuard(dataDir, () => createOwnership(recordPath, record));
-      recordWritten = true;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "EEXIST") {
-        throw new Error(`A PGM viewer already owns ${dataDir}. Stop it before starting another viewer.`);
-      }
-      throw error;
-    }
+    await claimViewerOwnership(recordPath, record, io.stderr);
+    recordWritten = true;
 
     let startupError: Error | null = null;
 
@@ -121,22 +122,46 @@ export async function runViewer(options: RuntimeOptions, io: Io) {
       }
     }
     const code = await waitForChild(child);
-    if (activeSignal === "SIGINT") process.exitCode = 130;
-    else if (activeSignal === "SIGTERM") process.exitCode = 143;
+    if (activeSignal) process.exitCode = signalExitCode(activeSignal);
     else if (code !== 0) throw new Error(`Local viewer stopped with exit code ${code ?? 1}.`);
   } catch (error) {
     if (!activeSignal) throw error;
-    process.exitCode = activeSignal === "SIGINT" ? 130 : 143;
+    process.exitCode = signalExitCode(activeSignal);
   } finally {
-    process.off("SIGINT", onInterrupt);
-    process.off("SIGTERM", onTerminate);
+    removeSignalHandlers();
     if (child) {
       record.state = "stopping";
       await writeOwnership(recordPath, record).catch(() => {});
     }
-    if (child && child.exitCode === null) await stopChild(child);
+    if (child && !hasExited(child)) await stopChild(child);
     if (recordWritten) await removeOwnedRecord(recordPath, runtimeId);
   }
+}
+
+// A record left by a viewer that was killed or lost its terminal would block
+// every later start, so clear it when its owner process is gone.
+export async function claimViewerOwnership(recordPath: string, record: RuntimeRecord, stderr: Io["stderr"]) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await withFolderGuard(record.dataDir, () => createOwnership(recordPath, record));
+      return;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+    }
+
+    const existing = await tryReadRecord(recordPath);
+    if (!existing) {
+      throw new Error(`${recordPath} cannot be read. Delete it if no PGM viewer or command is running for this folder.`);
+    }
+    if (isPidAlive(existing.pid)) {
+      throw new Error(existing.mode === "viewer"
+        ? `A PGM viewer is already running for ${record.dataDir}${existing.url ? ` at ${existing.url}/` : ""} (process ${existing.pid}). Stop it before starting another viewer.`
+        : `A pgm command is using ${record.dataDir} (process ${existing.pid}). Retry when it finishes.`);
+    }
+    await clearStaleRecord(recordPath, existing, stderr);
+    stderr.write("Removed a stale viewer record left by a viewer that did not shut down.\n");
+  }
+  throw new Error(`Another process claimed ${record.dataDir} while the viewer was starting. Retry shortly.`);
 }
 
 export function startRuntime(entry: string, dataDir: string, token: string, port: number, runtimeId: string, io: Io) {
@@ -206,7 +231,7 @@ export async function waitUntilReady(url: string, child: ReturnType<typeof spawn
   child.stdout?.on("data", collect);
   child.stderr?.on("data", collect);
   for (let attempt = 0; attempt < 60; attempt += 1) {
-    if (child.exitCode !== null) throw new Error(`Local viewer exited before readiness. ${output}`);
+    if (hasExited(child)) throw new Error(`Local viewer exited before readiness. ${output}`);
     try {
       const response = await fetch(`${url}/`, { signal: AbortSignal.timeout(1000) });
       if (response.ok && output.includes(`Listening on ${url}`)) return;
@@ -218,15 +243,22 @@ export async function waitUntilReady(url: string, child: ReturnType<typeof spawn
 }
 
 async function waitForChild(child: ReturnType<typeof spawn>) {
-  if (child.exitCode !== null) return child.exitCode;
+  if (hasExited(child)) return child.exitCode;
   return new Promise<number | null>((resolve, reject) => {
     child.once("error", reject);
     child.once("close", (code) => resolve(code));
   });
 }
 
+// A child killed by a signal (for example the SIGHUP a closed terminal sends
+// to the whole process group) keeps exitCode null and sets signalCode, and its
+// "close" event has already fired. Waiting on it again would never settle.
+export function hasExited(child: ReturnType<typeof spawn>) {
+  return child.exitCode !== null || child.signalCode !== null;
+}
+
 export async function stopChild(child: ReturnType<typeof spawn>) {
-  if (child.exitCode !== null) return;
+  if (hasExited(child)) return;
   child.kill("SIGTERM");
   let timeout: NodeJS.Timeout | undefined;
   const exited = waitForChild(child).catch(() => undefined);
@@ -235,7 +267,7 @@ export async function stopChild(child: ReturnType<typeof spawn>) {
     timeout.unref();
   });
   try {
-    if (await Promise.race([exited, timedOut]) === "timeout" && child.exitCode === null) {
+    if (await Promise.race([exited, timedOut]) === "timeout" && !hasExited(child)) {
       child.kill("SIGKILL");
       await exited;
     }
@@ -255,60 +287,6 @@ async function openBrowser(url: string, env: NodeJS.ProcessEnv) {
     browser.once("error", reject);
     browser.once("close", (code) => code === 0 ? resolve() : reject(new Error(`${command} exited with ${code ?? 1}.`)));
   });
-}
-
-export async function removeOwnedRecord(recordPath: string, runtimeId: string) {
-  await withFolderGuard(path.dirname(recordPath), async () => {
-    try {
-      const current = JSON.parse(await readFile(recordPath, "utf8")) as Partial<RuntimeRecord>;
-      if (current.id === runtimeId) await unlink(recordPath);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    }
-  });
-}
-
-export async function createOwnership(recordPath: string, record: RuntimeRecord) {
-  const tempPath = `${recordPath}.${process.pid}.${randomUUID()}.tmp`;
-  try {
-    await writeFile(tempPath, JSON.stringify(record), { flag: "wx", mode: 0o600 });
-    await link(tempPath, recordPath);
-  } finally {
-    await unlink(tempPath).catch(() => {});
-  }
-}
-
-export async function writeOwnership(recordPath: string, record: RuntimeRecord) {
-  const tempPath = `${recordPath}.${process.pid}.${randomUUID()}.tmp`;
-  try {
-    await writeFile(tempPath, JSON.stringify(record), { flag: "wx", mode: 0o600 });
-    await rename(tempPath, recordPath);
-  } finally {
-    await unlink(tempPath).catch(() => {});
-  }
-}
-
-export async function withFolderGuard<T>(dataDir: string, action: () => Promise<T>): Promise<T> {
-  const port = getFolderGuardPort(dataDir);
-  const guard = net.createServer();
-  await new Promise<void>((resolve, reject) => {
-    guard.once("error", (error) => reject(
-      (error as NodeJS.ErrnoException).code === "EADDRINUSE"
-        ? new Error("Another local runtime is changing folder ownership. Retry shortly.")
-        : error,
-    ));
-    guard.listen(port, "127.0.0.1", resolve);
-  });
-  try {
-    return await action();
-  } finally {
-    await new Promise<void>((resolve) => guard.close(() => resolve()));
-  }
-}
-
-export function getFolderGuardPort(dataDir: string) {
-  const digest = createHash("sha256").update(dataDir).digest();
-  return 44000 + digest.readUInt32BE(0) % 1000;
 }
 
 function requireString(value: string | boolean | undefined, message: string) {

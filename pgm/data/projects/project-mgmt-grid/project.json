@@ -3,23 +3,21 @@
   "name": "Project Mgmt Grid",
   "description": "Blank project ready for grid editing, structure mapping, and future AI-assisted details.",
   "createdAt": "2026-04-29T15:53:08.833Z",
-  "updatedAt": "2026-10-07T02:06:32.512Z",
+  "updatedAt": "2026-10-07T02:27:56.886Z",
   "operationLog": [
     {
-      "id": "2a3c9cef-0bba-4fa4-976b-e52fd0f2d139",
-      "kind": "node.images.added",
+      "id": "4201ef95-55ba-47d8-a34c-25c8620e9ab8",
+      "kind": "node.metadata.updated",
       "actor": {
-        "kind": "human"
+        "kind": "agent",
+        "id": "token:79b41d",
+        "label": "Agent token ...79b41d"
       },
-      "createdAt": "2026-10-07T02:06:32.516Z",
-      "summary": "Added 1 images to \"Consider showing image on left side to improve aspect ratio\".",
+      "createdAt": "2026-10-07T02:27:56.886Z",
+      "summary": "Updated metadata for \"Issues with server closing and not clearing the old manifest file\".",
       "nodeIds": [
-        "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
+        "feature-issues-with-server-closing-and-not-clearing-the-old-manifest-file"
       ],
-      "metadata": {
-        "imageCount": "1",
-        "clientMutationId": "a802287c-4adf-4821-a068-a0e09b7a721b"
-      },
       "payload": {
         "state": {
           "nodeMetadataSchema": [
@@ -941,8 +939,10 @@
                 "id": "feature-reorder-new-node-so-type-is-under-context",
                 "label": "Reorder `new node` so type is under context",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "The new node form now orders fields as title, Context, then Type (SpatialMapChildNodePlaceholder.tsx). Tab order follows the same sequence."
+                },
                 "context": "I rarely change type but nearly always add context",
                 "rawContext": "I rarely change type but nearly always add context",
                 "images": [
@@ -961,8 +961,10 @@
                 "id": "feature-issues-with-server-closing-and-not-clearing-the-old-manifest-file",
                 "label": "Issues with server closing and not clearing the old manifest file",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Two fixes in packages/cli. (1) Shutdown cleanup now treats a server child killed by a signal as exited (signalCode set, exitCode null). Before, cleanup waited on a close event that had already fired, so the process exited without removing .pgm-local-runtime.json; this happened when closing the terminal and whenever the server died from the signal itself. SIGHUP is now handled alongside SIGINT and SIGTERM. (2) pgm viewer clears a record whose owner process is gone (stopping a verified orphan server first) instead of refusing to start, and names the URL of a viewer that is still running. Verified end to end with SIGHUP, SIGKILL and Ctrl+C; covered by new CLI tests."
+                },
                 "context": "I usually close via CTRL C so make that work",
                 "rawContext": "I usually close via CTRL C so make that work",
                 "images": []
@@ -971,8 +973,10 @@
                 "id": "feature-deleting-a-node-should-delete-its-images-too",
                 "label": "Deleting a node should delete its images too",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "test"
+                },
                 "context": "",
                 "rawContext": "",
                 "images": []
@@ -981,8 +985,10 @@
                 "id": "feature-need-a-button-to-remove-all-dead-images",
                 "label": "Need a button to remove all \"dead\" images",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "The project list has a Remove unused images button (image-off icon) per project. The dialog counts image files that no node references, archived nodes included, with their size, and removes them after confirmation (image-cleanup.server.ts). Cleanup runs in the serialized mutation queue so in-flight uploads are never treated as unused."
+                },
                 "context": "There are images that are not linked anywhere else.",
                 "rawContext": "There are images that are not linked anywhere else.",
                 "images": []
@@ -991,8 +997,10 @@
                 "id": "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio",
                 "label": "Consider showing image on left side to improve aspect ratio",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Canvas nodes now choose between a top image band and a left image column (spatial-map-image-frame.ts). The layout with the larger preview wins, with a 1.25x bias toward top. Side images stop above the status badge, and the title and type center in the right column. Two-line titles also shrink to fit instead of overlapping the type text. Covered by spatial-map-image-frame.test.ts."
+                },
                 "context": "Basically two modes: top+bottom for image and text or left+right. Let image aspect ratio drive choice.  Goal is minimal whitespace and highest density possible.",
                 "rawContext": "Basically two modes: top+bottom for image and text or left+right. Let image aspect ratio drive choice.  Goal is minimal whitespace and highest density possible.",
                 "images": [
@@ -1011,6 +1019,148 @@
             "links": []
           }
         }
+      }
+    },
+    {
+      "id": "2a16d88a-0f0d-4054-ae5e-283308607ea4",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:79b41d",
+        "label": "Agent token ...79b41d"
+      },
+      "createdAt": "2026-10-07T02:27:56.877Z",
+      "summary": "Changed \"Issues with server closing and not clearing the old manifest file\" status to implemented.",
+      "nodeIds": [
+        "feature-issues-with-server-closing-and-not-clearing-the-old-manifest-file"
+      ]
+    },
+    {
+      "id": "64327f8b-ddc7-4786-82c2-e0acc027f2f6",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:85073b",
+        "label": "Agent token ...85073b"
+      },
+      "createdAt": "2026-10-07T02:22:47.906Z",
+      "summary": "Updated metadata for \"Need a button to remove all \"dead\" images\".",
+      "nodeIds": [
+        "feature-need-a-button-to-remove-all-dead-images"
+      ]
+    },
+    {
+      "id": "f2511a53-85a7-4460-b65c-e86d6d414baf",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:85073b",
+        "label": "Agent token ...85073b"
+      },
+      "createdAt": "2026-10-07T02:22:47.899Z",
+      "summary": "Changed \"Need a button to remove all \"dead\" images\" status to implemented.",
+      "nodeIds": [
+        "feature-need-a-button-to-remove-all-dead-images"
+      ]
+    },
+    {
+      "id": "4ed109bd-d486-4b10-91d5-5086fbcfc9cb",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:6cc4e1",
+        "label": "Agent token ...6cc4e1"
+      },
+      "createdAt": "2026-10-07T02:22:35.135Z",
+      "summary": "Updated metadata for \"Deleting a node should delete its images too\".",
+      "nodeIds": [
+        "feature-deleting-a-node-should-delete-its-images-too"
+      ]
+    },
+    {
+      "id": "a69f2038-d00d-46c2-9b63-620789b32737",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:6cc4e1",
+        "label": "Agent token ...6cc4e1"
+      },
+      "createdAt": "2026-10-07T02:22:35.127Z",
+      "summary": "Changed \"Deleting a node should delete its images too\" status to implemented.",
+      "nodeIds": [
+        "feature-deleting-a-node-should-delete-its-images-too"
+      ]
+    },
+    {
+      "id": "fcd48f08-0383-4ab7-ae1b-dab28ed62674",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:559011",
+        "label": "Agent token ...559011"
+      },
+      "createdAt": "2026-10-07T02:19:48.880Z",
+      "summary": "Updated metadata for \"Consider showing image on left side to improve aspect ratio\".",
+      "nodeIds": [
+        "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
+      ]
+    },
+    {
+      "id": "4af21824-9933-462c-b9bd-3c889240b36e",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:559011",
+        "label": "Agent token ...559011"
+      },
+      "createdAt": "2026-10-07T02:19:48.864Z",
+      "summary": "Changed \"Consider showing image on left side to improve aspect ratio\" status to implemented.",
+      "nodeIds": [
+        "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
+      ]
+    },
+    {
+      "id": "3300ec39-ed72-4215-838c-3cea11c330ce",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:14bd4a",
+        "label": "Agent token ...14bd4a"
+      },
+      "createdAt": "2026-10-07T02:17:29.703Z",
+      "summary": "Updated metadata for \"Reorder `new node` so type is under context\".",
+      "nodeIds": [
+        "feature-reorder-new-node-so-type-is-under-context"
+      ]
+    },
+    {
+      "id": "8406e1e0-94e3-4e42-8d4d-db8f9b00cbd2",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:14bd4a",
+        "label": "Agent token ...14bd4a"
+      },
+      "createdAt": "2026-10-07T02:17:29.688Z",
+      "summary": "Changed \"Reorder `new node` so type is under context\" status to implemented.",
+      "nodeIds": [
+        "feature-reorder-new-node-so-type-is-under-context"
+      ]
+    },
+    {
+      "id": "2a3c9cef-0bba-4fa4-976b-e52fd0f2d139",
+      "kind": "node.images.added",
+      "actor": {
+        "kind": "human"
+      },
+      "createdAt": "2026-10-07T02:06:32.516Z",
+      "summary": "Added 1 images to \"Consider showing image on left side to improve aspect ratio\".",
+      "nodeIds": [
+        "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
+      ],
+      "metadata": {
+        "imageCount": "1",
+        "clientMutationId": "a802287c-4adf-4821-a068-a0e09b7a721b"
       }
     },
     {
@@ -4441,132 +4591,6 @@
       "summary": "Deleted \"Allow filtering the global active nodes based on meta data or type\".",
       "nodeIds": [
         "task-allow-filtering-the-canvas-based-on-meta-data-or-type"
-      ]
-    },
-    {
-      "id": "c5704fc0-c8fa-437b-9b48-efa4c661c1fc",
-      "kind": "node.deleted",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-08T02:22:27.989Z",
-      "summary": "Deleted \"README should link to npm also\".",
-      "nodeIds": [
-        "task-readme-should-link-to-npm-also"
-      ]
-    },
-    {
-      "id": "e4cba018-bb67-421e-a64e-2444fca19057",
-      "kind": "node.deleted",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-08T02:21:40.845Z",
-      "summary": "Deleted \"Add a `commands` view\".",
-      "nodeIds": [
-        "page-add-a-command-view"
-      ]
-    },
-    {
-      "id": "4dc2485d-540b-42cc-bf5e-df75d937602e",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T22:45:37.570Z",
-      "summary": "Created \"Filter needs to do an AND when combining status and type.\" under \"Global data/view filters\".",
-      "nodeIds": [
-        "task-filter-needs-to-do-an-and-when-combining-status-and-type",
-        "page-view-filters"
-      ]
-    },
-    {
-      "id": "6d9168bc-aa35-48e8-92e2-0c5ba3ac3a8d",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T14:47:17.120Z",
-      "summary": "Created \"Additional feedback from codex\" under \"CLI and agent interaction\".",
-      "nodeIds": [
-        "page-additional-feedback-from-codex",
-        "page-ingest-via-cli"
-      ]
-    },
-    {
-      "id": "f4b213e6-4cb1-4d2b-bd8d-b4392e178259",
-      "kind": "node.type.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T13:16:17.723Z",
-      "summary": "Changed \"Mutations are too slow waiting for server... need optimistic that syncs bumplessly with websocket\" type to task.",
-      "nodeIds": [
-        "feature-mutations-are-too-slow-waiting-for-server-need-optimistic-that-syncs-bumplessly-with-websocket"
-      ]
-    },
-    {
-      "id": "96f81a37-1b15-4d86-a907-a9608ae335bf",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T13:16:09.771Z",
-      "summary": "Created \"Mutations are too slow waiting for server... need optimistic that syncs bumplessly with websocket\".",
-      "nodeIds": [
-        "feature-mutations-are-too-slow-waiting-for-server-need-optimistic-that-syncs-bumplessly-with-websocket"
-      ]
-    },
-    {
-      "id": "1a96f959-5e07-4907-8736-cf83a4078dba",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T13:15:45.898Z",
-      "summary": "Created \"Provide option to show all children on filtered nodes too\" under \"Global data/view filters\".",
-      "nodeIds": [
-        "task-provide-option-to-show-all-children-on-filtered-nodes-too",
-        "page-view-filters"
-      ]
-    },
-    {
-      "id": "d1d484df-e493-4942-9363-b0a7d80b6e2c",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T12:55:38.557Z",
-      "summary": "Created \"Add command to update `pgm`\" under \"CLI and agent interaction\".",
-      "nodeIds": [
-        "task-add-command-to-update-pgm",
-        "page-ingest-via-cli"
-      ]
-    },
-    {
-      "id": "cd37feb9-6602-4eee-8251-ea05979c4323",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T12:29:44.472Z",
-      "summary": "Created \"Allow filtering on last editor - human vs. agent\" under \"Global data/view filters\".",
-      "nodeIds": [
-        "task-allow-filtering-on-last-editor-human-vs-agent",
-        "page-view-filters"
-      ]
-    },
-    {
-      "id": "a90f6a17-54c8-4d69-9463-1548e3fa5223",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T12:27:16.526Z",
-      "summary": "Created \"Add nodes flow need to attribute to agent, not human\" under \"Agentic data flows\".",
-      "nodeIds": [
-        "page-add-nodes-flow-need-to-attribute-to-agent-not-human",
-        "page-agentic-data-flows"
       ]
     }
   ]

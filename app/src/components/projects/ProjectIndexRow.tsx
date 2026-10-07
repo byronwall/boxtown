@@ -5,6 +5,7 @@ import { Text } from "~/components/ui/text";
 import type { ProjectSummary } from "~/lib/projects/types";
 import { ProjectDeleteControl } from "./ProjectDeleteControl";
 import { ProjectExportControl } from "./ProjectExportControl";
+import { ProjectUnusedImagesControl } from "./ProjectUnusedImagesControl";
 
 type ProjectIndexRowProps = {
   project: ProjectSummary;
@@ -69,6 +70,7 @@ export function ProjectIndexRow(props: ProjectIndexRowProps) {
       </A>
       <HStack gap="1" pr="8px">
         <ProjectExportControl projectId={props.project.id} projectName={props.project.name} />
+        <ProjectUnusedImagesControl projectId={props.project.id} projectName={props.project.name} />
         <ProjectDeleteControl projectId={props.project.id} projectName={props.project.name} />
       </HStack>
     </Box>

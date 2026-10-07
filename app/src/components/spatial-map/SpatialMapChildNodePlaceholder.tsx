@@ -252,6 +252,28 @@ export function SpatialMapChildNodePlaceholder(props: {
         lineHeight="1"
         textTransform="none"
       >
+        <span>Context</span>
+        <Textarea
+          aria-label="New node context"
+          value={context()}
+          disabled={pending()}
+          placeholder="Optional context"
+          rows={4}
+          onInput={(event) => setContext(event.currentTarget.value)}
+        />
+      </Box>
+      <Box
+        as="label"
+        display="flex"
+        flexDirection="column"
+        gap="4px"
+        color="var(--spatial-map-copy-dim)"
+        fontSize="10px"
+        fontWeight="700"
+        letterSpacing="0.04em"
+        lineHeight="1"
+        textTransform="none"
+      >
         <span>Type</span>
         <SpatialMapSelect
           value={nodeType()}
@@ -275,28 +297,6 @@ export function SpatialMapChildNodePlaceholder(props: {
             )}
           </For>
         </SpatialMapSelect>
-      </Box>
-      <Box
-        as="label"
-        display="flex"
-        flexDirection="column"
-        gap="4px"
-        color="var(--spatial-map-copy-dim)"
-        fontSize="10px"
-        fontWeight="700"
-        letterSpacing="0.04em"
-        lineHeight="1"
-        textTransform="none"
-      >
-        <span>Context</span>
-        <Textarea
-          aria-label="New node context"
-          value={context()}
-          disabled={pending()}
-          placeholder="Optional context"
-          rows={4}
-          onInput={(event) => setContext(event.currentTarget.value)}
-        />
       </Box>
       <Box display="flex" gap="6px" justifyContent="flex-end">
         <Button

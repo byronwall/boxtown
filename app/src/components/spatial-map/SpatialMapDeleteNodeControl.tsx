@@ -210,8 +210,8 @@ export function SpatialMapDeleteNodeControl(props: SpatialMapDeleteNodeControlPr
         <VStack alignItems="stretch" gap="4">
           <Text fontSize="12px" lineHeight="1.45" color="var(--spatial-map-copy-dim)">
             {isSubtreeMode()
-              ? "This removes the node and every descendant. It cannot be undone. Press Delete without Cmd to remove only this node."
-              : "Deleting a node also removes its links. Its children are kept unless you delete them too."}
+              ? "This removes the node and every descendant, with their images. It cannot be undone. Press Delete without Cmd to remove only this node."
+              : "Deleting a node also removes its links and images. Its children are kept unless you delete them too."}
           </Text>
         </VStack>
       </SimpleDialog>

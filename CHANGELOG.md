@@ -2,6 +2,23 @@
 
 Notable changes to Product Grid Management, newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
 
+## 2026-10-06
+
+### Added
+
+- The project list has a Remove unused images button for each project. It shows how many image files no node uses, including archived nodes, and how much space they take, then deletes them after you confirm.
+
+### Changed
+
+- Deleting a node also deletes its image files, and its children's image files when you delete the children too.
+- Canvas nodes show a tall or square image on the left with the title beside it, and keep wide images on top. The image shape picks whichever layout gives the larger preview.
+- A node title that needs two lines shrinks to fit them instead of running into the node type below.
+- The new node form puts Context directly under the title and Type below it, so the field you fill in most often comes first.
+
+### Fixed
+
+- Closing the terminal running `pgm viewer`, or a server that stops on Ctrl+C by signal, no longer leaves `.pgm-local-runtime.json` behind. A new `pgm viewer` also replaces a record left by a viewer that was force-killed, instead of refusing to start.
+
 ## 2026-10-05
 
 ### Added
