@@ -3,21 +3,23 @@
   "name": "Project Mgmt Grid",
   "description": "Blank project ready for grid editing, structure mapping, and future AI-assisted details.",
   "createdAt": "2026-04-29T15:53:08.833Z",
-  "updatedAt": "2026-10-06T03:52:33.536Z",
+  "updatedAt": "2026-10-07T02:06:32.512Z",
   "operationLog": [
     {
-      "id": "5a558d31-a39d-4a17-be2d-183990a62fdc",
-      "kind": "node.metadata.updated",
+      "id": "2a3c9cef-0bba-4fa4-976b-e52fd0f2d139",
+      "kind": "node.images.added",
       "actor": {
-        "kind": "agent",
-        "id": "token:5403e8",
-        "label": "Agent token ...5403e8"
+        "kind": "human"
       },
-      "createdAt": "2026-10-06T03:52:33.536Z",
-      "summary": "Updated metadata for \"Zoom resets when tab gets focus again\".",
+      "createdAt": "2026-10-07T02:06:32.516Z",
+      "summary": "Added 1 images to \"Consider showing image on left side to improve aspect ratio\".",
       "nodeIds": [
-        "feature-zoom-resets-when-tab-gets-focus-again"
+        "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
       ],
+      "metadata": {
+        "imageCount": "1",
+        "clientMutationId": "a802287c-4adf-4821-a068-a0e09b7a721b"
+      },
       "payload": {
         "state": {
           "nodeMetadataSchema": [
@@ -117,7 +119,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "page-status-reporting-is-poor-needs-to-be-global",
@@ -131,18 +134,6 @@
                 "rawContext": "",
                 "images": [],
                 "archived": true
-              },
-              {
-                "id": "page-allow-multiple-selection",
-                "label": "Allow multiple selection",
-                "type": "task",
-                "status": "deprecated",
-                "metadata": {
-                  "implementation": "Closed at Byron’s request. This item referred to the removed Q&A view; no replacement work is required."
-                },
-                "context": "",
-                "rawContext": "",
-                "images": []
               },
               {
                 "id": "page-suggestions-after-processing",
@@ -258,7 +249,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "page-breadcrumb-is-really-nice-in-the-tree-view",
@@ -270,7 +262,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "page-show-active-header-in-toc-view",
@@ -282,7 +275,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "page-i-really-want-to-type-to-filter-in-here",
@@ -294,7 +288,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "page-likely-need-web-sockets-so-cli-updates-are-immediate-in-client",
@@ -319,7 +314,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "page-allow-setting-the-default-type",
@@ -331,7 +327,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "feature-show-a-small-line-or-link-to-the-parent-task",
@@ -364,7 +361,8 @@
                     "size": 23556,
                     "createdAt": "2026-05-01T13:11:04.432Z"
                   }
-                ]
+                ],
+                "archived": true
               },
               {
                 "id": "page-click-opens-the-zoom-modal",
@@ -378,31 +376,6 @@
                 "rawContext": "",
                 "images": [],
                 "archived": true
-              },
-              {
-                "id": "page-need-to-try-harder-to-render-a-useful-preview",
-                "label": "Need to try harder to render a useful preview",
-                "type": "task",
-                "status": "planned",
-                "metadata": {
-                  "implementation": "Consider aspect ratio range of zooms, allow width to vary some"
-                },
-                "context": "",
-                "rawContext": "",
-                "images": []
-              },
-              {
-                "id": "page-how-to-convert-tasks-into-features",
-                "label": "How to convert tasks into features?",
-                "type": "task",
-                "status": "deprecated",
-                "metadata": {
-                  "purpose": "Some tasks are just \"go do it\".  Others are very useful knowledge about features that now exist.  What's best?",
-                  "implementation": "Original thought was that things switch from `planned` to `implemented`.  How to actually do it?"
-                },
-                "context": "",
-                "rawContext": "",
-                "images": []
               },
               {
                 "id": "page-needs-to-work-on-an-existing-node-image-some-picker",
@@ -460,7 +433,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "feature-ensure-new-node-is-added-to-isolated-if-no-selection",
@@ -483,7 +457,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "task-pgm-cli-bug-report-metadata-persistence-and-stdout-edge-cases",
@@ -509,7 +484,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "task-app-should-expose-prompts-and-things-to-paste-into-agents",
@@ -560,7 +536,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "task-allow-dragging-an-image-on-the-image-list-to-add-one-more",
@@ -622,7 +599,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "page-add-check-for-using-latest-version-of-cli-show-update-command",
@@ -697,7 +675,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "task-add-command-to-update-pgm",
@@ -735,7 +714,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "task-filter-needs-to-do-an-and-when-combining-status-and-type",
@@ -786,17 +766,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
-              },
-              {
-                "id": "feature-is-it-possible-actually-overlap-nodes-by-depth-mahjong-style",
-                "label": "Is it possible actually overlap nodes by depth = Mahjong style",
-                "type": "feature",
-                "status": "planned",
-                "metadata": {},
-                "context": "",
-                "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "feature-delete-all-option-would-be-nice",
@@ -819,7 +790,8 @@
                 },
                 "context": "",
                 "rawContext": "",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "feature-need-a-distinct-clear-filters-or-reset-option",
@@ -831,7 +803,8 @@
                 },
                 "context": "When I archived all filtered items, the filter did not show in the list.",
                 "rawContext": "When I archived all filtered items, the filter did not show in the list.",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "feature-sidebar-visuals-are-just-a-mess-need-a-cleansing-pass",
@@ -879,7 +852,8 @@
                 },
                 "context": "This seems to be a very common action for me",
                 "rawContext": "This seems to be a very common action for me",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "feature-grid-view-has-layout-shift-when-selecting-all",
@@ -901,7 +875,8 @@
                     "size": 580101,
                     "createdAt": "2026-10-01T02:18:53.158Z"
                   }
-                ]
+                ],
+                "archived": true
               },
               {
                 "id": "feature-zoom-resets-when-tab-gets-focus-again",
@@ -913,7 +888,8 @@
                 },
                 "context": "Needs to be bumpless.  Ideally zoom and pan are also in the URL so there is no shift on reload.",
                 "rawContext": "Needs to be bumpless.  Ideally zoom and pan are also in the URL so there is no shift on reload.",
-                "images": []
+                "images": [],
+                "archived": true
               },
               {
                 "id": "feature-context-really-needs-to-be-edit-in-place",
@@ -958,7 +934,8 @@
                     "size": 94673,
                     "createdAt": "2026-10-02T00:59:25.216Z"
                   }
-                ]
+                ],
+                "archived": true
               },
               {
                 "id": "feature-reorder-new-node-so-type-is-under-context",
@@ -979,12 +956,232 @@
                     "createdAt": "2026-10-02T03:17:13.368Z"
                   }
                 ]
+              },
+              {
+                "id": "feature-issues-with-server-closing-and-not-clearing-the-old-manifest-file",
+                "label": "Issues with server closing and not clearing the old manifest file",
+                "type": "feature",
+                "status": "planned",
+                "metadata": {},
+                "context": "I usually close via CTRL C so make that work",
+                "rawContext": "I usually close via CTRL C so make that work",
+                "images": []
+              },
+              {
+                "id": "feature-deleting-a-node-should-delete-its-images-too",
+                "label": "Deleting a node should delete its images too",
+                "type": "feature",
+                "status": "planned",
+                "metadata": {},
+                "context": "",
+                "rawContext": "",
+                "images": []
+              },
+              {
+                "id": "feature-need-a-button-to-remove-all-dead-images",
+                "label": "Need a button to remove all \"dead\" images",
+                "type": "feature",
+                "status": "planned",
+                "metadata": {},
+                "context": "There are images that are not linked anywhere else.",
+                "rawContext": "There are images that are not linked anywhere else.",
+                "images": []
+              },
+              {
+                "id": "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio",
+                "label": "Consider showing image on left side to improve aspect ratio",
+                "type": "feature",
+                "status": "planned",
+                "metadata": {},
+                "context": "Basically two modes: top+bottom for image and text or left+right. Let image aspect ratio drive choice.  Goal is minimal whitespace and highest density possible.",
+                "rawContext": "Basically two modes: top+bottom for image and text or left+right. Let image aspect ratio drive choice.  Goal is minimal whitespace and highest density possible.",
+                "images": [
+                  {
+                    "id": "55012e03-3ad6-4c71-8829-334be855b9a3",
+                    "src": "/api/projects/project-mgmt-grid/images/feature-consider-showing-image-on-left-side-to-improve-aspect-ratio/55012e03-3ad6-4c71-8829-334be855b9a3.png",
+                    "filename": "55012e03-3ad6-4c71-8829-334be855b9a3.png",
+                    "originalName": "image.png",
+                    "mimeType": "image/png",
+                    "size": 109843,
+                    "createdAt": "2026-10-07T02:06:32.512Z"
+                  }
+                ]
               }
             ],
             "links": []
           }
         }
       }
+    },
+    {
+      "id": "083dbf0f-57c0-4a97-be64-319753715e9d",
+      "kind": "node.created",
+      "actor": {
+        "kind": "human"
+      },
+      "createdAt": "2026-10-07T02:06:31.932Z",
+      "summary": "Created \"Consider showing image on left side to improve aspect ratio\".",
+      "nodeIds": [
+        "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
+      ],
+      "metadata": {
+        "clientMutationId": "f7f4a4a2-0fe7-4d0d-956a-23f40184c3b5"
+      }
+    },
+    {
+      "id": "63ed3f0c-0e16-4025-9ff1-8e59dd23ef74",
+      "kind": "node.created",
+      "actor": {
+        "kind": "human"
+      },
+      "createdAt": "2026-10-07T02:05:08.018Z",
+      "summary": "Created \"Need a button to remove all \"dead\" images\".",
+      "nodeIds": [
+        "feature-need-a-button-to-remove-all-dead-images"
+      ],
+      "metadata": {
+        "clientMutationId": "a4132005-6bf4-4dec-8eb2-3477561b1fe0"
+      }
+    },
+    {
+      "id": "185086aa-07ad-4623-a1e9-e75d74b5ac38",
+      "kind": "node.created",
+      "actor": {
+        "kind": "human"
+      },
+      "createdAt": "2026-10-07T02:04:45.304Z",
+      "summary": "Created \"Deleting a node should delete its images too\".",
+      "nodeIds": [
+        "feature-deleting-a-node-should-delete-its-images-too"
+      ],
+      "metadata": {
+        "clientMutationId": "134db152-b731-46a0-ac40-b2e566c31f0d"
+      }
+    },
+    {
+      "id": "41ee501b-2b53-4033-adb6-8e7fe8c4e5a2",
+      "kind": "node.created",
+      "actor": {
+        "kind": "human"
+      },
+      "createdAt": "2026-10-07T02:04:36.728Z",
+      "summary": "Created \"Issues with server closing and not clearing the old manifest file\".",
+      "nodeIds": [
+        "feature-issues-with-server-closing-and-not-clearing-the-old-manifest-file"
+      ],
+      "metadata": {
+        "clientMutationId": "67f87766-70e5-4bef-af41-ae72ad6b14e0"
+      }
+    },
+    {
+      "id": "bbd7f364-1117-4a35-acb7-ebfbadbb1baf",
+      "kind": "node.deleted",
+      "actor": {
+        "kind": "human"
+      },
+      "createdAt": "2026-10-06T03:55:37.018Z",
+      "summary": "Deleted \"Need to try harder to render a useful preview\".",
+      "nodeIds": [
+        "page-need-to-try-harder-to-render-a-useful-preview"
+      ],
+      "metadata": {
+        "clientMutationId": "57eafc3a-4290-427d-8443-e7b34615fc9b"
+      }
+    },
+    {
+      "id": "3b5cdc7c-3ff8-4062-ae80-d3548f52c19b",
+      "kind": "node.deleted",
+      "actor": {
+        "kind": "human"
+      },
+      "createdAt": "2026-10-06T03:55:27.317Z",
+      "summary": "Deleted \"Allow multiple selection\".",
+      "nodeIds": [
+        "page-allow-multiple-selection"
+      ],
+      "metadata": {
+        "clientMutationId": "f40bdce1-f68f-4bf9-b456-ba5dd9de8316"
+      }
+    },
+    {
+      "id": "d2a641da-b87a-40b6-84c5-b0889de5d8be",
+      "kind": "node.deleted",
+      "actor": {
+        "kind": "human"
+      },
+      "createdAt": "2026-10-06T03:55:21.668Z",
+      "summary": "Deleted \"How to convert tasks into features?\".",
+      "nodeIds": [
+        "page-how-to-convert-tasks-into-features"
+      ],
+      "metadata": {
+        "clientMutationId": "2710a505-36a4-4947-8272-ba1b4cab9a3f"
+      }
+    },
+    {
+      "id": "cd284643-5eb7-49e2-b16b-77a6db52b3b4",
+      "kind": "node.deleted",
+      "actor": {
+        "kind": "human"
+      },
+      "createdAt": "2026-10-06T03:55:11.259Z",
+      "summary": "Deleted \"Is it possible actually overlap nodes by depth = Mahjong style\".",
+      "nodeIds": [
+        "feature-is-it-possible-actually-overlap-nodes-by-depth-mahjong-style"
+      ],
+      "metadata": {
+        "clientMutationId": "b81f44ba-97a6-4094-b705-ece14d58b498"
+      }
+    },
+    {
+      "id": "23cb3b31-869c-47ed-9722-003cb5f1c5d6",
+      "kind": "nodes.bulk.updated",
+      "actor": {
+        "kind": "human"
+      },
+      "createdAt": "2026-10-06T03:54:51.687Z",
+      "summary": "Bulk updated 22 nodes: archived.",
+      "nodeIds": [
+        "page-deleting-an-image-seemed-to-hang",
+        "page-need-some-sense-of-relevance-so-most-important-stuff-is-visible",
+        "page-breadcrumb-is-really-nice-in-the-tree-view",
+        "page-show-active-header-in-toc-view",
+        "page-i-really-want-to-type-to-filter-in-here",
+        "page-really-want-to-be-able-to-peek-at-structure",
+        "page-allow-setting-the-default-type",
+        "page-revise-highlight-to-avoid-extra-padding",
+        "page-allow-for-multiple-selection",
+        "task-add-a-quick-project-changer-to-cmd-k-or-top-near-the-back",
+        "task-odd-animation-when-adding-a-node-things-move-too-much",
+        "task-green-colors-are-not-helpful-need-to-go-more-neutral",
+        "task-needs-to-make-the-title-sticky",
+        "task-allow-filtering-on-last-editor-human-vs-agent",
+        "feature-mutations-are-too-slow-waiting-for-server-need-optimistic-that-syncs-bumplessly-with-websocket",
+        "feature-need-to-support-multi-select-so-bulk-archive-is-easier-or-bulk-archive-on-grid-view-or-checkboxes",
+        "feature-ideally-all-filters-are-in-the-url-so-they-persist-through-refresh",
+        "feature-need-a-distinct-clear-filters-or-reset-option",
+        "feature-add-an-archive-implemented-button-somewhere",
+        "feature-grid-view-has-layout-shift-when-selecting-all",
+        "feature-zoom-resets-when-tab-gets-focus-again",
+        "feature-archive-implemented-should-in-the-side-bar-too"
+      ],
+      "metadata": {
+        "clientMutationId": "8065272d-3a8a-40a4-82f3-d110685b6715"
+      }
+    },
+    {
+      "id": "5a558d31-a39d-4a17-be2d-183990a62fdc",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:5403e8",
+        "label": "Agent token ...5403e8"
+      },
+      "createdAt": "2026-10-06T03:52:33.536Z",
+      "summary": "Updated metadata for \"Zoom resets when tab gets focus again\".",
+      "nodeIds": [
+        "feature-zoom-resets-when-tab-gets-focus-again"
+      ]
     },
     {
       "id": "b51b6f94-ff94-4857-aef3-ec1595cc06ed",
@@ -4370,133 +4567,6 @@
       "nodeIds": [
         "page-add-nodes-flow-need-to-attribute-to-agent-not-human",
         "page-agentic-data-flows"
-      ]
-    },
-    {
-      "id": "182ed674-fc0a-47e7-afba-152a2e997c7a",
-      "kind": "node.context.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-07T04:16:50.012Z",
-      "summary": "Updated context for \"Meta data should edit in place\".",
-      "nodeIds": [
-        "note-meta-data-should-edit-in-place"
-      ]
-    },
-    {
-      "id": "5e1199b9-6ef7-4b97-bbc3-9ad6a1070adb",
-      "kind": "node.status.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-07T04:16:47.682Z",
-      "summary": "Changed \"Meta data should edit in place\" status to implemented.",
-      "nodeIds": [
-        "note-meta-data-should-edit-in-place"
-      ]
-    },
-    {
-      "id": "1506a51e-88be-4e91-b833-ce336c0e7a33",
-      "kind": "node.moved",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T04:16:17.461Z",
-      "summary": "Moved \"Hover inspector is just too much - disable for now\" under \"Canvas viewer\".",
-      "nodeIds": [
-        "task-hover-inspector-is-just-too-much-disable-for-now",
-        "page-canvas-viewer"
-      ]
-    },
-    {
-      "id": "124658c0-dda5-4473-925f-2c340b2787af",
-      "kind": "node.title.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T04:15:58.954Z",
-      "summary": "Renamed \"Ingest via CLI\" to \"CLI and agent interaction\".",
-      "nodeIds": [
-        "page-ingest-via-cli"
-      ]
-    },
-    {
-      "id": "021b16da-d5f3-4343-91dc-fc1a7ab6e096",
-      "kind": "node.metadata.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T04:14:29.867Z",
-      "summary": "Updated metadata for \"Meta data should edit in place\".",
-      "nodeIds": [
-        "note-meta-data-should-edit-in-place"
-      ]
-    },
-    {
-      "id": "1bfc849d-f627-4e84-b291-25ec64832f4f",
-      "kind": "node.metadata.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T04:14:12.534Z",
-      "summary": "Updated metadata for \"Meta data should edit in place\".",
-      "nodeIds": [
-        "note-meta-data-should-edit-in-place"
-      ]
-    },
-    {
-      "id": "ff73dba5-f9f0-4464-8897-bdc9c071219d",
-      "kind": "node.status.updated",
-      "actor": {
-        "kind": "agent",
-        "id": "token:esting",
-        "label": "Agent token ...esting"
-      },
-      "createdAt": "2026-05-07T04:10:15.427Z",
-      "summary": "Changed \"Allow filtering the global active nodes based on meta data or type\" status to implemented.",
-      "nodeIds": [
-        "task-allow-filtering-the-canvas-based-on-meta-data-or-type"
-      ]
-    },
-    {
-      "id": "44e88d6e-7bce-4209-b6c5-e461037be588",
-      "kind": "node.status.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T04:09:37.339Z",
-      "summary": "Changed \"Allow filtering the global active nodes based on meta data or type\" status to working.",
-      "nodeIds": [
-        "task-allow-filtering-the-canvas-based-on-meta-data-or-type"
-      ]
-    },
-    {
-      "id": "c83d75df-1804-44da-8f42-71c0b5e9718b",
-      "kind": "node.title.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T04:07:17.521Z",
-      "summary": "Renamed \"Allow filtering the canvas based on meta data or type\" to \"Allow filtering the global active nodes based on meta data or type\".",
-      "nodeIds": [
-        "task-allow-filtering-the-canvas-based-on-meta-data-or-type"
-      ]
-    },
-    {
-      "id": "c1e29280-2363-4a55-9657-969278ac5ee9",
-      "kind": "node.metadata.updated",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T04:06:57.291Z",
-      "summary": "Updated metadata for \"Allow filtering the canvas based on meta data or type\".",
-      "nodeIds": [
-        "task-allow-filtering-the-canvas-based-on-meta-data-or-type"
       ]
     }
   ]
