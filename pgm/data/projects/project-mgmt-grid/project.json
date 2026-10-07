@@ -3,20 +3,20 @@
   "name": "Project Mgmt Grid",
   "description": "Blank project ready for grid editing, structure mapping, and future AI-assisted details.",
   "createdAt": "2026-04-29T15:53:08.833Z",
-  "updatedAt": "2026-10-07T02:22:47.906Z",
+  "updatedAt": "2026-10-07T02:27:56.886Z",
   "operationLog": [
     {
-      "id": "64327f8b-ddc7-4786-82c2-e0acc027f2f6",
+      "id": "4201ef95-55ba-47d8-a34c-25c8620e9ab8",
       "kind": "node.metadata.updated",
       "actor": {
         "kind": "agent",
-        "id": "token:85073b",
-        "label": "Agent token ...85073b"
+        "id": "token:79b41d",
+        "label": "Agent token ...79b41d"
       },
-      "createdAt": "2026-10-07T02:22:47.906Z",
-      "summary": "Updated metadata for \"Need a button to remove all \"dead\" images\".",
+      "createdAt": "2026-10-07T02:27:56.886Z",
+      "summary": "Updated metadata for \"Issues with server closing and not clearing the old manifest file\".",
       "nodeIds": [
-        "feature-need-a-button-to-remove-all-dead-images"
+        "feature-issues-with-server-closing-and-not-clearing-the-old-manifest-file"
       ],
       "payload": {
         "state": {
@@ -961,8 +961,10 @@
                 "id": "feature-issues-with-server-closing-and-not-clearing-the-old-manifest-file",
                 "label": "Issues with server closing and not clearing the old manifest file",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "Two fixes in packages/cli. (1) Shutdown cleanup now treats a server child killed by a signal as exited (signalCode set, exitCode null). Before, cleanup waited on a close event that had already fired, so the process exited without removing .pgm-local-runtime.json; this happened when closing the terminal and whenever the server died from the signal itself. SIGHUP is now handled alongside SIGINT and SIGTERM. (2) pgm viewer clears a record whose owner process is gone (stopping a verified orphan server first) instead of refusing to start, and names the URL of a viewer that is still running. Verified end to end with SIGHUP, SIGKILL and Ctrl+C; covered by new CLI tests."
+                },
                 "context": "I usually close via CTRL C so make that work",
                 "rawContext": "I usually close via CTRL C so make that work",
                 "images": []
@@ -1018,6 +1020,34 @@
           }
         }
       }
+    },
+    {
+      "id": "2a16d88a-0f0d-4054-ae5e-283308607ea4",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:79b41d",
+        "label": "Agent token ...79b41d"
+      },
+      "createdAt": "2026-10-07T02:27:56.877Z",
+      "summary": "Changed \"Issues with server closing and not clearing the old manifest file\" status to implemented.",
+      "nodeIds": [
+        "feature-issues-with-server-closing-and-not-clearing-the-old-manifest-file"
+      ]
+    },
+    {
+      "id": "64327f8b-ddc7-4786-82c2-e0acc027f2f6",
+      "kind": "node.metadata.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:85073b",
+        "label": "Agent token ...85073b"
+      },
+      "createdAt": "2026-10-07T02:22:47.906Z",
+      "summary": "Updated metadata for \"Need a button to remove all \"dead\" images\".",
+      "nodeIds": [
+        "feature-need-a-button-to-remove-all-dead-images"
+      ]
     },
     {
       "id": "f2511a53-85a7-4460-b65c-e86d6d414baf",
@@ -4561,30 +4591,6 @@
       "summary": "Deleted \"Allow filtering the global active nodes based on meta data or type\".",
       "nodeIds": [
         "task-allow-filtering-the-canvas-based-on-meta-data-or-type"
-      ]
-    },
-    {
-      "id": "c5704fc0-c8fa-437b-9b48-efa4c661c1fc",
-      "kind": "node.deleted",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-08T02:22:27.989Z",
-      "summary": "Deleted \"README should link to npm also\".",
-      "nodeIds": [
-        "task-readme-should-link-to-npm-also"
-      ]
-    },
-    {
-      "id": "e4cba018-bb67-421e-a64e-2444fca19057",
-      "kind": "node.deleted",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-08T02:21:40.845Z",
-      "summary": "Deleted \"Add a `commands` view\".",
-      "nodeIds": [
-        "page-add-a-command-view"
       ]
     }
   ]

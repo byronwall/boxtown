@@ -6,7 +6,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { ProductGridClient } from "../src/client.mjs";
-import { createOwnership, getFolderGuardPort, getPortCandidates, writeOwnership } from "../build/local-runtime.mjs";
+import { claimViewerOwnership, createOwnership, getFolderGuardPort, getPortCandidates, writeOwnership } from "../build/local-runtime.mjs";
 import { defaultServer, resolveProjectId, resolveServer, resolveToken } from "../src/config.mjs";
 import { getUpdateCommand, main, parseArgs } from "../src/main.mjs";
 import { writeJson } from "../src/output.mjs";
@@ -184,6 +184,60 @@ test("folder admission guard releases when its owner process dies", async () => 
     assert.equal(acquired, true);
   } finally {
     if (child.exitCode === null) child.kill("SIGKILL");
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+function viewerRecord(dataDir, overrides = {}) {
+  return {
+    id: "runtime-viewer",
+    pid: process.pid,
+    dataDir,
+    token: "private-test-token",
+    url: "http://127.0.0.1:43249",
+    mode: "viewer",
+    state: "starting",
+    ...overrides,
+  };
+}
+
+test("viewer startup replaces a record left by a viewer that did not shut down", async () => {
+  const tempRoot = path.join(process.cwd(), "tmp", `pgm-viewer-stale-${process.pid}`);
+  const recordPath = path.join(tempRoot, ".pgm-local-runtime.json");
+  await mkdir(tempRoot, { recursive: true });
+  // Both the viewer and its server are gone, as after closing the terminal.
+  await writeFile(recordPath, JSON.stringify(viewerRecord(tempRoot, {
+    id: "closed-terminal-viewer",
+    pid: 2147483647,
+    childPid: 2147483646,
+    state: "ready",
+  })));
+  const stderr = createWritableBuffer();
+
+  try {
+    const record = viewerRecord(tempRoot, { id: "new-viewer" });
+    await claimViewerOwnership(recordPath, record, stderr);
+    assert.deepEqual(JSON.parse(await readFile(recordPath, "utf8")), record);
+    assert.match(stderr.value, /Removed a stale viewer record/);
+  } finally {
+    await rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("viewer startup refuses a folder that a running viewer owns", async () => {
+  const tempRoot = path.join(process.cwd(), "tmp", `pgm-viewer-live-${process.pid}`);
+  const recordPath = path.join(tempRoot, ".pgm-local-runtime.json");
+  await mkdir(tempRoot, { recursive: true });
+  const live = viewerRecord(tempRoot, { id: "live-viewer", state: "ready" });
+  await writeFile(recordPath, JSON.stringify(live));
+
+  try {
+    await assert.rejects(
+      claimViewerOwnership(recordPath, viewerRecord(tempRoot, { id: "second-viewer" }), createWritableBuffer()),
+      /already running .* at http:\/\/127\.0\.0\.1:43249\//,
+    );
+    assert.deepEqual(JSON.parse(await readFile(recordPath, "utf8")), live);
+  } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }
 });

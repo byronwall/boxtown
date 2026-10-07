@@ -1,20 +1,26 @@
 import { randomUUID } from "node:crypto";
-import { readFile, realpath, mkdir, stat, unlink } from "node:fs/promises";
+import { realpath, mkdir, stat } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CliError, exitCodes } from "../src/errors.mjs";
+import { getPortCandidates, hasExited, startRuntime, stopChild, waitUntilReady } from "./local-runtime.mjs";
 import {
-  getPortCandidates,
+  clearStaleRecord,
   createOwnership,
+  delay,
+  identifiesRuntime,
+  isLoopbackURL,
+  isPidAlive,
+  lockName,
+  onShutdownSignal,
   removeOwnedRecord,
-  startRuntime,
-  stopChild,
-  waitUntilReady,
+  signalExitCode,
+  tryReadRecord,
   withFolderGuard,
   writeOwnership,
   type RuntimeRecord,
-} from "./local-runtime.mjs";
+} from "./local-runtime-records.mjs";
 
 type Io = {
   stdout: { write: (value: string) => void };
@@ -28,7 +34,6 @@ type ParsedLocal = {
   command: string[];
   options: Record<string, string | boolean | undefined>;
 };
-const lockName = ".pgm-local-runtime.json";
 
 export async function dispatchLocal<T>(
   parsed: ParsedLocal,
@@ -111,10 +116,7 @@ export async function withLocalRuntime<T>(inputDir: string, io: Io, action: (run
       activeSignal = signal;
       child?.kill("SIGTERM");
     };
-    const onInterrupt = () => onSignal("SIGINT");
-    const onTerminate = () => onSignal("SIGTERM");
-    process.on("SIGINT", onInterrupt);
-    process.on("SIGTERM", onTerminate);
+    const removeSignalHandlers = onShutdownSignal(onSignal);
 
     try {
       const ports = await getPortCandidates(undefined);
@@ -141,7 +143,7 @@ export async function withLocalRuntime<T>(inputDir: string, io: Io, action: (run
         }
       }
       if (activeSignal) {
-        process.exitCode = activeSignal === "SIGINT" ? 130 : 143;
+        process.exitCode = signalExitCode(activeSignal);
         return undefined as T;
       }
       if (!child) throw startupError ?? new Error("No available local viewer port was found.");
@@ -149,20 +151,19 @@ export async function withLocalRuntime<T>(inputDir: string, io: Io, action: (run
       await writeOwnership(recordPath, record);
       io.stderr.write(`Using local viewer ${record.url}\n`);
       const result = await action(connectionFrom(record));
-      if (activeSignal) process.exitCode = activeSignal === "SIGINT" ? 130 : 143;
+      if (activeSignal) process.exitCode = signalExitCode(activeSignal);
       return result;
     } catch (error) {
       if (!activeSignal) throw error;
-      process.exitCode = activeSignal === "SIGINT" ? 130 : 143;
+      process.exitCode = signalExitCode(activeSignal);
       return undefined as T;
     } finally {
-      process.off("SIGINT", onInterrupt);
-      process.off("SIGTERM", onTerminate);
+      removeSignalHandlers();
       if (child) {
         record.state = "stopping";
         await writeOwnership(recordPath, record).catch(() => {});
       }
-      if (child && child.exitCode === null) await stopChild(child);
+      if (child && !hasExited(child)) await stopChild(child);
       await removeOwnedRecord(recordPath, runtimeId);
     }
   }
@@ -183,76 +184,6 @@ async function waitForViewer(record: RuntimeRecord, stderr: Io["stderr"]) {
   throw new Error("The local viewer is still starting. Retry the command shortly.");
 }
 
-async function clearStaleRecord(recordPath: string, record: RuntimeRecord, stderr: Io["stderr"]) {
-  await withFolderGuard(path.dirname(recordPath), async () => {
-    const current = await tryReadRecord(recordPath);
-    if (!current || current.id !== record.id) return;
-    if (isPidAlive(current.pid)) throw new Error("A local runtime owns this folder but did not confirm its identity.");
-    await clearOrphanedRuntime(current, stderr);
-    const latest = await tryReadRecord(recordPath);
-    if (latest?.id === record.id) await unlink(recordPath);
-  });
-}
-
-async function clearOrphanedRuntime(record: RuntimeRecord, stderr: Io["stderr"]) {
-  if (!record.childPid) {
-    if (await runtimeResponds(record.url) || record.state === "starting") {
-      throw new Error("A stale local startup has no saved child identity. Keep its record and check the server before retrying.");
-    }
-    return record;
-  }
-  if (!isPidAlive(record.childPid)) return record;
-  if (!(await identifiesRuntime(record))) {
-    throw new Error("A local runtime record is stale, but its server identity cannot be verified. Do not remove the record until that process stops.");
-  }
-  try {
-    process.kill(record.childPid!, "SIGTERM");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
-  }
-  for (let attempt = 0; attempt < 40 && isPidAlive(record.childPid); attempt += 1) await delay(100);
-  if (isPidAlive(record.childPid)) throw new Error("The stale local viewer did not stop after SIGTERM.");
-  stderr.write("Stopped a verified orphaned local viewer.\n");
-  return record;
-}
-
-async function runtimeResponds(url: string) {
-  if (!isLoopbackURL(url)) return false;
-  try {
-    await fetch(`${url}/api/local-runtime`, { signal: AbortSignal.timeout(500) });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function identifiesRuntime(record: RuntimeRecord) {
-  if (!isLoopbackURL(record.url)) return false;
-  try {
-    const response = await fetch(`${record.url}/api/local-runtime`, {
-      headers: { authorization: `Bearer ${record.token}` },
-      signal: AbortSignal.timeout(800),
-    });
-    if (!response.ok) return false;
-    const identity = await response.json() as { id?: unknown; dataDir?: unknown };
-    return identity.id === record.id && identity.dataDir === record.dataDir;
-  } catch {
-    return false;
-  }
-}
-
-async function tryReadRecord(recordPath: string): Promise<RuntimeRecord | null> {
-  try {
-    const value = JSON.parse(await readFile(recordPath, "utf8")) as Partial<RuntimeRecord>;
-    if (typeof value.id !== "string" || !Number.isInteger(value.pid) || typeof value.dataDir !== "string") return null;
-    if (typeof value.token !== "string" || typeof value.url !== "string") return null;
-    return value as RuntimeRecord;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-    return null;
-  }
-}
-
 async function resolveDataDir(inputDir: string, cwd: string) {
   if (!inputDir.trim()) throw new Error("Use --local <folder> to select local project data.");
   const requested = path.resolve(cwd, inputDir);
@@ -262,29 +193,6 @@ async function resolveDataDir(inputDir: string, cwd: string) {
 
 function connectionFrom(record: RuntimeRecord): LocalConnection {
   return { id: record.id, dataDir: record.dataDir, token: record.token, url: record.url };
-}
-
-function isLoopbackURL(value: string) {
-  try {
-    const url = new URL(value);
-    return url.protocol === "http:" && url.hostname === "127.0.0.1" && url.pathname === "/";
-  } catch {
-    return false;
-  }
-}
-
-function isPidAlive(pid?: number) {
-  if (!Number.isInteger(pid) || !pid || pid < 1) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === "EPERM";
-  }
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function asError(error: unknown) {

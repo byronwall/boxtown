@@ -19,6 +19,7 @@ await run("pnpm", [
   appDir,
   "exec",
   "tsc",
+  "../packages/cli/src/local-runtime-records.mts",
   "../packages/cli/src/local-runtime.mts",
   "../packages/cli/src/local-runtime-sharing.mts",
   "--target",
