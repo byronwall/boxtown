@@ -217,7 +217,11 @@ pnpm prepare
 pnpm dev
 ```
 
-Use `app/.env.example` to configure the data directory. The app needs no LLM API key.
+The app detects the repo's `pgm/data` folder, which contains a copy of the cloud Project Mgmt Grid.
+Use `APP_DATA_DIR` to select another data folder. The app needs no LLM API key.
+
+With the CLI installed, run `pgm viewer` from the repo root to open the same data.
+The viewer defaults to `./pgm/data`; use `--data-dir <folder>` to select another folder.
 
 ## Common Commands
 
@@ -245,7 +249,7 @@ pnpm start
 - Markdown renderer: `app/src/components/markdown-renderer/`
 - Shared UI wrappers: `app/src/components/ui/`
 - Theme and recipes: `app/src/theme/`
-- Local project data: `app/data/`
+- Local project data: `pgm/data/`
 - Design brief: `docs/design-brief-industrial-ui.md`
 
 ## Notes
