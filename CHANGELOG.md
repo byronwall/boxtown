@@ -2,6 +2,12 @@
 
 Notable changes to Product Grid Management, newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
 
+## 2026-10-06
+
+### Changed
+
+- The new node form puts Context directly under the title and Type below it, so the field you fill in most often comes first.
+
 ## 2026-10-05
 
 ### Added

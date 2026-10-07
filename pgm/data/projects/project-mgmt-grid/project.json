@@ -3,23 +3,21 @@
   "name": "Project Mgmt Grid",
   "description": "Blank project ready for grid editing, structure mapping, and future AI-assisted details.",
   "createdAt": "2026-04-29T15:53:08.833Z",
-  "updatedAt": "2026-10-07T02:06:32.512Z",
+  "updatedAt": "2026-10-07T02:17:29.703Z",
   "operationLog": [
     {
-      "id": "2a3c9cef-0bba-4fa4-976b-e52fd0f2d139",
-      "kind": "node.images.added",
+      "id": "3300ec39-ed72-4215-838c-3cea11c330ce",
+      "kind": "node.metadata.updated",
       "actor": {
-        "kind": "human"
+        "kind": "agent",
+        "id": "token:14bd4a",
+        "label": "Agent token ...14bd4a"
       },
-      "createdAt": "2026-10-07T02:06:32.516Z",
-      "summary": "Added 1 images to \"Consider showing image on left side to improve aspect ratio\".",
+      "createdAt": "2026-10-07T02:17:29.703Z",
+      "summary": "Updated metadata for \"Reorder `new node` so type is under context\".",
       "nodeIds": [
-        "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
+        "feature-reorder-new-node-so-type-is-under-context"
       ],
-      "metadata": {
-        "imageCount": "1",
-        "clientMutationId": "a802287c-4adf-4821-a068-a0e09b7a721b"
-      },
       "payload": {
         "state": {
           "nodeMetadataSchema": [
@@ -941,8 +939,10 @@
                 "id": "feature-reorder-new-node-so-type-is-under-context",
                 "label": "Reorder `new node` so type is under context",
                 "type": "feature",
-                "status": "planned",
-                "metadata": {},
+                "status": "implemented",
+                "metadata": {
+                  "implementation": "The new node form now orders fields as title, Context, then Type (SpatialMapChildNodePlaceholder.tsx). Tab order follows the same sequence."
+                },
                 "context": "I rarely change type but nearly always add context",
                 "rawContext": "I rarely change type but nearly always add context",
                 "images": [
@@ -1011,6 +1011,36 @@
             "links": []
           }
         }
+      }
+    },
+    {
+      "id": "8406e1e0-94e3-4e42-8d4d-db8f9b00cbd2",
+      "kind": "node.status.updated",
+      "actor": {
+        "kind": "agent",
+        "id": "token:14bd4a",
+        "label": "Agent token ...14bd4a"
+      },
+      "createdAt": "2026-10-07T02:17:29.688Z",
+      "summary": "Changed \"Reorder `new node` so type is under context\" status to implemented.",
+      "nodeIds": [
+        "feature-reorder-new-node-so-type-is-under-context"
+      ]
+    },
+    {
+      "id": "2a3c9cef-0bba-4fa4-976b-e52fd0f2d139",
+      "kind": "node.images.added",
+      "actor": {
+        "kind": "human"
+      },
+      "createdAt": "2026-10-07T02:06:32.516Z",
+      "summary": "Added 1 images to \"Consider showing image on left side to improve aspect ratio\".",
+      "nodeIds": [
+        "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
+      ],
+      "metadata": {
+        "imageCount": "1",
+        "clientMutationId": "a802287c-4adf-4821-a068-a0e09b7a721b"
       }
     },
     {
@@ -4541,32 +4571,6 @@
       "nodeIds": [
         "task-add-command-to-update-pgm",
         "page-ingest-via-cli"
-      ]
-    },
-    {
-      "id": "cd37feb9-6602-4eee-8251-ea05979c4323",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T12:29:44.472Z",
-      "summary": "Created \"Allow filtering on last editor - human vs. agent\" under \"Global data/view filters\".",
-      "nodeIds": [
-        "task-allow-filtering-on-last-editor-human-vs-agent",
-        "page-view-filters"
-      ]
-    },
-    {
-      "id": "a90f6a17-54c8-4d69-9463-1548e3fa5223",
-      "kind": "node.created",
-      "actor": {
-        "kind": "human"
-      },
-      "createdAt": "2026-05-07T12:27:16.526Z",
-      "summary": "Created \"Add nodes flow need to attribute to agent, not human\" under \"Agentic data flows\".",
-      "nodeIds": [
-        "page-add-nodes-flow-need-to-attribute-to-agent-not-human",
-        "page-agentic-data-flows"
       ]
     }
   ]
