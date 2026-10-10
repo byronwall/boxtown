@@ -1,0 +1,14 @@
+{
+  "id": "3527cc63-a06a-4505-90ca-9c7ebc228deb",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:02.486Z",
+  "summary": "Deleted \"Common comps\".",
+  "nodeIds": [
+    "page-common-comps"
+  ]
+}

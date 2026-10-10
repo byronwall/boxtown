@@ -1,0 +1,14 @@
+{
+  "id": "7f595c1e-be4f-4749-8d57-ce33feb32a1a",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:18.916Z",
+  "summary": "Updated metadata for \"Project root picker (to reassign) should allow searching for a node by name, using similar interface to CMD K menu\".",
+  "nodeIds": [
+    "page-project-root-picker-to-reassign-should-allow-searching-for-a-node-by-name-using-similar-interface-to-cmd-k-menu"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "e51f84ce-ba12-4469-b273-fccb25388a99",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:22:16.409Z",
+  "summary": "Updated metadata for \"App should expose `copy as prompt` and things to paste into agents\".",
+  "nodeIds": [
+    "task-app-should-expose-prompts-and-things-to-paste-into-agents"
+  ]
+}

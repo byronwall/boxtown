@@ -1,0 +1,16 @@
+{
+  "id": "e226dd4c-ca25-4fc7-912e-c5708db2acd7",
+  "kind": "node.images.added",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T02:22:25.655Z",
+  "summary": "Added 1 images to \"Context really needs to be edit in place\".",
+  "nodeIds": [
+    "feature-context-really-needs-to-be-edit-in-place"
+  ],
+  "metadata": {
+    "imageCount": "1",
+    "clientMutationId": "e396f7d7-8869-4299-95fd-6e89f09f021c"
+  }
+}

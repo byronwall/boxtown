@@ -1,0 +1,15 @@
+{
+  "id": "8819ca30-5e93-476c-a4c4-d37c3d086b0d",
+  "kind": "node.context.updated",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-02T00:59:43.550Z",
+  "summary": "Updated context for \"Archive implemented should in the side bar too\".",
+  "nodeIds": [
+    "feature-archive-implemented-should-in-the-side-bar-too"
+  ],
+  "metadata": {
+    "clientMutationId": "9af31fdf-76b2-42e7-af77-a6714ae6cf47"
+  }
+}

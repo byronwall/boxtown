@@ -1,0 +1,14 @@
+{
+  "id": "355898ff-9dcc-4fa3-9a99-b4b874b9e425",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.491Z",
+  "summary": "Changed \"Odd animation when adding a node - things move too much - seems like we're missing an optimistic update\" status to implemented.",
+  "nodeIds": [
+    "task-odd-animation-when-adding-a-node-things-move-too-much"
+  ]
+}

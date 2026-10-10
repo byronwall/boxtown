@@ -1,0 +1,15 @@
+{
+  "id": "63ed3f0c-0e16-4025-9ff1-8e59dd23ef74",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-07T02:05:08.018Z",
+  "summary": "Created \"Need a button to remove all \"dead\" images\".",
+  "nodeIds": [
+    "feature-need-a-button-to-remove-all-dead-images"
+  ],
+  "metadata": {
+    "clientMutationId": "a4132005-6bf4-4dec-8eb2-3477561b1fe0"
+  }
+}

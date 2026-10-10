@@ -1,0 +1,14 @@
+{
+  "id": "667311ed-17e7-4a7e-8432-4ff19aff11ed",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:12:21.212Z",
+  "summary": "Changed \"App should expose `copy as prompt` and things to paste into agents\" status to needs-review.",
+  "nodeIds": [
+    "task-app-should-expose-prompts-and-things-to-paste-into-agents"
+  ]
+}

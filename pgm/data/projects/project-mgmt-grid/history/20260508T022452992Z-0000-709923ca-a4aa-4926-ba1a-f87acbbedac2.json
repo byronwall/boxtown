@@ -1,0 +1,12 @@
+{
+  "id": "709923ca-a4aa-4926-ba1a-f87acbbedac2",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-05-08T02:24:52.992Z",
+  "summary": "Deleted \"Skill needs to include install steps\".",
+  "nodeIds": [
+    "task-skill-needs-to-include-install-steps"
+  ]
+}

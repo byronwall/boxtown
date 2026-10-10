@@ -1,0 +1,14 @@
+{
+  "id": "87e4b513-fa3c-4256-8138-ead8f6f0411e",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:12.179Z",
+  "summary": "Changed \"Filter needs to do an AND when combining status and type.\" status to implemented.",
+  "nodeIds": [
+    "task-filter-needs-to-do-an-and-when-combining-status-and-type"
+  ]
+}

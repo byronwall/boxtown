@@ -1,0 +1,14 @@
+{
+  "id": "0403c2ed-faf1-43d3-81e6-403599f52e39",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:02.616Z",
+  "summary": "Deleted \"Data flows\".",
+  "nodeIds": [
+    "page-data-flows"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "aab578b5-cfc2-40ef-a9d5-7030572c19a9",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:42:05.544Z",
+  "summary": "Changed \"Allow setting the default type\" status to needs-review.",
+  "nodeIds": [
+    "page-allow-setting-the-default-type"
+  ]
+}

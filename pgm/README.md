@@ -14,3 +14,14 @@ For a source checkout, run `pnpm cli:prepare-package` first, then `pnpm --dir pa
 The development app also detects this folder when started from the repo root or `app/`.
 
 This is an editable local copy. Local changes do not update the cloud project.
+
+## Layout
+
+Since October 9, 2026, the project is stored one file per node, so branches that add or edit issues merge cleanly:
+
+- `project.json` holds the name, description, metadata fields, and node types.
+- `nodes/<node-id>.md` holds one node: front matter for its fields, then its context as Markdown.
+- `history/` holds one JSON file per activity entry.
+- `images/<node-id>/` holds uploaded images.
+
+See [docs/project-storage.md](../docs/project-storage.md) for the format, merge behavior, and migration.

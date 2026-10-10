@@ -1,0 +1,14 @@
+{
+  "id": "a2e85f0e-7b47-4ca1-9a82-2f5096649e41",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:07.109Z",
+  "summary": "Deleted \"Top Nav\".",
+  "nodeIds": [
+    "page-top-nav"
+  ]
+}

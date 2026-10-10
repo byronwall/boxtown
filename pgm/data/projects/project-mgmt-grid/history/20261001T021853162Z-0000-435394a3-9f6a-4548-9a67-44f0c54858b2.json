@@ -1,0 +1,16 @@
+{
+  "id": "435394a3-9f6a-4548-9a67-44f0c54858b2",
+  "kind": "node.images.added",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T02:18:53.162Z",
+  "summary": "Added 1 images to \"Grid view has layout shift when selecting all\".",
+  "nodeIds": [
+    "feature-grid-view-has-layout-shift-when-selecting-all"
+  ],
+  "metadata": {
+    "imageCount": "1",
+    "clientMutationId": "13455fce-7c91-4978-9879-2ef98cfd82b7"
+  }
+}

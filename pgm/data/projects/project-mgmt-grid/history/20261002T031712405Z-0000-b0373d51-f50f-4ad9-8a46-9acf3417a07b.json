@@ -1,0 +1,15 @@
+{
+  "id": "b0373d51-f50f-4ad9-8a46-9acf3417a07b",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-02T03:17:12.405Z",
+  "summary": "Created \"Reorder `new node` so type is under context\".",
+  "nodeIds": [
+    "feature-reorder-new-node-so-type-is-under-context"
+  ],
+  "metadata": {
+    "clientMutationId": "44ca2127-08aa-44a1-af9a-b58fef882e11"
+  }
+}

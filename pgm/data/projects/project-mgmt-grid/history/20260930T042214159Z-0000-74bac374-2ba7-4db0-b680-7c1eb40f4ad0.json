@@ -1,0 +1,14 @@
+{
+  "id": "74bac374-2ba7-4db0-b680-7c1eb40f4ad0",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:22:14.159Z",
+  "summary": "Updated metadata for \"Creating ids from titles leads to long file names and other problems\".",
+  "nodeIds": [
+    "feature-creating-ids-from-titles-leads-to-long-file-names-and-other-problems"
+  ]
+}

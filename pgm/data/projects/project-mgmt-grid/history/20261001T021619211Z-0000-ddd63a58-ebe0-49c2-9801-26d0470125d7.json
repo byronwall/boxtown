@@ -1,0 +1,14 @@
+{
+  "id": "ddd63a58-ebe0-49c2-9801-26d0470125d7",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T02:16:19.211Z",
+  "summary": "Changed \"Context decomp leaves a lot of detail missing in new nodes\" status to implemented.",
+  "nodeIds": [
+    "note-context-decomp-leaves-a-lot-of-detail-missing-in-new-nodes"
+  ]
+}

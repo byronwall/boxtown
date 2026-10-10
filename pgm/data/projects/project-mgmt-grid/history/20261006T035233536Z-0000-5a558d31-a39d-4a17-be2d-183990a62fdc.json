@@ -1,0 +1,14 @@
+{
+  "id": "5a558d31-a39d-4a17-be2d-183990a62fdc",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.536Z",
+  "summary": "Updated metadata for \"Zoom resets when tab gets focus again\".",
+  "nodeIds": [
+    "feature-zoom-resets-when-tab-gets-focus-again"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "970175e5-46bc-44bb-bfb7-5b3f871332d6",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T02:30:10.236Z",
+  "summary": "Updated metadata for \"Sidebar visuals are just a mess.  Need a cleansing pass\".",
+  "nodeIds": [
+    "feature-sidebar-visuals-are-just-a-mess-need-a-cleansing-pass"
+  ]
+}

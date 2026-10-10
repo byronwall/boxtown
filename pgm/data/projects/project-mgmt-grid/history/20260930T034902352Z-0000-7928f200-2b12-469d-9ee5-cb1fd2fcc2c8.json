@@ -1,0 +1,14 @@
+{
+  "id": "7928f200-2b12-469d-9ee5-cb1fd2fcc2c8",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:02.352Z",
+  "summary": "Deleted \"Canvas viewer\".",
+  "nodeIds": [
+    "page-canvas-viewer"
+  ]
+}

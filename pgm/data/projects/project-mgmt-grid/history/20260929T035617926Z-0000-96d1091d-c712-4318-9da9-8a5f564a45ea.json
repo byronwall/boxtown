@@ -1,0 +1,14 @@
+{
+  "id": "96d1091d-c712-4318-9da9-8a5f564a45ea",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:17.926Z",
+  "summary": "Changed \"Project root picker (to reassign) should allow searching for a node by name, using similar interface to CMD K menu\" status to implemented.",
+  "nodeIds": [
+    "page-project-root-picker-to-reassign-should-allow-searching-for-a-node-by-name-using-similar-interface-to-cmd-k-menu"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "2a7ea875-aa2e-403a-a64e-fc9c3a65e3be",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:01.322Z",
+  "summary": "Deleted \"Agent can load context for a node\".",
+  "nodeIds": [
+    "page-agent-can-load-context-for-a-node"
+  ]
+}

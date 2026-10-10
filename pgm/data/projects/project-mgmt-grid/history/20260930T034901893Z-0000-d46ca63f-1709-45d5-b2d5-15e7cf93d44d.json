@@ -1,0 +1,14 @@
+{
+  "id": "d46ca63f-1709-45d5-b2d5-15e7cf93d44d",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:01.893Z",
+  "summary": "Deleted \"Allow an agent to provide status updates\".",
+  "nodeIds": [
+    "page-allow-an-agent-to-provide-status-updates"
+  ]
+}

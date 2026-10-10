@@ -1,0 +1,15 @@
+{
+  "id": "cb5ea66a-0867-4406-85df-7233ff28dbdd",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-05-08T03:00:50.364Z",
+  "summary": "Updated metadata for \"Ensure color is conveyed for type/status\".",
+  "nodeIds": [
+    "page-ensure-color-is-conveyed-for-type-status"
+  ],
+  "metadata": {
+    "clientMutationId": "d80fc431-73c4-4930-bfbf-88166c0092a7"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "c1b04e96-f257-494a-9572-10ea1e3a01bb",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.330Z",
+  "summary": "Changed \"Breadcrumb is really nice in the tree view\" status to implemented.",
+  "nodeIds": [
+    "page-breadcrumb-is-really-nice-in-the-tree-view"
+  ]
+}

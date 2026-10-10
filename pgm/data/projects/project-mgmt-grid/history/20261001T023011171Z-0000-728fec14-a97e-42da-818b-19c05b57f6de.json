@@ -1,0 +1,14 @@
+{
+  "id": "728fec14-a97e-42da-818b-19c05b57f6de",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T02:30:11.171Z",
+  "summary": "Updated metadata for \"Context really needs to be edit in place\".",
+  "nodeIds": [
+    "feature-context-really-needs-to-be-edit-in-place"
+  ]
+}

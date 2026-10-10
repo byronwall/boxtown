@@ -1,0 +1,14 @@
+{
+  "id": "b4f0b359-d341-46fc-af1c-b75df59d1a42",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T01:48:21.615Z",
+  "summary": "Changed \"Allow toggling on/off parent context on map\" status to implemented.",
+  "nodeIds": [
+    "task-allow-toggling-on-off-parent-context-on-map"
+  ]
+}

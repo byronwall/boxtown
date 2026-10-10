@@ -1,0 +1,14 @@
+{
+  "id": "8898a111-f6de-4c9a-9f7d-7470a5e01605",
+  "kind": "node.context.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-05-08T03:02:02.984Z",
+  "summary": "Updated context for \"Double click should isolate - not go to canvas\".",
+  "nodeIds": [
+    "page-double-click-should-isolate-not-go-to-canvas"
+  ]
+}

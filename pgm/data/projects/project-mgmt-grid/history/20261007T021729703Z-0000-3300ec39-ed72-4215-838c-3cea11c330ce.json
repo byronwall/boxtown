@@ -1,0 +1,14 @@
+{
+  "id": "3300ec39-ed72-4215-838c-3cea11c330ce",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:14bd4a",
+    "label": "Agent token ...14bd4a"
+  },
+  "createdAt": "2026-10-07T02:17:29.703Z",
+  "summary": "Updated metadata for \"Reorder `new node` so type is under context\".",
+  "nodeIds": [
+    "feature-reorder-new-node-so-type-is-under-context"
+  ]
+}

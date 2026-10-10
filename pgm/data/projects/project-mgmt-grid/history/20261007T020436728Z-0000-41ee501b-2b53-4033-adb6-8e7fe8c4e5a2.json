@@ -1,0 +1,15 @@
+{
+  "id": "41ee501b-2b53-4033-adb6-8e7fe8c4e5a2",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-07T02:04:36.728Z",
+  "summary": "Created \"Issues with server closing and not clearing the old manifest file\".",
+  "nodeIds": [
+    "feature-issues-with-server-closing-and-not-clearing-the-old-manifest-file"
+  ],
+  "metadata": {
+    "clientMutationId": "67f87766-70e5-4bef-af41-ae72ad6b14e0"
+  }
+}

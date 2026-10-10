@@ -1,0 +1,14 @@
+{
+  "id": "db13c6ca-8b57-4947-9236-c005189be267",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:42:06.596Z",
+  "summary": "Updated metadata for \"Need to expose \"add node\" flow off selected item\".",
+  "nodeIds": [
+    "page-need-to-expose-add-node-flow-off-selected-item"
+  ]
+}

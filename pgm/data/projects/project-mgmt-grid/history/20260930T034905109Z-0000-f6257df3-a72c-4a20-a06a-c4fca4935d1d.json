@@ -1,0 +1,14 @@
+{
+  "id": "f6257df3-a72c-4a20-a06a-c4fca4935d1d",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:05.109Z",
+  "summary": "Deleted \"Inspector side bar\".",
+  "nodeIds": [
+    "page-inspector-side-bar"
+  ]
+}

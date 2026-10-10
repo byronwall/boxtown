@@ -1,0 +1,14 @@
+{
+  "id": "800a91bd-cb34-4a21-a2b7-319466a02f49",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:22:17.040Z",
+  "summary": "Updated metadata for \"Need to support archiving things when done\".",
+  "nodeIds": [
+    "feature-need-to-support-archiving-things-when-done"
+  ]
+}

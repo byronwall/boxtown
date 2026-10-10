@@ -1,0 +1,14 @@
+{
+  "id": "2559b807-4d66-4415-bbdf-9ca1b0e9c074",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:05.395Z",
+  "summary": "Deleted \"Layout algorithm\".",
+  "nodeIds": [
+    "page-layout-algorith"
+  ]
+}

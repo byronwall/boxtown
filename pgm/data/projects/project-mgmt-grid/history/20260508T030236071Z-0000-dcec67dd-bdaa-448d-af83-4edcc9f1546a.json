@@ -1,0 +1,14 @@
+{
+  "id": "dcec67dd-bdaa-448d-af83-4edcc9f1546a",
+  "kind": "node.context.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-05-08T03:02:36.071Z",
+  "summary": "Updated context for \"Grid view\".",
+  "nodeIds": [
+    "page-grid-view"
+  ]
+}

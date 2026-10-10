@@ -1,0 +1,14 @@
+{
+  "id": "0f4f9857-4681-4644-bcf9-8361822d6156",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:16.930Z",
+  "summary": "Updated metadata for \"Click opens the zoom modal\".",
+  "nodeIds": [
+    "page-click-opens-the-zoom-modal"
+  ]
+}

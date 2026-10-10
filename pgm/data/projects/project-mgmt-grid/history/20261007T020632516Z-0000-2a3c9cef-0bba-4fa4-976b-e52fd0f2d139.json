@@ -1,0 +1,16 @@
+{
+  "id": "2a3c9cef-0bba-4fa4-976b-e52fd0f2d139",
+  "kind": "node.images.added",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-07T02:06:32.516Z",
+  "summary": "Added 1 images to \"Consider showing image on left side to improve aspect ratio\".",
+  "nodeIds": [
+    "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
+  ],
+  "metadata": {
+    "imageCount": "1",
+    "clientMutationId": "a802287c-4adf-4821-a068-a0e09b7a721b"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "9de43d16-5bd9-4543-80fe-4cb660d11192",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:04.672Z",
+  "summary": "Deleted \"Image zoom modal\".",
+  "nodeIds": [
+    "page-image-zoom-modal"
+  ]
+}

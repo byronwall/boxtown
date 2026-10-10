@@ -1,0 +1,14 @@
+{
+  "id": "f9b09da7-ee70-44b8-83ff-1fa3b281034a",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:00.862Z",
+  "summary": "Deleted \"Add node via questions\".",
+  "nodeIds": [
+    "page-add-node-via-questions"
+  ]
+}

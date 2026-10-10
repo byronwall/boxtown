@@ -1,0 +1,14 @@
+{
+  "id": "4d8b4ca2-b785-48ba-9923-c34a13f7264c",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.246Z",
+  "summary": "Changed \"Allow filtering on last editor - human vs. agent\" status to implemented.",
+  "nodeIds": [
+    "task-allow-filtering-on-last-editor-human-vs-agent"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "82dd82f3-dcf6-4858-86fd-3d4da411124b",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:22:14.739Z",
+  "summary": "Changed \"Need to provide a command to download image without curl\" status to implemented.",
+  "nodeIds": [
+    "page-need-to-provide-a-command-to-download-image-without-curl"
+  ]
+}

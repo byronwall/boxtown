@@ -1,0 +1,14 @@
+{
+  "id": "8bb75b74-d18d-4cf2-8eb6-f22b135f2cca",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:12:20.236Z",
+  "summary": "Updated metadata for \"Need to provide a command to download image without curl\".",
+  "nodeIds": [
+    "page-need-to-provide-a-command-to-download-image-without-curl"
+  ]
+}

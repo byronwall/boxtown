@@ -1,0 +1,14 @@
+{
+  "id": "3f6e8039-3645-4068-98d8-c3696d424f8d",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.464Z",
+  "summary": "Updated metadata for \"Need some sense of \"relevance\" so most important stuff is visible\".",
+  "nodeIds": [
+    "page-need-some-sense-of-relevance-so-most-important-stuff-is-visible"
+  ]
+}

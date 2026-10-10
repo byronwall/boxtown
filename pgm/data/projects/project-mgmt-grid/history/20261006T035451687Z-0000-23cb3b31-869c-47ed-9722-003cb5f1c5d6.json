@@ -1,0 +1,36 @@
+{
+  "id": "23cb3b31-869c-47ed-9722-003cb5f1c5d6",
+  "kind": "nodes.bulk.updated",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-06T03:54:51.687Z",
+  "summary": "Bulk updated 22 nodes: archived.",
+  "nodeIds": [
+    "page-deleting-an-image-seemed-to-hang",
+    "page-need-some-sense-of-relevance-so-most-important-stuff-is-visible",
+    "page-breadcrumb-is-really-nice-in-the-tree-view",
+    "page-show-active-header-in-toc-view",
+    "page-i-really-want-to-type-to-filter-in-here",
+    "page-really-want-to-be-able-to-peek-at-structure",
+    "page-allow-setting-the-default-type",
+    "page-revise-highlight-to-avoid-extra-padding",
+    "page-allow-for-multiple-selection",
+    "task-add-a-quick-project-changer-to-cmd-k-or-top-near-the-back",
+    "task-odd-animation-when-adding-a-node-things-move-too-much",
+    "task-green-colors-are-not-helpful-need-to-go-more-neutral",
+    "task-needs-to-make-the-title-sticky",
+    "task-allow-filtering-on-last-editor-human-vs-agent",
+    "feature-mutations-are-too-slow-waiting-for-server-need-optimistic-that-syncs-bumplessly-with-websocket",
+    "feature-need-to-support-multi-select-so-bulk-archive-is-easier-or-bulk-archive-on-grid-view-or-checkboxes",
+    "feature-ideally-all-filters-are-in-the-url-so-they-persist-through-refresh",
+    "feature-need-a-distinct-clear-filters-or-reset-option",
+    "feature-add-an-archive-implemented-button-somewhere",
+    "feature-grid-view-has-layout-shift-when-selecting-all",
+    "feature-zoom-resets-when-tab-gets-focus-again",
+    "feature-archive-implemented-should-in-the-side-bar-too"
+  ],
+  "metadata": {
+    "clientMutationId": "8065272d-3a8a-40a4-82f3-d110685b6715"
+  }
+}

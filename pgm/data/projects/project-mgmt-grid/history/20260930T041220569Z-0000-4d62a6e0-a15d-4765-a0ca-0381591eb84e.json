@@ -1,0 +1,14 @@
+{
+  "id": "4d62a6e0-a15d-4765-a0ca-0381591eb84e",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:12:20.569Z",
+  "summary": "Changed \"Provide option to show all children on filtered nodes too\" status to needs-review.",
+  "nodeIds": [
+    "task-provide-option-to-show-all-children-on-filtered-nodes-too"
+  ]
+}

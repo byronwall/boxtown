@@ -1,0 +1,15 @@
+{
+  "id": "ed513658-1111-4fad-9e8d-5764355f96d3",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T02:21:49.200Z",
+  "summary": "Created \"Zoom resets when tab gets focus again\".",
+  "nodeIds": [
+    "feature-zoom-resets-when-tab-gets-focus-again"
+  ],
+  "metadata": {
+    "clientMutationId": "1b4b86cc-9028-42f5-bb71-4617d3169583"
+  }
+}

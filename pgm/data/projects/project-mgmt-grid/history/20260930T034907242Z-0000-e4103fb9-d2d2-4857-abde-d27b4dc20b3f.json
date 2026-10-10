@@ -1,0 +1,14 @@
+{
+  "id": "e4103fb9-d2d2-4857-abde-d27b4dc20b3f",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:07.242Z",
+  "summary": "Deleted \"Tree viewer\".",
+  "nodeIds": [
+    "page-tree-viewer"
+  ]
+}

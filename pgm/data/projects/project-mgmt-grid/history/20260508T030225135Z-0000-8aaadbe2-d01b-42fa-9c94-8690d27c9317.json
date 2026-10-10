@@ -1,0 +1,14 @@
+{
+  "id": "8aaadbe2-d01b-42fa-9c94-8690d27c9317",
+  "kind": "node.context.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-05-08T03:02:25.135Z",
+  "summary": "Updated context for \"I want to resize columns and get longer name\".",
+  "nodeIds": [
+    "page-i-want-to-resize-columns-and-get-longer-name"
+  ]
+}

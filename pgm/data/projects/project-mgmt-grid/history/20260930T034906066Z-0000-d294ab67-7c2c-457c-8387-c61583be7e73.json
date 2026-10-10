@@ -1,0 +1,14 @@
+{
+  "id": "d294ab67-7c2c-457c-8387-c61583be7e73",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:06.066Z",
+  "summary": "Deleted \"Overall app flows\".",
+  "nodeIds": [
+    "page-overall-app-flows"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "7e4c831e-c92f-4ea6-af9b-d07327cadf12",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:03.190Z",
+  "summary": "Deleted \"Drop drop menu/picker\".",
+  "nodeIds": [
+    "page-drop-drop-menu-picker"
+  ]
+}

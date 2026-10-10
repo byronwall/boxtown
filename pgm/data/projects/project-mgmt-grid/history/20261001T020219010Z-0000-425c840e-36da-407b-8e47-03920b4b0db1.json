@@ -1,0 +1,15 @@
+{
+  "id": "425c840e-36da-407b-8e47-03920b4b0db1",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T02:02:19.010Z",
+  "summary": "Created \"Sidebar visuals are just a mess.  Need a cleansing pass\".",
+  "nodeIds": [
+    "feature-sidebar-visuals-are-just-a-mess-need-a-cleansing-pass"
+  ],
+  "metadata": {
+    "clientMutationId": "f03953e7-ef22-479c-bf18-fb62092b9373"
+  }
+}

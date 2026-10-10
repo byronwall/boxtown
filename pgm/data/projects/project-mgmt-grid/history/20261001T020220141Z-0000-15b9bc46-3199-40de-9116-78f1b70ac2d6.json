@@ -1,0 +1,16 @@
+{
+  "id": "15b9bc46-3199-40de-9116-78f1b70ac2d6",
+  "kind": "node.images.added",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T02:02:20.141Z",
+  "summary": "Added 1 images to \"Sidebar visuals are just a mess.  Need a cleansing pass\".",
+  "nodeIds": [
+    "feature-sidebar-visuals-are-just-a-mess-need-a-cleansing-pass"
+  ],
+  "metadata": {
+    "imageCount": "1",
+    "clientMutationId": "65a21554-e92d-417a-bc44-a9b1e9f90f00"
+  }
+}

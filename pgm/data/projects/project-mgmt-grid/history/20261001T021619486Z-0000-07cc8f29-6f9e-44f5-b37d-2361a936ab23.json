@@ -1,0 +1,14 @@
+{
+  "id": "07cc8f29-6f9e-44f5-b37d-2361a936ab23",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T02:16:19.486Z",
+  "summary": "Updated metadata for \"Context decomp leaves a lot of detail missing in new nodes\".",
+  "nodeIds": [
+    "note-context-decomp-leaves-a-lot-of-detail-missing-in-new-nodes"
+  ]
+}

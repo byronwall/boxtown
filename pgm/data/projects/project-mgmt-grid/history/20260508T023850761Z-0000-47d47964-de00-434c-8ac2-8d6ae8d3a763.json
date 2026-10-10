@@ -1,0 +1,12 @@
+{
+  "id": "47d47964-de00-434c-8ac2-8d6ae8d3a763",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-05-08T02:38:50.761Z",
+  "summary": "Changed \"Odd animation when adding a node - things move too much - seems like we're missing an optimistic update\" status to needs-review.",
+  "nodeIds": [
+    "task-odd-animation-when-adding-a-node-things-move-too-much"
+  ]
+}

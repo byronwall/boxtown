@@ -1,0 +1,14 @@
+{
+  "id": "27cfc650-79b1-4e46-bc77-9f8b779e85a5",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:06.205Z",
+  "summary": "Deleted \"Project index page\".",
+  "nodeIds": [
+    "page-project-index-page"
+  ]
+}

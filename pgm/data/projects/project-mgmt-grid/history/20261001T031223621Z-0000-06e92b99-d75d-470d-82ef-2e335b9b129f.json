@@ -1,0 +1,14 @@
+{
+  "id": "06e92b99-d75d-470d-82ef-2e335b9b129f",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T03:12:23.621Z",
+  "summary": "Changed \"Ideally all filters are in the URL so they persist through refresh\" status to needs-review.",
+  "nodeIds": [
+    "feature-ideally-all-filters-are-in-the-url-so-they-persist-through-refresh"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "d5c8a615-cb8f-4635-896a-d4dcc14f2c87",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T02:30:09.979Z",
+  "summary": "Changed \"Sidebar visuals are just a mess.  Need a cleansing pass\" status to implemented.",
+  "nodeIds": [
+    "feature-sidebar-visuals-are-just-a-mess-need-a-cleansing-pass"
+  ]
+}

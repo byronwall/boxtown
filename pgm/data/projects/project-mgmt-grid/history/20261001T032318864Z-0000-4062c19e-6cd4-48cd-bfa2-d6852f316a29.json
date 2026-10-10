@@ -1,0 +1,14 @@
+{
+  "id": "4062c19e-6cd4-48cd-bfa2-d6852f316a29",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T03:23:18.864Z",
+  "summary": "Changed \"Grid view has layout shift when selecting all\" status to needs-review.",
+  "nodeIds": [
+    "feature-grid-view-has-layout-shift-when-selecting-all"
+  ]
+}

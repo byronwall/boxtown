@@ -1,0 +1,14 @@
+{
+  "id": "9ada43ee-f112-4952-89da-8964a27dc80d",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:27.543Z",
+  "summary": "Updated metadata for \"Make a \"flat\" view for editing meta data quickly\".",
+  "nodeIds": [
+    "page-make-a-flat-view-for-editing-meta-data-quickly"
+  ]
+}

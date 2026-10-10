@@ -1,0 +1,14 @@
+{
+  "id": "847207e1-2e7b-48d6-84be-7ba69ea9c410",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:02.178Z",
+  "summary": "Deleted \"Breadcrumbs with TOC\".",
+  "nodeIds": [
+    "page-breadcrumbs-with-toc"
+  ]
+}

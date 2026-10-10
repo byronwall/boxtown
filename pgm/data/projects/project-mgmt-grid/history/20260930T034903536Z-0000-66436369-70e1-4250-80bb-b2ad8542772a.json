@@ -1,0 +1,14 @@
+{
+  "id": "66436369-70e1-4250-80bb-b2ad8542772a",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:03.536Z",
+  "summary": "Deleted \"Global search\".",
+  "nodeIds": [
+    "page-global-search"
+  ]
+}

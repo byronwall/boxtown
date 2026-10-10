@@ -1,0 +1,22 @@
+{
+  "id": "70106457-6ae7-4cef-9bdf-5224dc94d6aa",
+  "kind": "nodes.bulk.updated",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T02:18:24.472Z",
+  "summary": "Bulk updated 8 nodes: archived.",
+  "nodeIds": [
+    "note-the-whole-raw-context-stuff-is-odd",
+    "note-context-decomp-leaves-a-lot-of-detail-missing-in-new-nodes",
+    "page-status-reporting-is-poor-needs-to-be-global",
+    "page-need-to-expose-add-node-flow-off-selected-item",
+    "page-needs-to-work-on-an-existing-node-image-some-picker",
+    "task-new-task-mode-should-do-button-group-instead-of-select-menu",
+    "page-add-nodes-flow-need-to-attribute-to-agent-not-human",
+    "feature-delete-all-option-would-be-nice"
+  ],
+  "metadata": {
+    "clientMutationId": "97d858b3-fa51-4dbc-8b35-59e6d8bde381"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "5d77af38-4baf-4579-b749-4586047e3772",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:01.468Z",
+  "summary": "Deleted \"Agent can search for nodes\".",
+  "nodeIds": [
+    "page-agent-can-search-for-nodes"
+  ]
+}

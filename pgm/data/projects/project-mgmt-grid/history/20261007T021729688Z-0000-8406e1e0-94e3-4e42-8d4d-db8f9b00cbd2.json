@@ -1,0 +1,14 @@
+{
+  "id": "8406e1e0-94e3-4e42-8d4d-db8f9b00cbd2",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:14bd4a",
+    "label": "Agent token ...14bd4a"
+  },
+  "createdAt": "2026-10-07T02:17:29.688Z",
+  "summary": "Changed \"Reorder `new node` so type is under context\" status to implemented.",
+  "nodeIds": [
+    "feature-reorder-new-node-so-type-is-under-context"
+  ]
+}

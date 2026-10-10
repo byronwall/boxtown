@@ -1,0 +1,14 @@
+{
+  "id": "24be7861-8aeb-44f9-83c6-77e87e43d135",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:14.201Z",
+  "summary": "Changed \"Allow dragging an image on the image list to add one more\" status to implemented.",
+  "nodeIds": [
+    "task-allow-dragging-an-image-on-the-image-list-to-add-one-more"
+  ]
+}
