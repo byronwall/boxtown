@@ -1,0 +1,14 @@
+{
+  "id": "22d2c727-9144-40f2-9cf5-0dfacebfd2b0",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:04.232Z",
+  "summary": "Deleted \"Guidance from codex\".",
+  "nodeIds": [
+    "page-guidance-from-codex"
+  ]
+}

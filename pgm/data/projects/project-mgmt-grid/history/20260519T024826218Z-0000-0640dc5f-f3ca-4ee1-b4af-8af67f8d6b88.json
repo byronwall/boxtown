@@ -1,0 +1,15 @@
+{
+  "id": "0640dc5f-f3ca-4ee1-b4af-8af67f8d6b88",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-05-19T02:48:26.218Z",
+  "summary": "Created \"Need to support multi select so bulk archive is easier - or bulk archive on grid view - or checkboxes?\".",
+  "nodeIds": [
+    "feature-need-to-support-multi-select-so-bulk-archive-is-easier-or-bulk-archive-on-grid-view-or-checkboxes"
+  ],
+  "metadata": {
+    "clientMutationId": "9af32cf6-4e93-4348-9bc0-dbd4c24a917c"
+  }
+}

@@ -36,7 +36,7 @@ export async function exportProjectArchiveOnDisk(projectId: string) {
       projectId: project.id,
       projectName: project.name,
     }),
-    jsonEntry("project.json", project),
+    jsonEntry("project.json", toArchivedProjectRecord(project)),
   ];
 
   for (const node of project.spatialMap.nodes) {
@@ -96,6 +96,19 @@ export const importProjectArchiveOnDisk = serializedMutation(async function impo
 
   return project;
 });
+
+// Archives keep the single-file record. The newest history entry carries the
+// current state, which is what parseStoredProjectRecord reads back on import.
+function toArchivedProjectRecord(project: ProjectRecord): ProjectRecord {
+  const [newest, ...older] = project.operationLog;
+  if (!newest) return project;
+  const state = {
+    nodeMetadataSchema: project.nodeMetadataSchema,
+    nodeTypeSchema: project.nodeTypeSchema,
+    spatialMap: project.spatialMap,
+  };
+  return { ...project, operationLog: [{ ...newest, payload: { state } }, ...older] };
+}
 
 function jsonEntry(name: string, value: unknown): ZipEntry {
   return { name, data: Buffer.from(`${JSON.stringify(value, null, 2)}\n`) };

@@ -1,0 +1,14 @@
+{
+  "id": "1f98e2d6-6711-4fee-8d6d-4f19e5ffd34a",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-02T01:06:32.236Z",
+  "summary": "Changed \"Allow multiple selection\" status to deprecated.",
+  "nodeIds": [
+    "page-allow-multiple-selection"
+  ]
+}

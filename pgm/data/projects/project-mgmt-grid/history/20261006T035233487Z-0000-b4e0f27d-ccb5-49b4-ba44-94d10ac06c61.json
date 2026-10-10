@@ -1,0 +1,14 @@
+{
+  "id": "b4e0f27d-ccb5-49b4-ba44-94d10ac06c61",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.487Z",
+  "summary": "Updated metadata for \"Needs to make the title sticky\".",
+  "nodeIds": [
+    "task-needs-to-make-the-title-sticky"
+  ]
+}

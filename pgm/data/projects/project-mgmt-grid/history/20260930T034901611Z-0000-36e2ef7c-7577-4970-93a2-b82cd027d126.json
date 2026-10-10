@@ -1,0 +1,14 @@
+{
+  "id": "36e2ef7c-7577-4970-93a2-b82cd027d126",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:01.611Z",
+  "summary": "Deleted \"Agent can send project context\".",
+  "nodeIds": [
+    "page-agent-can-send-project-context"
+  ]
+}

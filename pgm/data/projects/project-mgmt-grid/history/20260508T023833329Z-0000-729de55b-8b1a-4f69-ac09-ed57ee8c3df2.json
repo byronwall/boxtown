@@ -1,0 +1,12 @@
+{
+  "id": "729de55b-8b1a-4f69-ac09-ed57ee8c3df2",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-05-08T02:38:33.329Z",
+  "summary": "Changed \"Add command to update `pgm`\" status to needs-review.",
+  "nodeIds": [
+    "task-add-command-to-update-pgm"
+  ]
+}

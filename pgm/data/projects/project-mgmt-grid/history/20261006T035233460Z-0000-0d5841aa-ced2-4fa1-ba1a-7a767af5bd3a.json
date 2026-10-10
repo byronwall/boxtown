@@ -1,0 +1,14 @@
+{
+  "id": "0d5841aa-ced2-4fa1-ba1a-7a767af5bd3a",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.460Z",
+  "summary": "Changed \"Need some sense of \"relevance\" so most important stuff is visible\" status to implemented.",
+  "nodeIds": [
+    "page-need-some-sense-of-relevance-so-most-important-stuff-is-visible"
+  ]
+}

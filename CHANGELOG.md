@@ -2,6 +2,14 @@
 
 Notable changes to Product Grid Management, newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
 
+## 2026-10-09
+
+### Changed
+
+- Projects are now saved as one Markdown file per node, one file per history entry, and a small `project.json`, instead of one large `project.json`. Two git branches that each add issues or edit different nodes now merge without conflicts. When both edit the same field, the conflict shows up in that node's file, where it is easy to read.
+- Existing projects move to the new layout the first time they're opened, with nothing lost. The old file is kept as a `project.json.v1-*.bak` backup, and git ignores it.
+- After a merge, a project with a missing parent, a link to a deleted node, or a parent loop from two crossing moves loads normally. The loader repairs the problem and logs what it changed. If a merge leaves conflict markers, the error names each file that needs fixing.
+
 ## 2026-10-06
 
 ### Added

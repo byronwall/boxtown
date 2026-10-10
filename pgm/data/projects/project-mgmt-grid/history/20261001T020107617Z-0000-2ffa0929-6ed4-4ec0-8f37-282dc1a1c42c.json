@@ -1,0 +1,45 @@
+{
+  "id": "2ffa0929-6ed4-4ec0-8f37-282dc1a1c42c",
+  "kind": "nodes.bulk.updated",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T02:01:07.617Z",
+  "summary": "Bulk updated 31 nodes: archived.",
+  "nodeIds": [
+    "note-meta-data-should-edit-in-place",
+    "page-suggestions-after-processing",
+    "page-initial-view-is-sometimes-askew",
+    "page-make-the-nodes-bigger-so-image-is-better-aspect-ratio-prevent-text-shrinkage",
+    "feature-make-it-easy-to-choose-node-type",
+    "feature-consider-splitting-title-context",
+    "page-make-a-flat-view-for-editing-meta-data-quickly",
+    "page-show-context-existence-preview",
+    "page-likely-need-web-sockets-so-cli-updates-are-immediate-in-client",
+    "feature-show-a-small-line-or-link-to-the-parent-task",
+    "page-click-opens-the-zoom-modal",
+    "page-double-click-should-isolate-not-go-to-canvas",
+    "page-need-to-make-the-various-displays-editable",
+    "page-ensure-color-is-conveyed-for-type-status",
+    "feature-ensure-new-node-is-added-to-isolated-if-no-selection",
+    "task-pgm-cli-bug-report-metadata-persistence-and-stdout-edge-cases",
+    "task-app-should-expose-prompts-and-things-to-paste-into-agents",
+    "task-allow-toggling-on-off-parent-context-on-map",
+    "task-allow-dragging-an-image-on-the-image-list-to-add-one-more",
+    "page-i-want-to-resize-columns-and-get-longer-name",
+    "feature-error-with-web-sockets",
+    "page-project-root-picker-to-reassign-should-allow-searching-for-a-node-by-name-using-similar-interface-to-cmd-k-menu",
+    "page-add-check-for-using-latest-version-of-cli-show-update-command",
+    "page-need-to-provide-a-command-to-download-image-without-curl",
+    "page-need-to-show-depth-and-sort-order-to-prefer-top-level-nodes",
+    "page-bug-report-from-codex",
+    "task-add-command-to-update-pgm",
+    "task-provide-option-to-show-all-children-on-filtered-nodes-too",
+    "task-filter-needs-to-do-an-and-when-combining-status-and-type",
+    "feature-creating-ids-from-titles-leads-to-long-file-names-and-other-problems",
+    "feature-need-to-support-archiving-things-when-done"
+  ],
+  "metadata": {
+    "clientMutationId": "97dde36d-2361-4b3c-b7eb-c045fb719e64"
+  }
+}

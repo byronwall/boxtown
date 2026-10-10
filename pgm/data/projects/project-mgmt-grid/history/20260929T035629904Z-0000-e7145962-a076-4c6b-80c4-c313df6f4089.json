@@ -1,0 +1,14 @@
+{
+  "id": "e7145962-a076-4c6b-80c4-c313df6f4089",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:29.904Z",
+  "summary": "Changed \"How to convert tasks into features?\" status to deprecated.",
+  "nodeIds": [
+    "page-how-to-convert-tasks-into-features"
+  ]
+}

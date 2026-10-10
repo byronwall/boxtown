@@ -1,0 +1,14 @@
+{
+  "id": "de5a4c8f-a99a-40be-adfb-e9fcbe6a41b1",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:04.368Z",
+  "summary": "Deleted \"Image decomp\".",
+  "nodeIds": [
+    "page-image-decomp"
+  ]
+}

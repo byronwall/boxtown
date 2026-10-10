@@ -1,0 +1,15 @@
+{
+  "id": "083dbf0f-57c0-4a97-be64-319753715e9d",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-07T02:06:31.932Z",
+  "summary": "Created \"Consider showing image on left side to improve aspect ratio\".",
+  "nodeIds": [
+    "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio"
+  ],
+  "metadata": {
+    "clientMutationId": "f7f4a4a2-0fe7-4d0d-956a-23f40184c3b5"
+  }
+}

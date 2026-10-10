@@ -1,0 +1,14 @@
+{
+  "id": "64327f8b-ddc7-4786-82c2-e0acc027f2f6",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:85073b",
+    "label": "Agent token ...85073b"
+  },
+  "createdAt": "2026-10-07T02:22:47.906Z",
+  "summary": "Updated metadata for \"Need a button to remove all \"dead\" images\".",
+  "nodeIds": [
+    "feature-need-a-button-to-remove-all-dead-images"
+  ]
+}

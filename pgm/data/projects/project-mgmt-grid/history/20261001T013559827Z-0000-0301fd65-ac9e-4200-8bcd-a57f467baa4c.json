@@ -1,0 +1,15 @@
+{
+  "id": "0301fd65-ac9e-4200-8bcd-a57f467baa4c",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T01:35:59.827Z",
+  "summary": "Created \"Ideally all filters are in the URL so they persist through refresh\".",
+  "nodeIds": [
+    "feature-ideally-all-filters-are-in-the-url-so-they-persist-through-refresh"
+  ],
+  "metadata": {
+    "clientMutationId": "393356d0-8488-4719-8d1a-9b666fdc2368"
+  }
+}

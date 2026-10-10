@@ -1,0 +1,14 @@
+{
+  "id": "ec629c59-b219-4646-bb5e-c7c40c88060d",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:03.676Z",
+  "summary": "Deleted \"Global state\".",
+  "nodeIds": [
+    "page-global-state"
+  ]
+}

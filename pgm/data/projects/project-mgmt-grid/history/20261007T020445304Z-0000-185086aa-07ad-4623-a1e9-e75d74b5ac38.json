@@ -1,0 +1,15 @@
+{
+  "id": "185086aa-07ad-4623-a1e9-e75d74b5ac38",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-07T02:04:45.304Z",
+  "summary": "Created \"Deleting a node should delete its images too\".",
+  "nodeIds": [
+    "feature-deleting-a-node-should-delete-its-images-too"
+  ],
+  "metadata": {
+    "clientMutationId": "134db152-b731-46a0-ac40-b2e566c31f0d"
+  }
+}

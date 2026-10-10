@@ -1,0 +1,14 @@
+{
+  "id": "7165be29-e518-4c71-89b4-f860a5e7f704",
+  "kind": "node.context.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T03:24:07.368Z",
+  "summary": "Updated context for \"Grid view has layout shift when selecting all\".",
+  "nodeIds": [
+    "feature-grid-view-has-layout-shift-when-selecting-all"
+  ]
+}

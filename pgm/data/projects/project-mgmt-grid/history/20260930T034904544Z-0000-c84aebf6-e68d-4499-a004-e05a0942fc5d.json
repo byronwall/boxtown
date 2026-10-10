@@ -1,0 +1,14 @@
+{
+  "id": "c84aebf6-e68d-4499-a004-e05a0942fc5d",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:04.544Z",
+  "summary": "Deleted \"Image preview\".",
+  "nodeIds": [
+    "page-image-preview"
+  ]
+}

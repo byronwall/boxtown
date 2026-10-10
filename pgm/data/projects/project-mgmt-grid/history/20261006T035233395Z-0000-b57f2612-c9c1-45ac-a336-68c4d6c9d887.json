@@ -1,0 +1,14 @@
+{
+  "id": "b57f2612-c9c1-45ac-a336-68c4d6c9d887",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.395Z",
+  "summary": "Updated metadata for \"Green colors are not helpful - need to go more neutral\".",
+  "nodeIds": [
+    "task-green-colors-are-not-helpful-need-to-go-more-neutral"
+  ]
+}

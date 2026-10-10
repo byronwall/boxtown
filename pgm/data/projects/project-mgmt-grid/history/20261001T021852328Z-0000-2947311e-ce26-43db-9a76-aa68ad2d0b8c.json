@@ -1,0 +1,15 @@
+{
+  "id": "2947311e-ce26-43db-9a76-aa68ad2d0b8c",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T02:18:52.328Z",
+  "summary": "Created \"Grid view has layout shift when selecting all\".",
+  "nodeIds": [
+    "feature-grid-view-has-layout-shift-when-selecting-all"
+  ],
+  "metadata": {
+    "clientMutationId": "22a17b4c-f469-4608-a5df-df8c126b570d"
+  }
+}

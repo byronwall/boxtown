@@ -1,0 +1,14 @@
+{
+  "id": "4683e9fb-c4e4-4b68-bb03-d41bb6fed4f3",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:04.003Z",
+  "summary": "Deleted \"Grid view\".",
+  "nodeIds": [
+    "page-grid-view"
+  ]
+}

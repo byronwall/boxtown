@@ -1,0 +1,14 @@
+{
+  "id": "2c7d9be8-80f9-4bae-b439-00802e7299e1",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:15.142Z",
+  "summary": "Updated metadata for \"Allow dragging an image on the image list to add one more\".",
+  "nodeIds": [
+    "task-allow-dragging-an-image-on-the-image-list-to-add-one-more"
+  ]
+}

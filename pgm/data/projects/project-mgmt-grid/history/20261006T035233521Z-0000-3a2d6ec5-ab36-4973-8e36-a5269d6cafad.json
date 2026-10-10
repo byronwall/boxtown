@@ -1,0 +1,14 @@
+{
+  "id": "3a2d6ec5-ab36-4973-8e36-a5269d6cafad",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.521Z",
+  "summary": "Changed \"Show active header in TOC view\" status to implemented.",
+  "nodeIds": [
+    "page-show-active-header-in-toc-view"
+  ]
+}

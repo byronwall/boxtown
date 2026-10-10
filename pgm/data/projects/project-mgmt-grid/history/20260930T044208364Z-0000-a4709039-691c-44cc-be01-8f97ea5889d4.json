@@ -1,0 +1,14 @@
+{
+  "id": "a4709039-691c-44cc-be01-8f97ea5889d4",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:42:08.364Z",
+  "summary": "Changed \"Allow for multiple selection\" status to needs-review.",
+  "nodeIds": [
+    "page-allow-for-multiple-selection"
+  ]
+}

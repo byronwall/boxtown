@@ -1,0 +1,14 @@
+{
+  "id": "d53439f7-9726-4537-af09-de71402f5392",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:20.726Z",
+  "summary": "Updated metadata for \"Error with web sockets\".",
+  "nodeIds": [
+    "feature-error-with-web-sockets"
+  ]
+}

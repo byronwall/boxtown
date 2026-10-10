@@ -1,0 +1,14 @@
+{
+  "id": "e1579be5-63fc-4cfc-ae53-a0a8dadc9f48",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:06.792Z",
+  "summary": "Deleted \"Rich markdown-like viewer\".",
+  "nodeIds": [
+    "page-rich-markdown-like-viewer"
+  ]
+}

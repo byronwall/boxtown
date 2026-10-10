@@ -1,0 +1,14 @@
+{
+  "id": "1be7091b-0da5-4d42-8325-ff378f668c89",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.408Z",
+  "summary": "Changed \"I really want to type to filter in here\" status to implemented.",
+  "nodeIds": [
+    "page-i-really-want-to-type-to-filter-in-here"
+  ]
+}

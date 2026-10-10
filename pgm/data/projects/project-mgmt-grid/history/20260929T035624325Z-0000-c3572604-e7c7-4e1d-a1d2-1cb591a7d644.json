@@ -1,0 +1,14 @@
+{
+  "id": "c3572604-e7c7-4e1d-a1d2-1cb591a7d644",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:24.325Z",
+  "summary": "Updated metadata for \"Add check for using latest version of CLI - show update command\".",
+  "nodeIds": [
+    "page-add-check-for-using-latest-version-of-cli-show-update-command"
+  ]
+}

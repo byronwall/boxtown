@@ -1,0 +1,14 @@
+{
+  "id": "79b1a0fe-43cb-4297-ab67-d90dc382deaf",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:28.324Z",
+  "summary": "Changed \"Likely need web sockets so CLI updates are immediate in client\" status to implemented.",
+  "nodeIds": [
+    "page-likely-need-web-sockets-so-cli-updates-are-immediate-in-client"
+  ]
+}

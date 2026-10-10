@@ -1,0 +1,14 @@
+{
+  "id": "4201ef95-55ba-47d8-a34c-25c8620e9ab8",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:79b41d",
+    "label": "Agent token ...79b41d"
+  },
+  "createdAt": "2026-10-07T02:27:56.886Z",
+  "summary": "Updated metadata for \"Issues with server closing and not clearing the old manifest file\".",
+  "nodeIds": [
+    "feature-issues-with-server-closing-and-not-clearing-the-old-manifest-file"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "899b628e-29b2-441e-84e2-2ff59ccc2598",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.417Z",
+  "summary": "Updated metadata for \"I really want to type to filter in here\".",
+  "nodeIds": [
+    "page-i-really-want-to-type-to-filter-in-here"
+  ]
+}

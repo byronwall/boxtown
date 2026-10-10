@@ -1,0 +1,14 @@
+{
+  "id": "a635d7d5-9033-490d-a580-75b5caca8215",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T01:48:21.955Z",
+  "summary": "Updated metadata for \"Allow toggling on/off parent context on map\".",
+  "nodeIds": [
+    "task-allow-toggling-on-off-parent-context-on-map"
+  ]
+}

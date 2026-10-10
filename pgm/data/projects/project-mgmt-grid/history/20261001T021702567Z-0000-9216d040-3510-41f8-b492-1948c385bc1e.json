@@ -1,0 +1,15 @@
+{
+  "id": "9216d040-3510-41f8-b492-1948c385bc1e",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T02:17:02.567Z",
+  "summary": "Created \"Resize thumb should be in the gap between panes\".",
+  "nodeIds": [
+    "feature-resize-thumb-should-be-in-the-gap-between-panes"
+  ],
+  "metadata": {
+    "clientMutationId": "5411c41e-62f9-43eb-b930-b290dd7f7fee"
+  }
+}

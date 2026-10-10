@@ -1,0 +1,14 @@
+{
+  "id": "a213ae5e-7b15-440c-8566-5042ebd4e1f4",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T03:45:38.425Z",
+  "summary": "Changed \"Need a distinct \"clear filters\" or \"reset\" option\" status to needs-review.",
+  "nodeIds": [
+    "feature-need-a-distinct-clear-filters-or-reset-option"
+  ]
+}

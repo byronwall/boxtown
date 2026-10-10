@@ -1,0 +1,14 @@
+{
+  "id": "cfe6c893-d51a-4422-abc9-1fa7dbf17921",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:07.381Z",
+  "summary": "Deleted \"Global data/view filters\".",
+  "nodeIds": [
+    "page-view-filters"
+  ]
+}

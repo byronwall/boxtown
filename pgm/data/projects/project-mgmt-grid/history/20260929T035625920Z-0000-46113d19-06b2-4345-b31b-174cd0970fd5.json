@@ -1,0 +1,14 @@
+{
+  "id": "46113d19-06b2-4345-b31b-174cd0970fd5",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:25.920Z",
+  "summary": "Updated metadata for \"pgm CLI bug report: metadata persistence and stdout edge cases\".",
+  "nodeIds": [
+    "task-pgm-cli-bug-report-metadata-persistence-and-stdout-edge-cases"
+  ]
+}

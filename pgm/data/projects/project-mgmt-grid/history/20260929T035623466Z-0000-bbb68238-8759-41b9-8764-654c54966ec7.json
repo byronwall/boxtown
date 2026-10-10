@@ -1,0 +1,14 @@
+{
+  "id": "bbb68238-8759-41b9-8764-654c54966ec7",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:23.466Z",
+  "summary": "Changed \"Add check for using latest version of CLI - show update command\" status to implemented.",
+  "nodeIds": [
+    "page-add-check-for-using-latest-version-of-cli-show-update-command"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "f7e2e38e-6505-4bfe-91c6-a6a961f467de",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.503Z",
+  "summary": "Updated metadata for \"Really want to be able to \"peek\" at structure\".",
+  "nodeIds": [
+    "page-really-want-to-be-able-to-peek-at-structure"
+  ]
+}

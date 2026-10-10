@@ -1,0 +1,14 @@
+{
+  "id": "8f0233ba-0516-4a9f-9835-a41d24dd6885",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T02:16:38.203Z",
+  "summary": "Updated metadata for \"The whole \"raw\" context stuff is odd\".",
+  "nodeIds": [
+    "note-the-whole-raw-context-stuff-is-odd"
+  ]
+}

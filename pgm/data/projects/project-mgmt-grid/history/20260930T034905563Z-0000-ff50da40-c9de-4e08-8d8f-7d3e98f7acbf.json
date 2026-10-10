@@ -1,0 +1,14 @@
+{
+  "id": "ff50da40-c9de-4e08-8d8f-7d3e98f7acbf",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:05.563Z",
+  "summary": "Deleted \"Metadata\".",
+  "nodeIds": [
+    "page-metadata"
+  ]
+}

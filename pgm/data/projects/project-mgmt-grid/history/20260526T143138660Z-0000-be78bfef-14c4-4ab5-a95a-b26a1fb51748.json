@@ -1,0 +1,15 @@
+{
+  "id": "be78bfef-14c4-4ab5-a95a-b26a1fb51748",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-05-26T14:31:38.660Z",
+  "summary": "Created \"Is it possible actually overlap nodes by depth = Mahjong style\".",
+  "nodeIds": [
+    "feature-is-it-possible-actually-overlap-nodes-by-depth-mahjong-style"
+  ],
+  "metadata": {
+    "clientMutationId": "c644fd76-90d8-40c9-b648-a1805d8cb7b8"
+  }
+}

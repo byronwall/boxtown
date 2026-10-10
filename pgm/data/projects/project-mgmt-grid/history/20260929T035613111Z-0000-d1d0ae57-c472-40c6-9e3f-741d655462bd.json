@@ -1,0 +1,14 @@
+{
+  "id": "d1d0ae57-c472-40c6-9e3f-741d655462bd",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:13.111Z",
+  "summary": "Updated metadata for \"Filter needs to do an AND when combining status and type.\".",
+  "nodeIds": [
+    "task-filter-needs-to-do-an-and-when-combining-status-and-type"
+  ]
+}

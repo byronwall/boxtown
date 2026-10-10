@@ -1,0 +1,14 @@
+{
+  "id": "7b90e3c1-af20-40e8-80ef-3012ffe4891f",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:02.787Z",
+  "summary": "Deleted \"Data structures\".",
+  "nodeIds": [
+    "page-data-structures"
+  ]
+}

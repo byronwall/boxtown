@@ -1,0 +1,14 @@
+{
+  "id": "48df8464-357f-4ff6-8896-a0f6e7da3d40",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:48:59.490Z",
+  "summary": "Deleted \"Global design\".",
+  "nodeIds": [
+    "feature-global-design"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "38ea523d-f944-47ad-8bd0-d933e45c819e",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-05-08T02:39:12.807Z",
+  "summary": "Deleted \"Prevent text selection with double click\".",
+  "nodeIds": [
+    "page-prevent-text-selection-with-double-click"
+  ]
+}

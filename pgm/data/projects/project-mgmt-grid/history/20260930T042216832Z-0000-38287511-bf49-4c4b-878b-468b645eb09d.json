@@ -1,0 +1,14 @@
+{
+  "id": "38287511-bf49-4c4b-878b-468b645eb09d",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:22:16.832Z",
+  "summary": "Changed \"Need to support archiving things when done\" status to implemented.",
+  "nodeIds": [
+    "feature-need-to-support-archiving-things-when-done"
+  ]
+}

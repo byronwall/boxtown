@@ -1,0 +1,14 @@
+{
+  "id": "6e1b38d3-56f6-4970-903d-93d9e6a34cc4",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:06.651Z",
+  "summary": "Deleted \"Quickly create new nodes\".",
+  "nodeIds": [
+    "page-quickly-create-new-nodes"
+  ]
+}

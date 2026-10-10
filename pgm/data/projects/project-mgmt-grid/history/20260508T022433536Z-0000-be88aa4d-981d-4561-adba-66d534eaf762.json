@@ -1,0 +1,12 @@
+{
+  "id": "be88aa4d-981d-4561-adba-66d534eaf762",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-05-08T02:24:33.536Z",
+  "summary": "Deleted \"Allow filtering the global active nodes based on meta data or type\".",
+  "nodeIds": [
+    "task-allow-filtering-the-canvas-based-on-meta-data-or-type"
+  ]
+}

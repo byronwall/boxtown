@@ -1,0 +1,14 @@
+{
+  "id": "61722074-693a-4e35-9896-fa4a0f46428e",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:42:05.823Z",
+  "summary": "Updated metadata for \"Allow setting the default type\".",
+  "nodeIds": [
+    "page-allow-setting-the-default-type"
+  ]
+}

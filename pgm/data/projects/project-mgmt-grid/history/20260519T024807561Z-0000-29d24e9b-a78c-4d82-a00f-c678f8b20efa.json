@@ -1,0 +1,15 @@
+{
+  "id": "29d24e9b-a78c-4d82-a00f-c678f8b20efa",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-05-19T02:48:07.561Z",
+  "summary": "Created \"Need to support archiving things when done\".",
+  "nodeIds": [
+    "feature-need-to-support-archiving-things-when-done"
+  ],
+  "metadata": {
+    "clientMutationId": "3c6dcb57-853f-4e97-b651-7921f0a88699"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "3ad305b1-fb2a-4415-ae68-8b23521ffa9c",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:22:15.796Z",
+  "summary": "Updated metadata for \"Provide option to show all children on filtered nodes too\".",
+  "nodeIds": [
+    "task-provide-option-to-show-all-children-on-filtered-nodes-too"
+  ]
+}

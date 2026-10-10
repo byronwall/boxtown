@@ -1,0 +1,15 @@
+{
+  "id": "68ac838f-d300-4cbb-b06e-2e59e11d265a",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T01:34:02.422Z",
+  "summary": "Created \"Delete all option would be nice\".",
+  "nodeIds": [
+    "feature-delete-all-option-would-be-nice"
+  ],
+  "metadata": {
+    "clientMutationId": "6bc6c592-09ba-4bb3-a60a-aa4419a39077"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "df13c0c1-b99a-485e-95ab-208497317671",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:00.577Z",
+  "summary": "Deleted \"Activated via CMD K\".",
+  "nodeIds": [
+    "page-activated-via-cmd-k"
+  ]
+}

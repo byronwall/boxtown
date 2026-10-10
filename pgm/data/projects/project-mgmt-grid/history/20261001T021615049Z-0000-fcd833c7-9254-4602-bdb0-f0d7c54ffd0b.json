@@ -1,0 +1,14 @@
+{
+  "id": "fcd833c7-9254-4602-bdb0-f0d7c54ffd0b",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T02:16:15.049Z",
+  "summary": "Updated metadata for \"Add nodes flow need to attribute to agent, not human\".",
+  "nodeIds": [
+    "page-add-nodes-flow-need-to-attribute-to-agent-not-human"
+  ]
+}

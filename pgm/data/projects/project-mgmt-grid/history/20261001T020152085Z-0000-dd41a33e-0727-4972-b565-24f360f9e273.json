@@ -1,0 +1,15 @@
+{
+  "id": "dd41a33e-0727-4972-b565-24f360f9e273",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T02:01:52.085Z",
+  "summary": "Created \"Need a distinct \"clear filters\" or \"reset\" option\".",
+  "nodeIds": [
+    "feature-need-a-distinct-clear-filters-or-reset-option"
+  ],
+  "metadata": {
+    "clientMutationId": "c2268e50-06ba-4d90-afb5-f3e892c3189a"
+  }
+}

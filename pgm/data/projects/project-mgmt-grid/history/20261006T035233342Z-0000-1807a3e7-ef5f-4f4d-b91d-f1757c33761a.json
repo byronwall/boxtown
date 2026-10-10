@@ -1,0 +1,14 @@
+{
+  "id": "1807a3e7-ef5f-4f4d-b91d-f1757c33761a",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.342Z",
+  "summary": "Updated metadata for \"Breadcrumb is really nice in the tree view\".",
+  "nodeIds": [
+    "page-breadcrumb-is-really-nice-in-the-tree-view"
+  ]
+}

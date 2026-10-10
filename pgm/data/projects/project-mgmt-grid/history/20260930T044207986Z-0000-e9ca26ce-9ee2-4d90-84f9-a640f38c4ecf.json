@@ -1,0 +1,14 @@
+{
+  "id": "e9ca26ce-9ee2-4d90-84f9-a640f38c4ecf",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:42:07.986Z",
+  "summary": "Updated metadata for \"Need to support multi select so bulk archive is easier - or bulk archive on grid view - or checkboxes?\".",
+  "nodeIds": [
+    "feature-need-to-support-multi-select-so-bulk-archive-is-easier-or-bulk-archive-on-grid-view-or-checkboxes"
+  ]
+}

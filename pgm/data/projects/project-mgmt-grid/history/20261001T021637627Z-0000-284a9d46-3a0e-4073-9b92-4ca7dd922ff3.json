@@ -1,0 +1,14 @@
+{
+  "id": "284a9d46-3a0e-4073-9b92-4ca7dd922ff3",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T02:16:37.627Z",
+  "summary": "Changed \"The whole \"raw\" context stuff is odd\" status to implemented.",
+  "nodeIds": [
+    "note-the-whole-raw-context-stuff-is-odd"
+  ]
+}

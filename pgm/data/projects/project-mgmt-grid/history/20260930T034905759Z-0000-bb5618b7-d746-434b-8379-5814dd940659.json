@@ -1,0 +1,14 @@
+{
+  "id": "bb5618b7-d746-434b-8379-5814dd940659",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:05.759Z",
+  "summary": "Deleted \"Use an op-log to record activity\".",
+  "nodeIds": [
+    "page-need-to-convert-to-an-op-log"
+  ]
+}

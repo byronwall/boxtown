@@ -1,0 +1,14 @@
+{
+  "id": "c7bbae49-f718-47d5-8886-03956f099406",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:04.976Z",
+  "summary": "Deleted \"CLI and agent interaction\".",
+  "nodeIds": [
+    "page-ingest-via-cli"
+  ]
+}

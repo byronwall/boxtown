@@ -1,0 +1,14 @@
+{
+  "id": "6ba31a6e-891f-4edc-a699-e08aee8728ab",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:04.834Z",
+  "summary": "Deleted \"Incorporate pattern fills\".",
+  "nodeIds": [
+    "page-incorporate-pattern-fills"
+  ]
+}

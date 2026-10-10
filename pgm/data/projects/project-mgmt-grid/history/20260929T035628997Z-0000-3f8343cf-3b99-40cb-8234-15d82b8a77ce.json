@@ -1,0 +1,14 @@
+{
+  "id": "3f8343cf-3b99-40cb-8234-15d82b8a77ce",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:28.997Z",
+  "summary": "Updated metadata for \"Likely need web sockets so CLI updates are immediate in client\".",
+  "nodeIds": [
+    "page-likely-need-web-sockets-so-cli-updates-are-immediate-in-client"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "b2ad3974-2b3e-45ac-97ac-920e25136b56",
+  "kind": "node.context.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-05-08T02:30:50.143Z",
+  "summary": "Updated context for \"Error with web sockets\".",
+  "nodeIds": [
+    "feature-error-with-web-sockets"
+  ]
+}

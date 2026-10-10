@@ -1,0 +1,14 @@
+{
+  "id": "2e8b72f4-156b-4d73-895c-56b55c35f423",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:03.011Z",
+  "summary": "Deleted \"Default to 100%, do not zoom more, center if smaller\".",
+  "nodeIds": [
+    "page-default-to-100-do-not-zoom-more-center-if-smaller"
+  ]
+}

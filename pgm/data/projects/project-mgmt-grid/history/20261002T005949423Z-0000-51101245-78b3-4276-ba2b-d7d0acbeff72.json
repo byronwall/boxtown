@@ -1,0 +1,17 @@
+{
+  "id": "51101245-78b3-4276-ba2b-d7d0acbeff72",
+  "kind": "nodes.bulk.updated",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-02T00:59:49.423Z",
+  "summary": "Bulk updated 3 nodes: archived.",
+  "nodeIds": [
+    "feature-sidebar-visuals-are-just-a-mess-need-a-cleansing-pass",
+    "feature-resize-thumb-should-be-in-the-gap-between-panes",
+    "feature-context-really-needs-to-be-edit-in-place"
+  ],
+  "metadata": {
+    "clientMutationId": "b87da233-03e0-4a73-a8fe-0c660bfbe455"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "53b8536a-32e3-409a-9eff-fbadc7604185",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:42:07.312Z",
+  "summary": "Updated metadata for \"Add a quick project changer to CMD K or top near the \"back\"\".",
+  "nodeIds": [
+    "task-add-a-quick-project-changer-to-cmd-k-or-top-near-the-back"
+  ]
+}

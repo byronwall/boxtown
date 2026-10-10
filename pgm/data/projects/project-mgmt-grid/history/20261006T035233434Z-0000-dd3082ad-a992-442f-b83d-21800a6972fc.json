@@ -1,0 +1,14 @@
+{
+  "id": "dd3082ad-a992-442f-b83d-21800a6972fc",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:5403e8",
+    "label": "Agent token ...5403e8"
+  },
+  "createdAt": "2026-10-06T03:52:33.434Z",
+  "summary": "Updated metadata for \"Ideally all filters are in the URL so they persist through refresh\".",
+  "nodeIds": [
+    "feature-ideally-all-filters-are-in-the-url-so-they-persist-through-refresh"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "1d0cf62f-dd0d-478b-b3b4-3ad8acd6466c",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T02:02:04.241Z",
+  "summary": "Changed \"Delete all option would be nice\" status to implemented.",
+  "nodeIds": [
+    "feature-delete-all-option-would-be-nice"
+  ],
+  "metadata": {
+    "clientMutationId": "29fe00ae-1fcc-4b20-89b6-b08e36002aaf"
+  }
+}

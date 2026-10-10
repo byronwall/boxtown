@@ -1,0 +1,16 @@
+{
+  "id": "60d2c45a-44d7-4572-a998-b3a91df538a2",
+  "kind": "node.images.added",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-02T03:17:13.370Z",
+  "summary": "Added 1 images to \"Reorder `new node` so type is under context\".",
+  "nodeIds": [
+    "feature-reorder-new-node-so-type-is-under-context"
+  ],
+  "metadata": {
+    "imageCount": "1",
+    "clientMutationId": "fbb8ba88-0ae6-49eb-b3de-6813d2f32603"
+  }
+}

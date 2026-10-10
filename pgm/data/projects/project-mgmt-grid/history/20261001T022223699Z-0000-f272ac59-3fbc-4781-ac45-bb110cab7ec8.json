@@ -1,0 +1,15 @@
+{
+  "id": "f272ac59-3fbc-4781-ac45-bb110cab7ec8",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-01T02:22:23.699Z",
+  "summary": "Created \"Context really needs to be edit in place\".",
+  "nodeIds": [
+    "feature-context-really-needs-to-be-edit-in-place"
+  ],
+  "metadata": {
+    "clientMutationId": "6d32613f-07ac-4039-bcc2-c4d2fceeed7e"
+  }
+}

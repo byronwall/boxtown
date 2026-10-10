@@ -1,0 +1,14 @@
+{
+  "id": "a69f2038-d00d-46c2-9b63-620789b32737",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:6cc4e1",
+    "label": "Agent token ...6cc4e1"
+  },
+  "createdAt": "2026-10-07T02:22:35.127Z",
+  "summary": "Changed \"Deleting a node should delete its images too\" status to implemented.",
+  "nodeIds": [
+    "feature-deleting-a-node-should-delete-its-images-too"
+  ]
+}

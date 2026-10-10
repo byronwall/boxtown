@@ -1,0 +1,14 @@
+{
+  "id": "c3db3a7f-4ac9-42f0-b2cc-e1bdbe158bcd",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T04:42:08.621Z",
+  "summary": "Updated metadata for \"Allow for multiple selection\".",
+  "nodeIds": [
+    "page-allow-for-multiple-selection"
+  ]
+}

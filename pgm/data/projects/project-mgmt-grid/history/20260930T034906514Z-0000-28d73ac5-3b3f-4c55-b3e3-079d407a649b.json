@@ -1,0 +1,14 @@
+{
+  "id": "28d73ac5-3b3f-4c55-b3e3-079d407a649b",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:06.514Z",
+  "summary": "Deleted \"Question and answer process\".",
+  "nodeIds": [
+    "page-question-and-answer-process"
+  ]
+}

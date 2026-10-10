@@ -1,0 +1,14 @@
+{
+  "id": "59975a8d-62ec-4276-8907-6f14d41dff6f",
+  "kind": "node.context.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-05-08T03:02:14.000Z",
+  "summary": "Updated context for \"Ensure color is conveyed for type/status\".",
+  "nodeIds": [
+    "page-ensure-color-is-conveyed-for-type-status"
+  ]
+}

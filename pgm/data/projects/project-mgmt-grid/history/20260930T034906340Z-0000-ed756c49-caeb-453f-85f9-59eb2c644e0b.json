@@ -1,0 +1,14 @@
+{
+  "id": "ed756c49-caeb-453f-85f9-59eb2c644e0b",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:06.340Z",
+  "summary": "Deleted \"Project settings\".",
+  "nodeIds": [
+    "page-project-settings"
+  ]
+}

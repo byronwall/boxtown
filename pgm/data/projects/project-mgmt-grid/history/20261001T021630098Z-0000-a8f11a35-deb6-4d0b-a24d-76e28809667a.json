@@ -1,0 +1,14 @@
+{
+  "id": "a8f11a35-deb6-4d0b-a24d-76e28809667a",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T02:16:30.098Z",
+  "summary": "Updated metadata for \"New task mode should do button group instead of select menu\".",
+  "nodeIds": [
+    "task-new-task-mode-should-do-button-group-instead-of-select-menu"
+  ]
+}

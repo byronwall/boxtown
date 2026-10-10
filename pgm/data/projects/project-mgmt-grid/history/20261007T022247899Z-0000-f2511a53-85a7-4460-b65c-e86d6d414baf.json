@@ -1,0 +1,14 @@
+{
+  "id": "f2511a53-85a7-4460-b65c-e86d6d414baf",
+  "kind": "node.status.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:85073b",
+    "label": "Agent token ...85073b"
+  },
+  "createdAt": "2026-10-07T02:22:47.899Z",
+  "summary": "Changed \"Need a button to remove all \"dead\" images\" status to implemented.",
+  "nodeIds": [
+    "feature-need-a-button-to-remove-all-dead-images"
+  ]
+}

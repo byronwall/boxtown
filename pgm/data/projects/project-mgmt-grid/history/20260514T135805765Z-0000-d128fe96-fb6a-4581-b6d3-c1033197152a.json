@@ -1,0 +1,15 @@
+{
+  "id": "d128fe96-fb6a-4581-b6d3-c1033197152a",
+  "kind": "node.created",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-05-14T13:58:05.765Z",
+  "summary": "Created \"Creating ids from titles leads to long file names and other problems\".",
+  "nodeIds": [
+    "feature-creating-ids-from-titles-leads-to-long-file-names-and-other-problems"
+  ],
+  "metadata": {
+    "clientMutationId": "6f8c4e9c-3d18-4f37-9028-77a990d92b04"
+  }
+}

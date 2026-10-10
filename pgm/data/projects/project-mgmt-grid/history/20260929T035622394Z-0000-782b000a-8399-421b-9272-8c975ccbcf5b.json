@@ -1,0 +1,14 @@
+{
+  "id": "782b000a-8399-421b-9272-8c975ccbcf5b",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-29T03:56:22.394Z",
+  "summary": "Updated metadata for \"Add command to update `pgm`\".",
+  "nodeIds": [
+    "task-add-command-to-update-pgm"
+  ]
+}

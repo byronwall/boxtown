@@ -1,0 +1,15 @@
+{
+  "id": "3b5cdc7c-3ff8-4062-ae80-d3548f52c19b",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-06T03:55:27.317Z",
+  "summary": "Deleted \"Allow multiple selection\".",
+  "nodeIds": [
+    "page-allow-multiple-selection"
+  ],
+  "metadata": {
+    "clientMutationId": "f40bdce1-f68f-4bf9-b456-ba5dd9de8316"
+  }
+}

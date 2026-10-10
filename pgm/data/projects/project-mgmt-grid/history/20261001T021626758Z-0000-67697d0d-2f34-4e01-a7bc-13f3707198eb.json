@@ -1,0 +1,14 @@
+{
+  "id": "67697d0d-2f34-4e01-a7bc-13f3707198eb",
+  "kind": "node.metadata.updated",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-10-01T02:16:26.758Z",
+  "summary": "Updated metadata for \"Needs to work on an existing node image (some picker)\".",
+  "nodeIds": [
+    "page-needs-to-work-on-an-existing-node-image-some-picker"
+  ]
+}

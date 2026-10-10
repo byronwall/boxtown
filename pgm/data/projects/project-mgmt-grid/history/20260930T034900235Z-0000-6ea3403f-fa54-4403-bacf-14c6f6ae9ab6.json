@@ -1,0 +1,14 @@
+{
+  "id": "6ea3403f-fa54-4403-bacf-14c6f6ae9ab6",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:00.235Z",
+  "summary": "Deleted \"CLI Hierarchical Task Context\".",
+  "nodeIds": [
+    "note-cli-hierarchical-task-context"
+  ]
+}

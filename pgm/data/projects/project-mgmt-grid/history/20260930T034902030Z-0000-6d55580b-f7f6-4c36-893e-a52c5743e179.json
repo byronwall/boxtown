@@ -1,0 +1,14 @@
+{
+  "id": "6d55580b-f7f6-4c36-893e-a52c5743e179",
+  "kind": "node.deleted",
+  "actor": {
+    "kind": "agent",
+    "id": "token:esting",
+    "label": "Agent token ...esting"
+  },
+  "createdAt": "2026-09-30T03:49:02.030Z",
+  "summary": "Deleted \"Available on npm\".",
+  "nodeIds": [
+    "page-available-on-npm"
+  ]
+}
