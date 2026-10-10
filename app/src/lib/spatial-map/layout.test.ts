@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import path from "node:path";
 import {
   VIEWPORT_HEIGHT,
   VIEWPORT_WIDTH,
@@ -16,13 +15,14 @@ import type { SpatialMapData } from "./types";
 import type { PositionedMapNode } from "./types";
 import { parseSpatialMapData } from "./validate";
 
-const dataPath = path.join(process.cwd(), "data", "spatial-map.json");
+// Committed sample map; app/data is gitignored, so fresh checkouts don't have one.
+const fixtureUrl = new URL("./fixtures/sample-spatial-map.json", import.meta.url);
 const parsedData = parseSpatialMapData(
-  JSON.parse(readFileSync(dataPath, "utf8")),
+  JSON.parse(readFileSync(fixtureUrl, "utf8")),
 );
 
 describe("spatial map data", () => {
-  it("parses the JSON seed file", () => {
+  it("parses the sample map fixture", () => {
     expect(parsedData.nodes.length).toBeGreaterThan(0);
     expect(parsedData.links.length).toBeGreaterThan(0);
   });
