@@ -286,7 +286,7 @@ function parseOperationLog(input: unknown): ProjectOperationLogEntry[] {
   return input.map(parseOperationLogEntry);
 }
 
-function parseOperationLogEntry(input: unknown): ProjectOperationLogEntry {
+export function parseOperationLogEntry(input: unknown): ProjectOperationLogEntry {
   if (!isRecord(input)) {
     throw new Error("Project operation log entries must be objects.");
   }
@@ -360,7 +360,7 @@ function parseOperationPayload(input: unknown): ProjectOperationPayload | undefi
   };
 }
 
-function parseOperationState(input: unknown): ProjectOperationState {
+export function parseOperationState(input: unknown): ProjectOperationState {
   if (!isRecord(input)) {
     throw new Error("Project operation state must be an object.");
   }
@@ -458,7 +458,7 @@ function parseNodeTypeField(input: unknown, index: number): ProjectNodeTypeDefin
   };
 }
 
-function mergeStoredNodeTypes(
+export function mergeStoredNodeTypes(
   schema: ProjectNodeTypeDefinition[],
   names: string[],
 ): ProjectNodeTypeDefinition[] {

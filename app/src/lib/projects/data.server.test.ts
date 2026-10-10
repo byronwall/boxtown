@@ -235,10 +235,8 @@ describe("serialized read normalization", () => {
       releaseResolve();
       await delayedRead;
 
-      const stored = JSON.parse(readFileSync(projectFile, "utf8")) as {
-        operationLog: Array<{ payload?: { state?: { spatialMap?: { nodes?: Array<{ label?: string }> } } } }>;
-      };
-      expect(stored.operationLog[0]?.payload?.state?.spatialMap?.nodes?.[0]?.label).toBe("After mutation");
+      expect(readStoredNodeFile(dataDir, projectId, "node-1")).toContain("label: After mutation");
+      expect(readStoredHistoryKinds(dataDir, projectId)[0]).toBe("node.title.updated");
       expect((await readProjectByIdFromDisk(projectId))?.spatialMap.nodes[0]?.label).toBe("After mutation");
     } finally {
       releaseResolve();
@@ -790,23 +788,12 @@ describe("context node persistence", () => {
       const persisted = await readProjectByIdFromDisk(projectId);
       expect(persisted?.spatialMap.nodes[0]?.metadata).toEqual({});
 
-      const writtenBack = JSON.parse(
-        readFileSync(path.join(dataDir, "projects", projectId, "project.json"), "utf8"),
-      ) as {
-        operationLog: Array<{
-          kind: string;
-          actor: { kind: string };
-          payload?: {
-            state?: {
-              spatialMap: { nodes: Array<{ metadata?: Record<string, string> }> };
-            };
-          };
-        }>;
-      };
-      expect(writtenBack.operationLog.some((entry) => entry.kind === "project.backfilled")).toBe(false);
-      expect(writtenBack.operationLog[0]?.payload?.state?.spatialMap.nodes[0]?.metadata).toEqual({});
-      expect(writtenBack.operationLog[0]?.kind).toBe("node.type.updated");
-      expect(writtenBack.operationLog[0]?.actor.kind).toBe("human");
+      const history = readStoredHistory(dataDir, projectId);
+      expect(history.some((entry) => entry.kind === "project.backfilled")).toBe(false);
+      expect(history.some((entry) => "payload" in entry)).toBe(false);
+      expect(readStoredNodeFile(dataDir, projectId, "legacy-note")).not.toContain("metadata:");
+      expect(history[0]?.kind).toBe("node.type.updated");
+      expect(history[0]?.actor.kind).toBe("human");
     } finally {
       process.chdir(originalCwd);
     }
@@ -866,22 +853,15 @@ describe("context node persistence", () => {
         metadata: { purpose: "Homepage" },
       });
 
-      const writtenBack = JSON.parse(
-        readFileSync(path.join(dataDir, "projects", projectId, "project.json"), "utf8"),
-      ) as {
-        operationLog: Array<{
-          kind: string;
-          metadata?: Record<string, string>;
-        }>;
-      };
-      expect(writtenBack.operationLog.map((entry) => entry.kind)).toEqual([
+      const history = readStoredHistory(dataDir, projectId);
+      expect(history.map((entry) => entry.kind)).toEqual([
         "node.metadata.updated",
         "node.type.updated",
         "node.created",
         "project.schema.updated",
         "project.created",
       ]);
-      expect(writtenBack.operationLog[0]?.metadata?.sourceOperationId).toBe(
+      expect(history[0]?.metadata?.sourceOperationId).toBe(
         "legacy-backfill-backfilled-project",
       );
     } finally {
@@ -1242,4 +1222,24 @@ function writeProjectFixture(dataDir: string, project: Record<string, unknown>) 
   const projectDir = path.join(dataDir, "projects", String(project.id));
   mkdirSync(projectDir, { recursive: true });
   writeFileSync(path.join(projectDir, "project.json"), `${JSON.stringify(project, null, 2)}\n`, "utf8");
+}
+
+function readStoredNodeFile(dataDir: string, projectId: string, nodeId: string) {
+  return readFileSync(path.join(dataDir, "projects", projectId, "nodes", `${nodeId}.md`), "utf8");
+}
+
+function readStoredHistory(dataDir: string, projectId: string) {
+  const historyDir = path.join(dataDir, "projects", projectId, "history");
+  return readdirSync(historyDir)
+    .sort()
+    .reverse()
+    .map((fileName) => JSON.parse(readFileSync(path.join(historyDir, fileName), "utf8")) as {
+      kind: string;
+      actor: { kind: string };
+      metadata?: Record<string, string>;
+    });
+}
+
+function readStoredHistoryKinds(dataDir: string, projectId: string) {
+  return readStoredHistory(dataDir, projectId).map((entry) => entry.kind);
 }

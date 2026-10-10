@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { copyFile, mkdir, readdir, readFile, rename, rm, rmdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { resolveAppDataDir } from "~/lib/server/data-dir";
@@ -28,16 +28,17 @@ import {
   normalizeProjectNodeTypeSchema,
   resolveNewNodeType,
 } from "./node-types";
+import { parseStoredProjectRecord } from "./project-record-format";
 import {
-  parseStoredProjectRecord,
-  serializeProjectRecord,
-} from "./project-record-format";
+  readProjectDirectory,
+  writeProjectDirectory,
+} from "./storage/project-directory.server";
+import { backupProjectFile, isProjectBackupFilename } from "./storage/stored-files.server";
 import type {
   ProjectOperationActor,
   ProjectOperationKind,
   ProjectOperationLogEntry,
   ProjectOperationPayload,
-  ProjectOperationState,
   ProjectNodeMetadataField,
   ProjectRecord,
   ProjectSummary,
@@ -222,27 +223,15 @@ function createProjectOperationLogEntry(input: {
   };
 }
 
-function getProjectOperationState(record: ProjectRecord): ProjectOperationState {
-  return {
-    nodeMetadataSchema: record.nodeMetadataSchema,
-    nodeTypeSchema: record.nodeTypeSchema,
-    spatialMap: record.spatialMap,
-  };
-}
-
 function appendProjectOperation(
   record: ProjectRecord,
   operation: Parameters<typeof createProjectOperationLogEntry>[0],
 ): ProjectRecord {
-  const operationWithState = {
-    ...operation,
-    payload: operation.payload ?? { state: getProjectOperationState(record) },
-  };
-
+  // Current state lives in the node files, so entries no longer carry snapshots.
   return {
     ...record,
     operationLog: [
-      createProjectOperationLogEntry(operationWithState),
+      createProjectOperationLogEntry(operation),
       ...stripProjectOperationStatePayloads(record.operationLog ?? []),
     ].slice(0, 250),
   };
@@ -252,7 +241,7 @@ function stripProjectOperationStatePayloads(
   operationLog: ProjectOperationLogEntry[],
 ): ProjectOperationLogEntry[] {
   return operationLog.map((entry) => {
-    if (!entry.payload?.state) {
+    if (!entry.payload) {
       return entry;
     }
 
@@ -305,18 +294,17 @@ export async function readProjectSummariesFromDisk(): Promise<ProjectSummary[]> 
 export async function readProjectByIdFromDisk(
   projectId: string,
 ): Promise<ProjectRecord | null> {
-  const projectFile = getProjectJsonFilePath(projectId);
-  if (!existsSync(projectFile)) {
+  const stored = await readProjectDirectory(getProjectDataDir(projectId));
+  if (stored.layout === "missing") {
     return null;
   }
-
-  const storedProject = await readStoredProjectJson(projectFile);
-  const parsed = parseStoredProjectRecord(storedProject.value);
-  if (parsed.didNormalize || storedProject.didRecover) {
-    await normalizeProjectRecordOnDisk(projectId);
+  if (stored.layout === "per-node" && !stored.didRecover) {
+    return stored.record;
   }
 
-  return parsed.record;
+  await migrateProjectOnDisk(projectId);
+  const migrated = await readProjectDirectory(getProjectDataDir(projectId), { backupOnRecovery: false });
+  return migrated.layout === "per-node" ? migrated.record : null;
 }
 
 // ponytail: one global queue; use per-project queues only if throughput matters.
@@ -334,15 +322,27 @@ export function serializedMutation<Args extends unknown[], Result>(
   };
 }
 
-const normalizeProjectRecordOnDisk = serializedMutation(async function normalizeProjectRecordOnDisk(
-  projectId: string,
-) {
-  const projectFile = getProjectJsonFilePath(projectId);
-  if (!existsSync(projectFile)) return;
+// One-time move from the single project.json (every node inside one history
+// snapshot) to one file per node and per history entry. The original file is
+// kept as a project.json.v1-*.bak backup. Re-running after an interruption is
+// safe: project.json is written last, so it stays legacy until the move completes.
+const migrateProjectOnDisk = serializedMutation(async function migrateProjectOnDisk(projectId: string) {
+  const projectDir = getProjectDataDir(projectId);
+  const stored = await readProjectDirectory(projectDir, { backupOnRecovery: false });
+  if (stored.layout === "per-node" && stored.didRecover) {
+    await writeProjectRecordToDisk(stored.record);
+    return;
+  }
+  if (stored.layout !== "legacy") return;
 
-  const storedProject = await readStoredProjectJson(projectFile, false);
-  const parsed = parseStoredProjectRecord(storedProject.value);
-  if (parsed.didNormalize || storedProject.didRecover) await writeProjectRecordToDisk(parsed.record);
+  const { record } = parseStoredProjectRecord(stored.value);
+  const backupFile = await backupProjectFile(getProjectJsonFilePath(projectId), "v1");
+  await writeProjectRecordToDisk(record);
+  console.info(
+    `Moved project "${record.name}" to one file per node: ${record.spatialMap.nodes.length} nodes and ` +
+      `${record.operationLog.length} history entries in ${projectDir}. The previous project.json is saved as ` +
+      `${path.basename(backupFile)}.`,
+  );
 });
 
 export const createProjectOnDisk = serializedMutation(async function createProjectOnDisk(
@@ -368,13 +368,6 @@ export const createProjectOnDisk = serializedMutation(async function createProje
         actor: input.actor,
         createdAt: now,
         summary: `Created project "${name}".`,
-        payload: {
-          state: {
-            nodeMetadataSchema: createDefaultProjectNodeMetadataSchema(),
-            nodeTypeSchema: createDefaultProjectNodeTypeSchema(),
-            spatialMap: createBlankSpatialMapData(),
-          },
-        },
       }),
     ],
   };
@@ -1319,25 +1312,15 @@ export async function readProjectRecordsFromDisk(): Promise<ProjectRecord[]> {
 
   const entries = await readdir(projectsDir, { withFileTypes: true });
   const records: ProjectRecord[] = [];
-  const recordsToNormalize: string[] = [];
 
   for (const entry of entries) {
     if (!entry.isDirectory()) {
       continue;
     }
 
-    const projectFile = path.join(projectsDir, entry.name, "project.json");
-    if (!existsSync(projectFile)) {
-      continue;
-    }
-
-    const storedProject = await readStoredProjectJson(projectFile);
-    const parsed = parseStoredProjectRecord(storedProject.value);
-    records.push(parsed.record);
-    if (parsed.didNormalize || storedProject.didRecover) recordsToNormalize.push(parsed.record.id);
+    const record = await readProjectByIdFromDisk(entry.name);
+    if (record) records.push(record);
   }
-
-  await Promise.all(recordsToNormalize.map((projectId) => normalizeProjectRecordOnDisk(projectId)));
 
   return records;
 }
@@ -1422,116 +1405,7 @@ export async function readProjectBackupFileFromDisk(input: {
 }
 
 async function writeProjectRecordToDisk(record: ProjectRecord) {
-  const projectDir = getProjectDataDir(record.id);
-  await mkdir(projectDir, { recursive: true });
-  const projectFile = getProjectJsonFilePath(record.id);
-  const tempFile = path.join(
-    projectDir,
-    `.project.${process.pid}.${Date.now()}.${randomUUID()}.tmp`,
-  );
-  await writeFile(tempFile, `${JSON.stringify(serializeProjectRecord(record), null, 2)}\n`, "utf8");
-  await rename(tempFile, projectFile);
-}
-
-function isProjectBackupFilename(filename: string) {
-  return (
-    path.basename(filename) === filename &&
-    filename.startsWith("project.json.corrupt-") &&
-    filename.includes(".bak")
-  );
-}
-
-async function readStoredProjectJson(projectFile: string, backupOnRecovery = true) {
-  const raw = await readFile(projectFile, "utf8");
-  try {
-    return { value: JSON.parse(raw) as unknown, didRecover: false };
-  } catch (error) {
-    const recoveredRaw = recoverFirstJsonObject(raw);
-    if (!recoveredRaw) {
-      throw error;
-    }
-
-    const recovered = JSON.parse(recoveredRaw) as unknown;
-    if (backupOnRecovery) {
-      const backupFile = await backupCorruptProjectFile(projectFile);
-      console.warn(
-        `Recovered ${projectFile} from trailing JSON data. Original file was preserved at ${backupFile}.`,
-      );
-    }
-    return { value: recovered, didRecover: true };
-  }
-}
-
-function recoverFirstJsonObject(raw: string) {
-  const start = raw.search(/\S/);
-  if (start === -1 || raw[start] !== "{") {
-    return null;
-  }
-
-  let depth = 0;
-  let inString = false;
-  let escaping = false;
-
-  for (let index = start; index < raw.length; index += 1) {
-    const char = raw[index];
-
-    if (inString) {
-      if (escaping) {
-        escaping = false;
-      } else if (char === "\\") {
-        escaping = true;
-      } else if (char === "\"") {
-        inString = false;
-      }
-      continue;
-    }
-
-    if (char === "\"") {
-      inString = true;
-      continue;
-    }
-
-    if (char === "{") {
-      depth += 1;
-      continue;
-    }
-
-    if (char !== "}") {
-      continue;
-    }
-
-    depth -= 1;
-    if (depth === 0) {
-      const end = index + 1;
-      if (raw.slice(end).trim().length === 0) {
-        return null;
-      }
-      return raw.slice(start, end);
-    }
-  }
-
-  return null;
-}
-
-async function backupCorruptProjectFile(projectFile: string) {
-  const backupFile = await createUniqueBackupFilePath(projectFile);
-  await copyFile(projectFile, backupFile);
-  return backupFile;
-}
-
-async function createUniqueBackupFilePath(projectFile: string) {
-  const safeTimestamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
-  const baseBackupFile = `${projectFile}.corrupt-${safeTimestamp}.bak`;
-  if (!existsSync(baseBackupFile)) {
-    return baseBackupFile;
-  }
-
-  let suffix = 2;
-  while (existsSync(`${baseBackupFile}.${suffix}`)) {
-    suffix += 1;
-  }
-
-  return `${baseBackupFile}.${suffix}`;
+  await writeProjectDirectory(getProjectDataDir(record.id), record);
 }
 
 function sanitizeProjectName(name?: string) {

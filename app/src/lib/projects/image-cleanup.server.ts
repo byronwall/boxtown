@@ -59,7 +59,7 @@ export async function getUnusedProjectImagesFromDisk(projectId: string): Promise
 }
 
 // Serialized with the other project mutations so an upload that has written
-// its file but not yet saved project.json is never mistaken for unused.
+// its file but not yet saved the node is never mistaken for unused.
 export const removeUnusedProjectImagesOnDisk = serializedMutation(async function removeUnusedProjectImagesOnDisk(
   projectId: string,
 ): Promise<UnusedProjectImages> {
