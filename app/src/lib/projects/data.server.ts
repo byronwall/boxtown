@@ -4,6 +4,7 @@ import { mkdir, readdir, readFile, rm, rmdir, stat, writeFile } from "node:fs/pr
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { resolveAppDataDir } from "~/lib/server/data-dir";
+import { getArchivedSubtreeNodeIds } from "~/lib/spatial-map/archive";
 import { createParentChildLink, getLinkKey } from "~/lib/spatial-map/links";
 import { withNodePriority } from "~/lib/spatial-map/node-priority-update";
 import { isMapNodePriority, type MapNodePriority } from "~/lib/spatial-map/node-priority";
@@ -1144,6 +1145,48 @@ export const deleteProjectNodeOnDisk = serializedMutation(async function deleteP
     summary: input.includeChildren
       ? `Deleted "${removedNode?.label ?? input.nodeId}" and ${nodeIdsToDelete.size - 1} children.`
       : `Deleted "${removedNode?.label ?? input.nodeId}".`,
+    nodeIds: [...nodeIdsToDelete],
+    metadata: getMutationMetadata(input),
+  });
+
+  await writeProjectAndPublish(nextRecord);
+  await removeNodeImageFiles(
+    input.projectId,
+    current.spatialMap.nodes.filter((node) => nodeIdsToDelete.has(node.id)),
+  );
+  return nextRecord;
+});
+
+// Removes every archived node plus the subtree it hides, along with their
+// links and image files. The server recomputes the set so a stale client
+// view cannot delete nodes that were unarchived in the meantime.
+export const deleteArchivedProjectNodesOnDisk = serializedMutation(async function deleteArchivedProjectNodesOnDisk(
+  input: { projectId: string; actor?: ProjectOperationActor; clientMutationId?: string },
+): Promise<ProjectRecord> {
+  const current = await readProjectByIdFromDisk(input.projectId);
+
+  if (!current) {
+    throw new Error("Project not found.");
+  }
+
+  const nodeIdsToDelete = getArchivedSubtreeNodeIds(current.spatialMap);
+  if (nodeIdsToDelete.size === 0) {
+    return current;
+  }
+
+  const nextRecord = appendProjectOperation({
+    ...current,
+    updatedAt: new Date().toISOString(),
+    spatialMap: {
+      nodes: current.spatialMap.nodes.filter((node) => !nodeIdsToDelete.has(node.id)),
+      links: current.spatialMap.links.filter(
+        (link) => !nodeIdsToDelete.has(link.source) && !nodeIdsToDelete.has(link.target),
+      ),
+    },
+  }, {
+    kind: "node.deleted",
+    actor: input.actor,
+    summary: `Deleted ${nodeIdsToDelete.size} archived node${nodeIdsToDelete.size === 1 ? "" : "s"}.`,
     nodeIds: [...nodeIdsToDelete],
     metadata: getMutationMetadata(input),
   });
