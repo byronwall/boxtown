@@ -1,0 +1,16 @@
+{
+  "id": "d69a2f86-9c32-4e87-889f-4b9fe7386e58",
+  "kind": "node.images.added",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-11T03:37:33.781Z",
+  "summary": "Added 1 images to \"Put actions in project `...` menu\".",
+  "nodeIds": [
+    "feature-put-actions-in-project-menu"
+  ],
+  "metadata": {
+    "imageCount": "1",
+    "clientMutationId": "0a9ff643-60be-4bd5-b4e5-d5a0b221c669"
+  }
+}

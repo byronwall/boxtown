@@ -3,6 +3,7 @@ id: feature-tweak-text-size-so-it-s-more-readable
 label: Tweak text size so it's more readable
 type: feature
 status: planned
+parent: feature-10-10-fdbk
 images:
   - id: e0a4e672-ff2a-49ee-8d2d-511049ed0da6
     src: /api/projects/project-mgmt-grid/images/feature-tweak-text-size-so-it-s-more-readable/e0a4e672-ff2a-49ee-8d2d-511049ed0da6.png

@@ -1,0 +1,16 @@
+{
+  "id": "2c072e35-1f33-4aa8-9f61-34a2a725b3ee",
+  "kind": "node.moved",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-11T03:37:01.399Z",
+  "summary": "Moved \"Tweak text size so it's more readable\" under \"10-10 fdbk\".",
+  "nodeIds": [
+    "feature-tweak-text-size-so-it-s-more-readable",
+    "feature-10-10-fdbk"
+  ],
+  "metadata": {
+    "clientMutationId": "5f024670-55ab-4021-836e-0ea54f4d4055"
+  }
+}
