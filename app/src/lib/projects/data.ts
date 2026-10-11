@@ -526,6 +526,23 @@ export const deleteProjectNode = action(
   "delete-project-node",
 );
 
+export const deleteArchivedProjectNodes = action(
+  async (input: { projectId: string; clientMutationId?: string }) => {
+    "use server";
+    const { deleteArchivedProjectNodesOnDisk } = await import("./data.server");
+
+    if (!input.projectId?.trim()) {
+      throw new Error("A project id is required.");
+    }
+
+    return deleteArchivedProjectNodesOnDisk({
+      projectId: input.projectId,
+      clientMutationId: input.clientMutationId,
+    });
+  },
+  "delete-archived-project-nodes",
+);
+
 export const deleteProjectLink = action(
   async (formData: FormData) => {
     "use server";

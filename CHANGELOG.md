@@ -2,6 +2,12 @@
 
 Notable changes to Product Grid Management, newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
 
+## 2026-10-10
+
+### Added
+
+- A Delete archived button sits next to Archive implemented in the grid view and the inspector header. It shows how many nodes are archived, including children hidden under an archived node, and after you confirm it deletes all of them with their links and image files.
+
 ## 2026-10-09
 
 ### Changed

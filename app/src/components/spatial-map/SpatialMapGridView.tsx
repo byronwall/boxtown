@@ -41,6 +41,7 @@ import {
 } from "~/lib/spatial-map/node-status";
 import type { MapLink, MapNode, MapNodeStatus } from "~/lib/spatial-map/types";
 import { SpatialMapArchiveImplementedButton } from "./SpatialMapArchiveImplementedButton";
+import { SpatialMapDeleteArchivedButton } from "./SpatialMapDeleteArchivedButton";
 import { SpatialMapDeleteNodeControl } from "./SpatialMapDeleteNodeControl";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapSegmentedControl, type SpatialMapSegmentedOption } from "./SpatialMapSegmentedControl";
@@ -352,6 +353,10 @@ export function SpatialMapGridView(props: {
             <HStack gap="8px" flex="0 1 auto" justifyContent="flex-end" minW="0">
               <Show when={mode() === "nodes" && !bulkSelectionActive()}>
                 <SpatialMapArchiveImplementedButton
+                  project={props.project}
+                  onProjectUpdated={props.onProjectUpdated}
+                />
+                <SpatialMapDeleteArchivedButton
                   project={props.project}
                   onProjectUpdated={props.onProjectUpdated}
                 />

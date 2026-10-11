@@ -6,9 +6,11 @@ import {
   addProjectNodeImagesOnDisk,
   createChildNodeOnDisk,
   createProjectOnDisk,
+  deleteArchivedProjectNodesOnDisk,
   deleteProjectNodeOnDisk,
   getProjectDataDir,
   getProjectNodeImageDir,
+  updateProjectNodesBulkOnDisk,
 } from "./data.server";
 import { getUnusedProjectImagesFromDisk, removeUnusedProjectImagesOnDisk } from "./image-cleanup.server";
 
@@ -69,6 +71,29 @@ describe("deleteProjectNodeOnDisk image files", () => {
     await deleteProjectNodeOnDisk({ projectId: project.id, nodeId: parent.nodeId });
 
     expect(existsSync(child.imagePath)).toBe(true);
+  });
+});
+
+describe("deleteArchivedProjectNodesOnDisk", () => {
+  it("removes archived nodes, their hidden children, and their images", async () => {
+    const project = await createProjectOnDisk({ name: "Delete Archived" });
+    const kept = await createNodeWithImage(project.id, "Kept");
+    const archived = await createNodeWithImage(project.id, "Archived");
+    const hiddenChild = await createNodeWithImage(project.id, "Hidden Child", archived.nodeId);
+    await updateProjectNodesBulkOnDisk({ projectId: project.id, nodeIds: [archived.nodeId], archived: true });
+
+    const result = await deleteArchivedProjectNodesOnDisk({ projectId: project.id });
+
+    const remainingIds = result.spatialMap.nodes.map((node) => node.id);
+    expect(remainingIds).toContain(kept.nodeId);
+    expect(remainingIds).not.toContain(archived.nodeId);
+    expect(remainingIds).not.toContain(hiddenChild.nodeId);
+    expect(result.spatialMap.links.some(
+      (link) => link.source === archived.nodeId || link.target === archived.nodeId,
+    )).toBe(false);
+    expect(existsSync(archived.imagePath)).toBe(false);
+    expect(existsSync(hiddenChild.imagePath)).toBe(false);
+    expect(existsSync(kept.imagePath)).toBe(true);
   });
 });
 
