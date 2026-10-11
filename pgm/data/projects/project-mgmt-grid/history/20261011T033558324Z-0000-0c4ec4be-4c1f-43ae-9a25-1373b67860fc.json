@@ -1,0 +1,16 @@
+{
+  "id": "0c4ec4be-4c1f-43ae-9a25-1373b67860fc",
+  "kind": "node.images.added",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-11T03:35:58.324Z",
+  "summary": "Added 1 images to \"Tweak text size so it's more readable\".",
+  "nodeIds": [
+    "feature-tweak-text-size-so-it-s-more-readable"
+  ],
+  "metadata": {
+    "imageCount": "1",
+    "clientMutationId": "54818dc1-a50e-4020-999d-932783fd022c"
+  }
+}

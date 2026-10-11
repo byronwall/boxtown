@@ -1,0 +1,15 @@
+{
+  "id": "b176f63d-e4d1-4774-b9f6-201cfb8b5866",
+  "kind": "node.context.updated",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-11T03:36:16.287Z",
+  "summary": "Updated context for \"Tweak text size so it's more readable\".",
+  "nodeIds": [
+    "feature-tweak-text-size-so-it-s-more-readable"
+  ],
+  "metadata": {
+    "clientMutationId": "2b3b5122-6ae1-4bb3-a89c-fe7875fe6890"
+  }
+}
