@@ -1,6 +1,6 @@
 # CLI releases
 
-Add a release note when you change the published CLI or its bundled skill:
+Add a release note to every change. The published CLI bundles the app, so app changes count too:
 
 ```sh
 pnpm changeset:add patch "Describe the change for CLI users"

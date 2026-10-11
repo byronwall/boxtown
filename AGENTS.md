@@ -113,12 +113,12 @@ Run inside `app/`:
 
 ## npm Releases
 
-- Add a changeset when a change affects the published CLI, including its bundled skill.
+- Every change needs a changeset, including app-only, test-only, and tooling changes. The published CLI bundles the app, so any change can reach npm users, and only a changeset starts the release workflow.
 - Run `pnpm changeset:add <patch|minor|major> "summary"`. Do not use the interactive changeset prompt.
 - Use `patch` for fixes and `minor` for features. Use `major` only when Byron requests it.
 - For breaking changes while the version is 0.x, use `minor`.
 - Write one or two short sentences for CLI users. Use one changeset per change and update it when scope changes.
-- Skip changesets for app-only, test-only, and release-tooling-only changes.
+- Add the changeset in the same PR as the change. A PR merged without one never opens a Version Packages PR.
 - Do not change package versions or the CLI changelog by hand. The Version Packages PR manages them.
 - Keep the dated root changelog for app changes, as required above.
 - Use `release.yml` and npm trusted publishing. Do not add `NPM_TOKEN`.
