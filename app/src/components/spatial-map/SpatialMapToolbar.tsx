@@ -1,7 +1,5 @@
 import {
-  ClipboardIcon,
   FilePlusIcon,
-  MoreHorizontalIcon,
   PlusIcon,
   SettingsIcon,
   XIcon,
@@ -17,10 +15,10 @@ import { Tooltip } from "~/components/ui/tooltip";
 import type { ProjectRecord } from "~/lib/projects/types";
 import { ProjectMetadataSettingsDialog } from "./ProjectMetadataSettingsDialog";
 import type { SpatialMapDepthLevel, SpatialMapViewMode } from "./spatial-map-canvas.types";
-import { copyVisibleNodesAsMarkdown } from "./spatial-map-markdown-export";
 import { SpatialMapCreateContextNodeDialog } from "./SpatialMapCreateContextNodeDialog";
 import { useSpatialMap } from "./SpatialMapContext";
 import { SpatialMapGlobalFilterMenu } from "./SpatialMapGlobalFilterMenu";
+import { SpatialMapProjectActionsMenu } from "./SpatialMapProjectActionsMenu";
 import { SpatialMapSegmentedControl, type SpatialMapSegmentedOption } from "./SpatialMapSegmentedControl";
 
 const VIEW_MODE_OPTIONS: SpatialMapSegmentedOption<SpatialMapViewMode>[] = [
@@ -40,6 +38,9 @@ interface SpatialMapToolbarProps {
 export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
   const spatialMap = useSpatialMap();
   const [contextNodeDialogOpen, setContextNodeDialogOpen] = createSignal(false);
+  // Hide the trigger tooltip while its menu is open so it never covers the first item.
+  const [createMenuOpen, setCreateMenuOpen] = createSignal(false);
+  const [createTooltipOpen, setCreateTooltipOpen] = createSignal(false);
   const depthOptions = createMemo<SpatialMapSegmentedOption<SpatialMapDepthLevel>[]>(() => {
     const levels = spatialMap.availableDepthLevels();
     return levels.map((level) => {
@@ -103,10 +104,20 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
           </HStack>
           <SpatialMapGlobalFilterMenu />
           <HStack gap="1" flexShrink="0">
-            <Menu.Root positioning={{ placement: "bottom-end", gutter: 4 }} size="sm">
+            <Menu.Root
+              positioning={{ placement: "bottom-end", gutter: 4 }}
+              size="sm"
+              onOpenChange={(details) => setCreateMenuOpen(details.open)}
+            >
               <Menu.Trigger
                 asChild={(triggerProps) => (
-                  <Tooltip content="Create" openDelay={150} closeDelay={80}>
+                  <Tooltip
+                    content="Create"
+                    openDelay={150}
+                    closeDelay={80}
+                    open={createTooltipOpen() && !createMenuOpen()}
+                    onOpenChange={(details) => setCreateTooltipOpen(details.open)}
+                  >
                     <Button
                       {...triggerProps()}
                       colorPalette="gray"
@@ -136,34 +147,7 @@ export function SpatialMapToolbar(props: SpatialMapToolbarProps) {
                 </Menu.Content>
               </Menu.Positioner>
             </Menu.Root>
-            <Menu.Root positioning={{ placement: "bottom-end", gutter: 4 }} size="sm">
-              <Menu.Trigger
-                asChild={(triggerProps) => (
-                  <Tooltip content="More actions" openDelay={150} closeDelay={80}>
-                    <Button
-                      {...triggerProps()}
-                      variant="outline"
-                      size="2xs"
-                      px="0"
-                      aria-label="More map actions"
-                    >
-                      <MoreHorizontalIcon size={14} aria-hidden="true" />
-                    </Button>
-                  </Tooltip>
-                )}
-              />
-              <Menu.Positioner>
-                <Menu.Content minW="190px" borderRadius="0" fontFamily="inherit" textTransform="none">
-                  <Menu.Item
-                    value="copy-visible-nodes-markdown"
-                    onClick={() => void copyVisibleNodesAsMarkdown(props.project, spatialMap.visibleData())}
-                  >
-                    <ClipboardIcon size={14} aria-hidden="true" />
-                    <Menu.ItemText>Copy visible nodes as Markdown</Menu.ItemText>
-                  </Menu.Item>
-                </Menu.Content>
-              </Menu.Positioner>
-            </Menu.Root>
+            <SpatialMapProjectActionsMenu project={props.project} onProjectUpdated={props.onProjectUpdated} />
           </HStack>
           <SpatialMapCreateContextNodeDialog
             project={props.project}

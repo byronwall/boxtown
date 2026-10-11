@@ -24,6 +24,8 @@ const SIDE_BOTTOM_INSET = 28;
 // Side placement must beat the top band by this factor, so near-ties keep the
 // familiar top layout.
 const SIDE_PREFERENCE = 1.25;
+// A top image never shrinks below this height, even when the label needs room.
+const MIN_TOP_HEIGHT = 24;
 
 export type NodeImagePlacement = "top" | "side";
 
@@ -39,16 +41,20 @@ export function getNodeImageFrame(input: {
   nodeWidth: number;
   nodeHeight: number;
   aspect?: number | null;
+  // Height kept free below a top image for the label and type text, so a
+  // preview never squeezes the label down to an unreadable size.
+  minTextHeight?: number;
 }): NodeImageFrame {
   const maxWidth = Math.max(1, input.nodeWidth - FRAME_INSET * 2);
-  const defaultHeight = Math.min(DEFAULT_MAX_HEIGHT, input.nodeHeight * DEFAULT_HEIGHT_RATIO);
+  const maxTopHeight = Math.max(MIN_TOP_HEIGHT, input.nodeHeight - FRAME_INSET - (input.minTextHeight ?? 0));
+  const defaultHeight = Math.min(DEFAULT_MAX_HEIGHT, input.nodeHeight * DEFAULT_HEIGHT_RATIO, maxTopHeight);
   const aspect = input.aspect && Number.isFinite(input.aspect) && input.aspect > 0 ? input.aspect : null;
   if (!aspect) {
     return { placement: "top", x: FRAME_INSET, y: FRAME_INSET, width: maxWidth, height: defaultHeight };
   }
 
   const shape = Math.min(MAX_ASPECT, Math.max(MIN_ASPECT, aspect));
-  const top = getTopFrame(input, shape, maxWidth, defaultHeight);
+  const top = getTopFrame(input, shape, maxWidth, defaultHeight, maxTopHeight);
   const side = getSideFrame(input, shape);
   return side && side.width * side.height > top.width * top.height * SIDE_PREFERENCE ? side : top;
 }
@@ -58,17 +64,21 @@ function getTopFrame(
   shape: number,
   maxWidth: number,
   defaultHeight: number,
+  maxTopHeight: number,
 ): NodeImageFrame {
   const defaultShape = maxWidth / defaultHeight;
   if (shape >= defaultShape) {
     // Wide: full width, shorter band, which leaves more room for the label.
-    const height = Math.max(defaultHeight * MIN_WIDE_HEIGHT_RATIO, maxWidth / shape);
+    const height = Math.min(maxTopHeight, Math.max(defaultHeight * MIN_WIDE_HEIGHT_RATIO, maxWidth / shape));
     return { placement: "top", x: FRAME_INSET, y: FRAME_INSET, width: maxWidth, height: round(height) };
   }
 
   // Square or tall: grow the band up to the tall limit, then narrow the frame
   // to the image shape and center it.
-  const height = Math.max(defaultHeight, Math.min(input.nodeHeight * TALL_HEIGHT_RATIO, maxWidth / shape));
+  const height = Math.max(
+    defaultHeight,
+    Math.min(input.nodeHeight * TALL_HEIGHT_RATIO, maxWidth / shape, maxTopHeight),
+  );
   const width = Math.min(maxWidth, height * shape);
   return {
     placement: "top",
