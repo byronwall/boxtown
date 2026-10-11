@@ -52,4 +52,13 @@ describe("getNodeImageFrame", () => {
       }
     }
   });
+
+  it("keeps room below a top image for the label", () => {
+    for (const aspect of [null, 0.8, 1.6, 3]) {
+      const frame = getNodeImageFrame({ nodeWidth: 192, nodeHeight: 158, aspect, minTextHeight: 90 });
+      if (frame.placement === "top") {
+        expect(frame.y + frame.height).toBeLessThanOrEqual(158 - 90 + 0.1);
+      }
+    }
+  });
 });

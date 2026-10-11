@@ -6,7 +6,16 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Added
 
-- A Delete archived button sits next to Archive implemented in the grid view and the inspector header. It shows how many nodes are archived, including children hidden under an archived node, and after you confirm it deletes all of them with their links and image files.
+- A Delete archived action sits next to Archive implemented in the toolbar `...` menu. It shows how many nodes are archived, including children hidden under an archived node, and after you confirm it deletes all of them with their links and image files.
+
+### Changed
+
+- Archive implemented and Delete archived moved from the grid toolbar and inspector header into the toolbar `...` menu, so they work the same in Canvas, Tree, and Grid. Each shows its count and is greyed out when there is nothing to act on.
+
+### Fixed
+
+- Labels on canvas nodes with an image preview are readable again. The preview leaves room for a two-line label, so the text no longer shrinks to a fraction of the size of nearby nodes.
+- The Create and More actions tooltips no longer cover the first item of their open menu.
 
 ## 2026-10-09
 

@@ -132,6 +132,8 @@ const NODE_LABEL_META_GAP = 8;
 const NODE_LABEL_MIN_BOTTOM_PADDING = 7;
 const NODE_LABEL_BOTTOM_PADDING_RATIO = 0.11;
 const NODE_LABEL_LINE_HEIGHT = 1.08;
+// Image previews leave room for two label lines at this share of the base font.
+const NODE_IMAGE_LABEL_MIN_SCALE = 0.75;
 const SVG_TEXT_WIDTH_FACTOR = 0.58;
 const NODE_TEXT_SCALE_ZOOM_START = 0.72;
 const NODE_TEXT_SCALE_STEP = 0.06;
@@ -623,6 +625,7 @@ function SpatialMapNode(props: {
       nodeWidth: props.item.node.width,
       nodeHeight: props.item.node.height,
       aspect: imageAspect()?.src === firstImage()?.src ? imageAspect()?.aspect : null,
+      minTextHeight: getImageNodeMinTextHeight(props.item.node),
     }),
   );
   const hasSideImage = () => hasImages() && imageFrame().placement === "side";
@@ -1095,6 +1098,13 @@ function getNodeTypeTone(
     stroke: `color-mix(in srgb, ${configured.color} 68%, #202820)`,
     strokeHover: `color-mix(in srgb, ${configured.color} 50%, #121812)`,
   };
+}
+
+function getImageNodeMinTextHeight(node: { height: number; fontSize: number; metaSize: number }) {
+  const bottomPadding = Math.max(NODE_LABEL_MIN_BOTTOM_PADDING, node.height * NODE_LABEL_BOTTOM_PADDING_RATIO);
+  const labelHeight = 2 * node.fontSize * NODE_IMAGE_LABEL_MIN_SCALE * NODE_LABEL_LINE_HEIGHT;
+
+  return NODE_LABEL_IMAGE_GAP + labelHeight + NODE_LABEL_META_GAP + node.metaSize + bottomPadding;
 }
 
 function wrapSvgText(options: {

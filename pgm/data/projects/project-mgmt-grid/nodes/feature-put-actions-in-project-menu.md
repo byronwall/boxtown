@@ -2,7 +2,9 @@
 id: feature-put-actions-in-project-menu
 label: Put actions in project `...` menu
 type: feature
-status: planned
+status: implemented
+metadata:
+  implementation: "Implemented 2026-10-10: Archive implemented and Delete archived moved into the toolbar ... menu (SpatialMapProjectActionsMenu), so they work in Canvas, Tree, and Grid. Each item shows its count and is disabled at zero; Delete archived still confirms first. The old grid-toolbar and inspector-header buttons were removed, and trigger tooltips no longer cover the open menu."
 parent: feature-10-10-fdbk
 images:
   - id: 50675206-e107-49f5-a720-7b6dda8b7709

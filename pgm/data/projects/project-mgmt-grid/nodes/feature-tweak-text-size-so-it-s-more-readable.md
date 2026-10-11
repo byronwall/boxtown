@@ -2,7 +2,9 @@
 id: feature-tweak-text-size-so-it-s-more-readable
 label: Tweak text size so it's more readable
 type: feature
-status: planned
+status: implemented
+metadata:
+  implementation: "Implemented 2026-10-10: top image previews now leave room for a two-line label at 75% of the base font (getNodeImageFrame minTextHeight), and image nodes are 16px taller. Labels on image nodes went from about 8-10px to 15-16px at the same zoom."
 parent: feature-10-10-fdbk
 images:
   - id: e0a4e672-ff2a-49ee-8d2d-511049ed0da6

@@ -19,7 +19,7 @@ const sizeByDepth: Record<
 const CANVAS_NODE_TEXT_SCALE = 1.15;
 const SHALLOW_VISIBLE_DEPTH_SCALE = 1.32;
 const DEEP_VISIBLE_DEPTH_SCALE = 1;
-const IMAGE_NODE_EXTRA_HEIGHT = 68;
+const IMAGE_NODE_EXTRA_HEIGHT = 84;
 const IMAGE_NODE_WIDTH_SCALE = 1.12;
 
 export type AdjacencyMap = Map<string, Set<string>>;
