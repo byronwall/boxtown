@@ -259,7 +259,7 @@ pnpm start
 
 ## Release
 
-Releases use [Changesets](https://github.com/changesets/changesets). Add a release note to each change to the public CLI:
+Releases use [Changesets](https://github.com/changesets/changesets). Every change needs a release note, including app-only changes, because the published CLI bundles the app:
 
 ```sh
 pnpm changeset:add patch "Describe the change for CLI users"
