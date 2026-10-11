@@ -1,5 +1,11 @@
 # @byronwallrus/product-grid-cli
 
+## 0.4.0
+
+### Minor Changes
+
+- d3acb92: The bundled app has a Delete archived button that deletes every archived node, the children hidden under them, and their images after you confirm.
+
 ## 0.3.0
 
 ### Minor Changes
