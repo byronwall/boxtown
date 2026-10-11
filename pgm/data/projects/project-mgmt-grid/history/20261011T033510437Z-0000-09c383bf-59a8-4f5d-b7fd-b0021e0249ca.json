@@ -1,0 +1,19 @@
+{
+  "id": "09c383bf-59a8-4f5d-b7fd-b0021e0249ca",
+  "kind": "nodes.bulk.updated",
+  "actor": {
+    "kind": "human"
+  },
+  "createdAt": "2026-10-11T03:35:10.437Z",
+  "summary": "Bulk updated 5 nodes: archived.",
+  "nodeIds": [
+    "feature-consider-showing-image-on-left-side-to-improve-aspect-ratio",
+    "feature-deleting-a-node-should-delete-its-images-too",
+    "feature-issues-with-server-closing-and-not-clearing-the-old-manifest-file",
+    "feature-need-a-button-to-remove-all-dead-images",
+    "feature-reorder-new-node-so-type-is-under-context"
+  ],
+  "metadata": {
+    "clientMutationId": "8e3fe9e0-679c-4239-9df4-4795b5c5fcf1"
+  }
+}
