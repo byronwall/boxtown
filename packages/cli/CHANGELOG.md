@@ -1,5 +1,11 @@
 # @byronwallrus/product-grid-cli
 
+## 0.4.1
+
+### Patch Changes
+
+- b4bf88f: Move Archive implemented and Delete archived into the toolbar ... menu, and keep canvas node labels readable when the node shows an image preview.
+
 ## 0.4.0
 
 ### Minor Changes
