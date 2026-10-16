@@ -224,7 +224,7 @@ function createProjectOperationLogEntry(input: {
   };
 }
 
-function appendProjectOperation(
+export function appendProjectOperation(
   record: ProjectRecord,
   operation: Parameters<typeof createProjectOperationLogEntry>[0],
 ): ProjectRecord {
@@ -251,7 +251,7 @@ function stripProjectOperationStatePayloads(
   });
 }
 
-function getMutationMetadata(input: { clientMutationId?: string }) {
+export function getMutationMetadata(input: { clientMutationId?: string }) {
   return input.clientMutationId ? { clientMutationId: input.clientMutationId } : undefined;
 }
 
@@ -263,7 +263,7 @@ function mergeMutationMetadata(
   return mutationMetadata || metadata ? { ...metadata, ...mutationMetadata } : undefined;
 }
 
-async function writeProjectAndPublish(project: ProjectRecord) {
+export async function writeProjectAndPublish(project: ProjectRecord) {
   await writeProjectRecordToDisk(project);
   publishProjectRecordChanged(project);
 }

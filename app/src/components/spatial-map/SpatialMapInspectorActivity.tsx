@@ -179,6 +179,7 @@ function getActivityKindConfig(kind: ProjectOperationLogEntry["kind"]): Activity
     case "node.images.added":
       return { label: "Image", tone: "image", icon: ImageIcon };
     case "node.metadata.updated":
+    case "node.updated":
     case "node.context.updated":
     case "node.title.updated":
     case "node.status.updated":

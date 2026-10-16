@@ -5,16 +5,13 @@ import { toAgentOperationActor } from "~/lib/agent-api/operation-actor";
 import { toAgentMapNode } from "~/lib/agent-api/projections.server";
 import { agentJson } from "~/lib/agent-api/response.server";
 import {
-  deleteProjectNodeOnDisk,
-  readProjectByIdFromDisk,
-  updateProjectNodeArchivedOnDisk,
-  updateProjectNodePriorityOnDisk,
-  updateProjectNodeStatusOnDisk,
-  updateProjectNodeTitleOnDisk,
-  updateProjectNodeTypeOnDisk,
-} from "~/lib/projects/data.server";
-import { isMapNodePriority } from "~/lib/spatial-map/node-priority";
-import { isMapNodeStatus } from "~/lib/spatial-map/node-status";
+  parseExpectedRevision,
+  parseNodePatchBody,
+  readJsonRecord,
+  respondWithNodePatch,
+} from "~/lib/agent-api/node-patch.server";
+import { deleteProjectNodeOnDisk, readProjectByIdFromDisk } from "~/lib/projects/data.server";
+import { getNodeRevision } from "~/lib/projects/node-patch.server";
 
 export async function GET(event: APIEvent) {
   return withAgentApi(event, { scopes: ["node:read"] }, async () => {
@@ -36,6 +33,8 @@ export async function GET(event: APIEvent) {
     const projectedNode = {
       ...toAgentMapNode(node),
       title: node.label,
+      revision: getNodeRevision(node, project.spatialMap.links),
+      // Project-wide activity time, not a per-node change marker; use `revision` for that.
       updatedAt: project.updatedAt,
     };
     return agentJson({
@@ -44,118 +43,22 @@ export async function GET(event: APIEvent) {
   });
 }
 
-type PatchNodeRequest = {
-  title?: unknown;
-  label?: unknown;
-  status?: unknown;
-  type?: unknown;
-  archived?: unknown;
-  priority?: unknown;
-};
-
 export async function PATCH(event: APIEvent) {
   return withAgentApi(event, { scopes: ["node:write"] }, async (context) => {
-    const input = (await event.request.json().catch(() => null)) as PatchNodeRequest | null;
-    if (!input) {
-      throw new AgentApiError("invalid_json", "A JSON body is required.", 400);
-    }
-
-    let project = null;
-
-    try {
-      const title = typeof input.title === "string"
-        ? input.title
-        : typeof input.label === "string"
-          ? input.label
-          : undefined;
-      if (title !== undefined) {
-        project = await updateProjectNodeTitleOnDisk({
-          projectId: event.params.projectId,
-          nodeId: event.params.nodeId,
-          title,
-          actor: toAgentOperationActor(context.actor),
-        });
-      }
-
-      if (input.status !== undefined) {
-        if (!isMapNodeStatus(input.status)) {
-          throw new AgentApiError("invalid_status", "A valid node status is required.", 400, {
-            status: input.status,
-          });
-        }
-        project = await updateProjectNodeStatusOnDisk({
-          projectId: event.params.projectId,
-          nodeId: event.params.nodeId,
-          status: input.status,
-          actor: toAgentOperationActor(context.actor),
-        });
-      }
-
-      if (input.archived !== undefined) {
-        if (typeof input.archived !== "boolean") {
-          throw new AgentApiError("invalid_archived", "archived must be a boolean.", 400);
-        }
-        project = await updateProjectNodeArchivedOnDisk({
-          projectId: event.params.projectId,
-          nodeId: event.params.nodeId,
-          archived: input.archived,
-          actor: toAgentOperationActor(context.actor),
-        });
-      }
-
-      if (input.priority !== undefined) {
-        const priority = input.priority === null || input.priority === "none" ? null : input.priority;
-        if (priority !== null && !isMapNodePriority(priority)) {
-          throw new AgentApiError(
-            "invalid_priority",
-            'priority must be one of "urgent", "high", "medium", "low", or null.',
-            400,
-            { priority: input.priority },
-          );
-        }
-        project = await updateProjectNodePriorityOnDisk({
-          projectId: event.params.projectId,
-          nodeId: event.params.nodeId,
-          priority,
-          actor: toAgentOperationActor(context.actor),
-        });
-      }
-
-      if (typeof input.type === "string") {
-        project = await updateProjectNodeTypeOnDisk({
-          projectId: event.params.projectId,
-          nodeId: event.params.nodeId,
-          type: input.type,
-          actor: toAgentOperationActor(context.actor),
-        });
-      }
-    } catch (error) {
-      if (error instanceof AgentApiError) {
-        throw error;
-      }
-      throw new AgentApiError(
-        "node_update_failed",
-        error instanceof Error ? error.message : "Failed to update node.",
-        400,
-      );
-    }
-
-    if (!project) {
+    const input = await readJsonRecord(event);
+    const patch = parseNodePatchBody(input);
+    if (Object.keys(patch).length === 0) {
       throw new AgentApiError(
         "empty_update",
-        "At least one of title, status, type, archived, or priority is required.",
+        "At least one of title, status, type, archived, priority, context, or metadata is required.",
         400,
       );
     }
 
-    const node = project.spatialMap.nodes.find((item) => item.id === event.params.nodeId);
-    if (!node) {
-      throw new AgentApiError("node_not_found", "Node not found.", 404, {
-        nodeId: event.params.nodeId,
-      });
-    }
-
-    return agentJson({ node: toAgentMapNode(node) });
+    return respondWithNodePatch(event, context.actor, patch, {
+      expectedRevision: parseExpectedRevision(input),
+      clientMutationId: input.clientMutationId,
+    });
   });
 }
 
