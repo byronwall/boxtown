@@ -38,6 +38,7 @@ export type ProjectOperationKind =
   | "node.type.updated"
   | "node.metadata.updated"
   | "node.updated"
+  | "node.note.added"
   | "project.schema.updated"
   | "node.images.added"
   | "node.image.deleted"

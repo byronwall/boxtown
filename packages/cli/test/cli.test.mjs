@@ -896,32 +896,25 @@ test("writeJson ignores EPIPE from closed stdout consumers", () => {
   });
 });
 
-test("node complete saves status and the appended note in one guarded request", async () => {
+test("node complete saves status and an appended note in one request", async () => {
   const { calls, stdout, error } = await runCli(
     ["node", "complete", "node-1", "--project", "demo", "--note", "Done", "--json"],
-    (call) => {
-      if (call.method === "GET") {
-        return { body: { node: { context: "Existing context", revision: "rev-1" } } };
-      }
-      return {
-        body: {
-          node: { id: "node-1", label: "Node 1", status: "implemented", metadata: {}, context: "x".repeat(42) },
-          changedFields: ["status", "context"],
-          revision: "rev-2",
-          operationId: "op-1",
-        },
-      };
-    },
+    () => ({
+      body: {
+        node: { id: "node-1", label: "Node 1", status: "implemented", metadata: {}, context: "x".repeat(42) },
+        changedFields: ["status", "context"],
+        revision: "rev-2",
+        operationId: "op-1",
+      },
+    }),
   );
 
   assert.equal(error, null);
-  assert.equal(calls[0].url, "http://localhost:3000/api/v1/projects/demo/nodes/node-1?fields=context%2Crevision");
-  assert.equal(calls.length, 2);
-  assert.equal(calls[1].method, "PATCH");
-  assert.deepEqual(calls[1].body, {
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].method, "PATCH");
+  assert.deepEqual(calls[0].body, {
     status: "implemented",
-    context: "Existing context\n\nResolution note:\n\nDone",
-    expectedRevision: "rev-1",
+    note: { text: "Done", heading: "Resolution note" },
   });
   assert.deepEqual(JSON.parse(stdout), {
     nodeId: "node-1",

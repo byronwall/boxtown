@@ -30,6 +30,7 @@ export function parseNodePatchBody(input: RecordValue): ProjectNodePatch {
     }
     patch.context = input.context;
   }
+  if (input.note !== undefined) patch.note = parseNote(input.note);
   const metadata = parseMetadataPatch(input.metadata);
   if (metadata) patch.metadata = metadata;
   return patch;
@@ -47,6 +48,18 @@ export function parseMetadataPatch(value: unknown): ProjectNodePatch["metadata"]
   const set = value.set === undefined ? undefined : requireRecord(value.set, "metadata.set");
   const replace = value.replace === undefined ? undefined : requireRecord(value.replace, "metadata.replace");
   return { set, replace, unset: parseUnsetKeys(value.unset) };
+}
+
+// Accepts a string, or `{ text, heading }`.
+export function parseNote(value: unknown): ProjectNodePatch["note"] {
+  if (typeof value === "string") return { text: value };
+  if (isRecord(value) && typeof value.text === "string") {
+    if (value.heading !== undefined && typeof value.heading !== "string") {
+      throw new AgentApiError("invalid_note", "note.heading must be a string.", 400);
+    }
+    return { text: value.text, heading: value.heading as string | undefined };
+  }
+  throw new AgentApiError("invalid_note", "note must be a string or { text, heading }.", 400);
 }
 
 export function parseUnsetKeys(value: unknown) {

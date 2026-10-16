@@ -19,6 +19,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Added
 
+- `pgm node note add <node-id> --text "..."` (or `--text-file`) adds a note to the end of a node's context on the server. Notes added by several agents at once are all kept, and each note's text is also saved in its history entry. `pgm node complete --note` uses this too, so it no longer reads and rewrites the whole context.
 - `pgm node resolve --solution` (or `--solution-file`) records the proven fix in the `solution` field, separately from `--note`, which writes `implementation`.
 - Text can come from a file or stdin instead of a quoted argument: `--note-file`, `--solution-file`, `node metadata set --value-file`, and `node context set --file -`. The text is stored as written, so backticks and `$( )` are never run by the shell.
 - Single-node commands print a receipt of what the server saved: the changed fields, their saved values, the new revision, and the history entry id. `node update` and `node context set` take `--expected-revision`.

@@ -242,6 +242,7 @@ pgm node metadata set <node-id> verification --value-file ./tmp/verification.md 
 cat ./tmp/notes.md | pgm node context set <node-id> --file - --json
 ```
 
+- Log failed attempts, corrections, and observations with `pgm node note add <node-id> --text-file ./tmp/note.md --heading "Attempt 2"`. The server adds the note to the end of the node's context, so notes from several agents are all kept, and the text is also saved in the history entry. Keep the `solution` field for the current answer.
 - Put Markdown, backticks, `$` syntax, or multiple lines in a file (or stdin with `-`) instead of a quoted argument. The shell never runs file text. Metadata values are trimmed; context is stored as read.
 - `--note` writes the `implementation` field. `--solution` writes `solution`. Both fields must exist in the project schema.
 - The JSON receipt shows what the server saved (`changedFields`, `savedFields`, `revision`, `operationId`), so you don't need to read the node again.

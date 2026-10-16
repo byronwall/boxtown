@@ -29,6 +29,9 @@ export interface ProjectNodePatch {
   archived?: boolean;
   priority?: string | null;
   context?: string;
+  // Appended to the latest stored context inside the write queue, so
+  // concurrent notes are all kept. Recorded once in the history entry.
+  note?: { text: string; heading?: string };
   metadata?: {
     set?: Record<string, unknown>;
     unset?: string[];
@@ -94,11 +97,17 @@ export const patchProjectNodeOnDisk = serializedMutation(async function patchPro
       nodes: current.spatialMap.nodes.map((item) => (item.id === node.id ? nextNode : item)),
     },
   }, {
-    kind: "node.updated",
+    kind: input.patch.note ? "node.note.added" : "node.updated",
     actor: input.actor,
-    summary: `Updated ${changedFields.join(", ")} on "${nextNode.label}".`,
+    summary: input.patch.note
+      ? `Added a note to "${nextNode.label}".`
+      : `Updated ${changedFields.join(", ")} on "${nextNode.label}".`,
     nodeIds: [node.id],
-    metadata: { ...getMutationMetadata(input), fields: changedFields.join(",") },
+    metadata: {
+      ...getMutationMetadata(input),
+      fields: changedFields.join(","),
+      ...(input.patch.note ? { note: input.patch.note.text.trim() } : {}),
+    },
   });
   await writeProjectAndPublish(nextRecord);
 
@@ -110,6 +119,12 @@ export const patchProjectNodeOnDisk = serializedMutation(async function patchPro
     operationId: nextRecord.operationLog[0]?.id ?? null,
   };
 });
+
+export function appendNote(context: string, note: { text: string; heading?: string }) {
+  const heading = note.heading?.trim();
+  const block = heading ? `${heading}:\n\n${note.text.trim()}` : note.text.trim();
+  return [context.trim(), block].filter(Boolean).join("\n\n");
+}
 
 // Pure: validates every requested field first, then builds the next node.
 export function applyNodePatch(node: MapNode, patch: ProjectNodePatch, project: ProjectRecord) {
@@ -124,6 +139,12 @@ export function applyNodePatch(node: MapNode, patch: ProjectNodePatch, project: 
   }
   if (patch.context !== undefined && typeof patch.context !== "string") {
     throw new ProjectMutationError("invalid_context", "context must be a string.");
+  }
+  if (patch.note !== undefined && (typeof patch.note.text !== "string" || !patch.note.text.trim())) {
+    throw new ProjectMutationError("invalid_note", "A note needs non-empty text.");
+  }
+  if (patch.note !== undefined && patch.context !== undefined) {
+    throw new ProjectMutationError("invalid_note", "Send either context or a note, not both.");
   }
   const metadata = patch.metadata ? mergeMetadata(node.metadata, patch.metadata, project) : undefined;
 
@@ -153,6 +174,10 @@ export function applyNodePatch(node: MapNode, patch: ProjectNodePatch, project: 
   }
   if (patch.context !== undefined && patch.context !== node.context) {
     next.context = patch.context;
+    changed.push("context");
+  }
+  if (patch.note !== undefined) {
+    next.context = appendNote(node.context, patch.note);
     changed.push("context");
   }
   if (metadata) {

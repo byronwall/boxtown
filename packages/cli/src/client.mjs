@@ -140,6 +140,13 @@ export class ProductGridClient {
     );
   }
 
+  addNodeNote(projectId, nodeId, input) {
+    return this.request(
+      `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}/notes`,
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) },
+    );
+  }
+
   patchNodeMetadata(projectId, nodeId, input) {
     return this.request(
       `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}/metadata`,

@@ -50,7 +50,7 @@ export async function PATCH(event: APIEvent) {
     if (Object.keys(patch).length === 0) {
       throw new AgentApiError(
         "empty_update",
-        "At least one of title, status, type, archived, priority, context, or metadata is required.",
+        "At least one of title, status, type, archived, priority, context, note, or metadata is required.",
         400,
       );
     }

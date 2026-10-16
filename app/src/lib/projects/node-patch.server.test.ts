@@ -141,4 +141,21 @@ describe("patchProjectNodeOnDisk", () => {
 
     expect(result.node.priority).toBe("high");
   });
+
+  it("keeps every note when two workers append at the same time", async () => {
+    const { projectId, nodeId } = await createFixture();
+    await patchProjectNodeOnDisk({ projectId, nodeId, patch: { context: "Original" } });
+
+    await Promise.all([
+      patchProjectNodeOnDisk({ projectId, nodeId, patch: { note: { text: "Attempt A failed", heading: "Note" } } }),
+      patchProjectNodeOnDisk({ projectId, nodeId, patch: { note: { text: "Attempt B worked" } } }),
+    ]);
+
+    const { node, project } = await readNode(projectId, nodeId);
+    expect(node.context).toContain("Original");
+    expect(node.context).toContain("Note:\n\nAttempt A failed");
+    expect(node.context).toContain("Attempt B worked");
+    const notes = project.operationLog.filter((entry) => entry.kind === "node.note.added");
+    expect(notes.map((entry) => entry.metadata?.note).sort()).toEqual(["Attempt A failed", "Attempt B worked"]);
+  });
 });

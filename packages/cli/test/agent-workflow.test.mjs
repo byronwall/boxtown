@@ -209,3 +209,14 @@ test("text from a file or stdin is sent exactly, without shell evaluation", asyn
   assert.equal(fromFile.calls[0].body.metadata.set.solution, text);
   assert.equal(fromStdin.calls[0].body.metadata.set.solution, text);
 });
+
+test("node note add posts the note text to the server", async () => {
+  const { calls, error } = await runCli(
+    ["node", "note", "add", "node-1", "--text", "Retry with `--force` failed", "--heading", "Attempt", "--project", "demo", "--json"],
+    () => ({ body: { node: { id: "node-1", label: "Node 1", context: "..." }, changedFields: ["context"] } }),
+  );
+
+  assert.equal(error, null);
+  assert.equal(calls[0].url, "http://localhost:3000/api/v1/projects/demo/nodes/node-1/notes");
+  assert.deepEqual(calls[0].body, { text: "Retry with `--force` failed", heading: "Attempt" });
+});

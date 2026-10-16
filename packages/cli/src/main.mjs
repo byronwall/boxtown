@@ -34,6 +34,7 @@ import {
   patchNode,
   readStdin,
   readTextOption,
+  toReceipt,
 } from "./node-writes.mjs";
 import { dispatchSchemaEnsureField } from "./schema-commands.mjs";
 import { notifyIfUpdateAvailable } from "./update-check.mjs";
@@ -399,13 +400,14 @@ async function dispatchNode(context, action) {
     unarchive: (context, projectId) => dispatchNodeArchive(context, projectId, false),
     context: dispatchNodeContext,
     metadata: dispatchNodeMetadata,
+    note: dispatchNodeNote,
     "export-context": dispatchNodeExportContext,
     "context-pack": dispatchNodeContextPack,
     "import-markdown": dispatchNodeImportMarkdown,
   };
   const handler = handlers[action];
   if (!handler) {
-    throw new CliError("Usage: pgm node <list|view|status|create|update|complete|resolve|batch-update|agent-update|move|delete|archive|unarchive|context|metadata|export-context|context-pack|import-markdown>", exitCodes.usage);
+    throw new CliError("Usage: pgm node <list|view|status|create|update|complete|resolve|batch-update|agent-update|move|delete|archive|unarchive|context|metadata|note|export-context|context-pack|import-markdown>", exitCodes.usage);
   }
 
   await handler(context, projectId);
@@ -541,14 +543,8 @@ async function dispatchNodeUpdate(context, projectId) {
 async function dispatchNodeComplete(context, projectId) {
   const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
   const note = (await readTextOption(context, "note", readTextFile))?.trim();
-  const patch = { status: "implemented" };
-
-  if (note) {
-    // Status and the appended note save together, and only if the context is unchanged since this read.
-    const current = await context.client.getNode(projectId, nodeId, { fields: "context,revision" });
-    patch.context = [current.context?.trim(), `Resolution note:\n\n${note}`].filter(Boolean).join("\n\n");
-    patch.expectedRevision = current.revision;
-  }
+  // The server appends the note to the latest context in the same write as the status.
+  const patch = { status: "implemented", ...(note ? { note: { text: note, heading: "Resolution note" } } : {}) };
 
   const receipt = await patchNode(context.client, projectId, nodeId, patch);
   writeNodeMutationResult(context, receipt, "Completed");
@@ -739,6 +735,18 @@ async function dispatchNodeMetadata(context, projectId) {
     return;
   }
   throw new CliError("Usage: pgm node metadata <get|set|unset> <node-id>", exitCodes.usage);
+}
+
+async function dispatchNodeNote(context, projectId) {
+  if (context.parsed.command[2] !== "add") {
+    throw new CliError("Usage: pgm node note add <node-id> (--text \"...\" | --text-file <path|->) [--heading \"Note\"]", exitCodes.usage);
+  }
+  const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
+  const text = (await readTextOption(context, "text", readTextFile))?.trim();
+  requireOption(text, "Note text is required. Pass --text, --text-file <path>, or --text-file - for stdin.");
+  const heading = typeof context.parsed.options.heading === "string" ? context.parsed.options.heading : undefined;
+  const response = await context.client.addNodeNote(projectId, nodeId, { text, ...(heading ? { heading } : {}) });
+  writeNodeMutationResult(context, toReceipt(nodeId, response), "Added a note to");
 }
 
 async function dispatchNodeExportContext(context, projectId) {
@@ -1083,7 +1091,7 @@ function parseBooleanValue(value) {
 }
 
 function getCommandPartLimit(command) {
-  if (command[0] === "node" && (command[1] === "context" || command[1] === "metadata")) {
+  if (command[0] === "node" && ["context", "metadata", "note"].includes(command[1])) {
     return 3;
   }
   return 2;
@@ -1455,6 +1463,7 @@ Usage:
   pgm node unarchive <node-id...> [--json]
   pgm node context get <node-id> [--json]
   pgm node context set <node-id> --file <path|-> [--expected-revision <rev>] [--json] [--full]
+  pgm node note add <node-id> (--text "Observation" | --text-file <path|->) [--heading "Note"] [--json]
   pgm node metadata get <node-id> [--json]
   pgm node metadata set <node-id> <key> (<value> | --value-file <path|->) [--json] [--full]
   pgm node metadata unset <node-id> <key> [--json] [--full]
