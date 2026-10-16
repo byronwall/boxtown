@@ -6,6 +6,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Fixed
 
+- When a `--local` command can't connect to a running viewer because local network access is blocked, it now says so right away. It no longer waits and reports that the viewer is still starting. Other connection errors name the cause, such as nothing listening, a timeout, or a blocked socket.
 - Project history is no longer capped at 250 entries. Older history files used to be deleted as new ones were written; now every entry is kept. The app still loads only the most recent 250, so big histories don't slow down editing.
 
 - Two agents updating different metadata fields on the same node at the same time no longer erase each other's change. Metadata `set` and `unset` now merge with the latest saved node.
@@ -19,6 +20,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Added
 
+- `pgm target inspect` shows where commands will go without starting anything. For a server, it shows the URL, project, whether a token is set, where each came from, and whether the server answers. For `--local`, it shows the data folder and the viewer running for it. Write receipts also include the target, so a write to the wrong server or folder is easy to spot.
 - `pgm relation list|add|remove` manages related, dependency, and reuse links between nodes, with matching `/nodes/<id>/relations` API routes. Adding a link that already exists does nothing, and parent/child structure is never changed. Added links show in node activity.
 - `pgm node note add <node-id> --text "..."` (or `--text-file`) adds a note to the end of a node's context on the server. Notes added by several agents at once are all kept, and each note's text is also saved in its history entry. `pgm node complete --note` uses this too, so it no longer reads and rewrites the whole context.
 - `pgm node resolve --solution` (or `--solution-file`) records the proven fix in the `solution` field, separately from `--note`, which writes `implementation`.

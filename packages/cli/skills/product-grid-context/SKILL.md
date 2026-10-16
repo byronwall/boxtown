@@ -298,7 +298,8 @@ pgm node context-pack <parent-node-id> --output ./context-pack-dir --json
 - After `node create`, keep using the returned `nodeId`.
 - After `node import-markdown`, keep using the returned node IDs.
 - After `image add`, keep using the returned image IDs/URLs.
-- If `pgm` cannot reach the server, ask whether the Product Grid server is running.
+- Before writing, confirm the target with `pgm target inspect --json` (or `pgm target inspect --local <folder> --project <id> --json`). It shows the server or data folder, where each setting came from, and whether it is reachable. It never starts a viewer or prints the token. Write receipts include the same `target`.
+- If `pgm` cannot reach the server, read the reason in the error. A blocked connection (`EPERM`/`EACCES`) means local network access is denied. A refused connection means no server is running.
 - The default local server is `http://localhost:3000`.
 - Use `--server <url>` when the project is not on the default server.
 - Use `--project <project-id>` when no project is linked.

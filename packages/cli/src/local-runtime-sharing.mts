@@ -11,6 +11,7 @@ import {
   delay,
   identifiesRuntime,
   isLoopbackURL,
+  probeRuntime,
   isPidAlive,
   lockName,
   onShutdownSignal,
@@ -19,6 +20,7 @@ import {
   tryReadRecord,
   withFolderGuard,
   writeOwnership,
+  type RuntimeProbe,
   type RuntimeRecord,
 } from "./local-runtime-records.mjs";
 
@@ -173,15 +175,62 @@ export async function withLocalRuntime<T>(inputDir: string, io: Io, action: (run
 async function waitForViewer(record: RuntimeRecord, stderr: Io["stderr"]) {
   if (!isLoopbackURL(record.url)) throw new Error("Local runtime record has an unsafe address.");
   if (!isPidAlive(record.pid)) return null;
+  let lastProbe: RuntimeProbe | null = null;
   for (let attempt = 0; attempt < 40; attempt += 1) {
-    if (record.state === "ready" && await identifiesRuntime(record)) return record;
+    if (record.state === "ready") {
+      lastProbe = await probeRuntime(record);
+      if (lastProbe.ok) return record;
+      // A blocked socket won't clear by waiting; report it instead of "still starting".
+      if (lastProbe.reason === "permission") {
+        throw new CliError(
+          `The local viewer for ${record.dataDir} is running at ${record.url}, but this command could not connect: ${lastProbe.message}`,
+          exitCodes.permission,
+          { code: "local_network_denied" },
+        );
+      }
+    }
     await delay(250);
     const current = await tryReadRecord(path.join(record.dataDir, lockName));
     if (!current || current.id !== record.id) return null;
     Object.assign(record, current);
     if (!isPidAlive(record.pid)) return null;
   }
-  throw new Error("The local viewer is still starting. Retry the command shortly.");
+  const detail = lastProbe && !lastProbe.ok
+    ? `It is marked ready at ${record.url}, but ${lastProbe.message}`
+    : `It is still marked "${record.state}".`;
+  throw new Error(`The local viewer for ${record.dataDir} did not respond within 10 seconds. ${detail} Retry shortly, or run: pgm target inspect --local ${record.dataDir}`);
+}
+
+// Read-only view of a local data folder and its runtime. Never creates the
+// folder, takes the folder guard, or starts or stops anything.
+export async function inspectLocalTarget(inputDir: string, cwd: string, projectId: string | null) {
+  const requested = path.resolve(cwd, inputDir);
+  const dataDir = await realpath(requested).catch(() => null);
+  const folder = dataDir ?? requested;
+  const record = dataDir ? await tryReadRecord(path.join(dataDir, lockName)) : null;
+  const probe = record?.url ? await probeRuntime(record) : null;
+  const projectExists = projectId
+    ? await stat(path.join(folder, "projects", projectId, "project.json")).then(() => true, () => false)
+    : null;
+
+  return {
+    mode: "local" as const,
+    dataDir: folder,
+    dataDirExists: dataDir !== null,
+    project: projectId ? { id: projectId, exists: projectExists } : null,
+    runtime: record
+      ? {
+          id: record.id,
+          mode: record.mode,
+          state: record.state,
+          url: record.url || null,
+          ownerPid: record.pid,
+          ownerAlive: isPidAlive(record.pid),
+          reachable: probe?.ok ?? false,
+          ...(probe && !probe.ok ? { problem: { reason: probe.reason, code: probe.code ?? null, message: probe.message } } : {}),
+        }
+      : null,
+  };
 }
 
 async function resolveDataDir(inputDir: string, cwd: string) {

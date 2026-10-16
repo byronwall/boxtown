@@ -924,6 +924,7 @@ test("node complete saves status and an appended note in one request", async () 
     savedFields: { status: "implemented", contextLength: 42 },
     revision: "rev-2",
     operationId: "op-1",
+    target: { mode: "remote", server: "http://localhost:3000", projectId: "demo" },
     updatedFields: ["status", "context"],
   });
 });

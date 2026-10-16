@@ -76,7 +76,7 @@ export async function applyNodeUpdates(context, projectId, updates) {
     }
   }
 
-  return summarizeResults(results);
+  return { target: context.target, ...summarizeResults(results) };
 }
 
 function toPatch(update, schema) {

@@ -237,3 +237,61 @@ test("relation commands list, add, and remove links on the source node", async (
   assert.match(add.stdout, /Added dependency a -> b/);
   assert.equal(remove.calls[0].method, "DELETE");
 });
+
+test("target inspect shows where commands go without printing the token", async () => {
+  const { calls, stdout, error } = await runCli(
+    ["target", "inspect", "--project", "demo", "--json"],
+    () => ({ body: { apiVersion: "1" } }),
+    { env: { PRODUCT_GRID_SERVER: "https://pgm.example.test", PRODUCT_GRID_TOKEN: "secret-token-value" } },
+  );
+
+  assert.equal(error, null);
+  assert.equal(calls[0].url, "https://pgm.example.test/api/v1/version");
+  const { target } = JSON.parse(stdout);
+  assert.equal(target.mode, "remote");
+  assert.equal(target.server, "https://pgm.example.test");
+  assert.equal(target.serverSource, "PRODUCT_GRID_SERVER");
+  assert.deepEqual(target.token, { present: true, source: "PRODUCT_GRID_TOKEN" });
+  assert.deepEqual(target.project, { id: "demo", source: "--project" });
+  assert.equal(target.reachability.reachable, true);
+  assert.doesNotMatch(stdout, /secret-token-value/);
+});
+
+test("target inspect --local reads a folder without creating or starting anything", async () => {
+  const { mkdtemp, readdir } = await import("node:fs/promises");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const parent = await mkdtemp(path.join(os.tmpdir(), "pgm-target-"));
+
+  const { stdout, error } = await runCli(
+    ["target", "inspect", "--local", "missing-data", "--project", "demo", "--json"],
+    () => ({ body: {} }),
+    { cwd: parent },
+  );
+
+  assert.equal(error, null);
+  const { target } = JSON.parse(stdout);
+  assert.equal(target.mode, "local");
+  assert.equal(target.dataDirExists, false);
+  assert.equal(target.runtime, null);
+  assert.deepEqual(await readdir(parent), []);
+});
+
+test("network errors name a blocked socket instead of a slow startup", async () => {
+  const { describeNetworkError } = await import("../src/network-errors.mjs");
+  const blocked = new TypeError("fetch failed", { cause: Object.assign(new Error("connect EPERM"), { code: "EPERM" }) });
+  const refused = new TypeError("fetch failed", { cause: Object.assign(new Error("connect"), { code: "ECONNREFUSED" }) });
+
+  assert.equal(describeNetworkError(blocked).kind, "permission");
+  assert.match(describeNetworkError(blocked).message, /local network access/);
+  assert.equal(describeNetworkError(refused).kind, "refused");
+});
+
+test("write receipts include the target they were sent to", async () => {
+  const { stdout } = await runCli(
+    ["node", "update", "node-1", "--status", "working", "--project", "demo", "--json"],
+    () => ({ body: { node: { id: "node-1", status: "working" }, changedFields: ["status"] } }),
+  );
+
+  assert.deepEqual(JSON.parse(stdout).target, { mode: "remote", server: "http://localhost:3000", projectId: "demo" });
+});

@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { CliError, apiErrorToExitCode } from "./errors.mjs";
+import { describeNetworkError } from "./network-errors.mjs";
 import { cliUserAgent } from "./version.mjs";
 
 export class ProductGridClient {
@@ -273,7 +274,7 @@ export class ProductGridClient {
       });
     } catch (error) {
       throw new CliError(
-        `Could not reach ${this.server}. Is the dev server running? ${formatCause(error)}`,
+        `Could not reach ${this.server}. Reason: ${formatCause(error)}`,
         1,
         { transport: true },
       );
@@ -311,7 +312,7 @@ export class ProductGridClient {
       });
     } catch (error) {
       throw new CliError(
-        `Could not reach ${this.server}. Is the dev server running? ${formatCause(error)}`,
+        `Could not reach ${this.server}. Reason: ${formatCause(error)}`,
         1,
         { transport: true },
       );
@@ -343,7 +344,7 @@ export class ProductGridClient {
       });
     } catch (error) {
       throw new CliError(
-        `Could not reach ${this.server}. Is the dev server running? ${formatCause(error)}`,
+        `Could not reach ${this.server}. Reason: ${formatCause(error)}`,
         1,
         { transport: true },
       );
@@ -394,7 +395,7 @@ function safeJson(text) {
 }
 
 function formatCause(error) {
-  return error instanceof Error && error.message ? error.message : "";
+  return describeNetworkError(error).message;
 }
 
 function jsonInit(method, input) {

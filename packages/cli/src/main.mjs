@@ -37,6 +37,7 @@ import {
   toReceipt,
 } from "./node-writes.mjs";
 import { dispatchRelation } from "./relation-commands.mjs";
+import { dispatchTarget } from "./target-commands.mjs";
 import { dispatchSchemaEnsureField } from "./schema-commands.mjs";
 import { notifyIfUpdateAvailable } from "./update-check.mjs";
 import { packageName, packageVersion } from "./version.mjs";
@@ -69,6 +70,11 @@ export async function main(argv = process.argv, io = defaultIo()) {
     return;
   }
 
+  if (parsed.command[0] === "target") {
+    await dispatchTarget(parsed, io);
+    return;
+  }
+
   if (parsed.options.local !== undefined) {
     const { dispatchLocal } = await import("../build/local-runtime-sharing.mjs");
     await dispatchLocal(parsed, io, async (runtime) => {
@@ -79,6 +85,7 @@ export async function main(argv = process.argv, io = defaultIo()) {
         server: runtime.url,
         token: runtime.token,
         projectId: parsed.options.project ?? null,
+        target: { mode: "local", dataDir: runtime.dataDir, projectId: parsed.options.project ?? null },
         client,
         io,
       };
@@ -96,7 +103,8 @@ export async function main(argv = process.argv, io = defaultIo()) {
   const token = resolveToken(parsed.options, config, server, io.env);
   const projectId = resolveProjectId(parsed.options, config, io.env);
   const client = new ProductGridClient({ server, token });
-  const context = { parsed, config, server, token, projectId, client, io };
+  const target = { mode: "remote", server, projectId };
+  const context = { parsed, config, server, token, projectId, target, client, io };
   await dispatch(context);
 }
 
@@ -1137,8 +1145,10 @@ function parseMetadataJson(value) {
 function writeNodeMutationResult(context, receipt, verb) {
   if (context.parsed.options.json) {
     const { node, ...compact } = receipt;
+    // The target makes a write to the wrong server or folder visible in the receipt.
+    const output = { ...compact, target: context.target };
     writeJson(
-      context.parsed.options.full ? { ...compact, node } : { ...compact, updatedFields: compact.changedFields },
+      context.parsed.options.full ? { ...output, node } : { ...output, updatedFields: compact.changedFields },
       context.io.stdout,
     );
   } else {
@@ -1439,6 +1449,7 @@ function helpText() {
   return `Product Grid CLI
 
 Usage:
+  pgm target inspect [--local <folder>] [--project <project-id>] [--json]
   pgm viewer [--data-dir <folder>] [--no-open] [--port <port>]
   pgm project list --local <folder> [--json]
   pgm node list --local <folder> --project <id> [--json]
