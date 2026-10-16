@@ -250,6 +250,19 @@ cat ./tmp/notes.md | pgm node context set <node-id> --file - --json
 - `node batch-update` and `node agent-update` report every item as `applied`, `rejected`, `conflict`, or `unknown`, and exit with code 8 when any item was not applied. Successful items stay saved. For `unknown`, run the `readback` command before retrying.
 - `agent-update` keys `blockedBy` and `filesChanged` write the `blocked-by` and `files-changed` fields.
 
+## Link Related Nodes
+
+Use relation links for blockers and overlaps. Don't put a node under another just to show a dependency.
+
+```bash
+pgm relation list <node-id> --json
+pgm relation add <blocked-node-id> <blocker-node-id> --relationship dependency --json
+pgm relation add <duplicate-node-id> <canonical-node-id> --json   # related; add a note naming the canonical node
+pgm relation remove <source-id> <target-id> --relationship dependency --json
+```
+
+When two findings overlap, keep both records. Link the duplicate to the canonical node and add a `pgm node note add` correction that names it. Never merge records just because their titles match.
+
 ## Attach Images To Nodes
 
 Use `image add` when the agent creates screenshots or local image artifacts, such as Playwright screenshots, and needs to attach them to specific nodes.

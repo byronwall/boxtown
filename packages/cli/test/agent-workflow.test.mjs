@@ -220,3 +220,20 @@ test("node note add posts the note text to the server", async () => {
   assert.equal(calls[0].url, "http://localhost:3000/api/v1/projects/demo/nodes/node-1/notes");
   assert.deepEqual(calls[0].body, { text: "Retry with `--force` failed", heading: "Attempt" });
 });
+
+test("relation commands list, add, and remove links on the source node", async () => {
+  const respond = (call) => {
+    if (call.method === "GET") return { body: { nodeId: "a", relations: [] } };
+    if (call.method === "POST") return { body: { created: true, link: { source: "a", target: "b", relationship: "dependency" } } };
+    return { body: { removed: { source: "a", target: "b", relationship: "dependency" } } };
+  };
+
+  const list = await runCli(["relation", "list", "a", "--project", "demo", "--json"], respond);
+  const add = await runCli(["relation", "add", "a", "b", "--relationship", "dependency", "--project", "demo"], respond);
+  const remove = await runCli(["relation", "remove", "a", "b", "--relationship", "dependency", "--project", "demo"], respond);
+
+  assert.equal(list.calls[0].url, "http://localhost:3000/api/v1/projects/demo/nodes/a/relations");
+  assert.deepEqual(add.calls[0].body, { target: "b", relationship: "dependency" });
+  assert.match(add.stdout, /Added dependency a -> b/);
+  assert.equal(remove.calls[0].method, "DELETE");
+});

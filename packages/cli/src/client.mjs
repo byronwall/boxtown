@@ -140,6 +140,22 @@ export class ProductGridClient {
     );
   }
 
+  listNodeRelations(projectId, nodeId) {
+    return this.request(this.relationsPath(projectId, nodeId));
+  }
+
+  addNodeRelation(projectId, nodeId, input) {
+    return this.request(this.relationsPath(projectId, nodeId), jsonInit("POST", input));
+  }
+
+  removeNodeRelation(projectId, nodeId, input) {
+    return this.request(this.relationsPath(projectId, nodeId), jsonInit("DELETE", input));
+  }
+
+  relationsPath(projectId, nodeId) {
+    return `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}/relations`;
+  }
+
   addNodeNote(projectId, nodeId, input) {
     return this.request(
       `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}/notes`,
@@ -379,4 +395,8 @@ function safeJson(text) {
 
 function formatCause(error) {
   return error instanceof Error && error.message ? error.message : "";
+}
+
+function jsonInit(method, input) {
+  return { method, headers: { "content-type": "application/json" }, body: JSON.stringify(input) };
 }

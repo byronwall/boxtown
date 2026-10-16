@@ -45,6 +45,7 @@ export type ProjectOperationKind =
   | "context.nodes.imported"
   | "node.created"
   | "node.deleted"
+  | "link.created"
   | "link.deleted"
   | "node.moved";
 

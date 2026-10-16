@@ -19,6 +19,7 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Added
 
+- `pgm relation list|add|remove` manages related, dependency, and reuse links between nodes, with matching `/nodes/<id>/relations` API routes. Adding a link that already exists does nothing, and parent/child structure is never changed. Added links show in node activity.
 - `pgm node note add <node-id> --text "..."` (or `--text-file`) adds a note to the end of a node's context on the server. Notes added by several agents at once are all kept, and each note's text is also saved in its history entry. `pgm node complete --note` uses this too, so it no longer reads and rewrites the whole context.
 - `pgm node resolve --solution` (or `--solution-file`) records the proven fix in the `solution` field, separately from `--note`, which writes `implementation`.
 - Text can come from a file or stdin instead of a quoted argument: `--note-file`, `--solution-file`, `node metadata set --value-file`, and `node context set --file -`. The text is stored as written, so backticks and `$( )` are never run by the shell.

@@ -36,6 +36,7 @@ import {
   readTextOption,
   toReceipt,
 } from "./node-writes.mjs";
+import { dispatchRelation } from "./relation-commands.mjs";
 import { dispatchSchemaEnsureField } from "./schema-commands.mjs";
 import { notifyIfUpdateAvailable } from "./update-check.mjs";
 import { packageName, packageVersion } from "./version.mjs";
@@ -112,6 +113,10 @@ async function dispatch(context) {
 
   if (scope === "node") {
     return dispatchNode(context, action);
+  }
+
+  if (scope === "relation") {
+    return dispatchRelation(context, action);
   }
 
   if (scope === "image") {
@@ -1470,6 +1475,9 @@ Usage:
   pgm node export-context <node-id> [--project <project-id>] [--output ./node-context.md] [--json]
   pgm node context-pack <parent-node-id> --output ./context-pack-dir [--depth N] [--json]
   pgm node import-markdown --file <path> [--title "Notes"] [--split-headings] [--max-heading-depth 2] [--metadata-json '{"purpose":"..."}'] [--json]
+  pgm relation list <node-id> [--project <project-id>] [--json]
+  pgm relation add <source-id> <target-id> [--relationship related|dependency|reuse] [--json]
+  pgm relation remove <source-id> <target-id> [--relationship related|dependency|reuse] [--json]
   pgm image add <node-id> <image-path...> [--project <project-id>] [--json]
   pgm image list <node-id> [--project <project-id>] [--json]
   pgm image remove <node-id> <image-id> [--project <project-id>] [--json]
