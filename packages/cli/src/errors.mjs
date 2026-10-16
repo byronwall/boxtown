@@ -1,8 +1,11 @@
 export class CliError extends Error {
-  constructor(message, exitCode = 1) {
+  constructor(message, exitCode = 1, apiError = undefined) {
     super(message);
     this.name = "CliError";
     this.exitCode = exitCode;
+    // The server's error code and details, when the failure came from the API.
+    this.code = apiError?.code;
+    this.details = apiError?.details;
   }
 }
 

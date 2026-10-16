@@ -228,7 +228,9 @@ describe("agent node API projections", () => {
 
     expect(response.status).toBe(400);
     expect(body.error.code).toBe("invalid_metadata_key");
-    expect(body.error.details.fields).toEqual(["purpose"]);
+    expect(body.error.details.fields).toEqual([{ key: "purpose", label: "Purpose" }]);
+    expect(body.error.message).toContain("This project defines: purpose");
+    expect(body.error.message).toContain("pgm project schema ensure-field mvp_tier");
     expect(writeProjectAndPublish).not.toHaveBeenCalled();
   });
 

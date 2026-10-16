@@ -1,5 +1,5 @@
 import type { APIEvent } from "@solidjs/start/server";
-import { AgentApiError } from "~/lib/agent-api/errors.server";
+import { AgentApiError, rethrowAsAgentApiError } from "~/lib/agent-api/errors.server";
 import { withAgentApi } from "~/lib/agent-api/handler.server";
 import { toAgentOperationActor } from "~/lib/agent-api/operation-actor";
 import { toAgentMapNode } from "~/lib/agent-api/projections.server";
@@ -57,11 +57,7 @@ export async function POST(event: APIEvent) {
         links: result.createdLinks,
       }, { status: 201 });
     } catch (error) {
-      throw new AgentApiError(
-        "markdown_import_failed",
-        error instanceof Error ? error.message : "Failed to import markdown.",
-        400,
-      );
+      rethrowAsAgentApiError(error, { code: "markdown_import_failed", message: "Failed to import markdown." });
     }
   });
 }

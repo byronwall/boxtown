@@ -89,6 +89,12 @@ After selecting a project, inspect the compact schema early so you know the avai
 pgm project schema --json
 ```
 
+Metadata keys must be declared in the project schema. Writes with an unknown key fail before anything is saved, and the error lists the fields the project already has. Reuse one of those when it fits. Add a field only when none does:
+
+```bash
+pgm project schema ensure-field solution --label "Solution" --json   # safe to repeat; keeps every other field
+```
+
 ## Gather Context
 
 Start small. Do not begin by dumping the full project into context.

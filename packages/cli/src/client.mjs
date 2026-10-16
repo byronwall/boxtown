@@ -36,6 +36,14 @@ export class ProductGridClient {
     );
   }
 
+  ensureMetadataField(projectId, input) {
+    return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/schema/fields`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input),
+    });
+  }
+
   getProjectHistory(projectId, options = {}) {
     const searchParams = new URLSearchParams();
     for (const [key, value] of Object.entries(options)) {
@@ -253,7 +261,7 @@ export class ProductGridClient {
     if (!response.ok) {
       const apiError = body?.error ?? {};
       const message = apiError.message ?? `Request failed with HTTP ${response.status}.`;
-      throw new CliError(message, apiErrorToExitCode(apiError.code, response.status));
+      throw new CliError(message, apiErrorToExitCode(apiError.code, response.status), apiError);
     }
 
     return body;

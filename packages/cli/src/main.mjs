@@ -18,6 +18,15 @@ import {
   writeJson,
   writeTable,
 } from "./output.mjs";
+import {
+  readJsonInput,
+  readOptionalTextInput,
+  requireOption,
+  requireProject,
+  resolveInputPath,
+  writeMaybeJson,
+} from "./cli-helpers.mjs";
+import { dispatchSchemaEnsureField } from "./schema-commands.mjs";
 import { notifyIfUpdateAvailable } from "./update-check.mjs";
 import { packageName, packageVersion } from "./version.mjs";
 
@@ -270,6 +279,10 @@ async function dispatchProject(context, action) {
       context.io.stdout.write(`Updated: ${project.updatedAt}\n`);
     }
     return;
+  }
+
+  if (action === "schema" && context.parsed.positionals[0] === "ensure-field") {
+    return dispatchSchemaEnsureField(context);
   }
 
   if (action === "schema") {
@@ -1103,20 +1116,6 @@ function isUpdateCommand(command) {
   return command.length === 1 && command[0] === "update";
 }
 
-function requireProject(context) {
-  return requireOption(
-    context.projectId,
-    "A project id is required. Use --project <id>, PRODUCT_GRID_PROJECT, or pgm project link <id>.",
-  );
-}
-
-function requireOption(value, message) {
-  if (typeof value !== "string" || value.trim().length === 0) {
-    throw new CliError(message, exitCodes.usage);
-  }
-  return value;
-}
-
 function parseMetadataJson(value) {
   if (value === undefined || value === null || value === "") {
     return {};
@@ -1131,33 +1130,6 @@ function parseMetadataJson(value) {
   } catch (error) {
     throw new CliError(
       `--metadata-json must be a JSON object. ${error instanceof Error ? error.message : ""}`.trim(),
-      exitCodes.usage,
-    );
-  }
-}
-
-async function readOptionalTextInput(file, cwd) {
-  if (typeof file !== "string" || file.trim().length === 0) {
-    return undefined;
-  }
-
-  return readFile(resolveInputPath(file, cwd), "utf8");
-}
-
-async function readJsonInput(file, cwd) {
-  const raw = await readFile(resolveInputPath(file, cwd), "utf8");
-  try {
-    if (file.endsWith(".jsonl")) {
-      return raw
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line) => JSON.parse(line));
-    }
-    return JSON.parse(raw);
-  } catch (error) {
-    throw new CliError(
-      `Could not parse JSON input. ${error instanceof Error ? error.message : ""}`.trim(),
       exitCodes.usage,
     );
   }
@@ -1483,24 +1455,12 @@ function uniqueStrings(values) {
   return [...new Set(values.filter((value) => typeof value === "string" && value.trim().length > 0))];
 }
 
-function resolveInputPath(value, cwd) {
-  return path.isAbsolute(value) ? value : path.resolve(cwd, value);
-}
-
 function titleFromFile(filePath) {
   const basename = path.basename(filePath, path.extname(filePath));
   return basename
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ")
     .trim() || "Imported Markdown";
-}
-
-function writeMaybeJson(context, jsonValue, humanValue) {
-  if (context.parsed.options.json) {
-    writeJson(jsonValue, context.io.stdout);
-  } else {
-    context.io.stdout.write(humanValue);
-  }
 }
 
 function toCamelCase(value) {
@@ -1530,6 +1490,7 @@ Usage:
   pgm project create ["Project name"] [--name "Project name"] [--link] [--json]
   pgm project view [project-id] [--json]
   pgm project schema [project-id] [--json]
+  pgm project schema ensure-field <key> [--label "Label"] [--default "Default"] [--project <project-id>] [--json]
   pgm project history [project-id] [--limit 50] [--before <cursor>] [--node <node-id>] [--json]
   pgm project export-markdown [project-id] [--output ./project.md] [--json]
   pgm project link <project-id>

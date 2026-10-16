@@ -1,10 +1,6 @@
 import type { APIEvent } from "@solidjs/start/server";
-import {
-  NodePatchError,
-  patchProjectNodeOnDisk,
-  type ProjectNodePatch,
-} from "~/lib/projects/node-patch.server";
-import { AgentApiError } from "./errors.server";
+import { patchProjectNodeOnDisk, type ProjectNodePatch } from "~/lib/projects/node-patch.server";
+import { AgentApiError, rethrowAsAgentApiError } from "./errors.server";
 import { toAgentOperationActor } from "./operation-actor";
 import { toAgentMapNode } from "./projections.server";
 import { agentJson } from "./response.server";
@@ -91,10 +87,7 @@ export async function respondWithNodePatch(
       operationId: result.operationId,
     });
   } catch (error) {
-    if (error instanceof NodePatchError) {
-      throw new AgentApiError(error.code, error.message, error.status, error.details);
-    }
-    throw error;
+    rethrowAsAgentApiError(error);
   }
 }
 

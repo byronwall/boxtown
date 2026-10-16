@@ -11,8 +11,12 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 - Two agents updating different metadata fields on the same node at the same time no longer erase each other's change. Metadata `set` and `unset` now merge with the latest saved node.
 - A node update that changes several fields is now all or nothing. An invalid status, priority, type, or metadata key rejects the whole request, so a valid title or status is no longer saved alongside an error.
 
+- Creating or importing a node with a metadata field the project doesn't define now fails, with no node created. It used to look successful while silently dropping the field. Every unknown-field error lists the project's existing fields and shows the command to add a new one.
+- Metadata keys typed in camelCase, such as `blockedBy`, become `blocked-by` instead of `blockedby`.
+
 ### Added
 
+- `pgm project schema ensure-field <key> --label "Label"` adds one metadata field without replacing the rest of the schema. Running it again does nothing, and a different label or default for an existing field is refused instead of overwritten.
 - Node reads return a `revision`. Pass it back as `expectedRevision` when replacing context or other fields, and the update is refused with a conflict if someone changed the node in between. Changes to other nodes don't affect it.
 - `pgm project history` and `GET /api/v1/projects/<id>/history` page through every stored history entry, newest first, with an optional node filter. Each page returns a `nextCursor` for reading older entries, and entries written in the meantime don't shift the pages.
 - The node update API accepts `context` and `metadata` (`set`, `unset`, or a full `replace`) alongside title, status, type, priority, and archived, and returns the saved node, its new revision, the changed fields, and the history entry id.

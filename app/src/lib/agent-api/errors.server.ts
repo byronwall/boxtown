@@ -1,3 +1,4 @@
+import { ProjectMutationError } from "~/lib/projects/mutation-error";
 import type { AgentApiErrorBody } from "./types";
 
 export class AgentApiError extends Error {
@@ -39,4 +40,20 @@ export function errorToResponse(error: unknown) {
       "cache-control": "no-store",
     },
   });
+}
+
+// Keeps the code, status, and details of a rejected project write. Other
+// errors become `fallback` when given, or propagate unchanged.
+export function rethrowAsAgentApiError(
+  error: unknown,
+  fallback?: { code: string; message: string },
+): never {
+  if (error instanceof AgentApiError) throw error;
+  if (error instanceof ProjectMutationError) {
+    throw new AgentApiError(error.code, error.message, error.status, error.details);
+  }
+  if (fallback) {
+    throw new AgentApiError(fallback.code, error instanceof Error ? error.message : fallback.message, 400);
+  }
+  throw error;
 }

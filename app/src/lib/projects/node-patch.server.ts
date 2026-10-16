@@ -10,6 +10,11 @@ import {
   serializedMutation,
   writeProjectAndPublish,
 } from "./data.server";
+import {
+  findUnknownMetadataKeys,
+  ProjectMutationError,
+  unknownMetadataKeysError,
+} from "./mutation-error";
 import { sanitizeNodeMetadata } from "./node-metadata";
 import { normalizeProjectNodeTypeName } from "./node-types";
 import { serializeNodeFile } from "./storage/node-file";
@@ -50,18 +55,6 @@ export interface PatchProjectNodeResult {
   operationId: string | null;
 }
 
-export class NodePatchError extends Error {
-  constructor(
-    readonly code: string,
-    message: string,
-    readonly status = 400,
-    readonly details?: Record<string, unknown>,
-  ) {
-    super(message);
-    this.name = "NodePatchError";
-  }
-}
-
 // Digest of the node's stored file. Other nodes' edits do not change it.
 export function getNodeRevision(node: MapNode, links: MapLink[]) {
   return createHash("sha256").update(serializeNodeFile(node, links)).digest("hex").slice(0, 16);
@@ -72,16 +65,16 @@ export const patchProjectNodeOnDisk = serializedMutation(async function patchPro
 ): Promise<PatchProjectNodeResult> {
   const current = await readProjectByIdFromDisk(input.projectId);
   if (!current) {
-    throw new NodePatchError("project_not_found", "Project not found.", 404, { projectId: input.projectId });
+    throw new ProjectMutationError("project_not_found", "Project not found.", 404, { projectId: input.projectId });
   }
   const node = current.spatialMap.nodes.find((item) => item.id === input.nodeId);
   if (!node) {
-    throw new NodePatchError("node_not_found", "Node not found.", 404, { nodeId: input.nodeId });
+    throw new ProjectMutationError("node_not_found", "Node not found.", 404, { nodeId: input.nodeId });
   }
 
   const currentRevision = getNodeRevision(node, current.spatialMap.links);
   if (input.expectedRevision !== undefined && input.expectedRevision !== currentRevision) {
-    throw new NodePatchError("revision_conflict", "The node changed since it was read.", 409, {
+    throw new ProjectMutationError("revision_conflict", "The node changed since it was read.", 409, {
       nodeId: node.id,
       expectedRevision: input.expectedRevision,
       currentRevision,
@@ -124,13 +117,13 @@ export function applyNodePatch(node: MapNode, patch: ProjectNodePatch, project: 
   const priority = patch.priority === undefined ? undefined : requirePriority(patch.priority);
   const type = patch.type === undefined ? undefined : requireType(patch.type, project);
   if (patch.archived !== undefined && typeof patch.archived !== "boolean") {
-    throw new NodePatchError("invalid_archived", "archived must be a boolean.");
+    throw new ProjectMutationError("invalid_archived", "archived must be a boolean.");
   }
   if (patch.title !== undefined && typeof patch.title !== "string") {
-    throw new NodePatchError("invalid_title", "title must be a string.");
+    throw new ProjectMutationError("invalid_title", "title must be a string.");
   }
   if (patch.context !== undefined && typeof patch.context !== "string") {
-    throw new NodePatchError("invalid_context", "context must be a string.");
+    throw new ProjectMutationError("invalid_context", "context must be a string.");
   }
   const metadata = patch.metadata ? mergeMetadata(node.metadata, patch.metadata, project) : undefined;
 
@@ -178,24 +171,17 @@ function mergeMetadata(
   patch: NonNullable<ProjectNodePatch["metadata"]>,
   project: ProjectRecord,
 ) {
-  const known = new Set(project.nodeMetadataSchema.map((field) => field.key));
-  const requested = [
+  const unknownKeys = findUnknownMetadataKeys([
     ...Object.keys(patch.replace ?? {}),
     ...Object.keys(patch.set ?? {}),
     ...(patch.unset ?? []),
-  ];
-  const unknownKeys = [...new Set(requested.filter((key) => !known.has(key)))];
-  if (unknownKeys.length > 0) {
-    throw new NodePatchError("invalid_metadata_key", "Metadata key is not defined in project schema.", 400, {
-      keys: unknownKeys,
-      fields: [...known],
-    });
-  }
+  ], project.nodeMetadataSchema);
+  if (unknownKeys.length > 0) throw unknownMetadataKeysError(unknownKeys, project.nodeMetadataSchema);
   const nonStrings = Object.entries({ ...patch.replace, ...patch.set })
     .filter(([, value]) => typeof value !== "string")
     .map(([key]) => key);
   if (nonStrings.length > 0) {
-    throw new NodePatchError("invalid_metadata_value", "Metadata values must be strings.", 400, {
+    throw new ProjectMutationError("invalid_metadata_value", "Metadata values must be strings.", 400, {
       keys: nonStrings,
     });
   }
@@ -207,7 +193,7 @@ function mergeMetadata(
 
 function requireStatus(value: string): MapNodeStatus {
   if (!isMapNodeStatus(value)) {
-    throw new NodePatchError("invalid_status", "A valid node status is required.", 400, { status: value });
+    throw new ProjectMutationError("invalid_status", "A valid node status is required.", 400, { status: value });
   }
   return value;
 }
@@ -215,7 +201,7 @@ function requireStatus(value: string): MapNodeStatus {
 function requirePriority(value: string | null): MapNodePriority | null {
   const priority = value === null || value === "none" ? null : value;
   if (priority !== null && !isMapNodePriority(priority)) {
-    throw new NodePatchError(
+    throw new ProjectMutationError(
       "invalid_priority",
       'priority must be one of "urgent", "high", "medium", "low", or null.',
       400,
@@ -228,7 +214,7 @@ function requirePriority(value: string | null): MapNodePriority | null {
 function requireType(value: string, project: ProjectRecord) {
   const type = typeof value === "string" ? normalizeProjectNodeTypeName(value) : "";
   if (!type || !project.nodeTypeSchema.some((item) => item.name === type)) {
-    throw new NodePatchError("invalid_type", "Node type is not defined in project settings.", 400, {
+    throw new ProjectMutationError("invalid_type", "Node type is not defined in project settings.", 400, {
       type: value,
       types: project.nodeTypeSchema.map((item) => item.name),
     });

@@ -16,6 +16,7 @@ import {
 } from "~/ws/project-events";
 import { applyBulkNodeUpdate, describeBulkNodeUpdate, type BulkNodeUpdate } from "./bulk-update";
 import { splitMarkdownIntoHeadingSections } from "./context-node-markdown";
+import { assertKnownMetadataKeys } from "./mutation-error";
 import { createUniqueNodeId, getNodeImageDirSegment } from "./node-id";
 import {
   createDefaultProjectNodeMetadataSchema,
@@ -897,6 +898,7 @@ export const createContextNodeOnDisk = serializedMutation(async function createC
   if (!current) {
     throw new Error("Project not found.");
   }
+  assertKnownMetadataKeys(input.metadata, current.nodeMetadataSchema);
   const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));
   const baseLabel = input.label.trim();
   const metadata = sanitizeNodeMetadata(input.metadata, current.nodeMetadataSchema, {
@@ -961,6 +963,7 @@ export const createChildNodeOnDisk = serializedMutation(async function createChi
   if (input.parentNodeId && !parentNode) {
     throw new Error("Parent node not found.");
   }
+  assertKnownMetadataKeys(input.metadata, current.nodeMetadataSchema);
 
   const label = input.title.trim() || "Untitled node";
   const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));
