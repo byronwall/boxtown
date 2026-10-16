@@ -132,6 +132,14 @@ pgm node list --priority urgent --with-ancestors --preset status --json   # most
 pgm node list --type page --preset compact --json
 ```
 
+To see what changed and who changed it, page through project history (newest first). Every entry is kept, so pass `nextCursor` back as `--before` to keep reading older entries:
+
+```bash
+pgm project history --limit 50 --json
+pgm project history --node <node-id> --json
+pgm project history --before <nextCursor> --json
+```
+
 Archived nodes and their descendants are left out of `node list` results. Pass `--include-archived` when you need them.
 
 Avoid `pgm project view --json` as a default first step. It returns the full graph, all links, metadata, context, and images, which can be very large and usually wastes context. Use it only when you explicitly need the complete project record.

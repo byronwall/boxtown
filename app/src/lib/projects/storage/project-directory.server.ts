@@ -11,9 +11,10 @@ import { getNodeImageDirSegment, hashString } from "~/lib/projects/node-id";
 import type { ProjectOperationLogEntry, ProjectRecord } from "~/lib/projects/types";
 import {
   assignHistoryFileNames,
-  compareHistoryFileNamesNewestFirst,
   parseHistoryFileName,
+  RECENT_HISTORY_LIMIT,
 } from "./history-files";
+import { HISTORY_DIR, listHistoryFileNamesNewestFirst } from "./history-page.server";
 import { parseNodeFile, serializeNodeFile } from "./node-file";
 import { assembleProjectGraph } from "./project-integrity";
 import {
@@ -34,7 +35,6 @@ export const PROJECT_FILE_FORMAT = "product-grid-project";
 export const PROJECT_FILE_VERSION = 2;
 
 const NODES_DIR = "nodes";
-const HISTORY_DIR = "history";
 const GITIGNORE = `# Written by Product Grid: keep local backups and interrupted writes out of git.\n*.bak\n*.tmp\n`;
 
 export type StoredProject =
@@ -174,13 +174,13 @@ async function readNodeFiles(projectDir: string, problems: string[]) {
   return files.sort((left, right) => compareText(String(left.node.id), String(right.node.id)));
 }
 
+// Loads only the recent window. Older entries stay on disk and are read by
+// readProjectHistoryPage, so normal writes never scan the full history.
 async function readHistoryFiles(projectDir: string, problems: string[]) {
   const historyDir = path.join(projectDir, HISTORY_DIR);
   const entries: ProjectOperationLogEntry[] = [];
   const seenIds = new Set<string>();
-  const fileNames = (await listFiles(historyDir, ".json"))
-    .filter((fileName) => parseHistoryFileName(fileName))
-    .sort(compareHistoryFileNamesNewestFirst);
+  const fileNames = (await listHistoryFileNamesNewestFirst(historyDir)).slice(0, RECENT_HISTORY_LIMIT);
 
   for (const fileName of fileNames) {
     const fileLabel = `${HISTORY_DIR}/${fileName}`;
@@ -218,10 +218,10 @@ async function writeNodeFiles(nodesDir: string, record: ProjectRecord) {
   }
 }
 
+// Append-only: entries outside the in-memory window are kept, never pruned here.
 async function writeHistoryFiles(historyDir: string, operationLog: ProjectOperationLogEntry[]) {
   const existing = (await listFiles(historyDir, ".json")).filter((fileName) => parseHistoryFileName(fileName));
   const fileNames = assignHistoryFileNames(operationLog, existing);
-  const expected = new Set(fileNames.values());
   const existingSet = new Set(existing);
 
   for (const entry of operationLog) {
@@ -230,10 +230,6 @@ async function writeHistoryFiles(historyDir: string, operationLog: ProjectOperat
     if (existingSet.has(fileName)) continue;
     const { payload: _payload, ...entryWithoutState } = entry;
     await writeFileIfChanged(path.join(historyDir, fileName), formatJsonFile(entryWithoutState));
-  }
-
-  for (const fileName of existing) {
-    if (!expected.has(fileName)) await rm(path.join(historyDir, fileName), { force: true });
   }
 }
 

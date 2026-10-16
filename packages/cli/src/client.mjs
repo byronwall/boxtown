@@ -36,6 +36,15 @@ export class ProductGridClient {
     );
   }
 
+  getProjectHistory(projectId, options = {}) {
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(options)) {
+      if (value !== undefined && value !== null && value !== "") searchParams.set(key, String(value));
+    }
+    const suffix = searchParams.size > 0 ? `?${searchParams}` : "";
+    return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/history${suffix}`);
+  }
+
   listNodes(projectId, filters = {}) {
     const searchParams = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {

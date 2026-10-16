@@ -6,12 +6,15 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 
 ### Fixed
 
+- Project history is no longer capped at 250 entries. Older history files used to be deleted as new ones were written; now every entry is kept. The app still loads only the most recent 250, so big histories don't slow down editing.
+
 - Two agents updating different metadata fields on the same node at the same time no longer erase each other's change. Metadata `set` and `unset` now merge with the latest saved node.
 - A node update that changes several fields is now all or nothing. An invalid status, priority, type, or metadata key rejects the whole request, so a valid title or status is no longer saved alongside an error.
 
 ### Added
 
 - Node reads return a `revision`. Pass it back as `expectedRevision` when replacing context or other fields, and the update is refused with a conflict if someone changed the node in between. Changes to other nodes don't affect it.
+- `pgm project history` and `GET /api/v1/projects/<id>/history` page through every stored history entry, newest first, with an optional node filter. Each page returns a `nextCursor` for reading older entries, and entries written in the meantime don't shift the pages.
 - The node update API accepts `context` and `metadata` (`set`, `unset`, or a full `replace`) alongside title, status, type, priority, and archived, and returns the saved node, its new revision, the changed fields, and the history entry id.
 
 ## 2026-10-10

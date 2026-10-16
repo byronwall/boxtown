@@ -287,6 +287,27 @@ async function dispatchProject(context, action) {
     return;
   }
 
+  if (action === "history") {
+    const projectId = context.parsed.positionals[0] ?? context.projectId;
+    requireOption(projectId, "A project id is required. Pass one or run pgm project link <id>.");
+    const options = context.parsed.options;
+    const page = await context.client.getProjectHistory(projectId, {
+      limit: parseOptionalInteger(options.limit, "--limit"),
+      before: options.before,
+      nodeId: options.node,
+    });
+    if (options.json) {
+      writeJson(page, context.io.stdout);
+    } else {
+      for (const entry of page.entries) {
+        const actor = entry.actor?.label ?? entry.actor?.kind ?? "unknown";
+        context.io.stdout.write(`${entry.createdAt}  ${entry.kind}  ${actor}  ${entry.summary}\n`);
+      }
+      if (page.nextCursor) context.io.stdout.write(`Older entries: --before ${page.nextCursor}\n`);
+    }
+    return;
+  }
+
   if (action === "export-markdown") {
     const projectId = context.parsed.positionals[0] ?? context.projectId;
     requireOption(projectId, "A project id is required. Pass one or run pgm project link <id>.");
@@ -335,7 +356,7 @@ async function dispatchProject(context, action) {
     return;
   }
 
-  throw new CliError("Usage: pgm project <list|create|view|schema|export-markdown|link|current|unlink>", exitCodes.usage);
+  throw new CliError("Usage: pgm project <list|create|view|schema|history|export-markdown|link|current|unlink>", exitCodes.usage);
 }
 
 async function dispatchNode(context, action) {
@@ -1509,6 +1530,7 @@ Usage:
   pgm project create ["Project name"] [--name "Project name"] [--link] [--json]
   pgm project view [project-id] [--json]
   pgm project schema [project-id] [--json]
+  pgm project history [project-id] [--limit 50] [--before <cursor>] [--node <node-id>] [--json]
   pgm project export-markdown [project-id] [--output ./project.md] [--json]
   pgm project link <project-id>
   pgm node list [--project <project-id>] [--roots] [--children <node-id>] [--subtree <node-id>] [--depth N] [--compact] [--fields id,label,status,type] [--preset status] [--status blocked] [--type feature] [--priority urgent|high|medium|low|none] [--search text] [--include-archived] [--with-ancestors|--with-context] [--json]

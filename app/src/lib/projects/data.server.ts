@@ -34,6 +34,7 @@ import {
   readProjectDirectory,
   writeProjectDirectory,
 } from "./storage/project-directory.server";
+import { RECENT_HISTORY_LIMIT } from "./storage/history-files";
 import { backupProjectFile, isProjectBackupFilename } from "./storage/stored-files.server";
 import type {
   ProjectOperationActor,
@@ -234,7 +235,7 @@ export function appendProjectOperation(
     operationLog: [
       createProjectOperationLogEntry(operation),
       ...stripProjectOperationStatePayloads(record.operationLog ?? []),
-    ].slice(0, 250),
+    ].slice(0, RECENT_HISTORY_LIMIT),
   };
 }
 
