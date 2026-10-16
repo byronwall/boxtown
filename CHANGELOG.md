@@ -12,10 +12,16 @@ Notable changes to Product Grid Management, newest first. Entries are grouped by
 - A node update that changes several fields is now all or nothing. An invalid status, priority, type, or metadata key rejects the whole request, so a valid title or status is no longer saved alongside an error.
 
 - Creating or importing a node with a metadata field the project doesn't define now fails, with no node created. It used to look successful while silently dropping the field. Every unknown-field error lists the project's existing fields and shows the command to add a new one.
+- `pgm node resolve`, `pgm node complete`, `node batch-update`, and `node agent-update` now save the status and notes for each node in one request. A rejected note no longer leaves the node marked implemented without it.
+- `node batch-update` and `node agent-update` exit with code 8 when any item isn't applied. They also report each item, in input order, as `applied`, `rejected`, `conflict`, or `unknown`, with the saved values and history entry id. An item with an unknown field or status is rejected before anything is sent. When the connection drops mid-request, the item is reported as `unknown` with a command to check it, instead of as failed.
+- `agent-update` writes `blockedBy` and `filesChanged` to the `blocked-by` and `files-changed` fields. An unrecognized key in an update now fails that item instead of being dropped.
 - Metadata keys typed in camelCase, such as `blockedBy`, become `blocked-by` instead of `blockedby`.
 
 ### Added
 
+- `pgm node resolve --solution` (or `--solution-file`) records the proven fix in the `solution` field, separately from `--note`, which writes `implementation`.
+- Text can come from a file or stdin instead of a quoted argument: `--note-file`, `--solution-file`, `node metadata set --value-file`, and `node context set --file -`. The text is stored as written, so backticks and `$( )` are never run by the shell.
+- Single-node commands print a receipt of what the server saved: the changed fields, their saved values, the new revision, and the history entry id. `node update` and `node context set` take `--expected-revision`.
 - `pgm project schema ensure-field <key> --label "Label"` adds one metadata field without replacing the rest of the schema. Running it again does nothing, and a different label or default for an existing field is refused instead of overwritten.
 - Node reads return a `revision`. Pass it back as `expectedRevision` when replacing context or other fields, and the update is refused with a conflict if someone changed the node in between. Changes to other nodes don't affect it.
 - `pgm project history` and `GET /api/v1/projects/<id>/history` page through every stored history entry, newest first, with an optional node filter. Each page returns a `nextCursor` for reading older entries, and entries written in the meantime don't shift the pages.

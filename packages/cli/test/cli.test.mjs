@@ -10,6 +10,7 @@ import { claimViewerOwnership, createOwnership, getFolderGuardPort, getPortCandi
 import { defaultServer, resolveProjectId, resolveServer, resolveToken } from "../src/config.mjs";
 import { getUpdateCommand, main, parseArgs } from "../src/main.mjs";
 import { writeJson } from "../src/output.mjs";
+import { runCli } from "./helpers.mjs";
 import { getBundledSkillPath, resolveSkillInstallTarget } from "../src/skill.mjs";
 import { isNewerVersion, notifyIfUpdateAvailable } from "../src/update-check.mjs";
 import { packageVersion } from "../src/version.mjs";
@@ -895,76 +896,43 @@ test("writeJson ignores EPIPE from closed stdout consumers", () => {
   });
 });
 
-test("node complete writes compact mutation JSON and appends a note", async () => {
-  const calls = [];
-  const stdout = createWritableBuffer();
-  const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (url, init = {}) => {
-    calls.push({ url, init });
-    if (url.endsWith("/context") && (!init.method || init.method === "GET")) {
-      return new Response(JSON.stringify({
-        nodeId: "node-1",
-        context: "Existing context",
-        rawContext: "",
-      }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      });
-    }
+test("node complete saves status and the appended note in one guarded request", async () => {
+  const { calls, stdout, error } = await runCli(
+    ["node", "complete", "node-1", "--project", "demo", "--note", "Done", "--json"],
+    (call) => {
+      if (call.method === "GET") {
+        return { body: { node: { context: "Existing context", revision: "rev-1" } } };
+      }
+      return {
+        body: {
+          node: { id: "node-1", label: "Node 1", status: "implemented", metadata: {}, context: "x".repeat(42) },
+          changedFields: ["status", "context"],
+          revision: "rev-2",
+          operationId: "op-1",
+        },
+      };
+    },
+  );
 
-    return new Response(JSON.stringify({
-      node: {
-        id: "node-1",
-        label: "Node 1",
-        type: "task",
-        status: "implemented",
-        metadata: {},
-        context: "",
-        rawContext: "",
-        images: [],
-      },
-    }), {
-      status: 200,
-      headers: { "content-type": "application/json" },
-    });
-  };
-
-  try {
-    await main([
-      "node",
-      "pgm",
-      "node",
-      "complete",
-      "node-1",
-      "--project",
-      "demo",
-      "--note",
-      "Done",
-      "--json",
-    ], {
-      stdout,
-      stderr: createWritableBuffer(),
-      env: {
-        PRODUCT_GRID_SERVER: "http://localhost:3000",
-      },
-      cwd: "/tmp",
-    });
-
-    assert.equal(calls[0].url, "http://localhost:3000/api/v1/projects/demo/nodes/node-1");
-    assert.deepEqual(JSON.parse(calls[0].init.body), { status: "implemented" });
-    assert.equal(calls[1].url, "http://localhost:3000/api/v1/projects/demo/nodes/node-1/context");
-    assert.equal(calls[2].init.method, "PUT");
-    assert.deepEqual(JSON.parse(calls[2].init.body), {
-      context: "Existing context\n\nResolution note:\n\nDone",
-    });
-    assert.deepEqual(JSON.parse(stdout.value), {
-      nodeId: "node-1",
-      status: "implemented",
-      updatedFields: ["status", "context"],
-    });
-  } finally {
-    globalThis.fetch = originalFetch;
-  }
+  assert.equal(error, null);
+  assert.equal(calls[0].url, "http://localhost:3000/api/v1/projects/demo/nodes/node-1?fields=context%2Crevision");
+  assert.equal(calls.length, 2);
+  assert.equal(calls[1].method, "PATCH");
+  assert.deepEqual(calls[1].body, {
+    status: "implemented",
+    context: "Existing context\n\nResolution note:\n\nDone",
+    expectedRevision: "rev-1",
+  });
+  assert.deepEqual(JSON.parse(stdout), {
+    nodeId: "node-1",
+    outcome: "applied",
+    status: "implemented",
+    changedFields: ["status", "context"],
+    savedFields: { status: "implemented", contextLength: 42 },
+    revision: "rev-2",
+    operationId: "op-1",
+    updatedFields: ["status", "context"],
+  });
 });
 
 test("client uploads node images as multipart form data", async () => {

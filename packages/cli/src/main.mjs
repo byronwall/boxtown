@@ -26,6 +26,15 @@ import {
   resolveInputPath,
   writeMaybeJson,
 } from "./cli-helpers.mjs";
+import { normalizeAgentUpdate } from "./agent-update.mjs";
+import {
+  applyNodeUpdates,
+  assertKnownMetadataKeys,
+  finishBatch,
+  patchNode,
+  readStdin,
+  readTextOption,
+} from "./node-writes.mjs";
 import { dispatchSchemaEnsureField } from "./schema-commands.mjs";
 import { notifyIfUpdateAvailable } from "./update-check.mjs";
 import { packageName, packageVersion } from "./version.mjs";
@@ -522,50 +531,50 @@ async function dispatchNodeUpdate(context, projectId) {
   if (Object.keys(input).length === 0) {
     throw new CliError("At least one of --title, --status, --type, or --priority is required.", exitCodes.usage);
   }
-  const result = await context.client.updateNode(projectId, nodeId, input);
-  writeNodeMutationResult(context, result, "Updated", Object.keys(input));
+  if (context.parsed.options.expectedRevision !== undefined) {
+    input.expectedRevision = context.parsed.options.expectedRevision;
+  }
+  const receipt = await patchNode(context.client, projectId, nodeId, input);
+  writeNodeMutationResult(context, receipt, "Updated");
 }
 
 async function dispatchNodeComplete(context, projectId) {
   const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
-  const updatedFields = ["status"];
-  let result = await context.client.updateNode(projectId, nodeId, { status: "implemented" });
+  const note = (await readTextOption(context, "note", readTextFile))?.trim();
+  const patch = { status: "implemented" };
 
-  if (typeof context.parsed.options.note === "string" && context.parsed.options.note.trim().length > 0) {
-    const current = await context.client.getNodeContext(projectId, nodeId);
-    const note = context.parsed.options.note.trim();
-    const nextContext = [current.context.trim(), `Resolution note:\n\n${note}`]
-      .filter(Boolean)
-      .join("\n\n");
-    result = await context.client.setNodeContext(projectId, nodeId, nextContext);
-    updatedFields.push("context");
+  if (note) {
+    // Status and the appended note save together, and only if the context is unchanged since this read.
+    const current = await context.client.getNode(projectId, nodeId, { fields: "context,revision" });
+    patch.context = [current.context?.trim(), `Resolution note:\n\n${note}`].filter(Boolean).join("\n\n");
+    patch.expectedRevision = current.revision;
   }
 
-  writeNodeMutationResult(context, result, "Completed", updatedFields);
+  const receipt = await patchNode(context.client, projectId, nodeId, patch);
+  writeNodeMutationResult(context, receipt, "Completed");
 }
 
 async function dispatchNodeResolve(context, projectId) {
   const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
   const status = context.parsed.options.status ?? "implemented";
-  const note = context.parsed.options.note;
+  // --note records what was implemented; --solution records the proven outcome.
+  const note = (await readTextOption(context, "note", readTextFile))?.trim();
+  const solution = (await readTextOption(context, "solution", readTextFile))?.trim();
   const deferred = parseRepeatedOption(context.parsed.options.deferred);
-  const metadata = {};
-  if (typeof note === "string" && note.trim().length > 0) {
-    metadata.implementation = note.trim();
-  }
-  if (deferred.length > 0) {
-    metadata.deferred = deferred.join("\n");
-  }
+  const metadata = {
+    ...(note ? { implementation: note } : {}),
+    ...(solution ? { solution } : {}),
+    ...(deferred.length > 0 ? { deferred: deferred.join("\n") } : {}),
+  };
 
-  const updatedFields = [];
-  let result = await context.client.updateNode(projectId, nodeId, { status });
-  updatedFields.push("status");
+  const patch = { status };
   if (Object.keys(metadata).length > 0) {
-    result = await context.client.patchNodeMetadata(projectId, nodeId, { set: metadata });
-    updatedFields.push(...Object.keys(metadata).map((key) => `metadata.${key}`));
+    const schema = await context.client.getProjectSchema(projectId);
+    assertKnownMetadataKeys(Object.keys(metadata), schema);
+    patch.metadata = { set: metadata };
   }
-
-  writeNodeMutationResult(context, result, "Resolved", updatedFields);
+  const receipt = await patchNode(context.client, projectId, nodeId, patch);
+  writeNodeMutationResult(context, receipt, "Resolved");
 }
 
 async function dispatchNodeBatchUpdate(context, projectId) {
@@ -580,11 +589,7 @@ async function dispatchNodeBatchUpdate(context, projectId) {
   }
 
   const result = await applyNodeUpdates(context, projectId, updates);
-  writeMaybeJson(
-    context,
-    result,
-    `Updated ${result.updated.length} node${result.updated.length === 1 ? "" : "s"}; ${result.failed.length} failed.\n`,
-  );
+  finishBatch(context, result, "update", writeMaybeJson);
 }
 
 async function dispatchNodeAgentUpdate(context, projectId) {
@@ -595,29 +600,8 @@ async function dispatchNodeAgentUpdate(context, projectId) {
     throw new CliError("Agent update input must be an array or an object with an updates array.", exitCodes.usage);
   }
 
-  const normalized = updates.map((update) => {
-    const summary = update.summary ?? update.note ?? update.implementation;
-    const metadata = {
-      ...(typeof summary === "string" && summary.trim().length > 0 ? { implementation: summary.trim() } : {}),
-      ...(Array.isArray(update.completed) ? { completed: update.completed.join("\n") } : {}),
-      ...(Array.isArray(update.deferred) ? { deferred: update.deferred.join("\n") } : {}),
-      ...(Array.isArray(update.blockedBy) ? { blockedBy: update.blockedBy.join("\n") } : {}),
-      ...(Array.isArray(update.verification) ? { verification: update.verification.join("\n") } : {}),
-      ...(Array.isArray(update.filesChanged) ? { filesChanged: update.filesChanged.join("\n") } : {}),
-    };
-    return {
-      id: update.id ?? update.nodeId,
-      status: update.status,
-      metadata,
-    };
-  });
-
-  const result = await applyNodeUpdates(context, projectId, normalized);
-  writeMaybeJson(
-    context,
-    result,
-    `Applied ${result.updated.length} agent update${result.updated.length === 1 ? "" : "s"}; ${result.failed.length} failed.\n`,
-  );
+  const result = await applyNodeUpdates(context, projectId, updates.map(normalizeAgentUpdate));
+  finishBatch(context, result, "agent update", writeMaybeJson);
 }
 
 async function dispatchNodeMove(context, projectId) {
@@ -715,10 +699,14 @@ async function dispatchNodeContext(context, projectId) {
     return;
   }
   if (subaction === "set") {
-    const file = requireOption(context.parsed.options.file, "--file <path> is required.");
-    const contextText = await readFile(resolveInputPath(file, context.io.cwd), "utf8");
-    const result = await context.client.setNodeContext(projectId, nodeId, contextText);
-    writeNodeMutationResult(context, result, "Updated context for", ["context"]);
+    const file = requireOption(context.parsed.options.file, "--file <path> is required. Use --file - to read stdin.");
+    const contextText = file === "-" ? await readStdin(context.io.stdin) : await readTextFile(file, context.io.cwd);
+    const patch = { context: contextText };
+    if (context.parsed.options.expectedRevision !== undefined) {
+      patch.expectedRevision = context.parsed.options.expectedRevision;
+    }
+    const receipt = await patchNode(context.client, projectId, nodeId, patch);
+    writeNodeMutationResult(context, receipt, "Updated context for");
     return;
   }
   throw new CliError("Usage: pgm node context <get|set> <node-id>", exitCodes.usage);
@@ -738,19 +726,16 @@ async function dispatchNodeMetadata(context, projectId) {
   }
   if (subaction === "set") {
     const key = requireOption(context.parsed.positionals[1], "A metadata key is required.");
-    const value = requireOption(context.parsed.positionals[2] ?? context.parsed.options.value, "A metadata value is required.");
-    const result = await context.client.patchNodeMetadata(projectId, nodeId, {
-      set: { [key]: value },
-    });
-    writeNodeMutationResult(context, result, "Updated metadata for", ["metadata"]);
+    const value = context.parsed.positionals[2] ?? await readTextOption(context, "value", readTextFile);
+    requireOption(value, "A metadata value is required. Pass it as an argument, --value-file <path>, or --value-file - for stdin.");
+    const receipt = await patchNode(context.client, projectId, nodeId, { metadata: { set: { [key]: value } } });
+    writeNodeMutationResult(context, receipt, "Updated metadata for");
     return;
   }
   if (subaction === "unset") {
     const key = requireOption(context.parsed.positionals[1], "A metadata key is required.");
-    const result = await context.client.patchNodeMetadata(projectId, nodeId, {
-      unset: [key],
-    });
-    writeNodeMutationResult(context, result, "Updated metadata for", ["metadata"]);
+    const receipt = await patchNode(context.client, projectId, nodeId, { metadata: { unset: [key] } });
+    writeNodeMutationResult(context, receipt, "Updated metadata for");
     return;
   }
   throw new CliError("Usage: pgm node metadata <get|set|unset> <node-id>", exitCodes.usage);
@@ -1135,61 +1120,17 @@ function parseMetadataJson(value) {
   }
 }
 
-async function applyNodeUpdates(context, projectId, updates) {
-  const updated = [];
-  const failed = [];
-
-  for (const update of updates) {
-    const nodeId = update.id ?? update.nodeId;
-    if (typeof nodeId !== "string" || nodeId.trim().length === 0) {
-      failed.push({ id: null, error: "Missing node id." });
-      continue;
-    }
-
-    try {
-      let result = null;
-      const updatedFields = [];
-      if (typeof update.status === "string" && update.status.trim().length > 0) {
-        result = await context.client.updateNode(projectId, nodeId, { status: update.status });
-        updatedFields.push("status");
-      }
-      if (update.metadata && typeof update.metadata === "object" && !Array.isArray(update.metadata)) {
-        result = await context.client.patchNodeMetadata(projectId, nodeId, { set: update.metadata });
-        updatedFields.push(...Object.keys(update.metadata).map((key) => `metadata.${key}`));
-      }
-      if (!result) {
-        throw new Error("No supported fields to update.");
-      }
-      updated.push({
-        id: result.node.id,
-        status: result.node.status,
-        updatedFields,
-      });
-    } catch (error) {
-      failed.push({
-        id: nodeId,
-        error: error instanceof Error ? error.message : "Update failed.",
-      });
-    }
-  }
-
-  return { updated, failed };
-}
-
-function writeNodeMutationResult(context, result, verb, updatedFields = []) {
+// Compact output reports what the server saved, not what was requested.
+function writeNodeMutationResult(context, receipt, verb) {
   if (context.parsed.options.json) {
-    if (context.parsed.options.full) {
-      writeJson(result, context.io.stdout);
-      return;
-    }
-
-    writeJson({
-      nodeId: result.node.id,
-      status: result.node.status,
-      updatedFields,
-    }, context.io.stdout);
+    const { node, ...compact } = receipt;
+    writeJson(
+      context.parsed.options.full ? { ...compact, node } : { ...compact, updatedFields: compact.changedFields },
+      context.io.stdout,
+    );
   } else {
-    context.io.stdout.write(`${verb} ${result.node.label} (${result.node.id}).\n`);
+    const changed = receipt.changedFields.length > 0 ? receipt.changedFields.join(", ") : "no changes";
+    context.io.stdout.write(`${verb} ${receipt.node.label} (${receipt.nodeId}): ${changed}.\n`);
   }
 }
 
@@ -1467,8 +1408,13 @@ function toCamelCase(value) {
   return value.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
 }
 
+function readTextFile(file, cwd) {
+  return readFile(resolveInputPath(file, cwd), "utf8");
+}
+
 function defaultIo() {
   return {
+    stdin: process.stdin,
     stdout: process.stdout,
     stderr: process.stderr,
     env: process.env,
@@ -1498,9 +1444,9 @@ Usage:
   pgm node view <node-id> [--project <project-id>] [--with-ancestors|--with-context] [--compact] [--fields id,status,metadata.implementation] [--json]
   pgm node status <node-id...> [--project <project-id>] [--json]
   pgm node create --title "Checkout" [--type page] [--parent <node-id>] [--context-file ./context.md] [--metadata-json '{"purpose":"..."}'] [--json]
-  pgm node update <node-id> [--title "Checkout"] [--status working] [--type page] [--priority high|none] [--json] [--full]
-  pgm node complete <node-id> [--note "Resolution note"] [--json] [--full]
-  pgm node resolve <node-id> [--status implemented] [--note "Implementation note"] [--json] [--full]
+  pgm node update <node-id> [--title "Checkout"] [--status working] [--type page] [--priority high|none] [--expected-revision <rev>] [--json] [--full]
+  pgm node complete <node-id> [--note "Resolution note" | --note-file <path|->] [--json] [--full]
+  pgm node resolve <node-id> [--status implemented] [--note "Implementation note" | --note-file <path|->] [--solution "Proven outcome" | --solution-file <path|->] [--json] [--full]
   pgm node batch-update --json-input ./updates.json [--json]
   pgm node agent-update --file ./agent-status.json [--json]
   pgm node move <node-id> (--parent <node-id> | --root) [--json]
@@ -1508,9 +1454,9 @@ Usage:
   pgm node archive <node-id...> [--json]
   pgm node unarchive <node-id...> [--json]
   pgm node context get <node-id> [--json]
-  pgm node context set <node-id> --file ./context.md [--json] [--full]
+  pgm node context set <node-id> --file <path|-> [--expected-revision <rev>] [--json] [--full]
   pgm node metadata get <node-id> [--json]
-  pgm node metadata set <node-id> <key> <value> [--json] [--full]
+  pgm node metadata set <node-id> <key> (<value> | --value-file <path|->) [--json] [--full]
   pgm node metadata unset <node-id> <key> [--json] [--full]
   pgm node export-context <node-id> [--project <project-id>] [--output ./node-context.md] [--json]
   pgm node context-pack <parent-node-id> --output ./context-pack-dir [--depth N] [--json]
@@ -1531,6 +1477,11 @@ Global options:
   --local <folder>     Use projects in a local data folder. Requires an explicit --project for scoped commands.
   --token <token>      Bearer token. Defaults to PRODUCT_GRID_TOKEN or stored token.
   --json               Print machine-readable JSON to stdout.
+
+Writes:
+  Each node update is saved as a whole or not at all. Batch commands report every item
+  (applied, rejected, conflict, or unknown) and exit with code 8 when any item was not applied.
+  A path of "-" reads text from stdin. Metadata values are trimmed; other text is stored as read.
 
 Context guidance:
   Start with project schema, then targeted node list/search and --with-context.

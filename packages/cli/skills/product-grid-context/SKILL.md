@@ -231,6 +231,24 @@ pgm node delete <node-id> --yes --json   # irreversible; add --with-children to 
 pgm node archive <node-id...> --json      # hide finished work; reversible with `pgm node unarchive`
 ```
 
+## Record Outcomes Safely
+
+Each update below is one request: the status and fields are saved together, or nothing is saved.
+
+```bash
+pgm node resolve <node-id> --note "What changed in code." --solution "What was proven to fix it." --json
+pgm node resolve <node-id> --note-file ./tmp/impl.md --solution-file ./tmp/solution.md --json
+pgm node metadata set <node-id> verification --value-file ./tmp/verification.md --json
+cat ./tmp/notes.md | pgm node context set <node-id> --file - --json
+```
+
+- Put Markdown, backticks, `$` syntax, or multiple lines in a file (or stdin with `-`) instead of a quoted argument. The shell never runs file text. Metadata values are trimmed; context is stored as read.
+- `--note` writes the `implementation` field. `--solution` writes `solution`. Both fields must exist in the project schema.
+- The JSON receipt shows what the server saved (`changedFields`, `savedFields`, `revision`, `operationId`), so you don't need to read the node again.
+- To replace prose you read earlier without overwriting someone else's newer edit, pass the node's `revision` as `--expected-revision`. A conflict means re-read and merge.
+- `node batch-update` and `node agent-update` report every item as `applied`, `rejected`, `conflict`, or `unknown`, and exit with code 8 when any item was not applied. Successful items stay saved. For `unknown`, run the `readback` command before retrying.
+- `agent-update` keys `blockedBy` and `filesChanged` write the `blocked-by` and `files-changed` fields.
+
 ## Attach Images To Nodes
 
 Use `image add` when the agent creates screenshots or local image artifacts, such as Playwright screenshots, and needs to attach them to specific nodes.

@@ -44,3 +44,168 @@ test("API errors keep their code and details", async () => {
   assert.equal(error.code, "invalid_metadata_key");
   assert.deepEqual(error.details.keys, ["soluton"]);
 });
+
+const schema = {
+  projectId: "demo",
+  statuses: [{ value: "planned" }, { value: "implemented" }, { value: "blocked" }],
+  nodeTypes: [],
+  metadataFields: [
+    { key: "implementation", label: "Implementation" },
+    { key: "solution", label: "Solution" },
+    { key: "blocked-by", label: "Blocked by" },
+  ],
+};
+
+function fakeServer(call) {
+  if (call.url.endsWith("/schema")) return { body: { schema } };
+  const nodeId = decodeURIComponent(call.url.split("/nodes/")[1] ?? "");
+  const metadata = call.body?.metadata?.set ?? {};
+  return {
+    body: {
+      node: { id: nodeId, label: nodeId, status: call.body?.status ?? "planned", metadata },
+      changedFields: [
+        ...(call.body?.status ? ["status"] : []),
+        ...Object.keys(metadata).map((key) => `metadata.${key}`),
+      ],
+      revision: "rev",
+      operationId: `op-${nodeId}`,
+    },
+  };
+}
+
+test("batch-update rejects a bad item without a request, keeps siblings, and exits nonzero", async () => {
+  const { writeFile, mkdtemp } = await import("node:fs/promises");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const dir = await mkdtemp(path.join(os.tmpdir(), "pgm-batch-"));
+  await writeFile(path.join(dir, "updates.json"), JSON.stringify([
+    { id: "good", status: "implemented", metadata: { solution: "Fixed" } },
+    { id: "typo", status: "implemented", metadata: { soluton: "Fixed" } },
+  ]));
+
+  const { calls, stdout, error } = await runCli(
+    ["node", "batch-update", "--project", "demo", "--json-input", "updates.json", "--json"],
+    fakeServer,
+    { cwd: dir },
+  );
+
+  assert.equal(error.exitCode, 8);
+  assert.equal(calls.filter((call) => call.method === "PATCH").length, 1);
+  const body = JSON.parse(stdout);
+  assert.deepEqual(body.results[0], {
+    index: 0,
+    nodeId: "good",
+    outcome: "applied",
+    status: "implemented",
+    changedFields: ["status", "metadata.solution"],
+    savedFields: { status: "implemented", "metadata.solution": "Fixed" },
+    revision: "rev",
+    operationId: "op-good",
+  });
+  assert.equal(body.results[1].outcome, "rejected");
+  assert.equal(body.results[1].error.code, "invalid_metadata_key");
+  assert.match(body.results[1].error.message, /This project defines: implementation, solution, blocked-by/);
+  assert.match(body.results[1].error.message, /pgm project schema ensure-field soluton/);
+});
+
+test("a dropped connection reports an unknown outcome with a readback command", async () => {
+  const { writeFile, mkdtemp } = await import("node:fs/promises");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const dir = await mkdtemp(path.join(os.tmpdir(), "pgm-batch-"));
+  await writeFile(path.join(dir, "updates.json"), JSON.stringify([{ id: "node-1", status: "implemented" }]));
+  const originalFetch = globalThis.fetch;
+
+  const { stdout, error } = await runCli(
+    ["node", "batch-update", "--project", "demo", "--json-input", "updates.json", "--json"],
+    (call) => {
+      if (call.method === "PATCH") throw new TypeError("fetch failed");
+      return fakeServer(call);
+    },
+    { cwd: dir },
+  );
+
+  assert.equal(globalThis.fetch, originalFetch);
+  assert.equal(error.exitCode, 8);
+  const [result] = JSON.parse(stdout).results;
+  assert.equal(result.outcome, "unknown");
+  assert.equal(result.readback, "pgm node view node-1 --json");
+});
+
+test("agent-update maps list fields to declared keys and rejects unknown input keys", async () => {
+  const { writeFile, mkdtemp } = await import("node:fs/promises");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const dir = await mkdtemp(path.join(os.tmpdir(), "pgm-agent-"));
+  await writeFile(path.join(dir, "status.json"), JSON.stringify([
+    { id: "a", status: "blocked", summary: "Tried X", blockedBy: ["node-b"], solution: "Workaround Y" },
+    { id: "b", status: "implemented", solutoin: "typo" },
+  ]));
+
+  const { calls, stdout, error } = await runCli(
+    ["node", "agent-update", "--project", "demo", "--file", "status.json", "--json"],
+    fakeServer,
+    { cwd: dir },
+  );
+
+  assert.equal(error.exitCode, 8);
+  const patch = calls.find((call) => call.method === "PATCH");
+  assert.deepEqual(patch.body, {
+    status: "blocked",
+    metadata: { set: { implementation: "Tried X", "blocked-by": "node-b", solution: "Workaround Y" } },
+  });
+  const body = JSON.parse(stdout);
+  assert.equal(body.results[1].error.code, "unknown_update_key");
+  assert.match(body.results[1].error.message, /solutoin/);
+});
+
+test("resolve --solution saves status and solution in one request", async () => {
+  const { calls, error } = await runCli(
+    ["node", "resolve", "node-1", "--project", "demo", "--note", "Code change", "--solution", "Proven fix", "--json"],
+    fakeServer,
+  );
+
+  assert.equal(error, null);
+  const patches = calls.filter((call) => call.method === "PATCH");
+  assert.equal(patches.length, 1);
+  assert.deepEqual(patches[0].body, {
+    status: "implemented",
+    metadata: { set: { implementation: "Code change", solution: "Proven fix" } },
+  });
+});
+
+test("resolve with an undeclared field fails before changing status", async () => {
+  const { calls, error } = await runCli(
+    ["node", "resolve", "node-1", "--project", "demo", "--deferred", "Later", "--json"],
+    fakeServer,
+  );
+
+  assert.equal(error.code, "invalid_metadata_key");
+  assert.equal(calls.filter((call) => call.method === "PATCH").length, 0);
+});
+
+test("text from a file or stdin is sent exactly, without shell evaluation", async () => {
+  const { writeFile, mkdtemp } = await import("node:fs/promises");
+  const { Readable } = await import("node:stream");
+  const os = await import("node:os");
+  const path = await import("node:path");
+  const dir = await mkdtemp(path.join(os.tmpdir(), "pgm-text-"));
+  const text = "Ran `pnpm test` and $(whoami) with \"quotes\" — ✅\n  indented line\n";
+  await writeFile(path.join(dir, "solution.md"), text);
+
+  const fromFile = await runCli(
+    ["node", "metadata", "set", "node-1", "solution", "--value-file", "solution.md", "--project", "demo", "--json"],
+    fakeServer,
+    { cwd: dir },
+  );
+  const fromStdin = await runCli(
+    ["node", "metadata", "set", "node-1", "solution", "--value-file", "-", "--project", "demo", "--json"],
+    fakeServer,
+    { stdin: Readable.from([text]) },
+  );
+
+  assert.equal(fromFile.error, null);
+  assert.equal(fromStdin.error, null);
+  assert.equal(fromFile.calls[0].body.metadata.set.solution, text);
+  assert.equal(fromStdin.calls[0].body.metadata.set.solution, text);
+});

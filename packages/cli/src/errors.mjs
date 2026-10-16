@@ -1,11 +1,14 @@
 export class CliError extends Error {
-  constructor(message, exitCode = 1, apiError = undefined) {
+  // `extra` carries the server's error `code` and `details`, the HTTP status,
+  // and `transport: true` when the request may not have reached the server.
+  constructor(message, exitCode = 1, extra = {}) {
     super(message);
     this.name = "CliError";
     this.exitCode = exitCode;
-    // The server's error code and details, when the failure came from the API.
-    this.code = apiError?.code;
-    this.details = apiError?.details;
+    this.code = extra.code;
+    this.details = extra.details;
+    this.httpStatus = extra.httpStatus;
+    this.transport = extra.transport === true;
   }
 }
 
@@ -17,6 +20,8 @@ export const exitCodes = {
   conflict: 5,
   permission: 6,
   remoteRunFailed: 7,
+  // A batch finished but at least one item was not applied.
+  partialFailure: 8,
 };
 
 export function apiErrorToExitCode(code, status) {

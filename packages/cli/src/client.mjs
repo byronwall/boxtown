@@ -252,6 +252,7 @@ export class ProductGridClient {
       throw new CliError(
         `Could not reach ${this.server}. Is the dev server running? ${formatCause(error)}`,
         1,
+        { transport: true },
       );
     }
 
@@ -261,7 +262,11 @@ export class ProductGridClient {
     if (!response.ok) {
       const apiError = body?.error ?? {};
       const message = apiError.message ?? `Request failed with HTTP ${response.status}.`;
-      throw new CliError(message, apiErrorToExitCode(apiError.code, response.status), apiError);
+      throw new CliError(message, apiErrorToExitCode(apiError.code, response.status), {
+        code: apiError.code,
+        details: apiError.details,
+        httpStatus: response.status,
+      });
     }
 
     return body;
@@ -285,6 +290,7 @@ export class ProductGridClient {
       throw new CliError(
         `Could not reach ${this.server}. Is the dev server running? ${formatCause(error)}`,
         1,
+        { transport: true },
       );
     }
 
@@ -316,6 +322,7 @@ export class ProductGridClient {
       throw new CliError(
         `Could not reach ${this.server}. Is the dev server running? ${formatCause(error)}`,
         1,
+        { transport: true },
       );
     }
 
