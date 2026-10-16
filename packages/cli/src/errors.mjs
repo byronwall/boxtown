@@ -22,6 +22,8 @@ export const exitCodes = {
   remoteRunFailed: 7,
   // A batch finished but at least one item was not applied.
   partialFailure: 8,
+  // `project audit --fail-on` found issues at or above the chosen severity.
+  auditFindings: 9,
 };
 
 export function apiErrorToExitCode(code, status) {

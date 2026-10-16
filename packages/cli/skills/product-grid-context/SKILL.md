@@ -250,6 +250,18 @@ cat ./tmp/notes.md | pgm node context set <node-id> --file - --json
 - `node batch-update` and `node agent-update` report every item as `applied`, `rejected`, `conflict`, or `unknown`, and exit with code 8 when any item was not applied. Successful items stay saved. For `unknown`, run the `readback` command before retrying.
 - `agent-update` keys `blockedBy` and `filesChanged` write the `blocked-by` and `files-changed` fields.
 
+## Audit Completeness
+
+Use the audit report instead of writing scripts that check fields node by node. It is read-only.
+
+```bash
+pgm project audit --json                                   # whole project, archived nodes left out
+pgm project audit --subtree <node-id> --require solution,verification --output ./tmp/audit.md
+pgm project audit --fail-on warning --json                  # exits 9 when warnings or errors exist
+```
+
+Findings list the rule, severity, node id, and a short reason. `open-with-solution` is informational: an open node with a workaround or partial fix is allowed, so review it rather than marking it complete. `duplicate-title` flags possible duplicates only. `graph-integrity` reports broken parents, links, or cycles in the stored files, even ones the loader repaired in memory.
+
 ## Link Related Nodes
 
 Use relation links for blockers and overlaps. Don't put a node under another just to show a dependency.

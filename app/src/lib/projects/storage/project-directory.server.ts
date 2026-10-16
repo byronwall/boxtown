@@ -108,6 +108,14 @@ export async function readProjectDirectory(
   };
 }
 
+// Read-only: problems in the node files as stored, before the loader repairs
+// them in memory. Reports use this so a repaired defect is still visible.
+export async function readProjectIntegrityIssues(projectDir: string) {
+  const problems: string[] = [];
+  const nodeFiles = await readNodeFiles(projectDir, problems);
+  return [...problems, ...assembleProjectGraph(nodeFiles).issues];
+}
+
 export async function writeProjectDirectory(projectDir: string, record: ProjectRecord) {
   const nodesDir = path.join(projectDir, NODES_DIR);
   const historyDir = path.join(projectDir, HISTORY_DIR);

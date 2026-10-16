@@ -37,6 +37,15 @@ export class ProductGridClient {
     );
   }
 
+  getProjectAudit(projectId, options = {}) {
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(options)) {
+      if (value !== undefined && value !== null && value !== "") searchParams.set(key, String(value));
+    }
+    const suffix = searchParams.size > 0 ? `?${searchParams}` : "";
+    return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/audit${suffix}`);
+  }
+
   ensureMetadataField(projectId, input) {
     return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/schema/fields`, {
       method: "POST",

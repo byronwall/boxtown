@@ -27,6 +27,7 @@ import {
   writeMaybeJson,
 } from "./cli-helpers.mjs";
 import { normalizeAgentUpdate } from "./agent-update.mjs";
+import { dispatchProjectAudit } from "./audit-commands.mjs";
 import {
   applyNodeUpdates,
   assertKnownMetadataKeys,
@@ -323,6 +324,10 @@ async function dispatchProject(context, action) {
     return;
   }
 
+  if (action === "audit") {
+    return dispatchProjectAudit(context);
+  }
+
   if (action === "history") {
     const projectId = context.parsed.positionals[0] ?? context.projectId;
     requireOption(projectId, "A project id is required. Pass one or run pgm project link <id>.");
@@ -392,7 +397,7 @@ async function dispatchProject(context, action) {
     return;
   }
 
-  throw new CliError("Usage: pgm project <list|create|view|schema|history|export-markdown|link|current|unlink>", exitCodes.usage);
+  throw new CliError("Usage: pgm project <list|create|view|schema|audit|history|export-markdown|link|current|unlink>", exitCodes.usage);
 }
 
 async function dispatchNode(context, action) {
@@ -1461,6 +1466,7 @@ Usage:
   pgm project view [project-id] [--json]
   pgm project schema [project-id] [--json]
   pgm project schema ensure-field <key> [--label "Label"] [--default "Default"] [--project <project-id>] [--json]
+  pgm project audit [project-id] [--subtree <node-id>] [--include-archived] [--require solution,verification] [--fail-on info|warning|error] [--output ./audit.md] [--json]
   pgm project history [project-id] [--limit 50] [--before <cursor>] [--node <node-id>] [--json]
   pgm project export-markdown [project-id] [--output ./project.md] [--json]
   pgm project link <project-id>

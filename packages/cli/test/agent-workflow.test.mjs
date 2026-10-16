@@ -295,3 +295,27 @@ test("write receipts include the target they were sent to", async () => {
 
   assert.deepEqual(JSON.parse(stdout).target, { mode: "remote", server: "http://localhost:3000", projectId: "demo" });
 });
+
+test("project audit prints a compact report and fails on the chosen severity", async () => {
+  const audit = {
+    projectId: "demo",
+    selection: { subtree: null, includeArchived: false, nodeCount: 3 },
+    rules: { requireImplemented: ["solution"], ownerCheck: false },
+    counts: { byStatus: { implemented: 2, blocked: 1 }, byType: { task: 3 }, archived: 0 },
+    summary: { warning: 1, info: 1 },
+    findings: [
+      { rule: "implemented-missing-field", severity: "warning", nodeId: "a", reason: "Implemented without solution." },
+      { rule: "open-with-solution", severity: "info", nodeId: "b", reason: "Status blocked with solution text (outcome: containment)." },
+    ],
+  };
+
+  const report = await runCli(["project", "audit", "demo", "--require", "solution"], () => ({ body: { audit } }));
+  const failing = await runCli(["project", "audit", "demo", "--fail-on", "warning", "--json"], () => ({ body: { audit } }));
+  const passing = await runCli(["project", "audit", "demo", "--fail-on", "error", "--json"], () => ({ body: { audit } }));
+
+  assert.equal(report.calls[0].url, "http://localhost:3000/api/v1/projects/demo/audit?require=solution");
+  assert.match(report.stdout, /- \*\*warning\*\* `implemented-missing-field` a: Implemented without solution\./);
+  assert.equal(failing.error.exitCode, 9);
+  assert.equal(JSON.parse(failing.stdout).audit.findings.length, 2);
+  assert.equal(passing.error, null);
+});
