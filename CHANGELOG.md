@@ -2,6 +2,36 @@
 
 Notable changes to Product Grid Management, newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
 
+## 2026-10-16
+
+### Fixed
+
+- When a `--local` command can't connect to a running viewer because local network access is blocked, it now says so right away. It no longer waits and reports that the viewer is still starting. Other connection errors name the cause, such as nothing listening, a timeout, or a blocked socket.
+- Project history is no longer capped at 250 entries. Older history files used to be deleted as new ones were written; now every entry is kept. The app still loads only the most recent 250, so big histories don't slow down editing.
+
+- Two agents updating different metadata fields on the same node at the same time no longer erase each other's change. Metadata `set` and `unset` now merge with the latest saved node.
+- A node update that changes several fields is now all or nothing. An invalid status, priority, type, or metadata key rejects the whole request, so a valid title or status is no longer saved alongside an error.
+
+- Creating or importing a node with a metadata field the project doesn't define now fails, with no node created. It used to look successful while silently dropping the field. Every unknown-field error lists the project's existing fields and shows the command to add a new one.
+- `pgm node resolve`, `pgm node complete`, `node batch-update`, and `node agent-update` now save the status and notes for each node in one request. A rejected note no longer leaves the node marked implemented without it.
+- `node batch-update` and `node agent-update` exit with code 8 when any item isn't applied. They also report each item, in input order, as `applied`, `rejected`, `conflict`, or `unknown`, with the saved values and history entry id. An item with an unknown field or status is rejected before anything is sent. When the connection drops mid-request, the item is reported as `unknown` with a command to check it, instead of as failed.
+- `agent-update` writes `blockedBy` and `filesChanged` to the `blocked-by` and `files-changed` fields. An unrecognized key in an update now fails that item instead of being dropped.
+- Metadata keys typed in camelCase, such as `blockedBy`, become `blocked-by` instead of `blockedby`.
+
+### Added
+
+- `pgm project audit` is a read-only report for a project or a subtree. It counts nodes by status and type and lists findings with a rule, severity, node id, and reason: implemented nodes missing `solution` or `verification` (or the fields you pass with `--require`), open nodes that have solution text (to review, not to mark wrong), working nodes with no owner, possible duplicate titles, missing image files, and broken parents, links, or cycles in the stored files, including ones the loader repaired. `--output` saves a Markdown copy, and `--fail-on warning` exits with code 9 when findings exist.
+- `pgm target inspect` shows where commands will go without starting anything. For a server, it shows the URL, project, whether a token is set, where each came from, and whether the server answers. For `--local`, it shows the data folder and the viewer running for it. Write receipts also include the target, so a write to the wrong server or folder is easy to spot.
+- `pgm relation list|add|remove` manages related, dependency, and reuse links between nodes, with matching `/nodes/<id>/relations` API routes. Adding a link that already exists does nothing, and parent/child structure is never changed. Added links show in node activity.
+- `pgm node note add <node-id> --text "..."` (or `--text-file`) adds a note to the end of a node's context on the server. Notes added by several agents at once are all kept, and each note's text is also saved in its history entry. `pgm node complete --note` uses this too, so it no longer reads and rewrites the whole context.
+- `pgm node resolve --solution` (or `--solution-file`) records the proven fix in the `solution` field, separately from `--note`, which writes `implementation`.
+- Text can come from a file or stdin instead of a quoted argument: `--note-file`, `--solution-file`, `node metadata set --value-file`, and `node context set --file -`. The text is stored as written, so backticks and `$( )` are never run by the shell.
+- Single-node commands print a receipt of what the server saved: the changed fields, their saved values, the new revision, and the history entry id. `node update` and `node context set` take `--expected-revision`.
+- `pgm project schema ensure-field <key> --label "Label"` adds one metadata field without replacing the rest of the schema. Running it again does nothing, and a different label or default for an existing field is refused instead of overwritten.
+- Node reads return a `revision`. Pass it back as `expectedRevision` when replacing context or other fields, and the update is refused with a conflict if someone changed the node in between. Changes to other nodes don't affect it.
+- `pgm project history` and `GET /api/v1/projects/<id>/history` page through every stored history entry, newest first, with an optional node filter. Each page returns a `nextCursor` for reading older entries, and entries written in the meantime don't shift the pages.
+- The node update API accepts `context` and `metadata` (`set`, `unset`, or a full `replace`) alongside title, status, type, priority, and archived, and returns the saved node, its new revision, the changed fields, and the history entry id.
+
 ## 2026-10-10
 
 ### Added

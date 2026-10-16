@@ -26,6 +26,8 @@ export function createDefaultProjectNodeMetadataSchema(): ProjectNodeMetadataFie
 export function normalizeProjectNodeMetadataKey(value: string) {
   return value
     .trim()
+    // camelCase becomes kebab-case ("blockedBy" -> "blocked-by") instead of running together.
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");

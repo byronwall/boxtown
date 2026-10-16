@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { CliError, apiErrorToExitCode } from "./errors.mjs";
+import { describeNetworkError } from "./network-errors.mjs";
 import { cliUserAgent } from "./version.mjs";
 
 export class ProductGridClient {
@@ -34,6 +35,32 @@ export class ProductGridClient {
     return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/schema`).then(
       (body) => body.schema,
     );
+  }
+
+  getProjectAudit(projectId, options = {}) {
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(options)) {
+      if (value !== undefined && value !== null && value !== "") searchParams.set(key, String(value));
+    }
+    const suffix = searchParams.size > 0 ? `?${searchParams}` : "";
+    return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/audit${suffix}`);
+  }
+
+  ensureMetadataField(projectId, input) {
+    return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/schema/fields`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input),
+    });
+  }
+
+  getProjectHistory(projectId, options = {}) {
+    const searchParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(options)) {
+      if (value !== undefined && value !== null && value !== "") searchParams.set(key, String(value));
+    }
+    const suffix = searchParams.size > 0 ? `?${searchParams}` : "";
+    return this.request(`/api/v1/projects/${encodeURIComponent(projectId)}/history${suffix}`);
   }
 
   listNodes(projectId, filters = {}) {
@@ -120,6 +147,29 @@ export class ProductGridClient {
   getNodeMetadata(projectId, nodeId) {
     return this.request(
       `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}/metadata`,
+    );
+  }
+
+  listNodeRelations(projectId, nodeId) {
+    return this.request(this.relationsPath(projectId, nodeId));
+  }
+
+  addNodeRelation(projectId, nodeId, input) {
+    return this.request(this.relationsPath(projectId, nodeId), jsonInit("POST", input));
+  }
+
+  removeNodeRelation(projectId, nodeId, input) {
+    return this.request(this.relationsPath(projectId, nodeId), jsonInit("DELETE", input));
+  }
+
+  relationsPath(projectId, nodeId) {
+    return `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}/relations`;
+  }
+
+  addNodeNote(projectId, nodeId, input) {
+    return this.request(
+      `/api/v1/projects/${encodeURIComponent(projectId)}/nodes/${encodeURIComponent(nodeId)}/notes`,
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) },
     );
   }
 
@@ -233,8 +283,9 @@ export class ProductGridClient {
       });
     } catch (error) {
       throw new CliError(
-        `Could not reach ${this.server}. Is the dev server running? ${formatCause(error)}`,
+        `Could not reach ${this.server}. Reason: ${formatCause(error)}`,
         1,
+        { transport: true },
       );
     }
 
@@ -244,7 +295,11 @@ export class ProductGridClient {
     if (!response.ok) {
       const apiError = body?.error ?? {};
       const message = apiError.message ?? `Request failed with HTTP ${response.status}.`;
-      throw new CliError(message, apiErrorToExitCode(apiError.code, response.status));
+      throw new CliError(message, apiErrorToExitCode(apiError.code, response.status), {
+        code: apiError.code,
+        details: apiError.details,
+        httpStatus: response.status,
+      });
     }
 
     return body;
@@ -266,8 +321,9 @@ export class ProductGridClient {
       });
     } catch (error) {
       throw new CliError(
-        `Could not reach ${this.server}. Is the dev server running? ${formatCause(error)}`,
+        `Could not reach ${this.server}. Reason: ${formatCause(error)}`,
         1,
+        { transport: true },
       );
     }
 
@@ -297,8 +353,9 @@ export class ProductGridClient {
       });
     } catch (error) {
       throw new CliError(
-        `Could not reach ${this.server}. Is the dev server running? ${formatCause(error)}`,
+        `Could not reach ${this.server}. Reason: ${formatCause(error)}`,
         1,
+        { transport: true },
       );
     }
 
@@ -347,5 +404,9 @@ function safeJson(text) {
 }
 
 function formatCause(error) {
-  return error instanceof Error && error.message ? error.message : "";
+  return describeNetworkError(error).message;
+}
+
+function jsonInit(method, input) {
+  return { method, headers: { "content-type": "application/json" }, body: JSON.stringify(input) };
 }

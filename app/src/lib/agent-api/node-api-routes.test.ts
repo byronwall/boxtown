@@ -7,13 +7,16 @@ import { GET as getSchema } from "~/routes/api/v1/projects/[projectId]/schema";
 import {
   deleteProjectNodeOnDisk,
   readProjectByIdFromDisk,
-  updateProjectNodeMetadataOnDisk,
+  writeProjectAndPublish,
 } from "~/lib/projects/data.server";
 
 vi.mock("~/lib/projects/data.server", () => ({
+  appendProjectOperation: vi.fn(),
   deleteProjectNodeOnDisk: vi.fn(),
+  getMutationMetadata: vi.fn(),
   readProjectByIdFromDisk: vi.fn(),
-  updateProjectNodeMetadataOnDisk: vi.fn(),
+  serializedMutation: (mutate: unknown) => mutate,
+  writeProjectAndPublish: vi.fn(),
 }));
 
 const project = {
@@ -225,7 +228,10 @@ describe("agent node API projections", () => {
 
     expect(response.status).toBe(400);
     expect(body.error.code).toBe("invalid_metadata_key");
-    expect(updateProjectNodeMetadataOnDisk).not.toHaveBeenCalled();
+    expect(body.error.details.fields).toEqual([{ key: "purpose", label: "Purpose" }]);
+    expect(body.error.message).toContain("This project defines: purpose");
+    expect(body.error.message).toContain("pgm project schema ensure-field mvp_tier");
+    expect(writeProjectAndPublish).not.toHaveBeenCalled();
   });
 
   it("deletes a node and reports removed ids", async () => {

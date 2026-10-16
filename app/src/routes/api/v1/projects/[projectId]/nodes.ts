@@ -1,5 +1,5 @@
 import type { APIEvent } from "@solidjs/start/server";
-import { AgentApiError } from "~/lib/agent-api/errors.server";
+import { AgentApiError, rethrowAsAgentApiError } from "~/lib/agent-api/errors.server";
 import { withAgentApi } from "~/lib/agent-api/handler.server";
 import { toAgentOperationActor } from "~/lib/agent-api/operation-actor";
 import {
@@ -179,11 +179,7 @@ export async function POST(event: APIEvent) {
         parentLink,
       }, { status: 201 });
     } catch (error) {
-      throw new AgentApiError(
-        "node_create_failed",
-        error instanceof Error ? error.message : "Failed to create node.",
-        400,
-      );
+      rethrowAsAgentApiError(error, { code: "node_create_failed", message: "Failed to create node." });
     }
   });
 }

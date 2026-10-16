@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { link, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
+import { describeNetworkError } from "../src/network-errors.mjs";
 
 // Ownership records (`.pgm-local-runtime.json`) say which process serves a
 // local data folder. Both `pgm viewer` and `--local` commands write them, and
@@ -57,11 +58,19 @@ export async function withFolderGuard<T>(dataDir: string, action: () => Promise<
   const port = getFolderGuardPort(dataDir);
   const guard = net.createServer();
   await new Promise<void>((resolve, reject) => {
-    guard.once("error", (error) => reject(
-      (error as NodeJS.ErrnoException).code === "EADDRINUSE"
-        ? new Error("Another local runtime is changing folder ownership. Retry shortly.")
-        : error,
-    ));
+    guard.once("error", (error) => {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "EADDRINUSE") {
+        reject(new Error("Another local runtime is changing folder ownership. Retry shortly."));
+      } else if (code === "EPERM" || code === "EACCES") {
+        reject(Object.assign(new Error(
+          `Could not open loopback port ${port} to guard ${dataDir} (${code}). ` +
+            "--local commands need permission to use local network sockets, even for reads. Allow local network access and retry.",
+        ), { code }));
+      } else {
+        reject(error);
+      }
+    });
     guard.listen(port, "127.0.0.1", resolve);
   });
   try {
@@ -132,19 +141,36 @@ async function runtimeResponds(url: string) {
   }
 }
 
-export async function identifiesRuntime(record: RuntimeRecord) {
-  if (!isLoopbackURL(record.url)) return false;
+// `reason` and `message` are set when `ok` is false.
+export type RuntimeProbe = {
+  ok: boolean;
+  reason?: "permission" | "refused" | "timeout" | "unreachable" | "http" | "mismatch" | "unsafe";
+  code?: string | null;
+  message?: string;
+};
+
+// Asks the runtime to prove which folder it serves, and says why when it can't.
+export async function probeRuntime(record: Pick<RuntimeRecord, "url" | "token" | "id" | "dataDir">): Promise<RuntimeProbe> {
+  if (!isLoopbackURL(record.url)) return { ok: false, reason: "unsafe", message: "the recorded address is not a local loopback URL." };
+  let response: Response;
   try {
-    const response = await fetch(`${record.url}/api/local-runtime`, {
+    response = await fetch(`${record.url}/api/local-runtime`, {
       headers: { authorization: `Bearer ${record.token}` },
       signal: AbortSignal.timeout(800),
     });
-    if (!response.ok) return false;
-    const identity = await response.json() as { id?: unknown; dataDir?: unknown };
-    return identity.id === record.id && identity.dataDir === record.dataDir;
-  } catch {
-    return false;
+  } catch (error) {
+    const described = describeNetworkError(error);
+    return { ok: false, reason: described.kind, code: described.code, message: described.message };
   }
+  if (!response.ok) return { ok: false, reason: "http", code: String(response.status), message: `it answered HTTP ${response.status}.` };
+  const identity = await response.json().catch(() => ({})) as { id?: unknown; dataDir?: unknown };
+  return identity.id === record.id && identity.dataDir === record.dataDir
+    ? { ok: true }
+    : { ok: false, reason: "mismatch", message: "it serves a different runtime or folder." };
+}
+
+export async function identifiesRuntime(record: RuntimeRecord) {
+  return (await probeRuntime(record)).ok;
 }
 
 export function isLoopbackURL(value: string) {

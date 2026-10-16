@@ -6,6 +6,8 @@ import type { ProjectOperationLogEntry } from "~/lib/projects/types";
 // The ordinal keeps entries that share a timestamp (such as backfilled ones) in order.
 
 const HISTORY_FILE_PATTERN = /^(\d{8}T\d{9}Z)-(\d{4})-(.+)\.json$/;
+// How many recent entries a loaded project carries. Every entry stays on disk.
+export const RECENT_HISTORY_LIMIT = 250;
 const FALLBACK_STAMP = "00000000T000000000Z";
 
 export interface HistoryFileName {

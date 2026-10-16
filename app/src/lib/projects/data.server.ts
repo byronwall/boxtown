@@ -16,6 +16,7 @@ import {
 } from "~/ws/project-events";
 import { applyBulkNodeUpdate, describeBulkNodeUpdate, type BulkNodeUpdate } from "./bulk-update";
 import { splitMarkdownIntoHeadingSections } from "./context-node-markdown";
+import { assertKnownMetadataKeys } from "./mutation-error";
 import { createUniqueNodeId, getNodeImageDirSegment } from "./node-id";
 import {
   createDefaultProjectNodeMetadataSchema,
@@ -34,6 +35,7 @@ import {
   readProjectDirectory,
   writeProjectDirectory,
 } from "./storage/project-directory.server";
+import { RECENT_HISTORY_LIMIT } from "./storage/history-files";
 import { backupProjectFile, isProjectBackupFilename } from "./storage/stored-files.server";
 import type {
   ProjectOperationActor,
@@ -224,7 +226,7 @@ function createProjectOperationLogEntry(input: {
   };
 }
 
-function appendProjectOperation(
+export function appendProjectOperation(
   record: ProjectRecord,
   operation: Parameters<typeof createProjectOperationLogEntry>[0],
 ): ProjectRecord {
@@ -234,7 +236,7 @@ function appendProjectOperation(
     operationLog: [
       createProjectOperationLogEntry(operation),
       ...stripProjectOperationStatePayloads(record.operationLog ?? []),
-    ].slice(0, 250),
+    ].slice(0, RECENT_HISTORY_LIMIT),
   };
 }
 
@@ -251,7 +253,7 @@ function stripProjectOperationStatePayloads(
   });
 }
 
-function getMutationMetadata(input: { clientMutationId?: string }) {
+export function getMutationMetadata(input: { clientMutationId?: string }) {
   return input.clientMutationId ? { clientMutationId: input.clientMutationId } : undefined;
 }
 
@@ -263,7 +265,7 @@ function mergeMutationMetadata(
   return mutationMetadata || metadata ? { ...metadata, ...mutationMetadata } : undefined;
 }
 
-async function writeProjectAndPublish(project: ProjectRecord) {
+export async function writeProjectAndPublish(project: ProjectRecord) {
   await writeProjectRecordToDisk(project);
   publishProjectRecordChanged(project);
 }
@@ -896,6 +898,7 @@ export const createContextNodeOnDisk = serializedMutation(async function createC
   if (!current) {
     throw new Error("Project not found.");
   }
+  assertKnownMetadataKeys(input.metadata, current.nodeMetadataSchema);
   const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));
   const baseLabel = input.label.trim();
   const metadata = sanitizeNodeMetadata(input.metadata, current.nodeMetadataSchema, {
@@ -960,6 +963,7 @@ export const createChildNodeOnDisk = serializedMutation(async function createChi
   if (input.parentNodeId && !parentNode) {
     throw new Error("Parent node not found.");
   }
+  assertKnownMetadataKeys(input.metadata, current.nodeMetadataSchema);
 
   const label = input.title.trim() || "Untitled node";
   const existingIds = new Set(current.spatialMap.nodes.map((node) => node.id));

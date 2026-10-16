@@ -89,6 +89,12 @@ After selecting a project, inspect the compact schema early so you know the avai
 pgm project schema --json
 ```
 
+Metadata keys must be declared in the project schema. Writes with an unknown key fail before anything is saved, and the error lists the fields the project already has. Reuse one of those when it fits. Add a field only when none does:
+
+```bash
+pgm project schema ensure-field solution --label "Solution" --json   # safe to repeat; keeps every other field
+```
+
 ## Gather Context
 
 Start small. Do not begin by dumping the full project into context.
@@ -130,6 +136,14 @@ pgm node list --type task --search "layout" --with-context --compact --json
 pgm node list --status blocked --preset status --json
 pgm node list --priority urgent --with-ancestors --preset status --json   # most important open work first
 pgm node list --type page --preset compact --json
+```
+
+To see what changed and who changed it, page through project history (newest first). Every entry is kept, so pass `nextCursor` back as `--before` to keep reading older entries:
+
+```bash
+pgm project history --limit 50 --json
+pgm project history --node <node-id> --json
+pgm project history --before <nextCursor> --json
 ```
 
 Archived nodes and their descendants are left out of `node list` results. Pass `--include-archived` when you need them.
@@ -217,6 +231,50 @@ pgm node delete <node-id> --yes --json   # irreversible; add --with-children to 
 pgm node archive <node-id...> --json      # hide finished work; reversible with `pgm node unarchive`
 ```
 
+## Record Outcomes Safely
+
+Each update below is one request: the status and fields are saved together, or nothing is saved.
+
+```bash
+pgm node resolve <node-id> --note "What changed in code." --solution "What was proven to fix it." --json
+pgm node resolve <node-id> --note-file ./tmp/impl.md --solution-file ./tmp/solution.md --json
+pgm node metadata set <node-id> verification --value-file ./tmp/verification.md --json
+cat ./tmp/notes.md | pgm node context set <node-id> --file - --json
+```
+
+- Log failed attempts, corrections, and observations with `pgm node note add <node-id> --text-file ./tmp/note.md --heading "Attempt 2"`. The server adds the note to the end of the node's context, so notes from several agents are all kept, and the text is also saved in the history entry. Keep the `solution` field for the current answer.
+- Put Markdown, backticks, `$` syntax, or multiple lines in a file (or stdin with `-`) instead of a quoted argument. The shell never runs file text. Metadata values are trimmed; context is stored as read.
+- `--note` writes the `implementation` field. `--solution` writes `solution`. Both fields must exist in the project schema.
+- The JSON receipt shows what the server saved (`changedFields`, `savedFields`, `revision`, `operationId`), so you don't need to read the node again.
+- To replace prose you read earlier without overwriting someone else's newer edit, pass the node's `revision` as `--expected-revision`. A conflict means re-read and merge.
+- `node batch-update` and `node agent-update` report every item as `applied`, `rejected`, `conflict`, or `unknown`, and exit with code 8 when any item was not applied. Successful items stay saved. For `unknown`, run the `readback` command before retrying.
+- `agent-update` keys `blockedBy` and `filesChanged` write the `blocked-by` and `files-changed` fields.
+
+## Audit Completeness
+
+Use the audit report instead of writing scripts that check fields node by node. It is read-only.
+
+```bash
+pgm project audit --json                                   # whole project, archived nodes left out
+pgm project audit --subtree <node-id> --require solution,verification --output ./tmp/audit.md
+pgm project audit --fail-on warning --json                  # exits 9 when warnings or errors exist
+```
+
+Findings list the rule, severity, node id, and a short reason. `open-with-solution` is informational: an open node with a workaround or partial fix is allowed, so review it rather than marking it complete. `duplicate-title` flags possible duplicates only. `graph-integrity` reports broken parents, links, or cycles in the stored files, even ones the loader repaired in memory.
+
+## Link Related Nodes
+
+Use relation links for blockers and overlaps. Don't put a node under another just to show a dependency.
+
+```bash
+pgm relation list <node-id> --json
+pgm relation add <blocked-node-id> <blocker-node-id> --relationship dependency --json
+pgm relation add <duplicate-node-id> <canonical-node-id> --json   # related; add a note naming the canonical node
+pgm relation remove <source-id> <target-id> --relationship dependency --json
+```
+
+When two findings overlap, keep both records. Link the duplicate to the canonical node and add a `pgm node note add` correction that names it. Never merge records just because their titles match.
+
 ## Attach Images To Nodes
 
 Use `image add` when the agent creates screenshots or local image artifacts, such as Playwright screenshots, and needs to attach them to specific nodes.
@@ -252,7 +310,8 @@ pgm node context-pack <parent-node-id> --output ./context-pack-dir --json
 - After `node create`, keep using the returned `nodeId`.
 - After `node import-markdown`, keep using the returned node IDs.
 - After `image add`, keep using the returned image IDs/URLs.
-- If `pgm` cannot reach the server, ask whether the Product Grid server is running.
+- Before writing, confirm the target with `pgm target inspect --json` (or `pgm target inspect --local <folder> --project <id> --json`). It shows the server or data folder, where each setting came from, and whether it is reachable. It never starts a viewer or prints the token. Write receipts include the same `target`.
+- If `pgm` cannot reach the server, read the reason in the error. A blocked connection (`EPERM`/`EACCES`) means local network access is denied. A refused connection means no server is running.
 - The default local server is `http://localhost:3000`.
 - Use `--server <url>` when the project is not on the default server.
 - Use `--project <project-id>` when no project is linked.

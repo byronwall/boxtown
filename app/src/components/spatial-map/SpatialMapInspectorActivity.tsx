@@ -6,6 +6,7 @@ import {
   GitBranchPlusIcon,
   HistoryIcon,
   ImageIcon,
+  Link2Icon,
   Link2OffIcon,
   MoveIcon,
   PencilIcon,
@@ -179,6 +180,8 @@ function getActivityKindConfig(kind: ProjectOperationLogEntry["kind"]): Activity
     case "node.images.added":
       return { label: "Image", tone: "image", icon: ImageIcon };
     case "node.metadata.updated":
+    case "node.updated":
+    case "node.note.added":
     case "node.context.updated":
     case "node.title.updated":
     case "node.status.updated":
@@ -199,6 +202,8 @@ function getActivityKindConfig(kind: ProjectOperationLogEntry["kind"]): Activity
       return { label: "Backfill", tone: "system", icon: DatabaseBackupIcon };
     case "link.deleted":
       return { label: "Link", tone: "link", icon: Link2OffIcon };
+    case "link.created":
+      return { label: "Link", tone: "link", icon: Link2Icon };
     case "node.moved":
       return { label: "Moved", tone: "link", icon: MoveIcon };
     case "project.created":

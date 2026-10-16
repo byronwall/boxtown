@@ -1,5 +1,5 @@
 import { tmpdir } from "node:os";
-import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import {
   assert,
@@ -164,10 +164,15 @@ async function addProofImage(url: string, projectId: string, nodeId: string) {
 }
 
 async function verifyDiskState(dataDir: string, projectId: string, nodeId: string, filename: string) {
-  const projectFile = path.join(dataDir, "projects", projectId, "project.json");
-  const saved = JSON.parse(await readFile(projectFile, "utf8"));
-  assert(saved.operationLog.some((item) => item.kind === "node.title.updated" && item.nodeIds.includes(nodeId)), "Edited title was not saved to the operation log.");
-  assert(saved.operationLog.some((item) => item.kind === "node.context.updated" && item.nodeIds.includes(nodeId)), "Edited context was not saved to the operation log.");
+  // History lives in one file per entry; agent API edits are recorded as node.updated with the changed fields.
+  const historyDir = path.join(dataDir, "projects", projectId, "history");
+  const history = await Promise.all(
+    (await readdir(historyDir)).map(async (file) => JSON.parse(await readFile(path.join(historyDir, file), "utf8"))),
+  );
+  const changed = (field: string) => history.some((item) =>
+    item.kind === "node.updated" && item.nodeIds.includes(nodeId) && String(item.metadata?.fields ?? "").split(",").includes(field));
+  assert(changed("title"), "Edited title was not saved to history.");
+  assert(changed("context"), "Edited context was not saved to history.");
   const imageFile = path.join(dataDir, "projects", projectId, "images", nodeId, filename);
   assert((await readFile(imageFile)).equals(imageBytes), "Image bytes were not saved under the selected data folder.");
 }
