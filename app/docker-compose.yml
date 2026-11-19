@@ -10,8 +10,9 @@ services:
       PORT: 3000
       BASE_PATH: ${BASE_PATH:-/}
       APP_DATA_DIR: /app/data
-    ports:
-      - "${APP_PORT_EXPOSE:-}:3000"
+    # Traefik reaches this service on the internal network. No host port in production.
+    expose:
+      - "3000"
     volumes:
       - type: volume
         source: product-grid-data
