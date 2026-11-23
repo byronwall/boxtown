@@ -32,7 +32,7 @@ export function SpatialMapGlobalFilterMenu() {
             title="Filter visible nodes"
             background={
               spatialMap.globalFilterActive()
-                ? "rgba(233, 235, 232, 0.96)"
+                ? "color-mix(in srgb, var(--spatial-map-selected-bg) 96%, transparent)"
                 : undefined
             }
             color={
@@ -66,7 +66,7 @@ export function SpatialMapGlobalFilterMenu() {
             disabled={getGlobalFilterSelectionCount(spatialMap.globalFilter()) === 0}
             onCheckedChange={(checked) => spatialMap.setGlobalFilterEnabled(checked)}
           />
-          <Box h="1px" my="10px" background="rgba(32, 38, 34, 0.12)" />
+          <Box h="1px" my="10px" background="color-mix(in srgb, var(--spatial-map-ink) 12%, transparent)" />
           <FilterToggleSection label="Type">
             <For each={spatialMap.availableNodeTypes()}>
               {(type) => {
@@ -125,7 +125,7 @@ export function SpatialMapGlobalFilterMenu() {
               )}
             </For>
           </FilterToggleSection>
-          <Box h="1px" my="10px" background="rgba(32, 38, 34, 0.12)" />
+          <Box h="1px" my="10px" background="color-mix(in srgb, var(--spatial-map-ink) 12%, transparent)" />
           <FilterSwitchRow
             label="Include parent context"
             checked={spatialMap.globalFilter().includeParents}
@@ -145,7 +145,7 @@ export function SpatialMapGlobalFilterMenu() {
             checked={spatialMap.showArchived()}
             onCheckedChange={(checked) => spatialMap.setShowArchived(checked)}
           />
-          <Box h="1px" my="10px" background="rgba(32, 38, 34, 0.12)" />
+          <Box h="1px" my="10px" background="color-mix(in srgb, var(--spatial-map-ink) 12%, transparent)" />
           <Button
             variant="outline"
             size="2xs"
@@ -179,7 +179,7 @@ function FilterToggleButton(props: {
         props.onClick();
       }}
       borderRadius="4px"
-      background={props.selected ? "rgba(233, 235, 232, 0.96)" : "transparent"}
+      background={props.selected ? "color-mix(in srgb, var(--spatial-map-selected-bg) 96%, transparent)" : "transparent"}
       color={props.selected ? "var(--spatial-map-accent-strong)" : undefined}
     >
       {props.children}

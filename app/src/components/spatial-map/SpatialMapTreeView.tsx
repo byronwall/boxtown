@@ -67,7 +67,7 @@ const treeStructureClass = css({
     content: '""',
     position: "absolute",
     inset: "0 0 -10px",
-    background: "color-mix(in srgb, var(--spatial-map-tree-stroke) 84%, #f8faf7)",
+    background: "color-mix(in srgb, var(--spatial-map-tree-stroke) 84%, var(--spatial-map-raised))",
     borderRadius: "inherit",
     WebkitMaskImage: "linear-gradient(90deg, transparent 0, #000 38%, #000 62%, transparent 100%)",
     maskImage: "linear-gradient(90deg, transparent 0, #000 38%, #000 62%, transparent 100%)",
@@ -459,7 +459,7 @@ function SpatialMapTreeNode(props: {
           p="0 0 6px"
           border="0"
           borderRadius="4px"
-          background={isSelected() ? "rgba(233, 235, 232, 0.7)" : "transparent"}
+          background={isSelected() ? "color-mix(in srgb, var(--spatial-map-selected-bg) 70%, transparent)" : "transparent"}
           color="var(--spatial-map-copy)"
           fontFamily="inherit"
           textAlign="left"
@@ -467,9 +467,9 @@ function SpatialMapTreeNode(props: {
           appearance="none"
           cursor="pointer"
           transition="background-color 180ms ease, box-shadow 180ms ease, outline-color 180ms ease"
-          _hover={{ background: isSelected() ? "rgba(233, 235, 232, 0.7)" : "rgba(34, 41, 36, 0.04)", boxShadow: "none" }}
+          _hover={{ background: isSelected() ? "color-mix(in srgb, var(--spatial-map-selected-bg) 70%, transparent)" : "color-mix(in srgb, var(--spatial-map-ink) 4%, transparent)", boxShadow: "none" }}
           _focusVisible={{
-            outline: "2px solid rgba(33, 38, 35, 0.58)",
+            outline: "2px solid color-mix(in srgb, var(--spatial-map-ink) 58%, transparent)",
             outlineOffset: "2px",
             boxShadow: "none",
           }}
@@ -530,8 +530,8 @@ function SpatialMapTreeNode(props: {
                 background="transparent"
                 color="var(--spatial-map-copy-dim)"
                 cursor="pointer"
-                _hover={{ background: "rgba(34, 41, 36, 0.1)", color: "var(--spatial-map-copy)" }}
-                _focusVisible={{ outline: "2px solid rgba(84, 90, 86, 0.42)", outlineOffset: "1px" }}
+                _hover={{ background: "color-mix(in srgb, var(--spatial-map-ink) 10%, transparent)", color: "var(--spatial-map-copy)" }}
+                _focusVisible={{ outline: "2px solid color-mix(in srgb, var(--spatial-map-ink) 42%, transparent)", outlineOffset: "1px" }}
                 aria-label={`${isCollapsed() ? "Expand" : "Collapse"} ${children().length} ${children().length === 1 ? "child" : "children"}`}
                 title={isCollapsed() ? "Expand children" : "Collapse children"}
                 onClick={(event) => {
@@ -719,7 +719,7 @@ function TreeContext(props: { content: string; nodeLabel: string }) {
           lineHeight="1.2"
           _hover={{ color: "var(--spatial-map-accent-strong)", textDecoration: "underline" }}
           _focusVisible={{
-            outline: "2px solid rgba(84, 90, 86, 0.42)",
+            outline: "2px solid color-mix(in srgb, var(--spatial-map-ink) 42%, transparent)",
             outlineOffset: "3px",
           }}
           onClick={(event) => {

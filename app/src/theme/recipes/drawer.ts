@@ -9,9 +9,9 @@ export const drawer = defineSlotRecipe({
       background: `
         radial-gradient(circle at 15% 8%, rgba(48, 164, 108, 0.16), transparent 28rem),
         radial-gradient(circle at 88% 20%, rgba(137, 142, 135, 0.14), transparent 30rem),
-        repeating-linear-gradient(0deg, rgba(31, 36, 33, 0.045) 0 1px, transparent 1px 40px),
-        repeating-linear-gradient(90deg, rgba(31, 36, 33, 0.035) 0 1px, transparent 1px 40px),
-        linear-gradient(180deg, rgba(248, 250, 248, 0.9), rgba(223, 226, 223, 0.94))
+        repeating-linear-gradient(0deg, color-mix(in srgb, var(--spatial-map-ink) 4.5%, transparent) 0 1px, transparent 1px 40px),
+        repeating-linear-gradient(90deg, color-mix(in srgb, var(--spatial-map-ink) 3.5%, transparent) 0 1px, transparent 1px 40px),
+        linear-gradient(180deg, color-mix(in srgb, var(--spatial-map-raised) 90%, transparent), rgba(223, 226, 223, 0.94))
       `,
       position: "fixed",
       insetInlineStart: "0",
@@ -50,10 +50,10 @@ export const drawer = defineSlotRecipe({
       zIndex: "modal",
       maxH: "100dvh",
       color: "inherit",
-      bg: "rgba(252, 253, 252, 0.94)",
+      bg: "color-mix(in srgb, var(--spatial-map-raised) 94%, transparent)",
       borderColor: "olive.8",
       boxShadow:
-        "0 28px 70px rgba(29, 33, 28, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88)",
+        "0 28px 70px rgba(29, 33, 28, 0.2), 0 0 0 1px color-mix(in srgb, var(--spatial-map-highlight) 64%, transparent), inset 0 1px 0 color-mix(in srgb, var(--spatial-map-highlight) 88%, transparent)",
       _open: {
         animationDuration: "slowest",
         animationTimingFunction: "cubic-bezier(0.05, 0.7, 0.1, 1.0)",
@@ -73,7 +73,7 @@ export const drawer = defineSlotRecipe({
       flex: "0",
       borderBottomWidth: "1px",
       borderColor: "olive.7",
-      bg: "rgba(248, 250, 248, 0.9)",
+      bg: "color-mix(in srgb, var(--spatial-map-raised) 90%, transparent)",
     },
     body: {
       display: "flex",
@@ -93,7 +93,7 @@ export const drawer = defineSlotRecipe({
       px: { base: "4", md: "6" },
       borderTopWidth: "1px",
       borderColor: "olive.7",
-      bg: "rgba(248, 250, 248, 0.82)",
+      bg: "color-mix(in srgb, var(--spatial-map-raised) 82%, transparent)",
     },
     title: {
       color: "fg.default",
@@ -113,7 +113,7 @@ export const drawer = defineSlotRecipe({
       borderColor: "olive.7",
       borderRadius: "l1",
       bg: "olive.1",
-      boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.78)",
+      boxShadow: "inset 0 1px 0 color-mix(in srgb, var(--spatial-map-highlight) 78%, transparent)",
       _hover: {
         bg: "olive.2",
         borderColor: "olive.8",

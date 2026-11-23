@@ -72,7 +72,7 @@ export function SpatialMapActivityList(props: {
               >
                 {(node) => (
                   <ActivityRowButton
-                    _active={{ transform: "scale(0.99)", background: "rgba(34, 41, 36, 0.1)" }}
+                    _active={{ transform: "scale(0.99)", background: "color-mix(in srgb, var(--spatial-map-ink) 10%, transparent)" }}
                     type="button"
                     display="block"
                     w="100%"
@@ -80,13 +80,13 @@ export function SpatialMapActivityList(props: {
                     p="0"
                     border="0"
                     borderRadius="4px"
-                    background={isCurrent() ? "rgba(233, 235, 232, 0.8)" : "transparent"}
+                    background={isCurrent() ? "color-mix(in srgb, var(--spatial-map-selected-bg) 80%, transparent)" : "transparent"}
                     color="inherit"
                     font="inherit"
                     textAlign="left"
                     cursor="pointer"
-                    _hover={{ background: "rgba(34, 41, 36, 0.06)" }}
-                    _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(60, 66, 62, 0.56)" }}
+                    _hover={{ background: "color-mix(in srgb, var(--spatial-map-ink) 6%, transparent)" }}
+                    _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 56%, transparent)" }}
                     onClick={() => props.onSelect(node().id)}
                     aria-pressed={props.showNode ? isCurrent() : undefined}
                   >
@@ -124,7 +124,7 @@ function ActivityRow(props: { entry: ProjectOperationLogEntry; nodeLabel?: strin
         as="span"
         display="inline-flex"
         pt="2px"
-        style={{ color: ACTIVITY_TONE_COLORS[config().tone] }}
+        style={{ color: `color-mix(in srgb, ${ACTIVITY_TONE_COLORS[config().tone]} var(--spatial-map-ink-mix), var(--spatial-map-ink-base))` }}
         aria-hidden="true"
       >
         <Dynamic component={config().icon} size={13} strokeWidth={2.2} />

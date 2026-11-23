@@ -25,9 +25,9 @@ export function SpatialMapInspectorSection(props: {
       pt="8px"
       borderTop="1px solid"
       style={{ gap: props.gap ?? "6px" }}
-      borderColor={props.error ? "rgba(126, 41, 41, 0.28)" : props.dragging ? "rgba(33, 38, 35, 0.62)" : "var(--spatial-map-panel-divider)"}
+      borderColor={props.error ? "rgba(126, 41, 41, 0.28)" : props.dragging ? "color-mix(in srgb, var(--spatial-map-ink) 62%, transparent)" : "var(--spatial-map-panel-divider)"}
       borderStyle={props.dragging ? "dashed" : "solid"}
-      background={props.error ? "rgba(246, 235, 235, 0.82)" : props.dragging ? "rgba(218, 229, 216, 0.96)" : "transparent"}
+      background={props.error ? "rgba(246, 235, 235, 0.82)" : props.dragging ? "color-mix(in srgb, var(--spatial-map-sunken) 96%, transparent)" : "transparent"}
       minH={props.minH}
       overflow={props.overflow}
       onDragEnter={props.onDragEnter}
@@ -97,7 +97,7 @@ export function SpatialMapCollapsibleGroup(props: {
   return (
     <Box minW="0">
       <CollapsibleTrigger
-        _active={{ transform: "scale(0.99)", background: "rgba(34, 41, 36, 0.1)" }}
+        _active={{ transform: "scale(0.99)", background: "color-mix(in srgb, var(--spatial-map-ink) 10%, transparent)" }}
         type="button"
         display="flex"
         alignItems="center"
@@ -112,8 +112,8 @@ export function SpatialMapCollapsibleGroup(props: {
         font="inherit"
         textAlign="left"
         cursor="pointer"
-        _hover={{ background: "rgba(34, 41, 36, 0.06)" }}
-        _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(60, 66, 62, 0.56)" }}
+        _hover={{ background: "color-mix(in srgb, var(--spatial-map-ink) 6%, transparent)" }}
+        _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 56%, transparent)" }}
         aria-expanded={props.open}
         onClick={() => props.onToggle()}
       >

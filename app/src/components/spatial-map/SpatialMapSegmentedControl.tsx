@@ -40,7 +40,7 @@ export function SpatialMapSegmentedControl<T extends string | number>(props: {
               p="0 8px"
               border="0"
               borderLeft={index() === 0 ? "0" : "1px solid var(--spatial-map-panel-divider)"}
-              background={active() ? "rgba(233, 235, 232, 0.96)" : "transparent"}
+              background={active() ? "color-mix(in srgb, var(--spatial-map-selected-bg) 96%, transparent)" : "transparent"}
               color={active() ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
               fontFamily="inherit"
               fontSize="11px"
@@ -49,9 +49,9 @@ export function SpatialMapSegmentedControl<T extends string | number>(props: {
               whiteSpace="nowrap"
               cursor="pointer"
               _hover={{ color: "var(--spatial-map-copy)" }}
-              _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(60, 66, 62, 0.56)" }}
+              _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 56%, transparent)" }}
               // A segment sits flush in its group, so it presses with a fill instead of a scale.
-              _active={{ transform: "none", background: "rgba(34, 41, 36, 0.1)" }}
+              _active={{ transform: "none", background: "color-mix(in srgb, var(--spatial-map-ink) 10%, transparent)" }}
               aria-label={option.ariaLabel}
               aria-pressed={active()}
               onClick={() => props.onChange(option.value)}

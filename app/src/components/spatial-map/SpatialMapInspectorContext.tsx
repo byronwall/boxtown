@@ -109,8 +109,8 @@ export function SpatialMapInspectorContextSection(props: {
             cursor="text"
             aria-label="Edit context"
             title="Click to edit"
-            _hover={{ background: "rgba(34, 41, 36, 0.05)" }}
-            _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(60, 66, 62, 0.56)" }}
+            _hover={{ background: "color-mix(in srgb, var(--spatial-map-ink) 5%, transparent)" }}
+            _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 56%, transparent)" }}
             onClick={handlePreviewClick}
             onKeyDown={(event) => {
               if (event.target !== event.currentTarget || event.key !== "Enter") return;

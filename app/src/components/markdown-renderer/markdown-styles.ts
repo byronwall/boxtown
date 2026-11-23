@@ -212,9 +212,9 @@ export const markdownStyles = {
     h: "100dvh",
     borderLeftWidth: "1px",
     borderLeftColor: "olive.8",
-    bg: "rgba(252, 253, 252, 0.94)",
+    bg: "color-mix(in srgb, var(--spatial-map-raised) 94%, transparent)",
     boxShadow:
-      "0 28px 70px rgba(29, 33, 28, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88)",
+      "0 28px 70px rgba(29, 33, 28, 0.2), 0 0 0 1px color-mix(in srgb, var(--spatial-map-highlight) 64%, transparent), inset 0 1px 0 color-mix(in srgb, var(--spatial-map-highlight) 88%, transparent)",
   }),
   codeDrawerHeader: css({
     position: "sticky",
@@ -223,7 +223,7 @@ export const markdownStyles = {
     pb: 3,
     borderBottomWidth: "1px",
     borderBottomColor: "olive.7",
-    bg: "rgba(248, 250, 248, 0.9)",
+    bg: "color-mix(in srgb, var(--spatial-map-raised) 90%, transparent)",
     backdropFilter: "blur(6px)",
   }),
   codeDrawerHeaderTop: css({
@@ -257,7 +257,7 @@ export const markdownStyles = {
     px: { base: 4, md: 6 },
     py: { base: 4, md: 5 },
     background:
-      "linear-gradient(90deg, rgba(31, 36, 33, 0.045) 1px, transparent 1px), linear-gradient(rgba(31, 36, 33, 0.045) 1px, transparent 1px), rgba(248, 250, 248, 0.92)",
+      "linear-gradient(90deg, color-mix(in srgb, var(--spatial-map-ink) 4.5%, transparent) 1px, transparent 1px), linear-gradient(color-mix(in srgb, var(--spatial-map-ink) 4.5%, transparent) 1px, transparent 1px), color-mix(in srgb, var(--spatial-map-raised) 92%, transparent)",
     backgroundSize: "24px 24px, 24px 24px, auto",
     minH: "100%",
     overflow: "visible",
@@ -269,9 +269,9 @@ export const markdownStyles = {
     maxH: "90dvh",
     borderWidth: "1px",
     borderColor: "olive.8",
-    bg: "rgba(252, 253, 252, 0.94)",
+    bg: "color-mix(in srgb, var(--spatial-map-raised) 94%, transparent)",
     boxShadow:
-      "0 28px 70px rgba(29, 33, 28, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.64), inset 0 1px 0 rgba(255, 255, 255, 0.88)",
+      "0 28px 70px rgba(29, 33, 28, 0.2), 0 0 0 1px color-mix(in srgb, var(--spatial-map-highlight) 64%, transparent), inset 0 1px 0 color-mix(in srgb, var(--spatial-map-highlight) 88%, transparent)",
   }),
   mermaidDialogHeader: css({
     position: "sticky",
@@ -280,7 +280,7 @@ export const markdownStyles = {
     pb: 3,
     borderBottomWidth: "1px",
     borderBottomColor: "olive.7",
-    bg: "rgba(248, 250, 248, 0.9)",
+    bg: "color-mix(in srgb, var(--spatial-map-raised) 90%, transparent)",
     backdropFilter: "blur(6px)",
   }),
   mermaidDialogHeaderTop: css({
@@ -315,10 +315,10 @@ export const markdownStyles = {
     borderColor: "olive.7",
     borderRadius: "l1",
     background:
-      "linear-gradient(90deg, rgba(31, 36, 33, 0.055) 1px, transparent 1px), linear-gradient(rgba(31, 36, 33, 0.055) 1px, transparent 1px), radial-gradient(circle at 12% 8%, rgba(48, 164, 108, 0.1), transparent 24rem), rgba(248, 250, 248, 0.92)",
+      "linear-gradient(90deg, color-mix(in srgb, var(--spatial-map-ink) 5.5%, transparent) 1px, transparent 1px), linear-gradient(color-mix(in srgb, var(--spatial-map-ink) 5.5%, transparent) 1px, transparent 1px), radial-gradient(circle at 12% 8%, rgba(48, 164, 108, 0.1), transparent 24rem), color-mix(in srgb, var(--spatial-map-raised) 92%, transparent)",
     backgroundSize: "24px 24px, 24px 24px, auto, auto",
     boxShadow:
-      "inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 14px 36px rgba(29, 33, 28, 0.12)",
+      "inset 0 1px 0 color-mix(in srgb, var(--spatial-map-highlight) 76%, transparent), 0 14px 36px rgba(29, 33, 28, 0.12)",
     touchAction: "none",
     cursor: "grab",
   }),

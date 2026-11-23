@@ -300,7 +300,7 @@ function StashedNodeCard(props: {
       p="6px"
       borderTop="1px solid var(--spatial-map-panel-divider)"
       borderRadius="4px"
-      background={isSelected() ? "rgba(233, 235, 232, 0.8)" : "transparent"}
+      background={isSelected() ? "color-mix(in srgb, var(--spatial-map-selected-bg) 80%, transparent)" : "transparent"}
     >
       <StashCardButton
         type="button"
@@ -372,7 +372,7 @@ function StashedNodeThumbnail(props: { node: MapNode }) {
           p="0"
           border="1px solid var(--spatial-map-panel-border)"
           borderRadius="4px"
-          background="rgba(214, 220, 212, 0.92)"
+          background="color-mix(in srgb, var(--spatial-map-sunken) 92%, transparent)"
           cursor="zoom-in"
           overflow="hidden"
           aria-label={`Open ${image().originalName}`}
@@ -400,9 +400,9 @@ function StashedNodeThumbnail(props: { node: MapNode }) {
               bottom="3px"
               minW="18px"
               p="2px 4px"
-              border="1px solid rgba(34, 41, 36, 0.24)"
+              border="1px solid color-mix(in srgb, var(--spatial-map-ink) 24%, transparent)"
               borderRadius="3px"
-              background="rgba(249, 250, 247, 0.94)"
+              background="color-mix(in srgb, var(--spatial-map-raised) 94%, transparent)"
               color="var(--spatial-map-copy)"
               fontSize="9px"
               fontWeight="760"

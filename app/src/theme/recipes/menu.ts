@@ -8,7 +8,7 @@ export const menu = defineSlotRecipe({
     content: {
       "--menu-z-index": "zIndex.dropdown",
 
-      bg: "#fbfcfb",
+      bg: "var(--spatial-map-raised)",
       borderWidth: "1px",
       borderColor: "olive.7",
       borderRadius: "6px",

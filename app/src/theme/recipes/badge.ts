@@ -38,10 +38,10 @@ export const badge = defineRecipe({
         color: "colorPalette.outline.fg",
       },
       spatial: {
-        bg: "rgba(246, 248, 244, 0.94)",
+        bg: "color-mix(in srgb, var(--spatial-map-raised) 94%, transparent)",
         borderWidth: "1px",
-        borderColor: "rgba(44, 52, 46, 0.24)",
-        boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.28)",
+        borderColor: "color-mix(in srgb, var(--spatial-map-ink) 24%, transparent)",
+        boxShadow: "inset 0 1px 0 color-mix(in srgb, var(--spatial-map-highlight) 28%, transparent)",
         color: "fg.muted",
       },
     },
