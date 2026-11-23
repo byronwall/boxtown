@@ -34,6 +34,12 @@ function inset(aside, map) {
   map.fit();
 }
 
+// Context often opens with a heading that repeats the box title; the panel already shows it.
+function dropTitle(src, label) {
+  const [first, ...rest] = src.split("\n");
+  return /^#+\s/.test(first) && first.replace(/^#+\s+/, "").trim() === label ? rest.join("\n") : src;
+}
+
 function inspect(aside, map, id) {
   aside.hidden = !id;
   if (!id) return inset(aside, map);
@@ -46,11 +52,11 @@ function inspect(aside, map, id) {
   for (let p = n.parent; p; p = byId.get(p).parent) path.unshift(chip(p));
   aside.innerHTML = `
     <div class="in-head"><h3>${esc(n.label)}</h3><button type="button" class="in-close" aria-label="Close details">×</button></div>
-    <p class="in-meta"><span class="dot" style="--f:${STATUS[map.status[id] ?? n.status][1]}"></span>${st} · ${n.type}${n.priority ? ` · ${n.priority} priority` : ""}</p>
-    ${path.length ? `<p class="in-path">${path.join(" › ")}</p>` : ""}
+    <p class="in-meta"><span class="dot" style="--f:${STATUS[map.status[id] ?? n.status][1]}"></span>${st} · ${n.type}${n.priority ? ` · ${n.priority[0].toUpperCase()}${n.priority.slice(1)} priority` : ""}</p>
+    ${path.length ? `<p class="in-path">In ${path.join(" › ")}</p>` : ""}
     ${n.purpose ? `<h4>Purpose</h4><p>${esc(n.purpose)}</p>` : ""}
     ${n.implementation ? `<h4>Implementation</h4><p>${esc(n.implementation)}</p>` : ""}
-    ${n.context ? `<h4>Context</h4><div class="in-md">${md(n.context)}</div>` : ""}
+    ${n.context ? `<h4>Context</h4><div class="in-md">${md(dropTitle(n.context, n.label))}</div>` : ""}
     ${n.image ? `<h4>Image</h4><img src="${n.image}" alt="Sketch attached to ${esc(n.label)}" width="240" height="420" loading="lazy">` : ""}
     ${kids.length ? `<h4>Inside (${kids.length})</h4><p class="in-chips">${kids.map(chip).join("")}</p>` : ""}
     ${links.length ? `<h4>Links</h4><ul class="in-links">${links.map((l) => `<li>${l.from === id ? "→" : "←"} ${chip(l.from === id ? l.to : l.from)} <span>${l.rel}</span></li>`).join("")}</ul>` : ""}`;
@@ -67,17 +73,19 @@ function chrome(root, { inspector = true, toolbar = true } = {}) {
   root.insertAdjacentHTML(
     "afterbegin",
     `${toolbar ? `<div class="ex-bar">
-      <div class="seg" data-key="depth" role="group" aria-label="Depth"><span>Depth</span><button type="button" data-v="1">1</button><button type="button" data-v="2">2</button><button type="button" data-v="3">3</button><button type="button" data-v="all">Max</button></div>
-      <div class="seg" data-key="color" role="group" aria-label="Color by"><span>Color</span><button type="button" data-v="type">Type</button><button type="button" data-v="status">Status</button></div>
+      <span class="bar-label">Depth</span>
+      <div class="seg" data-key="depth" role="group" aria-label="Depth"><button type="button" data-v="1">1</button><button type="button" data-v="2">2</button><button type="button" data-v="3">3</button><button type="button" data-v="all">Max</button></div>
+      <span class="bar-label">Color</span>
+      <div class="seg" data-key="color" role="group" aria-label="Color by"><button type="button" data-v="type">Type</button><button type="button" data-v="status">Status</button></div>
       <button type="button" class="tog" data-key="edges">Edges</button>
-      <button type="button" class="tog" data-act="fit">Fit</button>
+      <div class="cam" role="group" aria-label="Camera"><button type="button" class="tog" data-act="out" aria-label="Zoom out">−</button><button type="button" class="tog" data-act="in" aria-label="Zoom in">+</button><button type="button" class="tog" data-act="fit">Fit</button></div>
     </div>` : ""}
     <div class="ex-stage">
       <div class="ex-map"></div>
       <div class="iso-chip" hidden>Isolated: <b></b><button type="button" aria-label="Show the whole map">×</button></div>
       ${inspector ? '<aside class="inspector" hidden aria-live="polite"></aside>' : ""}
     </div>
-    <div class="legend">${legendHtml}</div>`,
+    <div class="legend">${legendHtml}<b class="lg-caption" aria-live="polite"></b></div>`,
   );
 }
 
@@ -112,6 +120,7 @@ function explorer(root, opts) {
     if (!b) return;
     const seg = b.closest("[data-key]");
     if (b.dataset.act === "fit") map.fit();
+    else if (b.dataset.act === "in" || b.dataset.act === "out") map.zoom(b.dataset.act === "in" ? 1.35 : 1 / 1.35, 0.5, 0.5, true);
     else if (seg?.tagName === "BUTTON") map.set({ [seg.dataset.key]: !map.state[seg.dataset.key] }, { fit: false });
     else if (seg) {
       const v = b.dataset.v;
@@ -160,6 +169,8 @@ function go(step) {
   if (step === current) return;
   current = step;
   stepEls.forEach((s) => s.classList.toggle("is-active", s.dataset.step === step));
+  const el = stepEls.find((s) => s.dataset.step === step);
+  storyRoot.querySelector(".lg-caption").textContent = `${stepEls.indexOf(el) + 1}/${stepEls.length} · ${el.querySelector("h3").textContent}`;
   story.set({ ...base, ...steps[step] });
   inspect(storyAside, story, steps[step].selected ?? null);
 }
@@ -184,6 +195,8 @@ let running = false;
 async function run(i) {
   if (running) return;
   running = true;
+  term.setAttribute("aria-busy", "true");
+  term.querySelectorAll("[data-run]").forEach((b) => (b.disabled = true));
   const { cmd, out, sets } = town.terminal[i];
   const block = document.createElement("div");
   block.className = "term-block";
@@ -200,6 +213,8 @@ async function run(i) {
   block.querySelector(".term-out").textContent = out;
   screen.scrollTop = screen.scrollHeight;
   term.querySelectorAll("[data-run]")[i].classList.add("ran");
+  term.querySelectorAll("[data-run]").forEach((b) => (b.disabled = false));
+  term.removeAttribute("aria-busy");
   if (sets) {
     agentMap.setStatus(sets.id, sets.status);
     agentMap.set({ selected: sets.id }, { fit: false });

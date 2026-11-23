@@ -26,7 +26,7 @@
     <nav aria-label="Sections">
       <a href="#how" class="wide">How it works</a>
       <a href="#agents">Agents</a>
-      <a href="#tour" class="wide">App</a>
+      <a href="#tour" class="wide">Screens</a>
       <a href="#start">Start</a>
       <a href="https://github.com/byronwall/boxtown" class="ext">GitHub</a>
     </nav>
@@ -50,7 +50,7 @@
   </div>
   <div class="hero-live">
     <div class="explorer" id="explorer"></div>
-    <p class="ex-hint">This is a live map of the <em>Harbor Bikes</em> demo. Click a box. Double-click to step inside it. Drag to pan, <kbd>⌘</kbd>/<kbd>Ctrl</kbd> + scroll to zoom.</p>
+    <p class="ex-hint">A live map of the <em>Harbor Bikes</em> demo. <span class="for-mouse">Click a box. Double-click to step inside it. Drag to pan, <kbd>⌘</kbd>/<kbd>Ctrl</kbd> + scroll to zoom.</span><span class="for-touch">Tap a box. Double-tap to step inside it. Use − and + to zoom.</span> <span class="for-keys">Keyboard: <kbd>Tab</kbd>, arrows, <kbd>Enter</kbd>, <kbd>Shift</kbd>+<kbd>Enter</kbd>.</span></p>
     <noscript><img src="images/map.webp" width="2880" height="1800" alt="Boxtown canvas with the Harbor Bikes demo"></noscript>
   </div>
 </section>
@@ -62,14 +62,14 @@
     <div class="story">
       <div class="story-stick"><div class="explorer" id="story-map"></div></div>
       <ol class="steps">
-        <li class="step" data-step="districts"><span class="n">1</span><h3>Start with districts</h3><p>The six biggest boxes are the big ideas: <b>Find a bike</b>, <b>Ride</b>, <b>Pay</b>, <b>Account</b>, <b>Fleet ops</b> and a launch brief. This is <b>Depth 1</b>.</p></li>
-        <li class="step" data-step="blocks"><span class="n">2</span><h3>Add the blocks</h3><p>At <b>Depth 2</b>, pages and modules appear next to the area they belong to. They are smaller, because they sit one level down.</p></li>
-        <li class="step" data-step="rooms"><span class="n">3</span><h3>Down to the rooms</h3><p>At full depth, assemblies and components fill in as the smallest boxes. Size shows depth at a glance. You never count indents.</p></li>
-        <li class="step" data-step="neighbors"><span class="n">4</span><h3>Neighbors are related</h3><p>Children cluster around their parent. Everything in <b>Ride</b> sits together: Unlock, Active ride, the timer card, the end button. No lines needed. Hover any box to light up its branch.</p></li>
-        <li class="step" data-step="streets"><span class="n">5</span><h3>Streets when you ask</h3><p>Lines are off by default. Turn on <b>Edges</b> to trace parents and the cross-links: the <b>End ride button</b> depends on the <b>Dock sensor feed</b>, and so does the rebalancing queue.</p></li>
-        <li class="step" data-step="inside"><span class="n">6</span><h3>Step inside a district</h3><p>Double-click a box to isolate it. The canvas packs just that branch, so a big project stays readable one area at a time.</p></li>
-        <li class="step" data-step="spec"><span class="n">7</span><h3>Every building has a spec</h3><p>Click a box to open it. Purpose, implementation notes, Markdown context, images and links live on the box, so the map is also the spec.</p></li>
-        <li class="step" data-step="status"><span class="n">8</span><h3>See the state of the town</h3><p>Switch <b>Color</b> to <b>Status</b>. Done work turns green, work in progress blue, and the blocked <b>End ride button</b> red.</p></li>
+        <li class="step" data-step="districts"><span class="n">Step 1 of 8</span><h3>Start with districts</h3><p>The six biggest boxes are the big ideas: <b>Find a bike</b>, <b>Ride</b>, <b>Pay</b>, <b>Account</b>, <b>Fleet ops</b> and a launch brief. This is <b>Depth 1</b>.</p></li>
+        <li class="step" data-step="blocks"><span class="n">Step 2 of 8</span><h3>Add the blocks</h3><p>At <b>Depth 2</b>, pages and modules appear next to the area they belong to. They are smaller, because they sit one level down.</p></li>
+        <li class="step" data-step="rooms"><span class="n">Step 3 of 8</span><h3>Down to the rooms</h3><p>At full depth, assemblies and components fill in as the smallest boxes. Size shows depth at a glance. You never count indents.</p></li>
+        <li class="step" data-step="neighbors"><span class="n">Step 4 of 8</span><h3>Neighbors are related</h3><p>Children cluster around their parent. Everything in <b>Ride</b> sits together: Unlock, Active ride, the timer card, the end button. No lines needed. Hover or tap any box to light up its branch.</p></li>
+        <li class="step" data-step="streets"><span class="n">Step 5 of 8</span><h3>Streets when you ask</h3><p>Lines are off by default. Turn on <b>Edges</b> to trace parents and the cross-links: the <b>End ride button</b> depends on the <b>Dock sensor feed</b>, and so does the rebalancing queue.</p></li>
+        <li class="step" data-step="inside"><span class="n">Step 6 of 8</span><h3>Step inside a district</h3><p>Double-click a box to isolate it. The canvas packs just that branch, so a big project stays readable one area at a time.</p></li>
+        <li class="step" data-step="spec"><span class="n">Step 7 of 8</span><h3>Every building has a spec</h3><p>Click a box to open it. Purpose, implementation notes, Markdown context, images and links live on the box, so the map is also the spec.</p></li>
+        <li class="step" data-step="status"><span class="n">Step 8 of 8</span><h3>See the state of the town</h3><p>Switch <b>Color</b> to <b>Status</b>. Done work turns green, work in progress blue, and the blocked <b>End ride button</b> red.</p></li>
       </ol>
     </div>
   </div>
@@ -89,7 +89,7 @@
         <button type="button" data-run="2"><span class="k">3</span> Mark it done</button>
       </div>
       <div class="term-screen" tabindex="0" aria-label="Terminal output" aria-live="polite"></div>
-      <p class="term-note" hidden>The open map updated: <b>Active ride</b> is now <b>Implemented</b>. In the real app the activity log also names the agent token that wrote it.</p>
+      <p class="term-note" hidden>The map updated: <b>Active ride</b> is now <b>Implemented</b>.</p>
     </div>
     <div class="explorer compact" id="agent-map"></div>
   </div>
@@ -266,7 +266,7 @@ at arm's length on a handlebar mount.
     </li>
     <li id="start-agents">
       <h3>Hand it to an agent <span class="time">as needed</span></h3>
-      <p>Install the skill (see <a href="#agents">For coding agents</a>) and point the agent at a box. With <code>--local</code>, commands reuse an open viewer, or start a short-lived one and stop it after.</p>
+      <p>Install the skill (see <a href="#agents">Hand the map to an agent</a>) and point the agent at a box. With <code>--local</code>, commands reuse an open viewer, or start a short-lived one and stop it after.</p>
     </li>
   </ol>
   <p class="more">From source: clone <a href="https://github.com/byronwall/boxtown">the repo</a>, run <code>pnpm install</code>, then <code>pnpm --dir app dev</code>. The app picks up <code>./boxtown/data</code> at the repo root.</p>

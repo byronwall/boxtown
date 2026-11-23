@@ -2,6 +2,13 @@
 
 Notable changes to Boxtown (formerly Product Grid Management), newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
 
+## 2026-11-23
+
+### Changed
+
+- The live map on the home page works from the keyboard: Tab to a box, arrows to move, Enter to open it, Shift+Enter to step inside. It also has zoom buttons for phones.
+- The home page map no longer animates on load, the story map shows which step it is on, and the agent terminal marks the commands you ran.
+
 ## 2026-11-22
 
 ### Added

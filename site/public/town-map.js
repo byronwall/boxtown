@@ -50,11 +50,18 @@ export class TownMap {
     for (const n of town.nodes) this.boxes.set(n.id, this.#box(n));
     this.view = [0, 0, 1600, 1000];
     this.#bind();
+    // The first paint places boxes and camera with no motion; transitions start after it.
+    this.svg.classList.add("no-anim");
+    this.instant = true;
     this.render(true);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      this.svg.classList.remove("no-anim");
+      this.instant = false;
+    }));
   }
 
   #box(n) {
-    const g = el("g", { class: `box box-${n.type}`, "data-id": n.id, opacity: 0 }, this.nodeLayer);
+    const g = el("g", { class: `box box-${n.type}`, "data-id": n.id, opacity: 0, role: "button", tabindex: -1 }, this.nodeLayer);
     [, , g.w = 120, g.h = 60] = this.town.layouts.all[n.id] ?? [];
     g.rect = el("rect", { class: "body", rx: 2 }, g);
     if (n.image) g.img = el("image", { href: n.image, preserveAspectRatio: "xMidYMin slice" }, g);
@@ -111,6 +118,7 @@ export class TownMap {
       const g = this.boxes.get(n.id);
       const box = lay[n.id];
       if (!box) {
+        g.removeAttribute("tabindex");
         g.setAttribute("opacity", 0);
         g.style.pointerEvents = "none";
         // Hidden boxes fold into their nearest visible ancestor, so they grow out of it on return.
@@ -122,12 +130,17 @@ export class TownMap {
       const [cx, cy, w, h] = box;
       g.w = w; g.h = h;
       g.style.pointerEvents = "";
+      if (!g.hasAttribute("tabindex")) g.setAttribute("tabindex", -1);
+      g.setAttribute("aria-label", `${n.label}, ${n.type}, ${STATUS[this.status[n.id] ?? n.status][0]}`);
       g.style.transform = `translate(${cx - w / 2}px, ${cy - h / 2}px)`;
       g.setAttribute("opacity", lit && !lit.has(n.id) ? 0.22 : 1);
       g.classList.toggle("is-selected", n.id === selected);
       this.#paint(g, n, w, h);
     }
     this.#edges(lay, edges);
+    // Roving tabindex: one visible box is in the tab order (the selected one, or the first).
+    const tabbable = this.boxes.get(selected && lay[selected] ? selected : Object.keys(lay)[0]);
+    for (const g of this.boxes.values()) if (g.hasAttribute("tabindex")) g.setAttribute("tabindex", g === tabbable ? 0 : -1);
     if (fit) this.fit(lay);
   }
 
@@ -151,7 +164,7 @@ export class TownMap {
     lines.forEach((t, i) => el("tspan", { x: textX, y: top + i * fs * 1.12, "text-anchor": "middle" }, g.label).append(t));
     const ms = Math.max(7, Math.min(13, h * 0.09));
     Object.entries({ x: textX, y: h - pad - 1, "font-size": ms, "text-anchor": "middle" }).forEach(([k, v]) => g.meta.setAttribute(k, v));
-    g.meta.textContent = n.type;
+    g.meta.textContent = h >= 64 ? n.type : "";
     const kids = (this.kids.get(n.id) ?? []).length;
     Object.entries({ x: w - pad, y: h - pad - 1, "font-size": ms, "text-anchor": "end" }).forEach(([k, v]) => g.count.setAttribute(k, v));
     g.count.textContent = kids || "";
@@ -195,7 +208,7 @@ export class TownMap {
 
   animate(to) {
     cancelAnimationFrame(this.raf);
-    const from = this.view, t0 = performance.now(), dur = reduced ? 0 : 520;
+    const from = this.view, t0 = performance.now(), dur = reduced || this.instant ? 0 : 520;
     const step = (now) => {
       const t = dur ? Math.min(1, (now - t0) / dur) : 1;
       this.view = from.map((v, i) => v + (to[i] - v) * ease(t));
@@ -205,10 +218,12 @@ export class TownMap {
     this.raf = requestAnimationFrame(step);
   }
 
-  zoom(factor, px = 0.5, py = 0.5) {
+  zoom(factor, px = 0.5, py = 0.5, animated = false) {
     const [x, y, w, h] = this.view;
     const nw = w / factor, nh = h / factor;
-    this.view = [x + (w - nw) * px, y + (h - nh) * py, nw, nh];
+    const next = [x + (w - nw) * px, y + (h - nh) * py, nw, nh];
+    if (animated) return this.animate(next);
+    this.view = next;
     this.svg.setAttribute("viewBox", this.view.join(" "));
   }
 
@@ -270,6 +285,35 @@ export class TownMap {
       const r = svg.getBoundingClientRect();
       this.zoom(Math.exp(-e.deltaY * 0.004), (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height);
     }, { passive: false });
+    svg.addEventListener("keydown", (e) => {
+      const id = e.target.closest?.(".box")?.dataset.id;
+      if (!id) return;
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        if (e.shiftKey && this.town.layouts.isolate[id]) this.set({ isolate: id, selected: id, focus: null });
+        else this.set({ selected: id, focus: null }, { fit: false });
+        this.onSelect(id);
+        this.boxes.get(id).focus();
+        return;
+      }
+      const dir = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1] }[e.key];
+      if (!dir) return;
+      e.preventDefault();
+      // Move to the nearest visible box in that direction.
+      const lay = this.layout(), [cx, cy] = lay[id];
+      let best = null, bestScore = Infinity;
+      for (const [other, [ox, oy]] of Object.entries(lay)) {
+        const dx = ox - cx, dy = oy - cy, along = dx * dir[0] + dy * dir[1];
+        if (other === id || along <= 0) continue;
+        const score = along + Math.abs(dx * dir[1] + dy * dir[0]) * 2;
+        if (score < bestScore) { best = other; bestScore = score; }
+      }
+      if (!best) return;
+      this.boxes.get(id).setAttribute("tabindex", -1);
+      const g = this.boxes.get(best);
+      g.setAttribute("tabindex", 0);
+      g.focus();
+    });
     new ResizeObserver(() => this.fit()).observe(svg);
   }
 }
