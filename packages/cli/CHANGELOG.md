@@ -1,5 +1,15 @@
 # boxtown
 
+## 0.6.0
+
+### Minor Changes
+
+- 2379ffc: Product Grid is now Boxtown. Install the CLI with `npm install -g boxtown` and run `boxtown` instead of `pgm`. Environment variables now start with `BOXTOWN_`, and the config file is now in a `boxtown` folder.
+
+### Patch Changes
+
+- 8070db3: Installing `boxtown` now adds the `boxtown` command. npm 12 dropped the command from the package because of how its path was written.
+
 ## 0.5.0
 
 ### Minor Changes
