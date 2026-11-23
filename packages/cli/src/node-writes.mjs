@@ -119,7 +119,7 @@ export function assertKnownMetadataKeys(keys, schema) {
     "invalid_metadata_key",
     `Unknown metadata field${unknown.length === 1 ? "" : "s"}: ${unknown.join(", ")}. ` +
       `This project defines: ${known.join(", ") || "(none)"}. Use an existing field, or add one with: ` +
-      unknown.map((key) => `pgm project schema ensure-field ${key} --label "<Label>"`).join("; "),
+      unknown.map((key) => `boxtown project schema ensure-field ${key} --label "<Label>"`).join("; "),
     { keys: unknown, fields: schema.metadataFields.map(({ key, label }) => ({ key, label })) },
   );
 }
@@ -141,7 +141,7 @@ function toFailedResult(index, nodeId, error) {
       nodeId,
       outcome: "unknown",
       error: { code: error?.code ?? "unknown_outcome", message },
-      readback: `pgm node view ${nodeId} --json`,
+      readback: `boxtown node view ${nodeId} --json`,
     };
   }
   const outcome = error.httpStatus === 409 ? "conflict" : "rejected";

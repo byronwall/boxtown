@@ -6,4 +6,4 @@ node_modules/
 /scripts/prepare-cli-package.mjs
 /packages/cli/build/
 /packages/cli/runtime/
-**/.pgm-local-runtime.json
+**/.boxtown-local-runtime.json

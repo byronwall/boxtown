@@ -40,10 +40,10 @@ interface ProjectSocketEventState {
 }
 
 const projectSocketEventGlobal = globalThis as typeof globalThis & {
-  __pgmProjectSocketEvents?: ProjectSocketEventState;
+  __boxtownProjectSocketEvents?: ProjectSocketEventState;
 };
 const projectSocketEventState =
-  projectSocketEventGlobal.__pgmProjectSocketEvents ??= {
+  projectSocketEventGlobal.__boxtownProjectSocketEvents ??= {
     listeners: new Set<ProjectSocketEventListener>(),
   };
 

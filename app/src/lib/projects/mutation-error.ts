@@ -27,12 +27,12 @@ export function unknownMetadataKeysError(keys: string[], schema: ProjectNodeMeta
     "invalid_metadata_key",
     `Unknown metadata field${keys.length === 1 ? "" : "s"}: ${keys.join(", ")}. ` +
       `This project defines: ${available.join(", ") || "(none)"}. ` +
-      `Use an existing field, or add one with: pgm project schema ensure-field ${keys[0]} --label "<Label>"`,
+      `Use an existing field, or add one with: boxtown project schema ensure-field ${keys[0]} --label "<Label>"`,
     400,
     {
       keys,
       fields: schema.map((field) => ({ key: field.key, label: field.label })),
-      ensureFieldCommand: `pgm project schema ensure-field ${keys[0]} --label "<Label>"`,
+      ensureFieldCommand: `boxtown project schema ensure-field ${keys[0]} --label "<Label>"`,
     },
   );
 }

@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Product Grid is most useful when it captures needs hierarchically: broad product intent, shared constraints, design references, and implementation notes live on parent nodes, while leaf nodes describe specific work. The CLI should preserve that model when an agent asks for tasks.
+Boxtown is most useful when it captures needs hierarchically: broad product intent, shared constraints, design references, and implementation notes live on parent nodes, while leaf nodes describe specific work. The CLI should preserve that model when an agent asks for tasks.
 
-The current `pgm task list --json` output is too flat for this workflow. It returns useful task summaries, but most leaf nodes look empty because their meaningful context is often expected to come from parents. Agents need a task view that shows the full path from root to leaf and makes inherited parent context explicit.
+The current `boxtown task list --json` output is too flat for this workflow. It returns useful task summaries, but most leaf nodes look empty because their meaningful context is often expected to come from parents. Agents need a task view that shows the full path from root to leaf and makes inherited parent context explicit.
 
 ## Problem
 
@@ -39,18 +39,18 @@ For any task-like node, the output should include:
 Add task-focused commands:
 
 ```bash
-pgm task view <node-id> --with-ancestors --json
-pgm task list --with-ancestors --json
-pgm task list --with-context --json
-pgm task export-context <node-id> --output ./task-context.md
-pgm task export-context --status planned --output ./planned-task-context.md
+boxtown task view <node-id> --with-ancestors --json
+boxtown task list --with-ancestors --json
+boxtown task list --with-context --json
+boxtown task export-context <node-id> --output ./task-context.md
+boxtown task export-context --status planned --output ./planned-task-context.md
 ```
 
 Add node equivalents for non-task workflows:
 
 ```bash
-pgm node view <node-id> --with-ancestors --json
-pgm node export-context <node-id> --output ./node-context.md
+boxtown node view <node-id> --with-ancestors --json
+boxtown node export-context <node-id> --output ./node-context.md
 ```
 
 `--with-ancestors` should return structured JSON. `--with-context` should include the inherited projection. `export-context` should produce markdown optimized for agent handoff.
@@ -125,7 +125,7 @@ This keeps common requirements available to children while avoiding ambiguity ab
 
 ## Markdown Export Shape
 
-`pgm task export-context <node-id>` should produce a compact file like:
+`boxtown task export-context <node-id>` should produce a compact file like:
 
 ```markdown
 # Task Context: Show context existence + preview
@@ -185,16 +185,16 @@ This format reinforces that parent context is common material and child nodes ar
 Keep the existing flat list for quick scans:
 
 ```bash
-pgm task list --json
+boxtown task list --json
 ```
 
 Add richer modes:
 
 ```bash
-pgm task list --tree --json
-pgm task list --with-ancestors --json
-pgm task list --with-context --json
-pgm task list --group-by-parent
+boxtown task list --tree --json
+boxtown task list --with-ancestors --json
+boxtown task list --with-context --json
+boxtown task list --group-by-parent
 ```
 
 Suggested behavior:
@@ -236,21 +236,21 @@ The server should build this projection. The CLI should not reconstruct inherita
 A useful agent loop becomes:
 
 ```bash
-pgm task next --with-context --json
-pgm task start <node-id> --json
-pgm task export-context <node-id> --output ./tmp/task-context.md
+boxtown task next --with-context --json
+boxtown task start <node-id> --json
+boxtown task export-context <node-id> --output ./tmp/task-context.md
 ```
 
 Then the agent can implement with the full inherited requirements in hand, and update the grid afterward:
 
 ```bash
-pgm node context set <node-id> --file ./implementation-notes.md --json
-pgm task review <node-id> --json
+boxtown node context set <node-id> --file ./implementation-notes.md --json
+boxtown task review <node-id> --json
 ```
 
 ## Why This Matters
 
-The Product Grid hierarchy is not just navigation. It is the requirements model. Parent nodes define shared intent, constraints, and references. Child nodes define scoped work. If CLI task output only shows leaves, the tool encourages agents to treat every task as isolated and underspecified.
+The Boxtown hierarchy is not just navigation. It is the requirements model. Parent nodes define shared intent, constraints, and references. Child nodes define scoped work. If CLI task output only shows leaves, the tool encourages agents to treat every task as isolated and underspecified.
 
 The better contract is:
 

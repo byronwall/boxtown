@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "product-grid-dev",
+      "name": "boxtown-dev",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--dir", "app", "exec", "vinxi", "dev", "--port", "3210"],
       "port": 3210

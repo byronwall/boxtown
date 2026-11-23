@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document reviews the next CLI capabilities worth building for Product Grid Management. The focus is agent workflows: commands should make it easy for an LLM agent to create, inspect, modify, enrich, and verify product-grid projects without browser scraping or direct filesystem writes.
+This document reviews the next CLI capabilities worth building for Boxtown. The focus is agent workflows: commands should make it easy for an LLM agent to create, inspect, modify, enrich, and verify product-grid projects without browser scraping or direct filesystem writes.
 
 The current CLI can already:
 
@@ -16,7 +16,7 @@ The current CLI can already:
 - Return created node IDs and created links from markdown import.
 - Attach, list, and remove local screenshots/images on a node.
 - Export the full project graph as LLM-ready markdown.
-- Install/print the bundled `product-grid-context` skill.
+- Install/print the bundled `boxtown-context` skill.
 
 Items 1, 2, 3, and 5 below are now implemented for the MVP. The next highest-leverage item is batch apply with dry run.
 
@@ -25,11 +25,11 @@ Items 1, 2, 3, and 5 below are now implemented for the MVP. The next highest-lev
 Proposed commands:
 
 ```bash
-pgm node update <node-id> --title "Checkout" --status working --type page --json
-pgm node context set <node-id> --file ./context.md --json
-pgm node context get <node-id> --json
-pgm node metadata set <node-id> purpose "Checkout entry point" --json
-pgm node metadata unset <node-id> purpose --json
+boxtown node update <node-id> --title "Checkout" --status working --type page --json
+boxtown node context set <node-id> --file ./context.md --json
+boxtown node context get <node-id> --json
+boxtown node metadata set <node-id> purpose "Checkout entry point" --json
+boxtown node metadata unset <node-id> purpose --json
 ```
 
 Why it matters:
@@ -54,9 +54,9 @@ Implementation notes:
 Proposed commands:
 
 ```bash
-pgm node create --title "Checkout" --type page --parent <parent-node-id> --json
-pgm node move <node-id> --parent <parent-node-id> --json
-pgm node move <node-id> --root --json
+boxtown node create --title "Checkout" --type page --parent <parent-node-id> --json
+boxtown node move <node-id> --parent <parent-node-id> --json
+boxtown node move <node-id> --root --json
 ```
 
 Why it matters:
@@ -82,8 +82,8 @@ Implementation notes:
 Proposed commands:
 
 ```bash
-pgm image list <node-id> --json
-pgm image remove <node-id> <image-id> --json
+boxtown image list <node-id> --json
+boxtown image remove <node-id> <image-id> --json
 ```
 
 Why it matters:
@@ -108,8 +108,8 @@ Implementation notes:
 Proposed commands:
 
 ```bash
-pgm node apply-batch --file ./generated-grid.json --dry-run --json
-pgm node apply-batch --file ./generated-grid.json --json
+boxtown node apply-batch --file ./generated-grid.json --dry-run --json
+boxtown node apply-batch --file ./generated-grid.json --json
 ```
 
 Why it matters:
@@ -136,9 +136,9 @@ Implementation notes:
 Proposed commands:
 
 ```bash
-pgm project export --output ./project.zip
-pgm project export-markdown --output ./project-context.md
-pgm node export-markdown <node-id> --depth 2 --output ./node-context.md
+boxtown project export --output ./project.zip
+boxtown project export-markdown --output ./project-context.md
+boxtown node export-markdown <node-id> --depth 2 --output ./node-context.md
 ```
 
 Why it matters:
@@ -163,11 +163,11 @@ Implementation notes:
 Proposed commands:
 
 ```bash
-pgm task next --json
-pgm task start <node-id> --json
-pgm task block <node-id> --reason "Waiting on copy" --json
-pgm task review <node-id> --json
-pgm task done <node-id> --json
+boxtown task next --json
+boxtown task start <node-id> --json
+boxtown task block <node-id> --reason "Waiting on copy" --json
+boxtown task review <node-id> --json
+boxtown task done <node-id> --json
 ```
 
 Why it matters:
@@ -176,7 +176,7 @@ Nodes already behave like tasks through status. Agents need a simple operational
 
 What it unlocks:
 
-- A coding agent can use Product Grid as its task queue.
+- A coding agent can use Boxtown as its task queue.
 - Users can ask "work the next task" and the agent can resolve a node deterministically.
 - Status changes become consistent instead of ad hoc `node update` calls.
 - Future audit logs can group task transitions.
@@ -192,10 +192,10 @@ Implementation notes:
 Proposed commands:
 
 ```bash
-pgm link list --json
-pgm link add <source-node-id> <target-node-id> --relationship dependency --json
-pgm link remove <source-node-id> <target-node-id> --relationship dependency --json
-pgm link parent <parent-node-id> <child-node-id> --json
+boxtown link list --json
+boxtown link add <source-node-id> <target-node-id> --relationship dependency --json
+boxtown link remove <source-node-id> <target-node-id> --relationship dependency --json
+boxtown link parent <parent-node-id> <child-node-id> --json
 ```
 
 Why it matters:
@@ -219,11 +219,11 @@ Implementation notes:
 Proposed commands:
 
 ```bash
-pgm query project-summary --json
-pgm query node-context <node-id> --depth 2 --json
-pgm query blockers --json
-pgm query open-work --json
-pgm query stale --days 14 --json
+boxtown query project-summary --json
+boxtown query node-context <node-id> --depth 2 --json
+boxtown query blockers --json
+boxtown query open-work --json
+boxtown query stale --days 14 --json
 ```
 
 Why it matters:
@@ -248,9 +248,9 @@ Implementation notes:
 Proposed commands:
 
 ```bash
-pgm audit list --limit 20 --json
-pgm audit view <audit-id> --json
-pgm node history <node-id> --json
+boxtown audit list --limit 20 --json
+boxtown audit view <audit-id> --json
+boxtown node history <node-id> --json
 ```
 
 Why it matters:
@@ -273,10 +273,10 @@ Implementation notes:
 Proposed commands:
 
 ```bash
-pgm config path
-pgm config get --json
-pgm config set server https://example.com
-pgm doctor --json
+boxtown config path
+boxtown config get --json
+boxtown config set server https://example.com
+boxtown doctor --json
 ```
 
 Why it matters:
@@ -307,4 +307,4 @@ Implementation notes:
 10. Audit/history.
 11. Config/doctor helpers.
 
-The reason to start with node update/create/move is simple: the current CLI can create projects, import source context, and attach screenshots. The next gap is controlled iteration on the resulting graph. Once agents can update, create, move, and remove/replace images, Product Grid becomes a practical working surface rather than a one-way import target.
+The reason to start with node update/create/move is simple: the current CLI can create projects, import source context, and attach screenshots. The next gap is controlled iteration on the resulting graph. Once agents can update, create, move, and remove/replace images, Boxtown becomes a practical working surface rather than a one-way import target.

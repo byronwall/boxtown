@@ -10,7 +10,7 @@ export interface NodeAgentPromptInput {
 }
 
 // Builds a paste-ready markdown prompt for a coding agent: the node, its
-// inherited ancestor context, and the pgm commands to reload and close it.
+// inherited ancestor context, and the boxtown commands to reload and close it.
 export function buildNodeAgentPrompt(input: NodeAgentPromptInput) {
   const nodesById = new Map(input.data.nodes.map((node) => [node.id, node]));
   const node = nodesById.get(input.nodeId);
@@ -50,11 +50,11 @@ export function buildNodeAgentPrompt(input: NodeAgentPromptInput) {
     "",
     "## Tracker",
     "",
-    "Use the `pgm` CLI to load more context and to report back when done:",
+    "Use the `boxtown` CLI to load more context and to report back when done:",
     "",
     "```bash",
-    `pgm node view ${node.id} ${scope} --with-context --compact --json`,
-    `pgm node resolve ${node.id} ${scope} --status implemented --note "What changed." --json`,
+    `boxtown node view ${node.id} ${scope} --with-context --compact --json`,
+    `boxtown node resolve ${node.id} ${scope} --status implemented --note "What changed." --json`,
     "```",
   );
 

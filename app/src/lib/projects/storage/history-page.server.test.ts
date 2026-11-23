@@ -17,7 +17,7 @@ let originalDataDir: string | undefined;
 
 beforeEach(() => {
   originalDataDir = process.env.APP_DATA_DIR;
-  tempRoot = mkdtempSync(path.join(os.tmpdir(), "pgm-history-"));
+  tempRoot = mkdtempSync(path.join(os.tmpdir(), "boxtown-history-"));
   process.env.APP_DATA_DIR = tempRoot;
 });
 

@@ -21,7 +21,7 @@ import {
 const root = process.cwd();
 const appDir = path.join(root, "app");
 const tempDir = path.join(root, "tmp", `local-viewer-smoke-${Date.now()}`);
-const runtimeRoot = path.join(tmpdir(), `pgm-local-viewer-smoke-${process.pid}-${Date.now()}`);
+const runtimeRoot = path.join(tmpdir(), `boxtown-local-viewer-smoke-${process.pid}-${Date.now()}`);
 const token = `smoke-${process.pid}-${Date.now()}`;
 const scopes = "project:read|project:write|node:read|node:write|image:read|image:write";
 const tokenHeader = { authorization: `Bearer ${token}` };

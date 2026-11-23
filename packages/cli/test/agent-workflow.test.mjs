@@ -77,7 +77,7 @@ test("batch-update rejects a bad item without a request, keeps siblings, and exi
   const { writeFile, mkdtemp } = await import("node:fs/promises");
   const os = await import("node:os");
   const path = await import("node:path");
-  const dir = await mkdtemp(path.join(os.tmpdir(), "pgm-batch-"));
+  const dir = await mkdtemp(path.join(os.tmpdir(), "boxtown-batch-"));
   await writeFile(path.join(dir, "updates.json"), JSON.stringify([
     { id: "good", status: "implemented", metadata: { solution: "Fixed" } },
     { id: "typo", status: "implemented", metadata: { soluton: "Fixed" } },
@@ -105,14 +105,14 @@ test("batch-update rejects a bad item without a request, keeps siblings, and exi
   assert.equal(body.results[1].outcome, "rejected");
   assert.equal(body.results[1].error.code, "invalid_metadata_key");
   assert.match(body.results[1].error.message, /This project defines: implementation, solution, blocked-by/);
-  assert.match(body.results[1].error.message, /pgm project schema ensure-field soluton/);
+  assert.match(body.results[1].error.message, /boxtown project schema ensure-field soluton/);
 });
 
 test("a dropped connection reports an unknown outcome with a readback command", async () => {
   const { writeFile, mkdtemp } = await import("node:fs/promises");
   const os = await import("node:os");
   const path = await import("node:path");
-  const dir = await mkdtemp(path.join(os.tmpdir(), "pgm-batch-"));
+  const dir = await mkdtemp(path.join(os.tmpdir(), "boxtown-batch-"));
   await writeFile(path.join(dir, "updates.json"), JSON.stringify([{ id: "node-1", status: "implemented" }]));
   const originalFetch = globalThis.fetch;
 
@@ -129,14 +129,14 @@ test("a dropped connection reports an unknown outcome with a readback command", 
   assert.equal(error.exitCode, 8);
   const [result] = JSON.parse(stdout).results;
   assert.equal(result.outcome, "unknown");
-  assert.equal(result.readback, "pgm node view node-1 --json");
+  assert.equal(result.readback, "boxtown node view node-1 --json");
 });
 
 test("agent-update maps list fields to declared keys and rejects unknown input keys", async () => {
   const { writeFile, mkdtemp } = await import("node:fs/promises");
   const os = await import("node:os");
   const path = await import("node:path");
-  const dir = await mkdtemp(path.join(os.tmpdir(), "pgm-agent-"));
+  const dir = await mkdtemp(path.join(os.tmpdir(), "boxtown-agent-"));
   await writeFile(path.join(dir, "status.json"), JSON.stringify([
     { id: "a", status: "blocked", summary: "Tried X", blockedBy: ["node-b"], solution: "Workaround Y" },
     { id: "b", status: "implemented", solutoin: "typo" },
@@ -189,7 +189,7 @@ test("text from a file or stdin is sent exactly, without shell evaluation", asyn
   const { Readable } = await import("node:stream");
   const os = await import("node:os");
   const path = await import("node:path");
-  const dir = await mkdtemp(path.join(os.tmpdir(), "pgm-text-"));
+  const dir = await mkdtemp(path.join(os.tmpdir(), "boxtown-text-"));
   const text = "Ran `pnpm test` and $(whoami) with \"quotes\" — ✅\n  indented line\n";
   await writeFile(path.join(dir, "solution.md"), text);
 
@@ -242,16 +242,16 @@ test("target inspect shows where commands go without printing the token", async 
   const { calls, stdout, error } = await runCli(
     ["target", "inspect", "--project", "demo", "--json"],
     () => ({ body: { apiVersion: "1" } }),
-    { env: { PRODUCT_GRID_SERVER: "https://pgm.example.test", PRODUCT_GRID_TOKEN: "secret-token-value" } },
+    { env: { BOXTOWN_SERVER: "https://boxtown.example.test", BOXTOWN_TOKEN: "secret-token-value" } },
   );
 
   assert.equal(error, null);
-  assert.equal(calls[0].url, "https://pgm.example.test/api/v1/version");
+  assert.equal(calls[0].url, "https://boxtown.example.test/api/v1/version");
   const { target } = JSON.parse(stdout);
   assert.equal(target.mode, "remote");
-  assert.equal(target.server, "https://pgm.example.test");
-  assert.equal(target.serverSource, "PRODUCT_GRID_SERVER");
-  assert.deepEqual(target.token, { present: true, source: "PRODUCT_GRID_TOKEN" });
+  assert.equal(target.server, "https://boxtown.example.test");
+  assert.equal(target.serverSource, "BOXTOWN_SERVER");
+  assert.deepEqual(target.token, { present: true, source: "BOXTOWN_TOKEN" });
   assert.deepEqual(target.project, { id: "demo", source: "--project" });
   assert.equal(target.reachability.reachable, true);
   assert.doesNotMatch(stdout, /secret-token-value/);
@@ -261,7 +261,7 @@ test("target inspect --local reads a folder without creating or starting anythin
   const { mkdtemp, readdir } = await import("node:fs/promises");
   const os = await import("node:os");
   const path = await import("node:path");
-  const parent = await mkdtemp(path.join(os.tmpdir(), "pgm-target-"));
+  const parent = await mkdtemp(path.join(os.tmpdir(), "boxtown-target-"));
 
   const { stdout, error } = await runCli(
     ["target", "inspect", "--local", "missing-data", "--project", "demo", "--json"],

@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { spawn as spawnProcess } from "node:child_process";
-import { ProductGridClient } from "./client.mjs";
+import { BoxtownClient } from "./client.mjs";
 import { downloadNodeImages, imageExtension } from "./image-download.mjs";
 import {
   getConfigPath,
@@ -64,7 +64,7 @@ export async function main(argv = process.argv, io = defaultIo()) {
 
   if (parsed.command[0] === "viewer") {
     if (parsed.command.length !== 1 || parsed.positionals.length > 0) {
-      throw new CliError("Usage: pgm viewer [--data-dir <folder>] [--no-open] [--port <port>]", exitCodes.usage);
+      throw new CliError("Usage: boxtown viewer [--data-dir <folder>] [--no-open] [--port <port>]", exitCodes.usage);
     }
     const { runViewer } = await import("../build/local-runtime.mjs");
     await runViewer(parsed.options, io);
@@ -79,7 +79,7 @@ export async function main(argv = process.argv, io = defaultIo()) {
   if (parsed.options.local !== undefined) {
     const { dispatchLocal } = await import("../build/local-runtime-sharing.mjs");
     await dispatchLocal(parsed, io, async (runtime) => {
-      const client = new ProductGridClient({ server: runtime.url, token: runtime.token });
+      const client = new BoxtownClient({ server: runtime.url, token: runtime.token });
       const context = {
         parsed,
         config: null,
@@ -103,7 +103,7 @@ export async function main(argv = process.argv, io = defaultIo()) {
   const server = resolveServer(parsed.options, config, io.env);
   const token = resolveToken(parsed.options, config, server, io.env);
   const projectId = resolveProjectId(parsed.options, config, io.env);
-  const client = new ProductGridClient({ server, token });
+  const client = new BoxtownClient({ server, token });
   const target = { mode: "remote", server, projectId };
   const context = { parsed, config, server, token, projectId, target, client, io };
   await dispatch(context);
@@ -163,15 +163,15 @@ async function dispatchUpdate(context) {
   }
 
   if (!context.parsed.options.json) {
-    context.io.stdout.write(`Updating pgm with: ${result.command}\n`);
+    context.io.stdout.write(`Updating boxtown with: ${result.command}\n`);
   }
 
   const exitCode = await runUpdateCommand(command, context.io);
   if (exitCode !== 0) {
-    throw new CliError(`pgm update failed with exit code ${exitCode}.`, exitCode);
+    throw new CliError(`boxtown update failed with exit code ${exitCode}.`, exitCode);
   }
 
-  writeMaybeJson(context, { ...result, exitCode }, "pgm update completed.\n");
+  writeMaybeJson(context, { ...result, exitCode }, "boxtown update completed.\n");
 }
 
 export function getUpdateCommand() {
@@ -240,7 +240,7 @@ async function dispatchAuth(context, action) {
     return;
   }
 
-  throw new CliError("Usage: pgm auth <login|status|logout>", exitCodes.usage);
+  throw new CliError("Usage: boxtown auth <login|status|logout>", exitCodes.usage);
 }
 
 async function dispatchProject(context, action) {
@@ -284,7 +284,7 @@ async function dispatchProject(context, action) {
       if (linked) {
         context.io.stdout.write(`Linked ${project.id} on ${context.server}.\n`);
       } else {
-        context.io.stdout.write(`Use next: pgm project link ${project.id}\n`);
+        context.io.stdout.write(`Use next: boxtown project link ${project.id}\n`);
       }
     }
     return;
@@ -292,7 +292,7 @@ async function dispatchProject(context, action) {
 
   if (action === "view") {
     const projectId = context.parsed.positionals[0] ?? context.projectId;
-    requireOption(projectId, "A project id is required. Pass one or run pgm project link <id>.");
+    requireOption(projectId, "A project id is required. Pass one or run boxtown project link <id>.");
     const project = await context.client.getProject(projectId);
     if (context.parsed.options.json) {
       writeJson({ project }, context.io.stdout);
@@ -311,7 +311,7 @@ async function dispatchProject(context, action) {
 
   if (action === "schema") {
     const projectId = context.parsed.positionals[0] ?? context.projectId;
-    requireOption(projectId, "A project id is required. Pass one or run pgm project link <id>.");
+    requireOption(projectId, "A project id is required. Pass one or run boxtown project link <id>.");
     const schema = await context.client.getProjectSchema(projectId);
     if (context.parsed.options.json) {
       writeJson({ schema }, context.io.stdout);
@@ -330,7 +330,7 @@ async function dispatchProject(context, action) {
 
   if (action === "history") {
     const projectId = context.parsed.positionals[0] ?? context.projectId;
-    requireOption(projectId, "A project id is required. Pass one or run pgm project link <id>.");
+    requireOption(projectId, "A project id is required. Pass one or run boxtown project link <id>.");
     const options = context.parsed.options;
     const page = await context.client.getProjectHistory(projectId, {
       limit: parseOptionalInteger(options.limit, "--limit"),
@@ -351,7 +351,7 @@ async function dispatchProject(context, action) {
 
   if (action === "export-markdown") {
     const projectId = context.parsed.positionals[0] ?? context.projectId;
-    requireOption(projectId, "A project id is required. Pass one or run pgm project link <id>.");
+    requireOption(projectId, "A project id is required. Pass one or run boxtown project link <id>.");
     const markdown = await context.client.exportProjectMarkdown(projectId);
     const output = context.parsed.options.output;
     if (typeof output === "string" && output.trim().length > 0) {
@@ -397,7 +397,7 @@ async function dispatchProject(context, action) {
     return;
   }
 
-  throw new CliError("Usage: pgm project <list|create|view|schema|audit|history|export-markdown|link|current|unlink>", exitCodes.usage);
+  throw new CliError("Usage: boxtown project <list|create|view|schema|audit|history|export-markdown|link|current|unlink>", exitCodes.usage);
 }
 
 async function dispatchNode(context, action) {
@@ -425,7 +425,7 @@ async function dispatchNode(context, action) {
   };
   const handler = handlers[action];
   if (!handler) {
-    throw new CliError("Usage: pgm node <list|view|status|create|update|complete|resolve|batch-update|agent-update|move|delete|archive|unarchive|context|metadata|note|export-context|context-pack|import-markdown>", exitCodes.usage);
+    throw new CliError("Usage: boxtown node <list|view|status|create|update|complete|resolve|batch-update|agent-update|move|delete|archive|unarchive|context|metadata|note|export-context|context-pack|import-markdown>", exitCodes.usage);
   }
 
   await handler(context, projectId);
@@ -723,7 +723,7 @@ async function dispatchNodeContext(context, projectId) {
     writeNodeMutationResult(context, receipt, "Updated context for");
     return;
   }
-  throw new CliError("Usage: pgm node context <get|set> <node-id>", exitCodes.usage);
+  throw new CliError("Usage: boxtown node context <get|set> <node-id>", exitCodes.usage);
 }
 
 async function dispatchNodeMetadata(context, projectId) {
@@ -752,12 +752,12 @@ async function dispatchNodeMetadata(context, projectId) {
     writeNodeMutationResult(context, receipt, "Updated metadata for");
     return;
   }
-  throw new CliError("Usage: pgm node metadata <get|set|unset> <node-id>", exitCodes.usage);
+  throw new CliError("Usage: boxtown node metadata <get|set|unset> <node-id>", exitCodes.usage);
 }
 
 async function dispatchNodeNote(context, projectId) {
   if (context.parsed.command[2] !== "add") {
-    throw new CliError("Usage: pgm node note add <node-id> (--text \"...\" | --text-file <path|->) [--heading \"Note\"]", exitCodes.usage);
+    throw new CliError("Usage: boxtown node note add <node-id> (--text \"...\" | --text-file <path|->) [--heading \"Note\"]", exitCodes.usage);
   }
   const nodeId = requireOption(context.parsed.positionals[0], "A node id is required.");
   const text = (await readTextOption(context, "text", readTextFile))?.trim();
@@ -939,16 +939,16 @@ async function dispatchImage(context, action) {
     return;
   }
 
-  throw new CliError("Usage: pgm image <add|list|remove|download>", exitCodes.usage);
+  throw new CliError("Usage: boxtown image <add|list|remove|download>", exitCodes.usage);
 }
 
 async function dispatchIssue(context, action) {
   if (action !== "view") {
-    throw new CliError("Usage: pgm issue view <product-grid-url> [--json]", exitCodes.usage);
+    throw new CliError("Usage: boxtown issue view <boxtown-url> [--json]", exitCodes.usage);
   }
 
-  const urlValue = requireOption(context.parsed.positionals[0], "A Product Grid URL is required.");
-  const target = parseProductGridUrl(urlValue);
+  const urlValue = requireOption(context.parsed.positionals[0], "A Boxtown URL is required.");
+  const target = parseBoxtownUrl(urlValue);
   const projectId = target.projectId ?? context.projectId;
   requireOption(projectId, "A project id is required in the URL or via --project.");
   const nodeId = requireOption(target.nodeId, "A node id is required in the URL.");
@@ -961,8 +961,8 @@ async function dispatchIssue(context, action) {
     nodeId,
     ...contextTree,
     suggestedCommands: {
-      view: `pgm node view ${nodeId} --project ${projectId} --with-context --compact --json`,
-      close: `pgm node resolve ${nodeId} --project ${projectId} --status implemented --note "..." --json`,
+      view: `boxtown node view ${nodeId} --project ${projectId} --with-context --compact --json`,
+      close: `boxtown node resolve ${nodeId} --project ${projectId} --status implemented --note "..." --json`,
     },
   };
 
@@ -979,7 +979,7 @@ async function dispatchIssue(context, action) {
   }
 }
 
-function parseProductGridUrl(value) {
+function parseBoxtownUrl(value) {
   try {
     const url = new URL(value);
     return {
@@ -1027,7 +1027,7 @@ async function dispatchSkill(context, action) {
     return;
   }
 
-  throw new CliError("Usage: pgm skill <path|print|install>", exitCodes.usage);
+  throw new CliError("Usage: boxtown skill <path|print|install>", exitCodes.usage);
 }
 
 export function parseArgs(args) {
@@ -1451,65 +1451,65 @@ function defaultIo() {
 }
 
 function helpText() {
-  return `Product Grid CLI
+  return `Boxtown CLI
 
 Usage:
-  pgm target inspect [--local <folder>] [--project <project-id>] [--json]
-  pgm viewer [--data-dir <folder>] [--no-open] [--port <port>]
-  pgm project list --local <folder> [--json]
-  pgm node list --local <folder> --project <id> [--json]
-  pgm image list <node-id> --local <folder> --project <id> [--json]
-  pgm auth login --token <token> [--server http://localhost:3000]
-  pgm auth status [--json]
-  pgm project list [--json]
-  pgm project create ["Project name"] [--name "Project name"] [--link] [--json]
-  pgm project view [project-id] [--json]
-  pgm project schema [project-id] [--json]
-  pgm project schema ensure-field <key> [--label "Label"] [--default "Default"] [--project <project-id>] [--json]
-  pgm project audit [project-id] [--subtree <node-id>] [--include-archived] [--require solution,verification] [--fail-on info|warning|error] [--output ./audit.md] [--json]
-  pgm project history [project-id] [--limit 50] [--before <cursor>] [--node <node-id>] [--json]
-  pgm project export-markdown [project-id] [--output ./project.md] [--json]
-  pgm project link <project-id>
-  pgm node list [--project <project-id>] [--roots] [--children <node-id>] [--subtree <node-id>] [--depth N] [--compact] [--fields id,label,status,type] [--preset status] [--status blocked] [--type feature] [--priority urgent|high|medium|low|none] [--search text] [--include-archived] [--with-ancestors|--with-context] [--json]
-  pgm node view <node-id> [--project <project-id>] [--with-ancestors|--with-context] [--compact] [--fields id,status,metadata.implementation] [--json]
-  pgm node status <node-id...> [--project <project-id>] [--json]
-  pgm node create --title "Checkout" [--type page] [--parent <node-id>] [--context-file ./context.md] [--metadata-json '{"purpose":"..."}'] [--json]
-  pgm node update <node-id> [--title "Checkout"] [--status working] [--type page] [--priority high|none] [--expected-revision <rev>] [--json] [--full]
-  pgm node complete <node-id> [--note "Resolution note" | --note-file <path|->] [--json] [--full]
-  pgm node resolve <node-id> [--status implemented] [--note "Implementation note" | --note-file <path|->] [--solution "Proven outcome" | --solution-file <path|->] [--json] [--full]
-  pgm node batch-update --json-input ./updates.json [--json]
-  pgm node agent-update --file ./agent-status.json [--json]
-  pgm node move <node-id> (--parent <node-id> | --root) [--json]
-  pgm node delete <node-id...> --yes [--with-children] [--json]
-  pgm node archive <node-id...> [--json]
-  pgm node unarchive <node-id...> [--json]
-  pgm node context get <node-id> [--json]
-  pgm node context set <node-id> --file <path|-> [--expected-revision <rev>] [--json] [--full]
-  pgm node note add <node-id> (--text "Observation" | --text-file <path|->) [--heading "Note"] [--json]
-  pgm node metadata get <node-id> [--json]
-  pgm node metadata set <node-id> <key> (<value> | --value-file <path|->) [--json] [--full]
-  pgm node metadata unset <node-id> <key> [--json] [--full]
-  pgm node export-context <node-id> [--project <project-id>] [--output ./node-context.md] [--json]
-  pgm node context-pack <parent-node-id> --output ./context-pack-dir [--depth N] [--json]
-  pgm node import-markdown --file <path> [--title "Notes"] [--split-headings] [--max-heading-depth 2] [--metadata-json '{"purpose":"..."}'] [--json]
-  pgm relation list <node-id> [--project <project-id>] [--json]
-  pgm relation add <source-id> <target-id> [--relationship related|dependency|reuse] [--json]
-  pgm relation remove <source-id> <target-id> [--relationship related|dependency|reuse] [--json]
-  pgm image add <node-id> <image-path...> [--project <project-id>] [--json]
-  pgm image list <node-id> [--project <project-id>] [--json]
-  pgm image remove <node-id> <image-id> [--project <project-id>] [--json]
-  pgm image download <node-id> [image-id...] [--output <dir-or-file>] [--project <project-id>] [--json]
-  pgm issue view <product-grid-url> [--json]
-  pgm update [--dry-run] [--json]
-  pgm skill install [--agent codex] [--global] [--force]
-  pgm skill path
-  pgm skill print
+  boxtown target inspect [--local <folder>] [--project <project-id>] [--json]
+  boxtown viewer [--data-dir <folder>] [--no-open] [--port <port>]
+  boxtown project list --local <folder> [--json]
+  boxtown node list --local <folder> --project <id> [--json]
+  boxtown image list <node-id> --local <folder> --project <id> [--json]
+  boxtown auth login --token <token> [--server http://localhost:3000]
+  boxtown auth status [--json]
+  boxtown project list [--json]
+  boxtown project create ["Project name"] [--name "Project name"] [--link] [--json]
+  boxtown project view [project-id] [--json]
+  boxtown project schema [project-id] [--json]
+  boxtown project schema ensure-field <key> [--label "Label"] [--default "Default"] [--project <project-id>] [--json]
+  boxtown project audit [project-id] [--subtree <node-id>] [--include-archived] [--require solution,verification] [--fail-on info|warning|error] [--output ./audit.md] [--json]
+  boxtown project history [project-id] [--limit 50] [--before <cursor>] [--node <node-id>] [--json]
+  boxtown project export-markdown [project-id] [--output ./project.md] [--json]
+  boxtown project link <project-id>
+  boxtown node list [--project <project-id>] [--roots] [--children <node-id>] [--subtree <node-id>] [--depth N] [--compact] [--fields id,label,status,type] [--preset status] [--status blocked] [--type feature] [--priority urgent|high|medium|low|none] [--search text] [--include-archived] [--with-ancestors|--with-context] [--json]
+  boxtown node view <node-id> [--project <project-id>] [--with-ancestors|--with-context] [--compact] [--fields id,status,metadata.implementation] [--json]
+  boxtown node status <node-id...> [--project <project-id>] [--json]
+  boxtown node create --title "Checkout" [--type page] [--parent <node-id>] [--context-file ./context.md] [--metadata-json '{"purpose":"..."}'] [--json]
+  boxtown node update <node-id> [--title "Checkout"] [--status working] [--type page] [--priority high|none] [--expected-revision <rev>] [--json] [--full]
+  boxtown node complete <node-id> [--note "Resolution note" | --note-file <path|->] [--json] [--full]
+  boxtown node resolve <node-id> [--status implemented] [--note "Implementation note" | --note-file <path|->] [--solution "Proven outcome" | --solution-file <path|->] [--json] [--full]
+  boxtown node batch-update --json-input ./updates.json [--json]
+  boxtown node agent-update --file ./agent-status.json [--json]
+  boxtown node move <node-id> (--parent <node-id> | --root) [--json]
+  boxtown node delete <node-id...> --yes [--with-children] [--json]
+  boxtown node archive <node-id...> [--json]
+  boxtown node unarchive <node-id...> [--json]
+  boxtown node context get <node-id> [--json]
+  boxtown node context set <node-id> --file <path|-> [--expected-revision <rev>] [--json] [--full]
+  boxtown node note add <node-id> (--text "Observation" | --text-file <path|->) [--heading "Note"] [--json]
+  boxtown node metadata get <node-id> [--json]
+  boxtown node metadata set <node-id> <key> (<value> | --value-file <path|->) [--json] [--full]
+  boxtown node metadata unset <node-id> <key> [--json] [--full]
+  boxtown node export-context <node-id> [--project <project-id>] [--output ./node-context.md] [--json]
+  boxtown node context-pack <parent-node-id> --output ./context-pack-dir [--depth N] [--json]
+  boxtown node import-markdown --file <path> [--title "Notes"] [--split-headings] [--max-heading-depth 2] [--metadata-json '{"purpose":"..."}'] [--json]
+  boxtown relation list <node-id> [--project <project-id>] [--json]
+  boxtown relation add <source-id> <target-id> [--relationship related|dependency|reuse] [--json]
+  boxtown relation remove <source-id> <target-id> [--relationship related|dependency|reuse] [--json]
+  boxtown image add <node-id> <image-path...> [--project <project-id>] [--json]
+  boxtown image list <node-id> [--project <project-id>] [--json]
+  boxtown image remove <node-id> <image-id> [--project <project-id>] [--json]
+  boxtown image download <node-id> [image-id...] [--output <dir-or-file>] [--project <project-id>] [--json]
+  boxtown issue view <boxtown-url> [--json]
+  boxtown update [--dry-run] [--json]
+  boxtown skill install [--agent codex] [--global] [--force]
+  boxtown skill path
+  boxtown skill print
 
 Global options:
-  --server <url>       Server URL. Defaults to PRODUCT_GRID_SERVER or http://localhost:3000.
-  --project <id>       Project ID. Defaults to PRODUCT_GRID_PROJECT or linked project.
+  --server <url>       Server URL. Defaults to BOXTOWN_SERVER or http://localhost:3000.
+  --project <id>       Project ID. Defaults to BOXTOWN_PROJECT or linked project.
   --local <folder>     Use projects in a local data folder. Requires an explicit --project for scoped commands.
-  --token <token>      Bearer token. Defaults to PRODUCT_GRID_TOKEN or stored token.
+  --token <token>      Bearer token. Defaults to BOXTOWN_TOKEN or stored token.
   --json               Print machine-readable JSON to stdout.
 
 Writes:

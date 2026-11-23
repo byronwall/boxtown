@@ -5,7 +5,7 @@ const packageJson = require("../package.json");
 
 export const packageName = typeof packageJson.name === "string"
   ? packageJson.name
-  : "product-grid-cli";
+  : "boxtown";
 
 export const packageVersion = typeof packageJson.version === "string"
   ? packageJson.version

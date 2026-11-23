@@ -35,7 +35,7 @@ export const PROJECT_FILE_FORMAT = "product-grid-project";
 export const PROJECT_FILE_VERSION = 2;
 
 const NODES_DIR = "nodes";
-const GITIGNORE = `# Written by Product Grid: keep local backups and interrupted writes out of git.\n*.bak\n*.tmp\n`;
+const GITIGNORE = `# Written by Boxtown: keep local backups and interrupted writes out of git.\n*.bak\n*.tmp\n`;
 
 export type StoredProject =
   | { layout: "missing" }
@@ -67,7 +67,7 @@ export async function readProjectDirectory(
   }
   if (stored.value.formatVersion > PROJECT_FILE_VERSION) {
     throw new Error(
-      `${projectFile} uses project format ${stored.value.formatVersion}. Update Product Grid to open it.`,
+      `${projectFile} uses project format ${stored.value.formatVersion}. Update Boxtown to open it.`,
     );
   }
 

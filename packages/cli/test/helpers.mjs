@@ -23,10 +23,10 @@ export async function runCli(args, respond, options = {}) {
 
   let error = null;
   try {
-    await main(["node", "pgm", ...args], {
+    await main(["node", "boxtown", ...args], {
       stdout,
       stderr,
-      env: { PRODUCT_GRID_SERVER: "http://localhost:3000", PGM_NO_UPDATE_CHECK: "1", ...options.env },
+      env: { BOXTOWN_SERVER: "http://localhost:3000", BOXTOWN_NO_UPDATE_CHECK: "1", ...options.env },
       cwd: options.cwd ?? "/tmp",
       stdin: options.stdin,
     });

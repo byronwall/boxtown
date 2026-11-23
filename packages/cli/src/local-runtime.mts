@@ -47,10 +47,10 @@ const runtimeDir = path.join(packageRoot, "runtime");
 const tokenScopes = "project:read|project:write|node:read|node:write|image:read|image:write";
 
 export async function runViewer(options: RuntimeOptions, io: Io) {
-  const inputDataDir = requireString(options.dataDir ?? "pgm/data", "Use --data-dir <folder> to select local project data.");
+  const inputDataDir = requireString(options.dataDir ?? "boxtown/data", "Use --data-dir <folder> to select local project data.");
   const runtimeEntry = path.join(runtimeDir, "server", "index.mjs");
   await stat(runtimeEntry).catch(() => {
-    throw new Error("The packaged viewer runtime is missing. Reinstall pgm or run `pnpm pack` from the PGM checkout.");
+    throw new Error("The packaged viewer runtime is missing. Reinstall boxtown or run `pnpm pack` from the Boxtown checkout.");
   });
 
   const requestedPath = path.resolve(io.cwd, inputDataDir);
@@ -151,12 +151,12 @@ export async function claimViewerOwnership(recordPath: string, record: RuntimeRe
 
     const existing = await tryReadRecord(recordPath);
     if (!existing) {
-      throw new Error(`${recordPath} cannot be read. Delete it if no PGM viewer or command is running for this folder.`);
+      throw new Error(`${recordPath} cannot be read. Delete it if no Boxtown viewer or command is running for this folder.`);
     }
     if (isPidAlive(existing.pid)) {
       throw new Error(existing.mode === "viewer"
-        ? `A PGM viewer is already running for ${record.dataDir}${existing.url ? ` at ${existing.url}/` : ""} (process ${existing.pid}). Stop it before starting another viewer.`
-        : `A pgm command is using ${record.dataDir} (process ${existing.pid}). Retry when it finishes.`);
+        ? `A Boxtown viewer is already running for ${record.dataDir}${existing.url ? ` at ${existing.url}/` : ""} (process ${existing.pid}). Stop it before starting another viewer.`
+        : `A boxtown command is using ${record.dataDir} (process ${existing.pid}). Retry when it finishes.`);
     }
     await clearStaleRecord(recordPath, existing, stderr);
     stderr.write("Removed a stale viewer record left by a viewer that did not shut down.\n");
@@ -180,7 +180,7 @@ export function startRuntime(entry: string, dataDir: string, token: string, port
     NODE_ENV: "production",
     BASE_PATH: "/",
     APP_DATA_DIR: dataDir,
-    PGM_LOCAL_RUNTIME_ID: runtimeId,
+    BOXTOWN_LOCAL_RUNTIME_ID: runtimeId,
     AGENT_API_TOKENS: `${token}:${tokenScopes}`,
     NITRO_HOST: "127.0.0.1",
     NITRO_PORT: String(port),

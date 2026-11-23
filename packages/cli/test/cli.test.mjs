@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { ProductGridClient } from "../src/client.mjs";
+import { BoxtownClient } from "../src/client.mjs";
 import { claimViewerOwnership, createOwnership, getFolderGuardPort, getPortCandidates, writeOwnership } from "../build/local-runtime.mjs";
 import { defaultServer, resolveProjectId, resolveServer, resolveToken } from "../src/config.mjs";
 import { getUpdateCommand, main, parseArgs } from "../src/main.mjs";
@@ -50,10 +50,10 @@ test("parseArgs handles project create name and link flag", () => {
 });
 
 test("parseArgs handles local viewer options", () => {
-  const parsed = parseArgs(["viewer", "--data-dir", "./product-grid-data", "--no-open", "--port", "43210"]);
+  const parsed = parseArgs(["viewer", "--data-dir", "./boxtown-data", "--no-open", "--port", "43210"]);
 
   assert.deepEqual(parsed.command, ["viewer"]);
-  assert.equal(parsed.options.dataDir, "./product-grid-data");
+  assert.equal(parsed.options.dataDir, "./boxtown-data");
   assert.equal(parsed.options.noOpen, true);
   assert.equal(parsed.options.port, "43210");
 });
@@ -71,25 +71,25 @@ test("local commands reject remote selectors and remote project linking", async 
   const io = {
     stdout: createWritableBuffer(),
     stderr: createWritableBuffer(),
-    env: { PGM_NO_UPDATE_CHECK: "1" },
+    env: { BOXTOWN_NO_UPDATE_CHECK: "1" },
     cwd: "/tmp",
   };
 
   await assert.rejects(
-    main(["node", "pgm", "node", "list", "--local", "./data", "--server", "https://example.test"], io),
+    main(["node", "boxtown", "node", "list", "--local", "./data", "--server", "https://example.test"], io),
     /Use --local or remote --server\/--token options, not both/,
   );
   await assert.rejects(
-    main(["node", "pgm", "project", "create", "--local", "./data", "--link"], io),
+    main(["node", "boxtown", "project", "create", "--local", "./data", "--link"], io),
     /--link changes the remote project selection/,
   );
 });
 
 test("local commands refuse a copied ownership record for a different folder", async () => {
-  const tempRoot = path.join(process.cwd(), "tmp", `pgm-local-record-${process.pid}`);
+  const tempRoot = path.join(process.cwd(), "tmp", `boxtown-local-record-${process.pid}`);
   const requested = path.join(tempRoot, "requested");
   const recorded = path.join(tempRoot, "recorded");
-  const recordPath = path.join(requested, ".pgm-local-runtime.json");
+  const recordPath = path.join(requested, ".boxtown-local-runtime.json");
   await mkdir(requested, { recursive: true });
   await mkdir(recorded, { recursive: true });
   const record = {
@@ -106,10 +106,10 @@ test("local commands refuse a copied ownership record for a different folder", a
 
   try {
     await assert.rejects(
-      main(["node", "pgm", "project", "list", "--local", requested], {
+      main(["node", "boxtown", "project", "list", "--local", requested], {
         stdout: createWritableBuffer(),
         stderr: createWritableBuffer(),
-        env: { PGM_NO_UPDATE_CHECK: "1" },
+        env: { BOXTOWN_NO_UPDATE_CHECK: "1" },
         cwd: process.cwd(),
       }),
       /points to a different folder/,
@@ -121,8 +121,8 @@ test("local commands refuse a copied ownership record for a different folder", a
 });
 
 test("local commands keep an unverified stale startup record", async () => {
-  const tempRoot = path.join(process.cwd(), "tmp", `pgm-local-stale-${process.pid}`);
-  const recordPath = path.join(tempRoot, ".pgm-local-runtime.json");
+  const tempRoot = path.join(process.cwd(), "tmp", `boxtown-local-stale-${process.pid}`);
+  const recordPath = path.join(tempRoot, ".boxtown-local-runtime.json");
   await mkdir(tempRoot, { recursive: true });
   const record = {
     id: "unknown-startup-child",
@@ -137,10 +137,10 @@ test("local commands keep an unverified stale startup record", async () => {
 
   try {
     await assert.rejects(
-      main(["node", "pgm", "project", "list", "--local", tempRoot], {
+      main(["node", "boxtown", "project", "list", "--local", tempRoot], {
         stdout: createWritableBuffer(),
         stderr: createWritableBuffer(),
-        env: { PGM_NO_UPDATE_CHECK: "1" },
+        env: { BOXTOWN_NO_UPDATE_CHECK: "1" },
         cwd: process.cwd(),
       }),
       /has no saved child identity/,
@@ -152,7 +152,7 @@ test("local commands keep an unverified stale startup record", async () => {
 });
 
 test("folder admission guard releases when its owner process dies", async () => {
-  const tempRoot = path.join(process.cwd(), "tmp", `pgm-local-guard-${process.pid}`);
+  const tempRoot = path.join(process.cwd(), "tmp", `boxtown-local-guard-${process.pid}`);
   await mkdir(tempRoot, { recursive: true });
   const moduleUrl = new URL("../build/local-runtime.mjs", import.meta.url).href;
   const script = `
@@ -203,8 +203,8 @@ function viewerRecord(dataDir, overrides = {}) {
 }
 
 test("viewer startup replaces a record left by a viewer that did not shut down", async () => {
-  const tempRoot = path.join(process.cwd(), "tmp", `pgm-viewer-stale-${process.pid}`);
-  const recordPath = path.join(tempRoot, ".pgm-local-runtime.json");
+  const tempRoot = path.join(process.cwd(), "tmp", `boxtown-viewer-stale-${process.pid}`);
+  const recordPath = path.join(tempRoot, ".boxtown-local-runtime.json");
   await mkdir(tempRoot, { recursive: true });
   // Both the viewer and its server are gone, as after closing the terminal.
   await writeFile(recordPath, JSON.stringify(viewerRecord(tempRoot, {
@@ -226,8 +226,8 @@ test("viewer startup replaces a record left by a viewer that did not shut down",
 });
 
 test("viewer startup refuses a folder that a running viewer owns", async () => {
-  const tempRoot = path.join(process.cwd(), "tmp", `pgm-viewer-live-${process.pid}`);
-  const recordPath = path.join(tempRoot, ".pgm-local-runtime.json");
+  const tempRoot = path.join(process.cwd(), "tmp", `boxtown-viewer-live-${process.pid}`);
+  const recordPath = path.join(tempRoot, ".boxtown-local-runtime.json");
   await mkdir(tempRoot, { recursive: true });
   const live = viewerRecord(tempRoot, { id: "live-viewer", state: "ready" });
   await writeFile(recordPath, JSON.stringify(live));
@@ -244,15 +244,15 @@ test("viewer startup refuses a folder that a running viewer owns", async () => {
 });
 
 test("viewer port selection rejects the folder's reserved ownership port", async () => {
-  const dataDir = path.join(process.cwd(), "tmp", `pgm-local-port-${process.pid}`);
+  const dataDir = path.join(process.cwd(), "tmp", `boxtown-local-port-${process.pid}`);
   const reservedPort = getFolderGuardPort(dataDir);
 
   await assert.rejects(getPortCandidates(String(reservedPort), reservedPort), /reserved for local runtime ownership/);
 });
 
 test("runtime ownership records publish complete JSON and update atomically", async () => {
-  const tempRoot = path.join(process.cwd(), "tmp", `pgm-local-record-atomic-${process.pid}`);
-  const recordPath = path.join(tempRoot, ".pgm-local-runtime.json");
+  const tempRoot = path.join(process.cwd(), "tmp", `boxtown-local-record-atomic-${process.pid}`);
+  const recordPath = path.join(tempRoot, ".boxtown-local-runtime.json");
   await mkdir(tempRoot, { recursive: true });
   const record = {
     id: "runtime-atomic",
@@ -282,7 +282,7 @@ test("runtime ownership records publish complete JSON and update atomically", as
     await reader;
     assert.ok(observed.length > 0);
     assert.ok(observed.every((id) => id.startsWith("runtime-")));
-    assert.deepEqual((await readdir(tempRoot)).sort(), [".pgm-local-runtime.json"]);
+    assert.deepEqual((await readdir(tempRoot)).sort(), [".boxtown-local-runtime.json"]);
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }
@@ -305,11 +305,11 @@ test("parseArgs does not let boolean flags consume following positionals", () =>
 test("main prints package version without reading config", async () => {
   const stdout = createWritableBuffer();
 
-  await main(["node", "pgm", "--version"], {
+  await main(["node", "boxtown", "--version"], {
     stdout,
     stderr: createWritableBuffer(),
     env: {
-      PRODUCT_GRID_CONFIG: path.join("/missing", "parent", "cli.json"),
+      BOXTOWN_CONFIG: path.join("/missing", "parent", "cli.json"),
     },
     cwd: "/tmp",
   });
@@ -321,11 +321,11 @@ test("main prints config path without reading config", async () => {
   const stdout = createWritableBuffer();
   const configPath = path.join("/missing", "parent", "cli.json");
 
-  await main(["node", "pgm", "config", "path"], {
+  await main(["node", "boxtown", "config", "path"], {
     stdout,
     stderr: createWritableBuffer(),
     env: {
-      PRODUCT_GRID_CONFIG: configPath,
+      BOXTOWN_CONFIG: configPath,
     },
     cwd: "/tmp",
   });
@@ -346,14 +346,14 @@ test("update check prints an encouraging update note to stderr", async () => {
     }),
   });
 
-  assert.match(stderr.value, /A fresh pgm update is ready:/);
-  assert.match(stderr.value, /pgm update/);
+  assert.match(stderr.value, /A fresh boxtown update is ready:/);
+  assert.match(stderr.value, /boxtown update/);
 });
 
-test("pgm update exposes dry-run JSON and spawns npm for real updates", async () => {
+test("boxtown update exposes dry-run JSON and spawns npm for real updates", async () => {
   const dryRunStdout = createWritableBuffer();
 
-  await main(["node", "pgm", "update", "--dry-run", "--json"], {
+  await main(["node", "boxtown", "update", "--dry-run", "--json"], {
     stdout: dryRunStdout,
     stderr: createWritableBuffer(),
     env: {},
@@ -361,16 +361,16 @@ test("pgm update exposes dry-run JSON and spawns npm for real updates", async ()
   });
 
   const dryRun = JSON.parse(dryRunStdout.value);
-  assert.equal(dryRun.packageName, "@byronwallrus/product-grid-cli");
+  assert.equal(dryRun.packageName, "boxtown");
   assert.equal(dryRun.dryRun, true);
-  assert.deepEqual(getUpdateCommand(), ["npm", "install", "-g", "@byronwallrus/product-grid-cli@latest"]);
+  assert.deepEqual(getUpdateCommand(), ["npm", "install", "-g", "boxtown@latest"]);
 
   const calls = [];
   const stdout = createWritableBuffer();
-  await main(["node", "pgm", "update", "--json"], {
+  await main(["node", "boxtown", "update", "--json"], {
     stdout,
     stderr: createWritableBuffer(),
-    env: { PGM_NO_UPDATE_CHECK: "1" },
+    env: { BOXTOWN_NO_UPDATE_CHECK: "1" },
     cwd: "/tmp",
     spawn(command, args, options) {
       calls.push({ command, args, options });
@@ -382,10 +382,10 @@ test("pgm update exposes dry-run JSON and spawns npm for real updates", async ()
 
   assert.deepEqual(calls[0], {
     command: "npm",
-    args: ["install", "-g", "@byronwallrus/product-grid-cli@latest"],
+    args: ["install", "-g", "boxtown@latest"],
     options: {
       cwd: "/tmp",
-      env: { PGM_NO_UPDATE_CHECK: "1" },
+      env: { BOXTOWN_NO_UPDATE_CHECK: "1" },
       stdio: "inherit",
     },
   });
@@ -398,7 +398,7 @@ test("update check can be disabled and compares semver versions", async () => {
 
   await notifyIfUpdateAvailable({
     stderr,
-    env: { PGM_NO_UPDATE_CHECK: "1" },
+    env: { BOXTOWN_NO_UPDATE_CHECK: "1" },
   }, {
     fetch: async () => {
       called = true;
@@ -542,10 +542,10 @@ test("config resolution prefers flags then environment then config", () => {
   };
 
   assert.equal(resolveServer({ server: "http://flag.example/" }, config, {}), "http://flag.example");
-  assert.equal(resolveServer({}, config, { PRODUCT_GRID_SERVER: "http://env.example" }), "http://env.example");
+  assert.equal(resolveServer({}, config, { BOXTOWN_SERVER: "http://env.example" }), "http://env.example");
   assert.equal(resolveServer({}, {}, {}), defaultServer);
   assert.equal(resolveProjectId({ project: "flag-project" }, config, {}), "flag-project");
-  assert.equal(resolveProjectId({}, config, { PRODUCT_GRID_PROJECT: "env-project" }), "env-project");
+  assert.equal(resolveProjectId({}, config, { BOXTOWN_PROJECT: "env-project" }), "env-project");
   assert.equal(resolveToken({ token: "flag-token" }, config, "http://flag.example", {}), "flag-token");
   assert.equal(resolveToken({}, config, "http://flag.example", {}), "config-token");
 });
@@ -562,7 +562,7 @@ test("client sends authorization and parses project list", async () => {
   };
 
   try {
-    const client = new ProductGridClient({
+    const client = new BoxtownClient({
       server: "http://localhost:3000",
       token: "secret-token",
     });
@@ -571,7 +571,7 @@ test("client sends authorization and parses project list", async () => {
     assert.equal(projects[0].id, "demo");
     assert.equal(calls[0].url, "http://localhost:3000/api/v1/projects");
     assert.equal(calls[0].init.headers.get("authorization"), "Bearer secret-token");
-    assert.equal(calls[0].init.headers.get("user-agent"), `@byronwallrus/product-grid-cli/${packageVersion}`);
+    assert.equal(calls[0].init.headers.get("user-agent"), `boxtown/${packageVersion}`);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -597,7 +597,7 @@ test("client creates a project with a JSON body", async () => {
   };
 
   try {
-    const client = new ProductGridClient({
+    const client = new BoxtownClient({
       server: "http://localhost:3000",
       token: "secret-token",
     });
@@ -633,7 +633,7 @@ test("client imports markdown with a JSON body", async () => {
   };
 
   try {
-    const client = new ProductGridClient({
+    const client = new BoxtownClient({
       server: "http://localhost:3000",
       token: "secret-token",
     });
@@ -689,7 +689,7 @@ test("client sends node mutation requests", async () => {
   };
 
   try {
-    const client = new ProductGridClient({
+    const client = new BoxtownClient({
       server: "http://localhost:3000",
       token: "secret-token",
     });
@@ -734,7 +734,7 @@ test("client requests schema and compact hierarchy context projections", async (
   };
 
   try {
-    const client = new ProductGridClient({
+    const client = new BoxtownClient({
       server: "http://localhost:3000",
       token: "secret-token",
     });
@@ -778,7 +778,7 @@ test("client requests schema and compact hierarchy context projections", async (
   }
 });
 
-test("issue view resolves a Product Grid URL to compact context", async () => {
+test("issue view resolves a Boxtown URL to compact context", async () => {
   const calls = [];
   const stdout = createWritableBuffer();
   const originalFetch = globalThis.fetch;
@@ -805,7 +805,7 @@ test("issue view resolves a Product Grid URL to compact context", async () => {
   try {
     await main([
       "node",
-      "pgm",
+      "boxtown",
       "issue",
       "view",
       "https://prod-mgmt.apps.byroni.us/projects/project-mgmt-grid?node=node-1&project=demo",
@@ -814,7 +814,7 @@ test("issue view resolves a Product Grid URL to compact context", async () => {
       stdout,
       stderr: createWritableBuffer(),
       env: {
-        PRODUCT_GRID_SERVER: "http://localhost:3000",
+        BOXTOWN_SERVER: "http://localhost:3000",
       },
       cwd: "/tmp",
     });
@@ -826,7 +826,7 @@ test("issue view resolves a Product Grid URL to compact context", async () => {
     const body = JSON.parse(stdout.value);
     assert.equal(body.projectId, "demo");
     assert.equal(body.nodeId, "node-1");
-    assert.match(body.suggestedCommands.close, /pgm node resolve node-1/);
+    assert.match(body.suggestedCommands.close, /boxtown node resolve node-1/);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -849,20 +849,20 @@ test("node delete requires --yes and sends DELETE per node", async () => {
   const io = (stdout) => ({
     stdout,
     stderr: createWritableBuffer(),
-    env: { PRODUCT_GRID_SERVER: "http://localhost:3000", PRODUCT_GRID_PROJECT: "demo" },
+    env: { BOXTOWN_SERVER: "http://localhost:3000", BOXTOWN_PROJECT: "demo" },
     cwd: "/tmp",
   });
 
   try {
     await assert.rejects(
-      main(["node", "pgm", "node", "delete", "node-1"], io(createWritableBuffer())),
+      main(["node", "boxtown", "node", "delete", "node-1"], io(createWritableBuffer())),
       /--yes/,
     );
     assert.equal(calls.length, 0);
 
     const stdout = createWritableBuffer();
     await main(
-      ["node", "pgm", "node", "delete", "node-1", "node-2", "--yes", "--with-children", "--json"],
+      ["node", "boxtown", "node", "delete", "node-1", "node-2", "--yes", "--with-children", "--json"],
       io(stdout),
     );
 
@@ -876,7 +876,7 @@ test("node delete requires --yes and sends DELETE per node", async () => {
 
     globalThis.fetch = async () => new Response("", { status: 200 });
     await assert.rejects(
-      main(["node", "pgm", "node", "delete", "node-3", "--yes"], io(createWritableBuffer())),
+      main(["node", "boxtown", "node", "delete", "node-3", "--yes"], io(createWritableBuffer())),
       /did not confirm/,
     );
   } finally {
@@ -930,7 +930,7 @@ test("node complete saves status and an appended note in one request", async () 
 });
 
 test("client uploads node images as multipart form data", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "pgm-cli-image-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "boxtown-cli-image-"));
   const imagePath = path.join(tempDir, "shot.png");
   await writeFile(imagePath, Buffer.from([0x89, 0x50, 0x4e, 0x47]));
 
@@ -954,7 +954,7 @@ test("client uploads node images as multipart form data", async () => {
   };
 
   try {
-    const client = new ProductGridClient({
+    const client = new BoxtownClient({
       server: "http://localhost:3000",
       token: "secret-token",
     });
@@ -994,7 +994,7 @@ test("client lists and removes images and exports markdown", async () => {
   };
 
   try {
-    const client = new ProductGridClient({
+    const client = new BoxtownClient({
       server: "http://localhost:3000",
       token: "secret-token",
     });
@@ -1015,7 +1015,7 @@ test("client lists and removes images and exports markdown", async () => {
 });
 
 test("node context-pack exports subtree context and images", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "pgm-context-pack-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "boxtown-context-pack-"));
   const outputDir = path.join(tempDir, "pack");
   const calls = [];
   const stdout = createWritableBuffer();
@@ -1095,7 +1095,7 @@ test("node context-pack exports subtree context and images", async () => {
   try {
     await main([
       "node",
-      "pgm",
+      "boxtown",
       "node",
       "context-pack",
       "parent-1",
@@ -1108,7 +1108,7 @@ test("node context-pack exports subtree context and images", async () => {
       stdout,
       stderr: createWritableBuffer(),
       env: {
-        PRODUCT_GRID_SERVER: "http://localhost:3000",
+        BOXTOWN_SERVER: "http://localhost:3000",
       },
       cwd: tempDir,
     });
@@ -1125,7 +1125,7 @@ test("node context-pack exports subtree context and images", async () => {
 });
 
 test("skill helpers resolve bundled and project install paths", () => {
-  assert.ok(getBundledSkillPath().endsWith("packages/cli/skills/product-grid-context"));
+  assert.ok(getBundledSkillPath().endsWith("packages/cli/skills/boxtown-context"));
 
   assert.equal(
     resolveSkillInstallTarget({
@@ -1133,7 +1133,7 @@ test("skill helpers resolve bundled and project install paths", () => {
       global: false,
       cwd: "/tmp/demo",
     }),
-    path.join("/tmp/demo", ".agents", "skills", "product-grid-context"),
+    path.join("/tmp/demo", ".agents", "skills", "boxtown-context"),
   );
 });
 
@@ -1164,25 +1164,25 @@ test("node archive and unarchive PATCH each node and require server confirmation
   const io = (stdout) => ({
     stdout,
     stderr: createWritableBuffer(),
-    env: { PRODUCT_GRID_SERVER: "http://localhost:3000", PRODUCT_GRID_PROJECT: "demo" },
+    env: { BOXTOWN_SERVER: "http://localhost:3000", BOXTOWN_PROJECT: "demo" },
     cwd: "/tmp",
   });
 
   try {
     const stdout = createWritableBuffer();
-    await main(["node", "pgm", "node", "archive", "node-1", "node-2", "--json"], io(stdout));
+    await main(["node", "boxtown", "node", "archive", "node-1", "node-2", "--json"], io(stdout));
     const result = JSON.parse(stdout.value);
     assert.deepEqual(result.nodeIds, ["node-1", "node-2"]);
     assert.equal(calls[0].init.method, "PATCH");
     assert.equal(calls[0].url, "http://localhost:3000/api/v1/projects/demo/nodes/node-1");
     assert.deepEqual(JSON.parse(calls[1].init.body), { archived: true });
 
-    await main(["node", "pgm", "node", "unarchive", "node-1"], io(createWritableBuffer()));
+    await main(["node", "boxtown", "node", "unarchive", "node-1"], io(createWritableBuffer()));
     assert.deepEqual(JSON.parse(calls[2].init.body), { archived: false });
 
     echoArchived = false;
     await assert.rejects(
-      main(["node", "pgm", "node", "archive", "node-1"], io(createWritableBuffer())),
+      main(["node", "boxtown", "node", "archive", "node-1"], io(createWritableBuffer())),
       /did not confirm archiving/,
     );
   } finally {
@@ -1205,10 +1205,10 @@ test("node list forwards --include-archived", async () => {
   };
 
   try {
-    await main(["node", "pgm", "node", "list", "--include-archived", "--json"], {
+    await main(["node", "boxtown", "node", "list", "--include-archived", "--json"], {
       stdout: createWritableBuffer(),
       stderr: createWritableBuffer(),
-      env: { PRODUCT_GRID_SERVER: "http://localhost:3000", PRODUCT_GRID_PROJECT: "demo" },
+      env: { BOXTOWN_SERVER: "http://localhost:3000", BOXTOWN_PROJECT: "demo" },
       cwd: "/tmp",
     });
     assert.equal(calls[0], "http://localhost:3000/api/v1/projects/demo/nodes?includeArchived=true");
@@ -1218,7 +1218,7 @@ test("node list forwards --include-archived", async () => {
 });
 
 test("image download writes node images to a directory or a single file", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "pgm-image-download-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "boxtown-image-download-"));
   const calls = [];
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => {
@@ -1236,10 +1236,10 @@ test("image download writes node images to a directory or a single file", async 
 
   const run = async (args) => {
     const stdout = createWritableBuffer();
-    await main(["node", "pgm", "image", "download", ...args, "--project", "demo", "--json"], {
+    await main(["node", "boxtown", "image", "download", ...args, "--project", "demo", "--json"], {
       stdout,
       stderr: createWritableBuffer(),
-      env: { PRODUCT_GRID_SERVER: "http://localhost:3000" },
+      env: { BOXTOWN_SERVER: "http://localhost:3000" },
       cwd: tempDir,
     });
     return JSON.parse(stdout.value);
@@ -1280,18 +1280,18 @@ test("node update and list pass priority through, with none clearing it", async 
   const io = () => ({
     stdout: createWritableBuffer(),
     stderr: createWritableBuffer(),
-    env: { PRODUCT_GRID_SERVER: "http://localhost:3000", PRODUCT_GRID_PROJECT: "demo" },
+    env: { BOXTOWN_SERVER: "http://localhost:3000", BOXTOWN_PROJECT: "demo" },
     cwd: "/tmp",
   });
 
   try {
-    await main(["node", "pgm", "node", "update", "node-1", "--priority", "high", "--json"], io());
+    await main(["node", "boxtown", "node", "update", "node-1", "--priority", "high", "--json"], io());
     assert.deepEqual(JSON.parse(calls[0].init.body), { priority: "high" });
 
-    await main(["node", "pgm", "node", "update", "node-1", "--priority", "none", "--json"], io());
+    await main(["node", "boxtown", "node", "update", "node-1", "--priority", "none", "--json"], io());
     assert.deepEqual(JSON.parse(calls[1].init.body), { priority: null });
 
-    await main(["node", "pgm", "node", "list", "--priority", "urgent", "--json"], io());
+    await main(["node", "boxtown", "node", "list", "--priority", "urgent", "--json"], io());
     assert.equal(calls[2].url, "http://localhost:3000/api/v1/projects/demo/nodes?priority=urgent");
   } finally {
     globalThis.fetch = originalFetch;

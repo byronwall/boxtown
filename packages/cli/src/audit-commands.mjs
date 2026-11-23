@@ -5,13 +5,13 @@ import { writeJson } from "./output.mjs";
 
 const severityRank = { info: 0, warning: 1, error: 2 };
 
-// pgm project audit: read-only report. --fail-on makes findings at or above a
+// boxtown project audit: read-only report. --fail-on makes findings at or above a
 // severity fail the process, for automated checks.
 export async function dispatchProjectAudit(context) {
   const options = context.parsed.options;
   const projectId = requireOption(
     context.parsed.positionals[0] ?? context.projectId,
-    "A project id is required. Pass one or run pgm project link <id>.",
+    "A project id is required. Pass one or run boxtown project link <id>.",
   );
   const failOn = options.failOn;
   if (failOn !== undefined && !(failOn in severityRank)) {

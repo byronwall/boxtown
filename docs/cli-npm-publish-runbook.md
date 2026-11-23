@@ -1,8 +1,8 @@
 # CLI npm Publish Runbook
 
-This runbook describes exactly how to publish the local CLI package at `packages/cli` to npm as `@byronwallrus/product-grid-cli`.
+This runbook describes exactly how to publish the local CLI package at `packages/cli` to npm as `boxtown`.
 
-The npm package installs a global executable named `pgm`.
+The npm package installs a global executable named `boxtown`.
 
 ## Current Package
 
@@ -15,14 +15,14 @@ packages/cli
 Package name:
 
 ```bash
-@byronwallrus/product-grid-cli
+boxtown
 ```
 
 Global install command after publish:
 
 ```bash
-npm install -g @byronwallrus/product-grid-cli
-pgm --help
+npm install -g boxtown
+boxtown --help
 ```
 
 ## 1. Confirm npm Account
@@ -43,7 +43,7 @@ npm whoami
 ## 2. Confirm Package Name Is Still Available
 
 ```bash
-npm view @byronwallrus/product-grid-cli
+npm view boxtown
 ```
 
 Expected before first publish:
@@ -72,23 +72,23 @@ From the repo root:
 
 ```bash
 npm install -g ./packages/cli
-pgm --version
-pgm --help
+boxtown --version
+boxtown --help
 ```
 
 With your dev app running at `http://localhost:3000`:
 
 ```bash
-pgm project list
-pgm project link recipe-architecture-grid
-pgm node view page-ai-recipes
-pgm task list
+boxtown project list
+boxtown project link recipe-architecture-grid
+boxtown node view page-ai-recipes
+boxtown task list
 ```
 
 Uninstall the local global package when done:
 
 ```bash
-npm uninstall -g @byronwallrus/product-grid-cli
+npm uninstall -g boxtown
 ```
 
 ## 5. Review Package Contents
@@ -104,7 +104,7 @@ Expected package contents should be limited to:
 
 ```text
 README.md
-bin/pgm.mjs
+bin/boxtown.mjs
 package.json
 src/client.mjs
 src/config.mjs
@@ -134,17 +134,17 @@ The `--access public` flag is required for the first publish of a public scoped 
 After publish:
 
 ```bash
-npm view @byronwallrus/product-grid-cli name version bin
-npm install -g @byronwallrus/product-grid-cli
-pgm --version
-pgm --help
-pgm project list --server http://localhost:3000
+npm view boxtown name version bin
+npm install -g boxtown
+boxtown --version
+boxtown --help
+boxtown project list --server http://localhost:3000
 ```
 
 Then uninstall if desired:
 
 ```bash
-npm uninstall -g @byronwallrus/product-grid-cli
+npm uninstall -g boxtown
 ```
 
 ## 8. Future Releases
@@ -176,7 +176,7 @@ Manual publishing is fine for the first release. After that, set up npm trusted 
 
 High-level steps:
 
-1. Publish `@byronwallrus/product-grid-cli` manually once.
+1. Publish `boxtown` manually once.
 2. Go to the package settings on npm.
 3. Add a trusted publisher for this GitHub repository.
 4. Use a GitHub Actions workflow with `id-token: write`.
@@ -226,7 +226,7 @@ npm publish
 Deprecate a bad version:
 
 ```bash
-npm deprecate @byronwallrus/product-grid-cli@0.1.0 "Use 0.1.1 or later."
+npm deprecate boxtown@0.1.0 "Use 0.1.1 or later."
 ```
 
 Avoid unpublishing unless the package accidentally contains secrets or legally sensitive content.

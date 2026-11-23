@@ -1,6 +1,18 @@
 # Changelog
 
-Notable changes to Product Grid Management, newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
+Notable changes to Boxtown (formerly Product Grid Management), newest first. Entries are grouped by date and written for someone using the app, not as a commit log.
+
+## 2026-11-22
+
+### Changed
+
+- Product Grid Management is now **Boxtown**. The app title, the CLI, and the agent skill use the new name.
+- The CLI command is `boxtown` instead of `pgm`. Install it with `npm install -g boxtown`. The old `@byronwallrus/product-grid-cli` package gets no more updates.
+- CLI environment variables start with `BOXTOWN_` instead of `PRODUCT_GRID_` or `PGM_`. For example, `BOXTOWN_SERVER` and `BOXTOWN_TOKEN`.
+- The CLI config file moved from a `product-grid` folder to a `boxtown` folder. Run `boxtown auth login --token <token>` again to set your server and token.
+- The agent skill is now `boxtown-context`. Run `boxtown skill install` to install it again.
+- The repo's local data folder moved from `pgm/data` to `boxtown/data`. `boxtown viewer` uses `./boxtown/data` by default.
+- Project exports download as `<project>.boxtown.zip`. Older `.product-grid.zip` files still import.
 
 ## 2026-10-16
 

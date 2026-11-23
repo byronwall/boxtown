@@ -18,8 +18,8 @@ export default function AdminRoute() {
   return (
     <>
       <PageMeta
-        title="Admin - Product Grid Mgmt"
-        description="Administrative tools for Product Grid Mgmt."
+        title="Admin - Boxtown"
+        description="Administrative tools for Boxtown."
       />
       <Box
         minH="100dvh"

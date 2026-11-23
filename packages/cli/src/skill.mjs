@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CliError, exitCodes } from "./errors.mjs";
 
-const skillName = "product-grid-context";
+const skillName = "boxtown-context";
 
 export function getBundledSkillPath() {
   const currentFile = fileURLToPath(import.meta.url);

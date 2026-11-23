@@ -12,7 +12,7 @@ let originalDataDir: string | undefined;
 
 beforeEach(() => {
   originalDataDir = process.env.APP_DATA_DIR;
-  tempRoot = mkdtempSync(path.join(os.tmpdir(), "pgm-audit-"));
+  tempRoot = mkdtempSync(path.join(os.tmpdir(), "boxtown-audit-"));
   process.env.APP_DATA_DIR = tempRoot;
 });
 

@@ -5,7 +5,7 @@
 
 ## Question
 
-Can an LLM agent use the current CLI and bundled skills to build out a Product Grid hierarchy from a markdown document or another LLM-generated artifact, while attaching arbitrary context to nodes?
+Can an LLM agent use the current CLI and bundled skills to build out a Boxtown hierarchy from a markdown document or another LLM-generated artifact, while attaching arbitrary context to nodes?
 
 ## Short Answer
 
@@ -21,13 +21,13 @@ The CLI package is in `packages/cli`.
 
 Current resource commands:
 
-- `pgm auth login|status|logout`
-- `pgm project list|create|view|export-markdown|link|current|unlink`
-- `pgm node list|view|create|update|move|context|metadata`
-- `pgm node import-markdown`
-- `pgm image add|list|remove`
-- `pgm task list`
-- `pgm skill path|print|install`
+- `boxtown auth login|status|logout`
+- `boxtown project list|create|view|export-markdown|link|current|unlink`
+- `boxtown node list|view|create|update|move|context|metadata`
+- `boxtown node import-markdown`
+- `boxtown image add|list|remove`
+- `boxtown task list`
+- `boxtown skill path|print|install`
 
 The client wraps these read endpoints:
 
@@ -57,10 +57,10 @@ There are still no CLI methods for batch apply, non-hierarchy relationship links
 
 ## Current Skill Surface
 
-The bundled skill is `product-grid-context`, present both at:
+The bundled skill is `boxtown-context`, present both at:
 
-- `skills/product-grid-context/SKILL.md`
-- `packages/cli/skills/product-grid-context/SKILL.md`
+- `skills/boxtown-context/SKILL.md`
+- `packages/cli/skills/boxtown-context/SKILL.md`
 
 Its guidance now covers the first write workflow:
 
@@ -77,7 +77,7 @@ Its guidance now covers the first write workflow:
 - List/remove images with `image list` and `image remove`.
 - Export markdown with `project export-markdown`.
 - Prefer `--json`.
-- Avoid browser scraping when `pgm` can provide data.
+- Avoid browser scraping when `boxtown` can provide data.
 - Do not mutate project data unless explicitly asked.
 
 The skill does not yet cover broader graph editing, because the CLI does not expose those operations yet.
@@ -128,7 +128,7 @@ That means the read/export direction is conceptually solid. The missing half is 
 
 ## What Is Possible Today
 
-Possible today through `pgm`:
+Possible today through `boxtown`:
 
 - Let an agent discover projects.
 - Create a new project.
@@ -157,7 +157,7 @@ Possible today through internal app/UI flows:
 - Persist markdown-heading splits as note-node trees through server code.
 - Attach metadata/context/images through existing server functions.
 
-Still not possible today through `pgm`:
+Still not possible today through `boxtown`:
 
 - Apply an LLM-generated node/link batch.
 - Start or accept the add-nodes workflow.
@@ -166,43 +166,43 @@ Still not possible today through `pgm`:
 
 ## Recommended Capability Model
 
-Add a write-capable, agent-safe layer to the existing `/api/v1` contract, then expose it through `pgm` and update the skill.
+Add a write-capable, agent-safe layer to the existing `/api/v1` contract, then expose it through `boxtown` and update the skill.
 
 Minimum useful command set:
 
 ```bash
-pgm node create --title "Checkout" --type page --parent root --json
-pgm node update <node-id> --title "Checkout" --status working --type page --json
-pgm node context set <node-id> --file ./context.md --json
-pgm node metadata set <node-id> purpose "Customer checkout entry point" --json
-pgm node move <node-id> --parent <parent-node-id> --json
-pgm node delete <node-id> --confirm --json
+boxtown node create --title "Checkout" --type page --parent root --json
+boxtown node update <node-id> --title "Checkout" --status working --type page --json
+boxtown node context set <node-id> --file ./context.md --json
+boxtown node metadata set <node-id> purpose "Customer checkout entry point" --json
+boxtown node move <node-id> --parent <parent-node-id> --json
+boxtown node delete <node-id> --confirm --json
 ```
 
 Markdown/tree import commands:
 
 ```bash
-pgm node import-markdown --file ./brief.md --title "Product Brief" --split-headings --json
-pgm node apply-batch --file ./generated-grid.json --dry-run --json
-pgm node apply-batch --file ./generated-grid.json --json
+boxtown node import-markdown --file ./brief.md --title "Product Brief" --split-headings --json
+boxtown node apply-batch --file ./generated-grid.json --dry-run --json
+boxtown node apply-batch --file ./generated-grid.json --json
 ```
 
 Run/workflow commands:
 
 ```bash
-pgm run list --json
-pgm run view <run-id> --json
-pgm run watch <run-id>
-pgm node add-from-brief --file ./brief.md --parent <node-id> --watch --json
-pgm node convert-context <node-id> --watch --json
+boxtown run list --json
+boxtown run view <run-id> --json
+boxtown run watch <run-id>
+boxtown node add-from-brief --file ./brief.md --parent <node-id> --watch --json
+boxtown node convert-context <node-id> --watch --json
 ```
 
 Image/file commands:
 
 ```bash
-pgm image add <node-id> ./mockup.png --json
-pgm image list <node-id> --json
-pgm image remove <node-id> <image-id> --json
+boxtown image add <node-id> ./mockup.png --json
+boxtown image list <node-id> --json
+boxtown image remove <node-id> <image-id> --json
 ```
 
 ## API Work Needed
@@ -270,7 +270,7 @@ The server should reserve final node IDs, validate types/statuses/metadata, dedu
 
 ## Skill Updates Needed
 
-Once write commands exist, update `product-grid-context` into a broader `product-grid` agent skill.
+Once write commands exist, update `boxtown-context` into a broader `product-grid` agent skill.
 
 Add guidance for:
 
@@ -287,12 +287,12 @@ Add guidance for:
 The skill should include one canonical workflow:
 
 ```bash
-pgm project current --json
-pgm project view --json
-pgm node list --json
-pgm node apply-batch --file ./generated-grid.json --dry-run --json
-pgm node apply-batch --file ./generated-grid.json --json
-pgm node list --search "new node label" --json
+boxtown project current --json
+boxtown project view --json
+boxtown node list --json
+boxtown node apply-batch --file ./generated-grid.json --dry-run --json
+boxtown node apply-batch --file ./generated-grid.json --json
+boxtown node list --search "new node label" --json
 ```
 
 ## Security and Safety Requirements
@@ -320,15 +320,15 @@ The implemented MVP slice adds:
 7. `POST /api/v1/projects/:projectId/imports/markdown`
 8. `GET/POST/DELETE /api/v1/projects/:projectId/nodes/:nodeId/images`
 9. `GET /api/v1/projects/:projectId/exports/markdown`
-10. `pgm project create "Product Site" --link --json`
-11. `pgm project export-markdown --output ./project-context.md`
-12. `pgm node create --title "Checkout" --type page --json`
-13. `pgm node update <node-id> --status working --json`
-14. `pgm node context set <node-id> --file ./context.md --json`
-15. `pgm node metadata set <node-id> purpose "Purpose text" --json`
-16. `pgm node move <node-id> --parent <parent-node-id> --json`
-17. `pgm node import-markdown --file ./brief.md --title "Brief" --split-headings --json`
-18. `pgm image add/list/remove`
+10. `boxtown project create "Product Site" --link --json`
+11. `boxtown project export-markdown --output ./project-context.md`
+12. `boxtown node create --title "Checkout" --type page --json`
+13. `boxtown node update <node-id> --status working --json`
+14. `boxtown node context set <node-id> --file ./context.md --json`
+15. `boxtown node metadata set <node-id> purpose "Purpose text" --json`
+16. `boxtown node move <node-id> --parent <parent-node-id> --json`
+17. `boxtown node import-markdown --file ./brief.md --title "Brief" --split-headings --json`
+18. `boxtown image add/list/remove`
 19. Skill/README/help updates for the workflows.
 
 The project creation response includes:
@@ -360,10 +360,10 @@ The project markdown export returns LLM-ready markdown for the full project grap
 
 Build the next useful write path after the MVP:
 
-1. Add `pgm node apply-batch --dry-run` for LLM-generated structured graph plans.
+1. Add `boxtown node apply-batch --dry-run` for LLM-generated structured graph plans.
 2. Add relationship-link commands for `related`, `dependency`, and `reuse`.
 3. Add run start/watch commands for add-nodes and context-note conversion flows.
 4. Add audit/history commands for agent writes.
-5. Add `pgm doctor` for setup diagnostics.
+5. Add `boxtown doctor` for setup diagnostics.
 
 That would make the broader user goal possible: an LLM agent could read a markdown source, generate a graph plan, create or update a hierarchy, attach rich node context and screenshots, and then verify the result through the same CLI.
