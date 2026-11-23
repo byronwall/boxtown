@@ -137,7 +137,7 @@ function ActionRow(props: { icon?: JSX.Element; label: string; hint?: string; on
       }
     >
       <ActionRowButton
-        _active={{ transform: "scale(0.99)", background: "rgba(34, 41, 36, 0.1)" }}
+        _active={{ transform: "scale(0.99)", background: "color-mix(in srgb, var(--spatial-map-ink) 10%, transparent)" }}
         type="button"
         display="grid"
         gridTemplateColumns="14px minmax(0, 1fr) auto"
@@ -152,8 +152,8 @@ function ActionRow(props: { icon?: JSX.Element; label: string; hint?: string; on
         font="inherit"
         textAlign="left"
         cursor="pointer"
-        _hover={{ background: "rgba(34, 41, 36, 0.06)" }}
-        _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(60, 66, 62, 0.56)" }}
+        _hover={{ background: "color-mix(in srgb, var(--spatial-map-ink) 6%, transparent)" }}
+        _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 56%, transparent)" }}
         onClick={() => props.onClick?.()}
       >
         {content()}

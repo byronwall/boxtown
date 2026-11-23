@@ -71,15 +71,15 @@ export const textarea = defineRecipe({
         },
       },
       spatial: {
-        bg: "rgba(246, 248, 244, 0.92)",
+        bg: "color-mix(in srgb, var(--spatial-map-raised) 92%, transparent)",
         borderWidth: "1px",
-        borderColor: "rgba(44, 52, 46, 0.34)",
+        borderColor: "color-mix(in srgb, var(--spatial-map-ink) 34%, transparent)",
         boxShadow:
-          "0 1px 2px rgba(15, 23, 42, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.84)",
+          "0 1px 2px rgba(15, 23, 42, 0.035), inset 0 1px 0 color-mix(in srgb, var(--spatial-map-highlight) 84%, transparent)",
         _focus: {
           borderColor: "rgba(45, 111, 72, 0.78)",
           boxShadow:
-            "0 0 0 3px rgba(45, 111, 72, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.84)",
+            "0 0 0 3px rgba(45, 111, 72, 0.14), inset 0 1px 0 color-mix(in srgb, var(--spatial-map-highlight) 84%, transparent)",
         },
       },
     },

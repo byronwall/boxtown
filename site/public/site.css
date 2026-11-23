@@ -74,6 +74,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 img { display: block; max-width: 100%; height: auto; }
+picture { display: block; }
 a { color: var(--link); text-decoration: none; white-space: nowrap; transition: color var(--fast); }
 p a, li a { white-space: normal; }
 code, kbd, pre { font-family: var(--mono); }

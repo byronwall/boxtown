@@ -26,17 +26,17 @@ export default function AdminRoute() {
         w="100%"
         boxSizing="border-box"
         p={{ base: "10px", md: "24px" }}
-        color="#171c19"
+        color="var(--spatial-map-copy)"
         fontFamily={monoFont}
-        bg="linear-gradient(180deg, rgba(248,250,248,0.98), rgba(225,229,224,1))"
+        bg="linear-gradient(180deg, color-mix(in srgb, var(--spatial-map-raised) 98%, transparent), var(--spatial-map-sunken))"
       >
         <Stack
           maxW="1180px"
           mx="auto"
           gap="12px"
-          border="1px solid rgba(96, 101, 95, 0.58)"
+          border="1px solid color-mix(in srgb, var(--spatial-map-ink) 58%, transparent)"
           borderRadius="8px"
-          bg="rgba(252, 253, 252, 0.95)"
+          bg="color-mix(in srgb, var(--spatial-map-raised) 95%, transparent)"
           boxShadow="0 24px 64px rgba(29, 33, 28, 0.14)"
           p={{ base: "10px", md: "14px" }}
         >
@@ -45,11 +45,11 @@ export default function AdminRoute() {
             alignItems="center"
             gap="3"
             flexWrap="wrap"
-            borderBottom="1px solid rgba(95, 101, 94, 0.28)"
+            borderBottom="1px solid color-mix(in srgb, var(--spatial-map-ink) 28%, transparent)"
             pb="12px"
           >
             <HStack gap="2" minW="0">
-              <Box as={ShieldAlert} boxSize="18px" color="#173e27" />
+              <Box as={ShieldAlert} boxSize="18px" color="var(--spatial-map-green-stroke)" />
               <Heading as="h1" fontSize={{ base: "18px", md: "20px" }} lineHeight="1.1">
                 Admin
               </Heading>
@@ -64,7 +64,7 @@ export default function AdminRoute() {
               <Heading as="h2" fontSize="14px" lineHeight="1.2">
                 Project backup files
               </Heading>
-              <Text fontSize="12px" color="#475249" fontWeight="700">
+              <Text fontSize="12px" color="var(--spatial-map-copy-dim)" fontWeight="700">
                 {backups.latest?.length ?? 0} found
               </Text>
             </HStack>
@@ -74,11 +74,11 @@ export default function AdminRoute() {
               fallback={
                 <Box
                   p="20px"
-                  border="1px dashed rgba(95, 101, 94, 0.4)"
+                  border="1px dashed color-mix(in srgb, var(--spatial-map-ink) 40%, transparent)"
                   borderRadius="6px"
-                  bg="rgba(244, 247, 243, 0.78)"
+                  bg="color-mix(in srgb, var(--spatial-map-raised) 78%, transparent)"
                 >
-                  <Text fontSize="13px" color="#323b35">
+                  <Text fontSize="13px" color="var(--spatial-map-copy-muted)">
                     No recovered project backup files found.
                   </Text>
                 </Box>
@@ -109,13 +109,13 @@ function BackupRow(props: { backup: ProjectBackupFileSummary }) {
       gridTemplateColumns={{ base: "minmax(0, 1fr)", lg: "1.1fr 1.8fr auto auto" }}
       gap={{ base: "8px", lg: "12px" }}
       alignItems="center"
-      border="1px solid rgba(95, 101, 94, 0.3)"
+      border="1px solid color-mix(in srgb, var(--spatial-map-ink) 30%, transparent)"
       borderRadius="6px"
-      bg="rgba(244, 247, 243, 0.82)"
+      bg="color-mix(in srgb, var(--spatial-map-raised) 82%, transparent)"
       p="10px"
     >
       <Stack gap="2px" minW="0">
-        <Text fontSize="11px" color="#475249" fontWeight="700">
+        <Text fontSize="11px" color="var(--spatial-map-copy-dim)" fontWeight="700">
           Project
         </Text>
         <Text fontSize="13px" fontWeight="700" wordBreak="break-word">
@@ -123,7 +123,7 @@ function BackupRow(props: { backup: ProjectBackupFileSummary }) {
         </Text>
       </Stack>
       <Stack gap="2px" minW="0">
-        <Text fontSize="11px" color="#475249" fontWeight="700">
+        <Text fontSize="11px" color="var(--spatial-map-copy-dim)" fontWeight="700">
           File
         </Text>
         <Text fontSize="13px" wordBreak="break-word">
@@ -131,7 +131,7 @@ function BackupRow(props: { backup: ProjectBackupFileSummary }) {
         </Text>
       </Stack>
       <Stack gap="2px" minW="0">
-        <Text fontSize="11px" color="#475249" fontWeight="700">
+        <Text fontSize="11px" color="var(--spatial-map-copy-dim)" fontWeight="700">
           Modified
         </Text>
         <Text fontSize="12px" fontVariantNumeric="tabular-nums">
@@ -139,7 +139,7 @@ function BackupRow(props: { backup: ProjectBackupFileSummary }) {
         </Text>
       </Stack>
       <HStack gap="3" justifyContent={{ base: "space-between", lg: "flex-end" }}>
-        <Text fontSize="12px" color="#475249" fontWeight="700" whiteSpace="nowrap">
+        <Text fontSize="12px" color="var(--spatial-map-copy-dim)" fontWeight="700" whiteSpace="nowrap">
           {formatBytes(props.backup.size)}
         </Text>
         <Button as="a" href={href()} size="sm" variant="outline">

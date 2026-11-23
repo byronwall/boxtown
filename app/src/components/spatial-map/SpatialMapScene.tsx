@@ -152,8 +152,8 @@ const NODE_COLOR_MODE_OPTIONS: SpatialMapSegmentedOption<SpatialMapNodeColorMode
 // it stays as a local selector instead of a global CSS file rule.
 const nodeInteractionClass = css({
   "&:hover .spatial-map-node-body, &.is-hovered .spatial-map-node-body": {
-    fill: "color-mix(in srgb, var(--spatial-map-node-fill-hover, var(--spatial-map-neutral-fill-hover)) calc(100% - var(--spatial-map-node-depth-fill-hover-lightness, 0%)), white var(--spatial-map-node-depth-fill-hover-lightness, 0%))",
-    stroke: "color-mix(in srgb, var(--spatial-map-node-stroke-hover, var(--spatial-map-neutral-stroke-hover)) calc(100% - var(--spatial-map-node-depth-stroke-hover-lightness, 0%)), white var(--spatial-map-node-depth-stroke-hover-lightness, 0%))",
+    fill: "color-mix(in srgb, var(--spatial-map-node-fill-hover, var(--spatial-map-neutral-fill-hover)) calc(100% - var(--spatial-map-node-depth-fill-hover-lightness, 0%)), var(--spatial-map-depth-tint) var(--spatial-map-node-depth-fill-hover-lightness, 0%))",
+    stroke: "color-mix(in srgb, var(--spatial-map-node-stroke-hover, var(--spatial-map-neutral-stroke-hover)) calc(100% - var(--spatial-map-node-depth-stroke-hover-lightness, 0%)), var(--spatial-map-depth-tint) var(--spatial-map-node-depth-stroke-hover-lightness, 0%))",
   },
   "& .spatial-map-node-status:hover .spatial-map-node-status-label-bg, & .spatial-map-node-status:hover .spatial-map-node-status-label": {
     opacity: "1",
@@ -263,7 +263,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
       position="relative"
       overflow="hidden"
       minH="0"
-      background="rgba(240, 243, 238, 1)"
+      background="var(--spatial-map-canvas)"
       cursor={controller.isPanning() ? "grabbing" : "grab"}
       touchAction="none"
       userSelect="none"
@@ -341,7 +341,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
           display: "block",
           "user-select": "none",
           background:
-            "linear-gradient(rgba(26, 33, 28, 0.065) 1px, transparent 1px), linear-gradient(90deg, rgba(26, 33, 28, 0.065) 1px, transparent 1px), linear-gradient(rgba(26, 33, 28, 0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(26, 33, 28, 0.018) 1px, transparent 1px), linear-gradient(180deg, rgba(248, 250, 248, 0.9), rgba(235, 239, 233, 0.96))",
+            "linear-gradient(var(--spatial-map-grid-major) 1px, transparent 1px), linear-gradient(90deg, var(--spatial-map-grid-major) 1px, transparent 1px), linear-gradient(var(--spatial-map-grid-minor) 1px, transparent 1px), linear-gradient(90deg, var(--spatial-map-grid-minor) 1px, transparent 1px), linear-gradient(180deg, var(--spatial-map-canvas-top), var(--spatial-map-canvas-bottom))",
           "background-size": "96px 96px, 96px 96px, 24px 24px, 24px 24px, auto",
           "background-position": "-1px -1px, -1px -1px, -1px -1px, -1px -1px, 0 0",
         }}
@@ -367,7 +367,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                   opacity={edge.opacity}
                   fill="none"
                   pointer-events="none"
-                  stroke="rgba(47, 57, 51, 0.42)"
+                  stroke="var(--spatial-map-edge)"
                   stroke-width="1.25"
                   stroke-linecap="square"
                 />
@@ -380,7 +380,7 @@ export function SpatialMapScene(props: SpatialMapSceneProps) {
                   d={path()}
                   fill="none"
                   pointer-events="none"
-                  stroke="rgba(33, 38, 35, 0.68)"
+                  stroke="var(--spatial-map-edge-draft)"
                   stroke-width="2"
                   stroke-dasharray="8 7"
                   stroke-linecap="round"
@@ -457,7 +457,7 @@ function CanvasToggle(props: { pressed: boolean; onClick: () => void; children: 
     <Button
       variant="outline"
       size="2xs"
-      background={props.pressed ? "rgba(233, 235, 232, 0.96)" : "transparent"}
+      background={props.pressed ? "var(--spatial-map-toggle-on)" : "transparent"}
       color={props.pressed ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
       fontWeight={props.pressed ? "700" : "500"}
       aria-pressed={props.pressed}
@@ -642,7 +642,7 @@ function SpatialMapNode(props: {
     getNodeTypeTone(props.project.nodeTypeSchema, props.item.node.type);
   const nodeTone = () =>
     props.colorMode === "status"
-      ? getNodeStatusTone(props.item.node.status)
+      ? themeTone(getNodeStatusTone(props.item.node.status))
       : fallbackTone();
   const zoomTextScale = createMemo(() =>
     quantizeTextScale(
@@ -793,18 +793,18 @@ function SpatialMapNode(props: {
           in srgb,
           var(--spatial-map-node-fill, var(--spatial-map-neutral-fill))
             calc(100% - var(--spatial-map-node-depth-fill-lightness, 0%)),
-          white var(--spatial-map-node-depth-fill-lightness, 0%)
+          var(--spatial-map-depth-tint) var(--spatial-map-node-depth-fill-lightness, 0%)
         )`}
         stroke={
           props.item.isSelected
-            ? "#1a1f1c"
+            ? "var(--spatial-map-selected)"
             : props.isIsolationTarget
-              ? "#245d7e"
+              ? "var(--spatial-map-isolation)"
               : `color-mix(
                   in srgb,
                   var(--spatial-map-node-stroke, var(--spatial-map-neutral-stroke))
                     calc(100% - var(--spatial-map-node-depth-stroke-lightness, 0%)),
-                  white var(--spatial-map-node-depth-stroke-lightness, 0%)
+                  var(--spatial-map-depth-tint) var(--spatial-map-node-depth-stroke-lightness, 0%)
                 )`
         }
         style={{
@@ -823,7 +823,7 @@ function SpatialMapNode(props: {
           ry="0"
           fill="none"
           pointer-events="none"
-          stroke="#1f2421"
+          stroke="var(--spatial-map-accent-strong)"
           stroke-width="2.6"
           shape-rendering="crispEdges"
           style={{ filter: "none" }}
@@ -847,9 +847,9 @@ function SpatialMapNode(props: {
                 height: "100%",
                 display: "block",
                 padding: "0",
-                border: "1px solid rgba(24, 28, 26, 0.38)",
+                border: "1px solid var(--spatial-map-image-border)",
                 "border-radius": "0",
-                background: "rgba(18, 22, 19, 0.1)",
+                background: "var(--spatial-map-image-bg)",
                 cursor: "zoom-in",
                 overflow: "hidden",
               }}
@@ -887,8 +887,8 @@ function SpatialMapNode(props: {
                     bottom: "4px",
                     "min-width": "22px",
                     padding: "2px 5px",
-                    border: "1px solid rgba(34, 41, 36, 0.24)",
-                    background: "rgba(249, 250, 247, 0.92)",
+                    border: "1px solid var(--spatial-map-chip-border)",
+                    background: "var(--spatial-map-chip-bg)",
                     color: "var(--spatial-map-copy)",
                     "font-size": "10px",
                     "font-weight": "760",
@@ -908,7 +908,7 @@ function SpatialMapNode(props: {
         y={labelStartY()}
         text-anchor="middle"
         font-size={String(labelFontSize())}
-        fill="#131816"
+        fill="var(--spatial-map-node-ink)"
         font-weight="700"
         letter-spacing="0"
         pointer-events="none"
@@ -941,7 +941,7 @@ function SpatialMapNode(props: {
         y={metaBaselineY()}
         text-anchor="middle"
         font-size={String(metaFontSize())}
-        fill="rgba(23, 27, 24, 0.66)"
+        fill="var(--spatial-map-node-meta)"
         font-family={`"SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace`}
         letter-spacing="0.04em"
         pointer-events="none"
@@ -960,7 +960,7 @@ function SpatialMapNode(props: {
           y={metaBaselineY()}
           text-anchor="end"
           font-size={String(metaFontSize())}
-          fill="rgba(23, 27, 24, 0.72)"
+          fill="var(--spatial-map-node-count)"
           font-family={`"SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace`}
           font-weight="800"
           letter-spacing="0"
@@ -1079,9 +1079,9 @@ function getNodeStatusStyle(status: MapNodeStatus) {
               : "#30322f";
 
   return {
-    "--spatial-map-status-fill": tone.fill,
-    "--spatial-map-status-stroke": tone.stroke,
-    "--spatial-map-status-copy": copy,
+    "--spatial-map-status-fill": boxFill(tone.fill),
+    "--spatial-map-status-stroke": boxLine(tone.stroke),
+    "--spatial-map-status-copy": `color-mix(in srgb, ${copy} var(--spatial-map-ink-mix), var(--spatial-map-ink-base))`,
   };
 }
 
@@ -1090,6 +1090,14 @@ function getNodeTypeTone(
   type: string,
 ) {
   const configured = getProjectNodeType(schema, type);
+  return themeTone(getRawNodeTypeTone(schema, type), configured ? "box" : "tint");
+}
+
+function getRawNodeTypeTone(
+  schema: ProjectRecord["nodeTypeSchema"],
+  type: string,
+): NodeTone {
+  const configured = getProjectNodeType(schema, type);
   if (!configured) return getNodeTypeFallbackTone(type);
 
   return {
@@ -1097,6 +1105,27 @@ function getNodeTypeTone(
     fillHover: `color-mix(in srgb, ${configured.color} 86%, white)`,
     stroke: `color-mix(in srgb, ${configured.color} 68%, #202820)`,
     strokeHover: `color-mix(in srgb, ${configured.color} 50%, #121812)`,
+  };
+}
+
+// Tones are authored for light mode. The theme variables pull fills toward the
+// dark box base and lines toward a light ink, so one tone serves both themes.
+// Configured type colors are saturated and keep more color than the pastel
+// status and fallback tones.
+function boxFill(color: string, mix: "box" | "tint" = "tint") {
+  return `color-mix(in srgb, ${color} var(--spatial-map-${mix}-mix), var(--spatial-map-box-base))`;
+}
+
+function boxLine(color: string) {
+  return `color-mix(in srgb, ${color} var(--spatial-map-line-mix), var(--spatial-map-line-base))`;
+}
+
+function themeTone(tone: NodeTone, mix: "box" | "tint" = "tint"): NodeTone {
+  return {
+    fill: boxFill(tone.fill, mix),
+    fillHover: boxFill(tone.fillHover, mix),
+    stroke: boxLine(tone.stroke),
+    strokeHover: boxLine(tone.strokeHover),
   };
 }
 

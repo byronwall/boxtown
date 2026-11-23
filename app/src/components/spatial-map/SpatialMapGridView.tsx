@@ -99,7 +99,7 @@ const gridStructureClass = css({
   "& .spatial-map-grid-table th": {
     p: "5px 8px",
     borderBottom: "1px solid var(--spatial-map-panel-border)",
-    background: "rgba(240, 243, 238, 1)",
+    background: "var(--spatial-map-sunken)",
     color: "var(--spatial-map-copy-dim)",
     fontSize: "11px",
     fontWeight: "700",
@@ -120,23 +120,23 @@ const gridStructureClass = css({
     verticalAlign: "middle",
   },
   "& .spatial-map-grid-table th:not(:last-child), & .spatial-map-grid-table td:not(:last-child)": {
-    borderRight: "1px solid rgba(96, 101, 95, 0.1)",
+    borderRight: "1px solid color-mix(in srgb, var(--spatial-map-ink) 10%, transparent)",
   },
   "& .spatial-map-grid-table tbody tr": {
-    "--grid-row-bg": "#f8faf8",
+    "--grid-row-bg": "var(--spatial-map-raised)",
     background: "var(--grid-row-bg)",
     cursor: "pointer",
     scrollMarginTop: "32px",
   },
   "& .spatial-map-grid-table tbody tr:hover": {
-    "--grid-row-bg": "#f0f3ee",
+    "--grid-row-bg": "color-mix(in srgb, var(--spatial-map-sunken) 50%, var(--spatial-map-raised))",
   },
   "& .spatial-map-grid-table tbody tr.is-selected": {
-    "--grid-row-bg": "#e9ebe8",
-    color: "#171c19",
+    "--grid-row-bg": "var(--spatial-map-selected-bg)",
+    color: "var(--spatial-map-copy)",
   },
   "& .spatial-map-grid-table tbody tr:focus-visible": {
-    outline: "2px solid rgba(33, 38, 35, 0.48)",
+    outline: "2px solid color-mix(in srgb, var(--spatial-map-ink) 48%, transparent)",
     outlineOffset: "-2px",
   },
   // The header row and the select + name columns stay in view while the rest scrolls.
@@ -209,8 +209,8 @@ const gridStructureClass = css({
   },
   "& .spatial-map-grid-node-title mark": {
     p: "0",
-    background: "rgba(60, 66, 62, 0.2)",
-    color: "#171c19",
+    background: "color-mix(in srgb, var(--spatial-map-ink) 20%, transparent)",
+    color: "var(--spatial-map-copy)",
     boxDecorationBreak: "clone",
   },
 });
@@ -328,7 +328,7 @@ export function SpatialMapGridView(props: {
             gap="12px"
             minH="36px"
             p="5px 10px"
-            background={bulkSelectionActive() ? "rgba(233, 235, 232, 0.6)" : "transparent"}
+            background={bulkSelectionActive() ? "color-mix(in srgb, var(--spatial-map-selected-bg) 60%, transparent)" : "transparent"}
           >
             {/* Bulk actions take the summary's place so selecting rows never moves the table. */}
             <Show
@@ -998,7 +998,7 @@ function MetadataKeyPicker(props: {
                 variant="outline"
                 size="2xs"
                 aria-pressed={selected()}
-                background={selected() ? "rgba(233, 235, 232, 0.96)" : "transparent"}
+                background={selected() ? "color-mix(in srgb, var(--spatial-map-selected-bg) 96%, transparent)" : "transparent"}
                 color={selected() ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
                 fontWeight={selected() ? "700" : "500"}
                 onClick={() => props.onToggle(field.key)}
@@ -1135,7 +1135,7 @@ function LinkActionsCell(props: {
 function NodeCell(props: { node: MapNode }) {
   return (
     <Box display="grid" gap="6px" minW="0">
-      <Box display="inline-flex" alignItems="center" gap="6px" m="0" color="#141816" fontSize="13px" lineHeight="1.24" fontWeight="640" overflowWrap="anywhere">
+      <Box display="inline-flex" alignItems="center" gap="6px" m="0" color="var(--spatial-map-copy)" fontSize="13px" lineHeight="1.24" fontWeight="640" overflowWrap="anywhere">
         {props.node.label}
       </Box>
       <HStack gap="1" flexWrap="wrap">
@@ -1205,8 +1205,8 @@ function NodeNameCell(props: {
       style={{
         "--tree-rail-width": "18px",
         "--tree-row-bleed": "4px",
-        "--tree-connector-color": "rgba(44, 52, 46, 0.28)",
-        "--tree-connector-strong": "rgba(44, 52, 46, 0.36)",
+        "--tree-connector-color": "color-mix(in srgb, var(--spatial-map-ink) 28%, transparent)",
+        "--tree-connector-strong": "color-mix(in srgb, var(--spatial-map-ink) 36%, transparent)",
       }}
     >
       <Box display="inline-flex" alignSelf="stretch" alignItems="stretch" flex="0 0 auto" minH="24px" pointerEvents="none" aria-hidden="true">
@@ -1238,10 +1238,10 @@ function NodeNameCell(props: {
           p="0"
           border="0"
           background="transparent"
-          color="rgba(40, 45, 42, 0.78)"
+          color="color-mix(in srgb, var(--spatial-map-ink) 78%, transparent)"
           cursor="pointer"
-          _hover={{ color: "var(--spatial-map-accent-strong)", outline: "2px solid rgba(33, 38, 35, 0.26)", outlineOffset: "-1px" }}
-          _focusVisible={{ color: "var(--spatial-map-accent-strong)", outline: "2px solid rgba(33, 38, 35, 0.26)", outlineOffset: "-1px" }}
+          _hover={{ color: "var(--spatial-map-accent-strong)", outline: "2px solid color-mix(in srgb, var(--spatial-map-ink) 26%, transparent)", outlineOffset: "-1px" }}
+          _focusVisible={{ color: "var(--spatial-map-accent-strong)", outline: "2px solid color-mix(in srgb, var(--spatial-map-ink) 26%, transparent)", outlineOffset: "-1px" }}
           aria-label={`${props.expanded ? "Collapse" : "Expand"} ${props.node.label}`}
           aria-expanded={props.expanded}
           onClick={(event) => {
@@ -1264,7 +1264,7 @@ function NodeNameCell(props: {
         alignItems="center"
         gap="6px"
         ml={props.row.hasChildren ? "4px" : "12px"}
-        color="#141816"
+        color="var(--spatial-map-copy)"
         fontSize="13px"
         lineHeight="1.24"
         fontWeight={props.row.hasChildren ? "720" : "640"}
@@ -1289,12 +1289,12 @@ function NodeNameCell(props: {
             w="18px"
             h="18px"
             p="0"
-            border="1px solid rgba(44, 52, 46, 0.2)"
-            background="rgba(252, 253, 252, 0.38)"
-            color="rgba(40, 45, 42, 0.62)"
+            border="1px solid color-mix(in srgb, var(--spatial-map-ink) 20%, transparent)"
+            background="color-mix(in srgb, var(--spatial-map-raised) 38%, transparent)"
+            color="color-mix(in srgb, var(--spatial-map-ink) 62%, transparent)"
             cursor="pointer"
-            _hover={{ borderColor: "rgba(33, 38, 35, 0.34)", background: "rgba(233, 235, 232, 0.54)", color: "rgba(33, 38, 35, 0.78)", outline: "2px solid rgba(33, 38, 35, 0.2)", outlineOffset: "1px" }}
-            _focusVisible={{ borderColor: "rgba(33, 38, 35, 0.34)", background: "rgba(233, 235, 232, 0.54)", color: "rgba(33, 38, 35, 0.78)", outline: "2px solid rgba(33, 38, 35, 0.2)", outlineOffset: "1px" }}
+            _hover={{ borderColor: "color-mix(in srgb, var(--spatial-map-ink) 34%, transparent)", background: "color-mix(in srgb, var(--spatial-map-selected-bg) 54%, transparent)", color: "color-mix(in srgb, var(--spatial-map-ink) 78%, transparent)", outline: "2px solid color-mix(in srgb, var(--spatial-map-ink) 20%, transparent)", outlineOffset: "1px" }}
+            _focusVisible={{ borderColor: "color-mix(in srgb, var(--spatial-map-ink) 34%, transparent)", background: "color-mix(in srgb, var(--spatial-map-selected-bg) 54%, transparent)", color: "color-mix(in srgb, var(--spatial-map-ink) 78%, transparent)", outline: "2px solid color-mix(in srgb, var(--spatial-map-ink) 20%, transparent)", outlineOffset: "1px" }}
             aria-label={`Open context preview for ${props.node.label}`}
             onClick={(event) => {
               event.stopPropagation();
@@ -1554,12 +1554,12 @@ function ImagePreviewCell(props: { node: MapNode }) {
           maxW="100%"
           aspectRatio="16 / 9"
           p="0"
-          border="1px solid rgba(34, 41, 36, 0.28)"
-          background="rgba(18, 22, 19, 0.08)"
+          border="1px solid color-mix(in srgb, var(--spatial-map-ink) 28%, transparent)"
+          background="color-mix(in srgb, var(--spatial-map-ink) 8%, transparent)"
           cursor="zoom-in"
           overflow="hidden"
-          _hover={{ outline: "none", borderColor: "rgba(33, 38, 35, 0.68)", boxShadow: "inset 0 0 0 1px rgba(33, 38, 35, 0.32)" }}
-          _focusVisible={{ outline: "none", borderColor: "rgba(33, 38, 35, 0.68)", boxShadow: "inset 0 0 0 1px rgba(33, 38, 35, 0.32)" }}
+          _hover={{ outline: "none", borderColor: "color-mix(in srgb, var(--spatial-map-ink) 68%, transparent)", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 32%, transparent)" }}
+          _focusVisible={{ outline: "none", borderColor: "color-mix(in srgb, var(--spatial-map-ink) 68%, transparent)", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 32%, transparent)" }}
           aria-label={`Open ${previewImage().originalName}`}
           title={previewImage().originalName}
           onClick={(event) => {
@@ -1577,7 +1577,7 @@ function ImagePreviewCell(props: { node: MapNode }) {
             objectFit="cover"
           />
           <Show when={images().length > 1}>
-            <Box as="span" position="absolute" right="4px" bottom="4px" minW="24px" p="2px 5px" border="1px solid rgba(34, 41, 36, 0.24)" background="rgba(249, 250, 247, 0.92)" color="var(--spatial-map-copy)" fontSize="10px" fontWeight="760" lineHeight="1">
+            <Box as="span" position="absolute" right="4px" bottom="4px" minW="24px" p="2px 5px" border="1px solid color-mix(in srgb, var(--spatial-map-ink) 24%, transparent)" background="color-mix(in srgb, var(--spatial-map-raised) 92%, transparent)" color="var(--spatial-map-copy)" fontSize="10px" fontWeight="760" lineHeight="1">
               +{images().length - 1}
             </Box>
           </Show>

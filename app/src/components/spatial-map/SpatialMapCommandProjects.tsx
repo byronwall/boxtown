@@ -41,17 +41,17 @@ export function CommandProjectRow(props: {
       w="100%"
       p="8px 10px"
       border="1px solid"
-      borderColor={props.active ? "rgba(84, 90, 86, 0.38)" : "transparent"}
+      borderColor={props.active ? "color-mix(in srgb, var(--spatial-map-ink) 38%, transparent)" : "transparent"}
       borderRadius="6px"
-      background={props.active ? "rgba(233, 235, 232, 0.52)" : "transparent"}
+      background={props.active ? "color-mix(in srgb, var(--spatial-map-selected-bg) 52%, transparent)" : "transparent"}
       color="var(--spatial-map-copy)"
       cursor="pointer"
       textAlign="left"
       _hover={{
-        borderColor: "rgba(84, 90, 86, 0.38)",
-        background: "rgba(233, 235, 232, 0.52)",
+        borderColor: "color-mix(in srgb, var(--spatial-map-ink) 38%, transparent)",
+        background: "color-mix(in srgb, var(--spatial-map-selected-bg) 52%, transparent)",
       }}
-      _focusVisible={{ outline: "2px solid rgba(84, 90, 86, 0.7)", outlineOffset: "2px" }}
+      _focusVisible={{ outline: "2px solid color-mix(in srgb, var(--spatial-map-ink) 70%, transparent)", outlineOffset: "2px" }}
       onMouseEnter={() => props.onHover()}
       onClick={() => props.onSelect()}
     >

@@ -171,7 +171,7 @@ export function SpatialMapChildNodePlaceholder(props: {
       p="10px"
       border="1px solid var(--spatial-map-panel-border-strong)"
       borderRadius="6px"
-      background="rgba(250, 252, 247, 0.98)"
+      background="color-mix(in srgb, var(--spatial-map-raised) 98%, transparent)"
       boxShadow="0 8px 24px rgba(24, 32, 24, 0.15)"
       color="var(--spatial-map-copy)"
       overflow="auto"
@@ -217,8 +217,8 @@ export function SpatialMapChildNodePlaceholder(props: {
         {(parentNode) => (
           <Box
             p="6px 7px"
-            border="1px solid rgba(34, 41, 36, 0.12)"
-            background="rgba(232, 236, 230, 0.72)"
+            border="1px solid color-mix(in srgb, var(--spatial-map-ink) 12%, transparent)"
+            background="color-mix(in srgb, var(--spatial-map-sunken) 72%, transparent)"
             color="var(--spatial-map-copy-muted)"
             fontSize="11px"
             lineHeight="1.25"
@@ -280,8 +280,8 @@ export function SpatialMapChildNodePlaceholder(props: {
           disabled={pending()}
           w="100%"
           minH="30px"
-          border="1px solid rgba(47, 57, 50, 0.28)"
-          background="rgba(248, 250, 248, 0.94)"
+          border="1px solid color-mix(in srgb, var(--spatial-map-ink) 28%, transparent)"
+          background="color-mix(in srgb, var(--spatial-map-raised) 94%, transparent)"
           color="var(--spatial-map-copy)"
           fontFamily="inherit"
           fontSize="12px"

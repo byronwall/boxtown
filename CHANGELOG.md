@@ -4,6 +4,11 @@ Notable changes to Boxtown (formerly Product Grid Management), newest first. Ent
 
 ## 2026-11-23
 
+### Added
+
+- The app has a dark mode. It follows your system setting, and covers the canvas, tree, grid, inspector, menus and dialogs. Canvas colors match the live map on the Boxtown home page.
+- The home page shows the app screenshots in dark mode when your system is dark.
+
 ### Changed
 
 - The live map on the home page works from the keyboard: Tab to a box, arrows to move, Enter to open it, Shift+Enter to step inside. It also has zoom buttons for phones.

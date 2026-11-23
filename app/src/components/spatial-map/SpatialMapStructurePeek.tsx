@@ -132,13 +132,13 @@ function PeekRow(props: {
           pr="8px"
           border="0"
           borderRadius="4px"
-          background={props.current ? "rgba(34, 41, 36, 0.08)" : "transparent"}
+          background={props.current ? "color-mix(in srgb, var(--spatial-map-ink) 8%, transparent)" : "transparent"}
           color="var(--spatial-map-copy)"
           font="inherit"
           textAlign="left"
           cursor="pointer"
-          _hover={{ background: "rgba(34, 41, 36, 0.06)" }}
-          _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(34, 41, 36, 0.5)" }}
+          _hover={{ background: "color-mix(in srgb, var(--spatial-map-ink) 6%, transparent)" }}
+          _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 50%, transparent)" }}
           aria-current={props.current ? "true" : undefined}
           style={{ "padding-left": `${8 + props.level * 14}px` }}
           onClick={() => props.onSelect(props.nodeId)}
