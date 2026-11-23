@@ -122,6 +122,17 @@ await page.locator('#explorer g.box[data-id="page-active-ride"]').click();
 await page.waitForTimeout(400);
 if ((await page.textContent("#explorer .inspector h3")) !== "Active ride") fail("click did not open the inspector");
 await page.click("#explorer .in-close");
+await page.waitForTimeout(300);
+// Keyboard: arrow from the tabbable box to a neighbor, Enter opens its details.
+await page.locator('#explorer g.box[tabindex="0"]').focus();
+const startId = await page.evaluate(() => document.activeElement.dataset.id);
+await page.keyboard.press("ArrowRight");
+const nextId = await page.evaluate(() => document.activeElement.dataset.id);
+if (!nextId || nextId === startId) fail("arrow key did not move focus between boxes");
+await page.keyboard.press("Enter");
+await page.waitForTimeout(400);
+if (await page.isHidden("#explorer .inspector")) fail("Enter on a box did not open its details");
+await page.keyboard.press("Escape");
 await page.waitForTimeout(700);
 await page.locator('#explorer g.box[data-id="area-find-a-bike"]').dblclick();
 await page.waitForTimeout(400);
