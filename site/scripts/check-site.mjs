@@ -1,13 +1,13 @@
 // Checks the built site under its Pages base path and writes review screenshots.
-// Serve first:  pnpm dlx http-server@14.1.1 tmp/site/serve -p 4173   (tmp/site/serve/prod-mgmt-grid -> site/public)
-// Then:         node site/scripts/check-site.mjs [http://localhost:4173/prod-mgmt-grid/] [--og]
+// Serve first:  pnpm dlx http-server@14.1.1 tmp/site/serve -p 4173   (tmp/site/serve/boxtown -> site/public)
+// Then:         node site/scripts/check-site.mjs [http://localhost:4173/boxtown/] [--og]
 import { mkdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const url = process.argv.find((a) => a.startsWith("http")) ?? "http://localhost:4173/prod-mgmt-grid/";
+const url = process.argv.find((a) => a.startsWith("http")) ?? "http://localhost:4173/boxtown/";
 const shots = join(root, "tmp/site/shots");
 mkdirSync(shots, { recursive: true });
 const failures = [];

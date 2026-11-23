@@ -7,8 +7,8 @@
 <meta name="description" content="Boxtown maps ideas, screens and systems as nested boxes on a canvas. Big concepts are big boxes. The boxtown CLI lets coding agents read and edit the same map.">
 <meta property="og:title" content="Boxtown: map a product as a town of boxes">
 <meta property="og:description" content="Nested boxes for ideas, screens and systems, with a CLI your coding agents can use. Runs locally. Plain Markdown files.">
-<meta property="og:image" content="https://byronwall.github.io/prod-mgmt-grid/og.png">
-<meta property="og:url" content="https://byronwall.github.io/prod-mgmt-grid/">
+<meta property="og:image" content="https://byronwall.github.io/boxtown/og.png">
+<meta property="og:url" content="https://byronwall.github.io/boxtown/">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -26,7 +26,7 @@
       <a href="#tour">Tour</a>
       <a href="#agents">Agents</a>
       <a href="#start">Start</a>
-      <a href="https://github.com/byronwall/prod-mgmt-grid" class="ext">GitHub</a>
+      <a href="https://github.com/byronwall/boxtown" class="ext">GitHub</a>
     </nav>
   </div>
 </header>
@@ -292,7 +292,7 @@ at arm's length on a handlebar mount.
       <p>Install the skill (see <a href="#agents">For coding agents</a>) and point the agent at a box. With <code>--local</code>, commands reuse an open viewer, or start a short-lived one and stop it after.</p>
     </li>
   </ol>
-  <p class="more">From source: clone <a href="https://github.com/byronwall/prod-mgmt-grid">the repo</a>, run <code>pnpm install</code>, then <code>pnpm --dir app dev</code>. The app picks up <code>./boxtown/data</code> at the repo root.</p>
+  <p class="more">From source: clone <a href="https://github.com/byronwall/boxtown">the repo</a>, run <code>pnpm install</code>, then <code>pnpm --dir app dev</code>. The app picks up <code>./boxtown/data</code> at the repo root.</p>
 </section>
 
 <section class="band" id="built" aria-labelledby="built-title">
@@ -300,7 +300,7 @@ at arm's length on a handlebar mount.
     <h2 id="built-title">How I built it</h2>
     <p>I started this in April 2026 as Product Grid Management, a place to keep the structure of an app next to the notes and screenshots for each piece. The first versions called LLM providers from inside the app. I took that out. Agents in a terminal were better at the thinking, and the app got simpler once it only had to hold the result.</p>
     <p>The stack is SolidStart, SolidJS and Panda CSS. The CLI ships a production build of the app, so <code>boxtown viewer</code> is the same app with no server to set up. Codex and Claude did much of the work in pull requests that I reviewed; Boxtown held the issues, and the agents used the CLI to read them and mark them done. In November 2026 I renamed it Boxtown, for the boxes and how they nest.</p>
-    <p class="more"><a href="https://byroni.us/blog/product-grid-local-viewer-and-agent-workflow">Read the October update</a> · <a href="https://github.com/byronwall/prod-mgmt-grid/blob/main/CHANGELOG.md">Changelog</a></p>
+    <p class="more"><a href="https://byroni.us/blog/product-grid-local-viewer-and-agent-workflow">Read the October update</a> · <a href="https://github.com/byronwall/boxtown/blob/main/CHANGELOG.md">Changelog</a></p>
   </div></div>
 </section>
 </main>
@@ -308,7 +308,7 @@ at arm's length on a handlebar mount.
 <footer class="wrap foot">
   <a class="brand" href="#top"><img src="favicon.svg" alt="" width="20" height="20">Boxtown</a>
   <span>Built by <a href="https://byroni.us">Byron Wall</a></span>
-  <a href="https://github.com/byronwall/prod-mgmt-grid">GitHub</a>
+  <a href="https://github.com/byronwall/boxtown">GitHub</a>
   <a href="https://www.npmjs.com/package/boxtown">npm</a>
   <a href="llms.txt">llms.txt</a>
   <span class="dim">Screens from the fictional Harbor Bikes demo, November 2026.</span>

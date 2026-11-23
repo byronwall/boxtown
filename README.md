@@ -1,6 +1,6 @@
 # Boxtown
 
-Map your product as a town of boxes: ideas, screens and systems become nested boxes that you and your coding agents edit. Site: [byronwall.github.io/prod-mgmt-grid](https://byronwall.github.io/prod-mgmt-grid/).
+Map your product as a town of boxes: ideas, screens and systems become nested boxes that you and your coding agents edit. Site: [byronwall.github.io/boxtown](https://byronwall.github.io/boxtown/).
 
 Boxtown is a SolidStart application for mapping product ideas, UI architecture, system relationships, and loose planning context as a spatial graph. It combines a project registry, an interactive map canvas, structured node metadata, markdown context notes, image attachments, and a CLI for reading and editing project data.
 

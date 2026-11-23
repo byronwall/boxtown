@@ -20,6 +20,6 @@ Each project is a folder: `project.json`, `nodes/<node-id>.md` (YAML front matte
 
 ## Links
 
-- Site: https://byronwall.github.io/prod-mgmt-grid/
+- Site: https://byronwall.github.io/boxtown/
 - Full CLI reference: https://www.npmjs.com/package/boxtown
-- Source: https://github.com/byronwall/prod-mgmt-grid
+- Source: https://github.com/byronwall/boxtown

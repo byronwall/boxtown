@@ -6,7 +6,7 @@ Notable changes to Boxtown (formerly Product Grid Management), newest first. Ent
 
 ### Added
 
-- Boxtown has a home page at [byronwall.github.io/prod-mgmt-grid](https://byronwall.github.io/prod-mgmt-grid/), with a tour of each view, the agent workflow, and install steps.
+- Boxtown has a home page at [byronwall.github.io/boxtown](https://byronwall.github.io/boxtown/), with a tour of each view, the agent workflow, and install steps.
 
 ### Fixed
 
