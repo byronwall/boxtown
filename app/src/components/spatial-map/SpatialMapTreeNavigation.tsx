@@ -164,7 +164,7 @@ export function SpatialMapTreeNavigation(props: TreeNavigationProps) {
       m="0 -8px 0"
       p="3px max(12px, calc(((100% - min(100%, 86ch)) / 2) - 4px)) 3px max(12px, calc(((100% - min(100%, 86ch)) / 2) - 16px))"
       borderBottom="1px solid var(--spatial-map-panel-divider)"
-      background="rgba(248, 250, 248, 0.98)"
+      background="color-mix(in srgb, var(--spatial-map-raised) 98%, transparent)"
     >
       <PanelPopover
         open={isTocOpen()}
@@ -263,13 +263,13 @@ function TocEntry(props: {
         p="2px 8px 2px calc(8px + (var(--spatial-map-tree-toc-depth) * 14px))"
         border="0"
         borderRadius="4px"
-        background={isCurrent() ? "rgba(34, 41, 36, 0.1)" : "transparent"}
+        background={isCurrent() ? "color-mix(in srgb, var(--spatial-map-ink) 10%, transparent)" : "transparent"}
         color="var(--spatial-map-copy)"
         fontFamily="inherit"
         textAlign="left"
         cursor="pointer"
-        _hover={{ background: isCurrent() ? "rgba(34, 41, 36, 0.12)" : "rgba(34, 41, 36, 0.06)", outline: "none" }}
-        _focusVisible={{ boxShadow: "inset 0 0 0 1px rgba(34, 41, 36, 0.5)", outline: "none" }}
+        _hover={{ background: isCurrent() ? "color-mix(in srgb, var(--spatial-map-ink) 12%, transparent)" : "color-mix(in srgb, var(--spatial-map-ink) 6%, transparent)", outline: "none" }}
+        _focusVisible={{ boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 50%, transparent)", outline: "none" }}
         aria-current={isCurrent() ? "location" : undefined}
         ref={(element) => {
           // Bring the current heading into view when the contents open.
@@ -282,7 +282,7 @@ function TocEntry(props: {
           as="span"
           minW="0"
           overflow="hidden"
-          color={isCurrent() ? "#141816" : "var(--spatial-map-copy)"}
+          color={isCurrent() ? "var(--spatial-map-copy)" : "var(--spatial-map-copy)"}
           fontSize="12px"
           lineHeight="1.3"
           fontWeight={isCurrent() || props.entry.depth === 0 ? "700" : "500"}
@@ -339,8 +339,8 @@ function BreadcrumbItem(props: {
           overflow="hidden"
           textOverflow="ellipsis"
           cursor="pointer"
-          _hover={{ background: "rgba(34, 41, 36, 0.06)", outline: "none" }}
-          _focusVisible={{ background: "rgba(34, 41, 36, 0.06)", outline: "none" }}
+          _hover={{ background: "color-mix(in srgb, var(--spatial-map-ink) 6%, transparent)", outline: "none" }}
+          _focusVisible={{ background: "color-mix(in srgb, var(--spatial-map-ink) 6%, transparent)", outline: "none" }}
           onClick={props.onClick}
         >
           {props.children}

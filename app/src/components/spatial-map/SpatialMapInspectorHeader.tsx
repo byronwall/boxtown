@@ -45,9 +45,9 @@ export function SpatialMapInspectorHeader(props: SpatialMapInspectorHeaderProps)
               textStyle="xs"
               display="inline-flex"
               p="3px 6px"
-              border="1px solid rgba(84, 90, 86, 0.34)"
+              border="1px solid color-mix(in srgb, var(--spatial-map-ink) 34%, transparent)"
               borderRadius="4px"
-              background="rgba(233, 235, 232, 0.74)"
+              background="color-mix(in srgb, var(--spatial-map-selected-bg) 74%, transparent)"
               color="var(--spatial-map-accent-strong)"
               fontSize="11px"
               lineHeight="1"
@@ -138,14 +138,14 @@ export function InspectorToggle(props: {
       flexShrink="0"
       transition="background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease"
       _hover={{
-        background: "rgba(233, 235, 232, 0.72)",
+        background: "color-mix(in srgb, var(--spatial-map-selected-bg) 72%, transparent)",
         color: "var(--spatial-map-accent-strong)",
       }}
       _active={{ transform: "scale(0.97)" }}
       _focusVisible={{
         outline: "none",
-        background: "rgba(233, 235, 232, 0.72)",
-        boxShadow: "inset 0 0 0 1px rgba(33, 38, 35, 0.28)",
+        background: "color-mix(in srgb, var(--spatial-map-selected-bg) 72%, transparent)",
+        boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 28%, transparent)",
       }}
       onClick={props.onClick ?? (() => spatialMap.setInspectorOpen((current) => !current))}
       aria-expanded={expanded()}
@@ -174,7 +174,7 @@ function InspectorTitle(props: { children: JSX.Element }) {
     <Box
       as="h2"
       m="0"
-      color="#141816"
+      color="var(--spatial-map-copy)"
       fontSize="1.125rem"
       lineHeight="1.25"
       fontWeight="700"

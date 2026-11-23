@@ -211,19 +211,19 @@ export function SpatialMapCommandMenu() {
                     w="100%"
                     p="8px 10px"
                     border="1px solid"
-                    borderColor={index() === activeIndex() ? "rgba(84, 90, 86, 0.38)" : "transparent"}
+                    borderColor={index() === activeIndex() ? "color-mix(in srgb, var(--spatial-map-ink) 38%, transparent)" : "transparent"}
                     borderRadius="6px"
-                    background={index() === activeIndex() ? "rgba(233, 235, 232, 0.52)" : "transparent"}
+                    background={index() === activeIndex() ? "color-mix(in srgb, var(--spatial-map-selected-bg) 52%, transparent)" : "transparent"}
                     color="var(--spatial-map-copy)"
                     cursor="pointer"
                     textAlign="left"
                     transition="background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease"
                     _hover={{
-                      borderColor: "rgba(84, 90, 86, 0.38)",
-                      background: "rgba(233, 235, 232, 0.52)",
-                      boxShadow: "inset 0 0 0 1px rgba(84, 90, 86, 0.08)",
+                      borderColor: "color-mix(in srgb, var(--spatial-map-ink) 38%, transparent)",
+                      background: "color-mix(in srgb, var(--spatial-map-selected-bg) 52%, transparent)",
+                      boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 8%, transparent)",
                     }}
-                    _focusVisible={{ outline: "2px solid rgba(84, 90, 86, 0.7)", outlineOffset: "2px" }}
+                    _focusVisible={{ outline: "2px solid color-mix(in srgb, var(--spatial-map-ink) 70%, transparent)", outlineOffset: "2px" }}
                     onMouseEnter={() => setActiveIndex(index())}
                     onClick={() => selectResult(result)}
                   >
@@ -485,7 +485,7 @@ function HighlightedText(props: {
             p="0"
             borderRadius="2px"
             background="rgba(250, 204, 21, 0.56)"
-            color="#2f2a12"
+            color="var(--spatial-map-mark-ink)"
             boxShadow="inset 0 -1px 0 rgba(154, 117, 0, 0.32)"
           >
             {match()}

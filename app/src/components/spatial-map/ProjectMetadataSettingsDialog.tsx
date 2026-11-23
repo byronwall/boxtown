@@ -213,7 +213,7 @@ export function ProjectMetadataSettingsDialog(
                 alignItems="start"
                 gap="8px"
               >
-                <Field.Label color="#475249" fontSize="12px" fontWeight="500" pt="7px">Title</Field.Label>
+                <Field.Label color="var(--spatial-map-copy-dim)" fontSize="12px" fontWeight="500" pt="7px">Title</Field.Label>
                 <Textarea
                   variant="spatial"
                   size="compact"
@@ -233,7 +233,7 @@ export function ProjectMetadataSettingsDialog(
                 alignItems="start"
                 gap="8px"
               >
-                <Field.Label color="#475249" fontSize="12px" fontWeight="500" pt="7px">Subtitle</Field.Label>
+                <Field.Label color="var(--spatial-map-copy-dim)" fontSize="12px" fontWeight="500" pt="7px">Subtitle</Field.Label>
                 <Textarea
                   variant="spatial"
                   size="compact"
@@ -255,7 +255,7 @@ export function ProjectMetadataSettingsDialog(
               Node Metadata Fields
             </SettingsSectionTitle>
             <GridScrollArea>
-              <Box {...metadataGridProps()} minH="26px" borderBottom="1px solid rgba(96, 101, 95, 0.34)">
+              <Box {...metadataGridProps()} minH="26px" borderBottom="1px solid color-mix(in srgb, var(--spatial-map-ink) 34%, transparent)">
                 <GridHeaderCell>Key</GridHeaderCell>
                 <GridHeaderCell>Label</GridHeaderCell>
                 <GridHeaderCell>Default Value</GridHeaderCell>
@@ -332,7 +332,7 @@ export function ProjectMetadataSettingsDialog(
                             type="button"
                             size="2xs"
                             variant="plain"
-                            color="#475249"
+                            color="var(--spatial-map-copy-dim)"
                           disabled={index === 0}
                           onClick={() => moveRow(index, -1, setRows)}
                           >
@@ -345,7 +345,7 @@ export function ProjectMetadataSettingsDialog(
                             type="button"
                             size="2xs"
                             variant="plain"
-                            color="#475249"
+                            color="var(--spatial-map-copy-dim)"
                           disabled={index === rows().length - 1}
                           onClick={() => moveRow(index, 1, setRows)}
                           >
@@ -358,7 +358,7 @@ export function ProjectMetadataSettingsDialog(
                             type="button"
                             size="2xs"
                             variant="plain"
-                            color="#475249"
+                            color="var(--spatial-map-copy-dim)"
                             _hover={{ background: "red.subtle.bg", color: "red.outline.fg" }}
                           onClick={() => removeRow(index, setRows)}
                           >
@@ -373,7 +373,7 @@ export function ProjectMetadataSettingsDialog(
             </GridScrollArea>
 
             <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap">
-              <Text color="#475249" fontSize="12px">
+              <Text color="var(--spatial-map-copy-dim)" fontSize="12px">
                 Keys are normalized on save; existing node values follow a renamed key.
               </Text>
               <Button
@@ -399,7 +399,7 @@ export function ProjectMetadataSettingsDialog(
               Node Types
             </SettingsSectionTitle>
             <GridScrollArea>
-              <Box {...typeGridProps()} minH="26px" borderBottom="1px solid rgba(96, 101, 95, 0.34)">
+              <Box {...typeGridProps()} minH="26px" borderBottom="1px solid color-mix(in srgb, var(--spatial-map-ink) 34%, transparent)">
                 <GridHeaderCell>Name</GridHeaderCell>
                 <GridHeaderCell>Color</GridHeaderCell>
                 <GridHeaderCell centered>Default</GridHeaderCell>
@@ -434,7 +434,7 @@ export function ProjectMetadataSettingsDialog(
                             width: "28px",
                             height: "26px",
                             padding: "0",
-                            border: "1px solid rgba(34, 41, 36, 0.28)",
+                            border: "1px solid color-mix(in srgb, var(--spatial-map-ink) 28%, transparent)",
                             background: "transparent",
                           }}
                           type="color"
@@ -444,7 +444,7 @@ export function ProjectMetadataSettingsDialog(
                             updateTypeRow(index, { color: event.currentTarget.value }, setTypeRows)
                           }
                         />
-                        <Text as="span" color="#475249" fontFamily="mono" fontSize="11px">
+                        <Text as="span" color="var(--spatial-map-copy-dim)" fontFamily="mono" fontSize="11px">
                           {row().color}
                         </Text>
                       </HStack>
@@ -466,7 +466,7 @@ export function ProjectMetadataSettingsDialog(
                             type="button"
                             size="2xs"
                             variant="plain"
-                            color="#475249"
+                            color="var(--spatial-map-copy-dim)"
                           disabled={index === 0}
                           onClick={() => moveRow(index, -1, setTypeRows)}
                           >
@@ -479,7 +479,7 @@ export function ProjectMetadataSettingsDialog(
                             type="button"
                             size="2xs"
                             variant="plain"
-                            color="#475249"
+                            color="var(--spatial-map-copy-dim)"
                           disabled={index === typeRows().length - 1}
                           onClick={() => moveRow(index, 1, setTypeRows)}
                           >
@@ -492,7 +492,7 @@ export function ProjectMetadataSettingsDialog(
                             type="button"
                             size="2xs"
                             variant="plain"
-                            color="#475249"
+                            color="var(--spatial-map-copy-dim)"
                             _hover={{ background: "red.subtle.bg", color: "red.outline.fg" }}
                           onClick={() => removeRow(index, setTypeRows)}
                           >
@@ -507,7 +507,7 @@ export function ProjectMetadataSettingsDialog(
             </GridScrollArea>
 
             <HStack justifyContent="space-between" alignItems="center" flexWrap="wrap">
-              <Text color="#475249" fontSize="12px">
+              <Text color="var(--spatial-map-copy-dim)" fontSize="12px">
                 Type names are normalized on save and become the type picker options.
               </Text>
               <Button
@@ -540,7 +540,7 @@ function SettingsSectionTitle(props: { children: JSX.Element }) {
     <Text
       as="h3"
       m="0"
-      color="#475249"
+      color="var(--spatial-map-copy-dim)"
       fontSize="11px"
       fontWeight="700"
       letterSpacing="0.08em"
@@ -582,8 +582,8 @@ function SettingsSectionRail(props: {
       w={{ base: "100%", md: "176px" }}
       maxH={{ base: "none", md: "100%" }}
       p="8px"
-      borderRight={{ base: "0", md: "1px solid rgba(96, 101, 95, 0.2)" }}
-      borderBottom={{ base: "1px solid rgba(96, 101, 95, 0.2)", md: "0" }}
+      borderRight={{ base: "0", md: "1px solid color-mix(in srgb, var(--spatial-map-ink) 20%, transparent)" }}
+      borderBottom={{ base: "1px solid color-mix(in srgb, var(--spatial-map-ink) 20%, transparent)", md: "0" }}
       overflowX={{ base: "auto", md: "hidden" }}
       overflowY="hidden"
     >
@@ -627,19 +627,19 @@ function SettingsSectionButton(props: {
       p="6px 8px"
       border="0"
       borderRadius="4px"
-      background={props.selected ? "rgba(233, 235, 232, 0.96)" : "transparent"}
-      color="#171c19"
+      background={props.selected ? "color-mix(in srgb, var(--spatial-map-selected-bg) 96%, transparent)" : "transparent"}
+      color="var(--spatial-map-copy)"
       cursor="pointer"
       font="inherit"
       textAlign="left"
       _hover={{
-        background: props.selected ? "rgba(233, 235, 232, 0.96)" : "rgba(34, 41, 36, 0.06)",
+        background: props.selected ? "color-mix(in srgb, var(--spatial-map-selected-bg) 96%, transparent)" : "color-mix(in srgb, var(--spatial-map-ink) 6%, transparent)",
       }}
     >
       <Text as="span" fontSize="12px" fontWeight={props.selected ? "700" : "500"} lineHeight="1.3">
         {props.label}
       </Text>
-      <Text as="span" color="#475249" fontSize="11px" lineHeight="1.3">
+      <Text as="span" color="var(--spatial-map-copy-dim)" fontSize="11px" lineHeight="1.3">
         {props.meta}
       </Text>
     </SettingsSectionButtonRoot>
@@ -668,7 +668,7 @@ function GridHeaderCell(props: { children: JSX.Element; centered?: boolean }) {
       justifyContent={props.centered ? "center" : undefined}
       minW="0"
       p="0 6px"
-      color="#475249"
+      color="var(--spatial-map-copy-dim)"
       fontSize="11px"
       fontWeight="500"
       lineHeight="1"
@@ -706,7 +706,7 @@ function gridCellProps() {
     minW: "0",
     minH: "36px",
     p: "3px",
-    borderBottom: "1px solid rgba(96, 101, 95, 0.2)",
+    borderBottom: "1px solid color-mix(in srgb, var(--spatial-map-ink) 20%, transparent)",
     class: gridCellClass,
   } as const;
 }

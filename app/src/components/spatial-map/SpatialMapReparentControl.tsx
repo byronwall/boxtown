@@ -100,7 +100,7 @@ export function SpatialMapReparentControl(props: SpatialMapReparentControlProps)
           w="min(420px, calc(100vw - 20px))"
           border="1px solid var(--spatial-map-panel-border)"
           borderRadius="6px"
-          background="#fbfcfb"
+          background="var(--spatial-map-raised)"
           boxShadow="0 8px 24px rgba(24, 32, 24, 0.15)"
           overflow="hidden"
         >
@@ -168,20 +168,20 @@ export function SpatialMapReparentControl(props: SpatialMapReparentControlProps)
                       w="100%"
                       p="7px 8px"
                       border="1px solid"
-                      borderColor={index() === activeIndex() ? "rgba(84, 90, 86, 0.38)" : "transparent"}
+                      borderColor={index() === activeIndex() ? "color-mix(in srgb, var(--spatial-map-ink) 38%, transparent)" : "transparent"}
                       borderRadius="6px"
-                      background={index() === activeIndex() ? "rgba(233, 235, 232, 0.52)" : "transparent"}
+                      background={index() === activeIndex() ? "color-mix(in srgb, var(--spatial-map-selected-bg) 52%, transparent)" : "transparent"}
                       color="var(--spatial-map-copy)"
                       cursor={props.movePending ? "default" : "pointer"}
                       textAlign="left"
                       transition="background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease"
                       disabled={props.movePending}
                       _hover={{
-                        borderColor: "rgba(84, 90, 86, 0.38)",
-                        background: "rgba(233, 235, 232, 0.52)",
-                        boxShadow: "inset 0 0 0 1px rgba(84, 90, 86, 0.08)",
+                        borderColor: "color-mix(in srgb, var(--spatial-map-ink) 38%, transparent)",
+                        background: "color-mix(in srgb, var(--spatial-map-selected-bg) 52%, transparent)",
+                        boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 8%, transparent)",
                       }}
-                      _focusVisible={{ outline: "2px solid rgba(84, 90, 86, 0.7)", outlineOffset: "2px" }}
+                      _focusVisible={{ outline: "2px solid color-mix(in srgb, var(--spatial-map-ink) 70%, transparent)", outlineOffset: "2px" }}
                       onMouseEnter={() => setActiveIndex(index())}
                       onClick={() => selectResult(result)}
                     >
@@ -223,7 +223,7 @@ export function SpatialMapReparentControl(props: SpatialMapReparentControlProps)
         maxW="calc(100vw - 20px)"
         border="1px solid var(--spatial-map-panel-border)"
         borderRadius="6px"
-        background="#fbfcfb"
+        background="var(--spatial-map-raised)"
         boxShadow="0 8px 24px rgba(24, 32, 24, 0.15)"
       >
         <HStack gap="1" alignItems="flex-start" minW="0">
@@ -233,7 +233,7 @@ export function SpatialMapReparentControl(props: SpatialMapReparentControlProps)
               size="2xs"
               minW="134px"
               justifyContent="flex-start"
-              background={searchOpen() ? "rgba(233, 235, 232, 0.96)" : "transparent"}
+              background={searchOpen() ? "color-mix(in srgb, var(--spatial-map-selected-bg) 96%, transparent)" : "transparent"}
               color="var(--spatial-map-copy-dim)"
               disabled={props.movePending}
               onClick={() => setSearchOpen((open) => !open)}
@@ -376,7 +376,7 @@ function HighlightedLabel(props: {
       {parts().before}
       <Show when={parts().match}>
         {(match) => (
-          <Box as="mark" p="0 2px" borderRadius="3px" background="rgba(250, 204, 21, 0.52)" color="#2f2a12">
+          <Box as="mark" p="0 2px" borderRadius="3px" background="rgba(250, 204, 21, 0.52)" color="var(--spatial-map-mark-ink)">
             {match()}
           </Box>
         )}

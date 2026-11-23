@@ -45,7 +45,7 @@ export function ProjectIndexRow(props: ProjectIndexRowProps) {
       gridTemplateColumns="minmax(0, 1fr) auto"
       alignItems="center"
       transition="background-color 120ms ease"
-      _hover={{ background: "rgba(34, 41, 36, 0.05)" }}
+      _hover={{ background: "color-mix(in srgb, var(--spatial-map-ink) 5%, transparent)" }}
     >
       <A href={`/projects/${props.project.id}`} class={projectLinkClass}>
         <Text as="h2" m="0" fontSize="14px" fontWeight="700" lineHeight="1.3" overflowWrap="anywhere">

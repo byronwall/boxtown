@@ -48,7 +48,10 @@ const page = await open(1440, 900);
 
 // Every image loads, every local anchor and link resolves.
 // Lazy images in hidden tabs have not loaded yet, so fetch every source directly.
-const srcs = await page.evaluate(() => [...document.querySelectorAll("main img")].map((i) => i.src));
+const srcs = await page.evaluate(() => [
+  ...[...document.querySelectorAll("main img")].map((i) => i.src),
+  ...[...document.querySelectorAll("main source[srcset]")].map((s) => new URL(s.getAttribute("srcset"), location.href).href),
+]);
 for (const src of new Set(srcs)) {
   const res = await page.request.get(src);
   if (!res.ok()) fail(`image ${src} -> ${res.status()}`);

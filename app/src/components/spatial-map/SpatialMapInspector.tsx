@@ -524,14 +524,14 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
         alignSelf="stretch"
         p="0"
         border="0"
-        background={resizingInspector() ? "rgba(84, 90, 86, 0.18)" : "transparent"}
+        background={resizingInspector() ? "color-mix(in srgb, var(--spatial-map-ink) 18%, transparent)" : "transparent"}
         color={resizingInspector() ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
         cursor="col-resize"
         _active={{ transform: "none" }}
         touchAction="none"
         transition="background-color 120ms ease, color 120ms ease"
-        _hover={{ background: "rgba(96, 101, 95, 0.18)", color: "var(--spatial-map-copy)" }}
-        _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(60, 66, 62, 0.56)" }}
+        _hover={{ background: "color-mix(in srgb, var(--spatial-map-ink) 18%, transparent)", color: "var(--spatial-map-copy)" }}
+        _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 56%, transparent)" }}
         style={{ width: `${RESIZE_GUTTER_WIDTH}px` }}
         onPointerDown={startInspectorResize}
         onMouseDown={startInspectorMouseResize}
@@ -612,7 +612,7 @@ export function SpatialMapInspector(props: SpatialMapInspectorProps) {
                     h="24px"
                     p="0"
                     color={inspectorView() === "activity" ? "var(--spatial-map-accent-strong)" : "var(--spatial-map-copy-dim)"}
-                    background={inspectorView() === "activity" ? "rgba(233, 235, 232, 0.96)" : "transparent"}
+                    background={inspectorView() === "activity" ? "color-mix(in srgb, var(--spatial-map-selected-bg) 96%, transparent)" : "transparent"}
                     aria-label="Project activity"
                     aria-pressed={inspectorView() === "activity"}
                     onClick={() => setInspectorView((view) => (view === "activity" ? "details" : "activity"))}
@@ -896,7 +896,7 @@ function InspectorRelationList(props: {
               <InspectorPlainButton
                 type="button"
                 display="grid"
-                _active={{ transform: "scale(0.99)", background: "rgba(34, 41, 36, 0.1)" }}
+                _active={{ transform: "scale(0.99)", background: "color-mix(in srgb, var(--spatial-map-ink) 10%, transparent)" }}
                 gridTemplateColumns="14px minmax(0, 1fr) auto"
                 alignItems="baseline"
                 columnGap="6px"
@@ -909,8 +909,8 @@ function InspectorRelationList(props: {
                 font="inherit"
                 textAlign="left"
                 cursor="pointer"
-                _hover={{ background: "rgba(34, 41, 36, 0.06)" }}
-                _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px rgba(60, 66, 62, 0.56)" }}
+                _hover={{ background: "color-mix(in srgb, var(--spatial-map-ink) 6%, transparent)" }}
+                _focusVisible={{ outline: "none", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 56%, transparent)" }}
                 title={`${item.direction === "outgoing" ? "Links to" : "Linked from"} ${node().label}`}
                 onClick={() => props.onSelect(node().id)}
               >

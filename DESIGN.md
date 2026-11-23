@@ -405,6 +405,17 @@ Status colors should be quieter than type colors. Status is a work-tracking over
 - **Done:** calm completed green.
 - **Blocked:** pale red.
 
+### Dark mode
+
+The app follows the OS setting (`prefers-color-scheme`). There is no toggle. Dark is the same drafting table at night: green-black paper, chalk-light ink, and the same muted type colors pulled down into the paper.
+
+- **Tokens:** Panda semantic colors carry `_light` and `_dark` values. The `dark` condition in `app/src/theme/conditions.ts` is the media query, so a component that uses tokens needs no extra work.
+- **Spatial-map variables:** `app/src/theme/global-css.ts` sets every `--spatial-map-*` variable twice, on `:root` and inside the dark media query. Use these variables instead of new hex or rgba values.
+- **Tints:** for a hover wash, a divider or a selected fill, mix a variable with `transparent`, for example `color-mix(in srgb, var(--spatial-map-ink) 6%, transparent)`. `--spatial-map-ink` is dark in light mode and light in dark mode, so one value serves both.
+- **Canvas:** paper `#141814`, grid `#1e241f`, ink `#E6EBE6`. These match the live map on the landing page (`site/public/town.css`).
+- **Box fills:** write node tones for light mode. In dark mode a configured type color keeps 44% of itself over `#1a1f1b` (`--spatial-map-box-mix`). Pastel status and fallback tones keep 22% (`--spatial-map-tint-mix`). Lines mix toward light ink (`--spatial-map-line-mix`), and chip text toward `#E6EBE6` (`--spatial-map-ink-mix`).
+- **Elevation:** shadows mostly disappear on dark paper. Separate surfaces with the raised (`#1c221e`) and sunken (`#121613`) variables and with borders, not with stronger shadows. The canvas safety rules still apply: no filters or shadows inside the scaled SVG.
+
 ## Typography
 
 The product should use a technical typography system, but it should not force every surface into monospace. The implemented index surface uses standard Panda heading/body styles for approachable management copy and reserves the mono stack for ids, counts, file details, and technical metadata. The spatial-map workspace currently uses full monospace and can keep that stronger drafting character.

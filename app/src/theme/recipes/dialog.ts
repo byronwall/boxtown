@@ -39,13 +39,13 @@ export const dialog = defineSlotRecipe({
     },
 
     title: {
-      color: "#171c19",
+      color: "var(--spatial-map-copy)",
       fontSize: "14px",
       fontWeight: "bold",
       lineHeight: "1.3",
     },
     description: {
-      color: "#475249",
+      color: "var(--spatial-map-copy-dim)",
       fontSize: "12px",
       lineHeight: "1.4",
     },
@@ -57,12 +57,12 @@ export const dialog = defineSlotRecipe({
     },
     content: {
       "--dialog-z-index": "zIndex.modal",
-      bg: "#fbfcfb",
+      bg: "var(--spatial-map-raised)",
       borderWidth: "1px",
       borderColor: "olive.7",
       borderRadius: "8px",
       boxShadow: "0 8px 24px rgba(24, 32, 24, 0.15)",
-      color: "#171c19",
+      color: "var(--spatial-map-copy)",
       display: "flex",
       flexDirection: "column",
       my: "var(--dialog-margin, var(--dialog-base-margin))",

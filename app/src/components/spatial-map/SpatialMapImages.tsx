@@ -364,13 +364,13 @@ export function SpatialMapImageStrip(props: {
               w={props.variant === "inspector" ? undefined : "min(100%, 320px)"}
               minW={props.variant === "inspector" ? "0" : "160px"}
               p="0"
-              border="1px solid rgba(34, 41, 36, 0.22)"
+              border="1px solid color-mix(in srgb, var(--spatial-map-ink) 22%, transparent)"
               borderRadius={props.variant === "inspector" ? "6px" : "0"}
-              background={props.variant === "inspector" ? "rgba(214, 220, 212, 0.92)" : "rgba(249, 250, 247, 0.92)"}
+              background={props.variant === "inspector" ? "color-mix(in srgb, var(--spatial-map-sunken) 92%, transparent)" : "color-mix(in srgb, var(--spatial-map-raised) 92%, transparent)"}
               cursor="zoom-in"
               overflow="hidden"
-              _hover={{ borderColor: "rgba(33, 38, 35, 0.62)", boxShadow: "inset 0 0 0 1px rgba(33, 38, 35, 0.42)", outline: "none" }}
-              _focusVisible={{ borderColor: "rgba(33, 38, 35, 0.62)", boxShadow: "inset 0 0 0 1px rgba(33, 38, 35, 0.42)", outline: "none" }}
+              _hover={{ borderColor: "color-mix(in srgb, var(--spatial-map-ink) 62%, transparent)", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 42%, transparent)", outline: "none" }}
+              _focusVisible={{ borderColor: "color-mix(in srgb, var(--spatial-map-ink) 62%, transparent)", boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 42%, transparent)", outline: "none" }}
               aria-label={`Open ${image.originalName}`}
               title={image.originalName}
               onClick={(event) => {
@@ -406,9 +406,9 @@ export function SpatialMapImageDropTarget(props: {
       gap={props.variant === "tree" ? "0" : "8px"}
       pt={props.variant === "tree" ? "0" : "12px"}
       borderTop={props.variant === "tree" ? "0" : "1px solid"}
-      borderColor={isDraggingImage() ? "rgba(33, 38, 35, 0.62)" : "var(--spatial-map-panel-divider)"}
+      borderColor={isDraggingImage() ? "color-mix(in srgb, var(--spatial-map-ink) 62%, transparent)" : "var(--spatial-map-panel-divider)"}
       borderStyle={isDraggingImage() ? "dashed" : "solid"}
-      background={isDraggingImage() ? "rgba(218, 229, 216, 0.96)" : "transparent"}
+      background={isDraggingImage() ? "color-mix(in srgb, var(--spatial-map-sunken) 96%, transparent)" : "transparent"}
       onDragEnter={(event) => {
         if (getImageFilesFromDataTransfer(event.dataTransfer).length === 0) {
           console.info(
@@ -841,8 +841,8 @@ function ImageViewerContent(props: {
           overflowX={{ base: "auto", md: "hidden" }}
           overflowY={{ base: "hidden", md: "auto" }}
           p={{ base: "0 0 6px", md: "10px" }}
-          borderRight={{ base: "0", md: "1px solid rgba(96, 101, 95, 0.34)" }}
-          borderBottom={{ base: "1px solid rgba(96, 101, 95, 0.34)", md: "0" }}
+          borderRight={{ base: "0", md: "1px solid color-mix(in srgb, var(--spatial-map-ink) 34%, transparent)" }}
+          borderBottom={{ base: "1px solid color-mix(in srgb, var(--spatial-map-ink) 34%, transparent)", md: "0" }}
           display={{ base: "grid", md: "flex" }}
           gridAutoFlow={{ base: "column", md: undefined }}
           gridAutoColumns={{ base: "minmax(150px, 200px)", md: undefined }}
@@ -855,13 +855,13 @@ function ImageViewerContent(props: {
                 h={{ base: "150px", md: "112px" }}
                 p="0"
                 border="1px solid"
-                borderColor={index() === props.activeIndex ? "rgba(33, 38, 35, 0.62)" : "rgba(34, 41, 36, 0.18)"}
+                borderColor={index() === props.activeIndex ? "color-mix(in srgb, var(--spatial-map-ink) 62%, transparent)" : "color-mix(in srgb, var(--spatial-map-ink) 18%, transparent)"}
                 borderRadius="6px"
-                background="rgba(232, 236, 230, 0.78)"
+                background="color-mix(in srgb, var(--spatial-map-sunken) 78%, transparent)"
                 cursor="pointer"
                 overflow="hidden"
                 position="relative"
-                boxShadow={index() === props.activeIndex ? "inset 0 0 0 1px rgba(33, 38, 35, 0.42)" : undefined}
+                boxShadow={index() === props.activeIndex ? "inset 0 0 0 1px color-mix(in srgb, var(--spatial-map-ink) 42%, transparent)" : undefined}
                 aria-label={`Show ${image.originalName}`}
                 aria-current={
                   index() === props.activeIndex ? "true" : undefined
@@ -885,7 +885,7 @@ function ImageViewerContent(props: {
         minH="0"
         overflow="hidden"
       >
-        <Box position="relative" display="grid" minH="0" h="100%" background="rgba(221, 226, 219, 0.72)">
+        <Box position="relative" display="grid" minH="0" h="100%" background="color-mix(in srgb, var(--spatial-map-sunken) 72%, transparent)">
           <Show when={props.hasMultipleImages}>
             <ImageButton
               type="button"
@@ -900,9 +900,9 @@ function ImageViewerContent(props: {
               justifyContent="center"
               w="36px"
               h="36px"
-              border="1px solid rgba(34, 41, 36, 0.22)"
+              border="1px solid color-mix(in srgb, var(--spatial-map-ink) 22%, transparent)"
               borderRadius="999px"
-              background="rgba(252, 253, 252, 0.9)"
+              background="color-mix(in srgb, var(--spatial-map-raised) 90%, transparent)"
               color="var(--spatial-map-copy)"
               cursor="pointer"
               aria-label="Show previous image"
@@ -996,9 +996,9 @@ function ImageViewerContent(props: {
               justifyContent="center"
               w="36px"
               h="36px"
-              border="1px solid rgba(34, 41, 36, 0.22)"
+              border="1px solid color-mix(in srgb, var(--spatial-map-ink) 22%, transparent)"
               borderRadius="999px"
-              background="rgba(252, 253, 252, 0.9)"
+              background="color-mix(in srgb, var(--spatial-map-raised) 90%, transparent)"
               color="var(--spatial-map-copy)"
               cursor="pointer"
               aria-label="Show next image"

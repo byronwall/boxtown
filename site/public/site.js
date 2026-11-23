@@ -99,7 +99,8 @@ async function show(i) {
   const b = shots[index];
   title.textContent = `${b.dataset.title}  (${index + 1} of ${shots.length})`;
   img.alt = b.querySelector("img").alt;
-  img.src = b.dataset.full;
+  // currentSrc is the light or dark file the <picture> chose.
+  img.src = b.querySelector("img").currentSrc || b.dataset.full;
   await img.decode().catch(() => {});
   fitView();
 }

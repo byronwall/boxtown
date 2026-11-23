@@ -102,7 +102,7 @@ export function AppShellFallback() {
       aria-label="Loading"
     >
       <AppHeader>
-        <Box w="160px" maxW="40vw" h="12px" borderRadius="3px" background="rgba(96, 101, 95, 0.18)" />
+        <Box w="160px" maxW="40vw" h="12px" borderRadius="3px" background="color-mix(in srgb, var(--spatial-map-ink) 18%, transparent)" />
       </AppHeader>
       <Box />
     </Box>

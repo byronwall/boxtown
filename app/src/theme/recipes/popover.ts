@@ -6,7 +6,7 @@ export const popover = defineSlotRecipe({
   slots: popoverAnatomy.extendWith("header", "body", "footer").keys(),
   base: {
     content: {
-      "--popover-bg": "#fbfcfb",
+      "--popover-bg": "var(--spatial-map-raised)",
       "--popover-padding": "spacing.3",
 
       background: "var(--popover-bg)",
@@ -33,12 +33,12 @@ export const popover = defineSlotRecipe({
       },
     },
     title: {
-      color: "#171c19",
+      color: "var(--spatial-map-copy)",
       fontSize: "13px",
       fontWeight: "bold",
     },
     description: {
-      color: "#475249",
+      color: "var(--spatial-map-copy-dim)",
       fontSize: "12px",
     },
     closeTrigger: {

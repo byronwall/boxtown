@@ -30,12 +30,19 @@ export function SpatialMapNodeAttributeMenu<T extends string>(props: {
   };
   onChange: (value: T) => void;
 }) {
+  // Tones are authored for light mode; the theme variables shift them for dark.
   const triggerTone = () =>
-    props.tone ?? {
-      fill: "rgba(244, 247, 241, 0.78)",
-      stroke: "#6f776e",
-      copy: "#202622",
-    };
+    props.tone
+      ? {
+          fill: `color-mix(in srgb, ${props.tone.fill} var(--spatial-map-tint-mix), var(--spatial-map-box-base))`,
+          stroke: `color-mix(in srgb, ${props.tone.stroke} var(--spatial-map-line-mix), var(--spatial-map-line-base))`,
+          copy: `color-mix(in srgb, ${props.tone.copy} var(--spatial-map-ink-mix), var(--spatial-map-ink-base))`,
+        }
+      : {
+          fill: "color-mix(in srgb, var(--spatial-map-raised) 78%, transparent)",
+          stroke: "var(--spatial-map-neutral-stroke)",
+          copy: "var(--spatial-map-copy)",
+        };
   const triggerClass = () =>
     [
       "spatial-map-attribute-menu-trigger",

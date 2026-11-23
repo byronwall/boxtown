@@ -18,7 +18,7 @@ const exportLinkClass = css({
   justifyContent: "center",
   w: "24px",
   transition: "background-color 120ms ease, color 120ms ease, transform 160ms cubic-bezier(0.23, 1, 0.32, 1)",
-  _hover: { bg: "rgba(34, 41, 36, 0.08)", color: "var(--spatial-map-copy)" },
+  _hover: { bg: "color-mix(in srgb, var(--spatial-map-ink) 8%, transparent)", color: "var(--spatial-map-copy)" },
   _active: { transform: "scale(0.97)" },
   _focusVisible: { outline: "2px solid var(--spatial-map-accent)", outlineOffset: "2px" },
 });
