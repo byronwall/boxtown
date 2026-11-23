@@ -1,5 +1,11 @@
 # boxtown
 
+## 0.6.1
+
+### Patch Changes
+
+- 9e14108: The CLI package now links to the renamed GitHub repository, byronwall/boxtown.
+
 ## 0.6.0
 
 ### Minor Changes
