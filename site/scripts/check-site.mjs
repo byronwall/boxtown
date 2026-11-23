@@ -92,7 +92,8 @@ const clip = await page.evaluate(() => navigator.clipboard.readText());
 if (!clip.includes("npm install -g boxtown")) fail("clipboard does not hold the install command");
 
 // Lightbox: fitted on open, click zooms, arrow steps, Esc closes and returns focus.
-await page.click(".hero .shot");
+await page.click("#tab-map");
+await page.click("#panel-map .shot");
 await page.waitForTimeout(300);
 const fit = await page.evaluate(() => {
   const img = document.querySelector(".lb-stage img"), st = document.querySelector(".lb-stage");
@@ -112,6 +113,33 @@ if (!(await page.textContent("#lb-title")).startsWith("Inspect")) fail("ArrowRig
 await page.keyboard.press("Escape");
 if (await page.evaluate(() => document.querySelector(".lb").open)) fail("Esc did not close");
 if (!(await page.evaluate(() => document.activeElement.classList.contains("shot")))) fail("focus did not return");
+
+// Live maps: select opens the inspector, double-click isolates, story steps drive depth,
+// and the agent terminal changes the map.
+await page.goto(url, { waitUntil: "networkidle" });
+await page.waitForFunction(() => window.boxtown);
+await page.locator('#explorer g.box[data-id="page-active-ride"]').click();
+await page.waitForTimeout(400);
+if ((await page.textContent("#explorer .inspector h3")) !== "Active ride") fail("click did not open the inspector");
+await page.click("#explorer .in-close");
+await page.waitForTimeout(700);
+await page.locator('#explorer g.box[data-id="area-find-a-bike"]').dblclick();
+await page.waitForTimeout(400);
+if (await page.isHidden("#explorer .iso-chip")) fail("double-click did not isolate");
+await page.click('#explorer [data-key="depth"] [data-v="1"]');
+await page.waitForTimeout(300);
+const visible = await page.evaluate(() => [...document.querySelectorAll("#explorer g.box")].filter((g) => g.getAttribute("opacity") !== "0").length);
+if (visible !== 6) fail(`Depth 1 shows ${visible} boxes, expected 6`);
+for (const [step, depth] of [["districts", 1], ["blocks", 2], ["status", "all"]]) {
+  await page.locator(`.step[data-step="${step}"]`).evaluate((e) => e.scrollIntoView({ block: "center" }));
+  await page.waitForTimeout(500);
+  const d = await page.evaluate(() => window.boxtown.story.state.depth);
+  if (d !== depth) fail(`story step ${step}: depth ${d}, expected ${depth}`);
+}
+await page.locator("#terminal").evaluate((e) => e.scrollIntoView({ block: "center" }));
+await page.click('[data-run="2"]');
+await page.waitForTimeout(2500);
+if ((await page.evaluate(() => window.boxtown.agentMap.status["page-active-ride"])) !== "implemented") fail("Mark it done did not update the map");
 
 // og.png from the site's own first viewport.
 if (process.argv.includes("--og")) {

@@ -7,6 +7,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { exportDemo } from "./export-demo.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const dataDir = join(root, "tmp/site/demo-data");
@@ -36,7 +37,7 @@ const encoder = await ctx.newPage();
 mkdirSync(out, { recursive: true });
 
 // Playwright writes PNG or JPEG only, so the browser encodes WebP from the PNG.
-async function save(name, png) {
+async function encodeWebp(png) {
   const url = `data:image/png;base64,${png.toString("base64")}`;
   const webp = await encoder.evaluate(async (src) => {
     const img = new Image();
@@ -48,7 +49,10 @@ async function save(name, png) {
     c.getContext("2d").drawImage(img, 0, 0);
     return c.toDataURL("image/webp", 0.86).split(",")[1];
   }, url);
-  writeFileSync(join(out, `${name}.webp`), Buffer.from(webp, "base64"));
+  return Buffer.from(webp, "base64");
+}
+async function save(name, png) {
+  writeFileSync(join(out, `${name}.webp`), await encodeWebp(png));
   console.log(`wrote ${name}.webp`);
 }
 
@@ -77,6 +81,9 @@ await shot("search", project, async () => {
   await page.keyboard.type("dock", { delay: 40 });
   await page.waitForTimeout(500);
 });
+
+// The live map on the page: layouts, node data, images and CLI output. Runs last: it changes the data.
+await exportDemo({ root, base, dataDir, page, encodeWebp });
 
 await browser.close();
 viewer.kill("SIGINT");

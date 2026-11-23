@@ -17,14 +17,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="town.css">
 </head>
 <body>
 <header class="top" id="top">
   <div class="wrap top-row">
     <a class="brand" href="#top"><img src="favicon.svg" alt="" width="24" height="24">Boxtown</a>
     <nav aria-label="Sections">
-      <a href="#tour">Tour</a>
+      <a href="#how" class="wide">How it works</a>
       <a href="#agents">Agents</a>
+      <a href="#tour" class="wide">App</a>
       <a href="#start">Start</a>
       <a href="https://github.com/byronwall/boxtown" class="ext">GitHub</a>
     </nav>
@@ -46,37 +48,64 @@
       <p class="facts">Needs Node 22+. One 14 MB package with the viewer inside. No account, no database: projects are Markdown files in <code>./boxtown/data</code>.</p>
     </div>
   </div>
-  <figure class="hero-shot">
-    <button class="shot" type="button" data-full="images/map.webp" data-title="Map view: the Harbor Bikes demo, fitted">
-      <img src="images/map.webp" width="2880" height="1800" alt="Boxtown canvas with the Harbor Bikes demo: large green area boxes such as Find a bike, Ride and Pay, blue page boxes with phone sketches, and small purple component boxes clustered around them">
-    </button>
-    <figcaption>The canvas on the fictional <em>Harbor Bikes</em> demo. Areas are big, pages smaller, components smallest.</figcaption>
-  </figure>
-</section>
-
-<section class="band" id="why" aria-labelledby="why-title">
-  <div class="wrap why">
-    <div class="prose">
-      <h2 id="why-title">Why boxes</h2>
-      <p>Product context ends up in a doc, a ticket list, a folder of screenshots and someone's head. A list loses the shape of the product. A node graph with every edge drawn turns into a hairball.</p>
-      <p>Boxtown keeps the shape and drops the noise. Size shows depth. Position shows meaning: children cluster around their parent. Edges stay hidden until you ask for them. Each box can hold Markdown notes, metadata and screenshots, so the map is also the spec.</p>
-    </div>
-    <figure class="nest" aria-label="How box sizes map to depth">
-      <div class="b b-area"><span class="t">Find a bike</span><span class="k">area · district</span>
-        <div class="b b-page"><span class="t">Map</span><span class="k">page · block</span>
-          <div class="b b-asm"><span class="t">Filter bar</span><span class="k">assembly · building</span>
-            <div class="b b-cmp"><span class="t">E-bike toggle</span><span class="k">component · room</span></div>
-          </div>
-        </div>
-      </div>
-      <figcaption>Default node types, largest to smallest. Each project can rename them and pick their colors.</figcaption>
-    </figure>
+  <div class="hero-live">
+    <div class="explorer" id="explorer"></div>
+    <p class="ex-hint">This is a live map of the <em>Harbor Bikes</em> demo. Click a box. Double-click to step inside it. Drag to pan, <kbd>⌘</kbd>/<kbd>Ctrl</kbd> + scroll to zoom.</p>
+    <noscript><img src="images/map.webp" width="2880" height="1800" alt="Boxtown canvas with the Harbor Bikes demo"></noscript>
   </div>
 </section>
 
-<section class="wrap" id="tour" aria-labelledby="tour-title">
-  <h2 id="tour-title">Tour</h2>
-  <p class="sub">Six views of one project. Every view keeps its state in the URL, so a refresh or a shared link opens the same thing.</p>
+<section class="band" id="how" aria-labelledby="how-title">
+  <div class="wrap">
+    <h2 id="how-title">How a town of boxes works</h2>
+    <p class="sub">A product has districts, blocks, buildings and rooms. A list flattens them; a graph with every line drawn turns into a hairball. Scroll to build the Harbor Bikes map one idea at a time. The map stays live: click anything.</p>
+    <div class="story">
+      <div class="story-stick"><div class="explorer" id="story-map"></div></div>
+      <ol class="steps">
+        <li class="step" data-step="districts"><span class="n">1</span><h3>Start with districts</h3><p>The six biggest boxes are the big ideas: <b>Find a bike</b>, <b>Ride</b>, <b>Pay</b>, <b>Account</b>, <b>Fleet ops</b> and a launch brief. This is <b>Depth 1</b>.</p></li>
+        <li class="step" data-step="blocks"><span class="n">2</span><h3>Add the blocks</h3><p>At <b>Depth 2</b>, pages and modules appear next to the area they belong to. They are smaller, because they sit one level down.</p></li>
+        <li class="step" data-step="rooms"><span class="n">3</span><h3>Down to the rooms</h3><p>At full depth, assemblies and components fill in as the smallest boxes. Size shows depth at a glance. You never count indents.</p></li>
+        <li class="step" data-step="neighbors"><span class="n">4</span><h3>Neighbors are related</h3><p>Children cluster around their parent. Everything in <b>Ride</b> sits together: Unlock, Active ride, the timer card, the end button. No lines needed. Hover any box to light up its branch.</p></li>
+        <li class="step" data-step="streets"><span class="n">5</span><h3>Streets when you ask</h3><p>Lines are off by default. Turn on <b>Edges</b> to trace parents and the cross-links: the <b>End ride button</b> depends on the <b>Dock sensor feed</b>, and so does the rebalancing queue.</p></li>
+        <li class="step" data-step="inside"><span class="n">6</span><h3>Step inside a district</h3><p>Double-click a box to isolate it. The canvas packs just that branch, so a big project stays readable one area at a time.</p></li>
+        <li class="step" data-step="spec"><span class="n">7</span><h3>Every building has a spec</h3><p>Click a box to open it. Purpose, implementation notes, Markdown context, images and links live on the box, so the map is also the spec.</p></li>
+        <li class="step" data-step="status"><span class="n">8</span><h3>See the state of the town</h3><p>Switch <b>Color</b> to <b>Status</b>. Done work turns green, work in progress blue, and the blocked <b>End ride button</b> red.</p></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+
+
+<section class="wrap" id="agents" aria-labelledby="agents-title">
+  <h2 id="agents-title">Hand the map to an agent</h2>
+  <p class="sub">The <code>boxtown</code> CLI reads and writes the same project as the viewer, and writes show up in an open browser at once. Boxtown calls no LLM itself: Codex, Claude or any agent with a shell does the work and writes the result back. Run the commands below. The output is real, recorded from this demo.</p>
+  <div class="agent-play">
+    <div class="terminal" id="terminal">
+      <div class="term-bar"><span>agent shell</span><button type="button" data-act="reset">Reset</button></div>
+      <div class="term-runs">
+        <button type="button" data-run="0"><span class="k">1</span> Find the work</button>
+        <button type="button" data-run="1"><span class="k">2</span> Read one box with its parents</button>
+        <button type="button" data-run="2"><span class="k">3</span> Mark it done</button>
+      </div>
+      <div class="term-screen" tabindex="0" aria-label="Terminal output" aria-live="polite"></div>
+      <p class="term-note" hidden>The open map updated: <b>Active ride</b> is now <b>Implemented</b>. In the real app the activity log also names the agent token that wrote it.</p>
+    </div>
+    <div class="explorer compact" id="agent-map"></div>
+  </div>
+  <div class="agent-setup">
+    <div>
+      <h3>Teach the agent once</h3>
+      <p>The package bundles a <code>boxtown-context</code> skill: when to use the CLI, and which commands keep the context small. <code>node context-pack</code> writes a whole branch to a folder, and <code>image add</code> attaches screenshots as proof.</p>
+    </div>
+    <div class="cmd" data-copy="boxtown skill install --agent codex --global"><pre><code><span class="p">$</span> boxtown skill install --agent codex --global</code></pre><button class="copy" type="button" aria-label="Copy command"><span>Copy</span></button></div>
+  </div>
+  <p class="more">Agents reading this page: <a href="llms.txt">llms.txt</a> has the short version. The <a href="https://www.npmjs.com/package/boxtown">npm README</a> lists every command.</p>
+</section>
+
+<section class="band" id="tour" aria-labelledby="tour-title"><div class="wrap">
+  <h2 id="tour-title">The real app</h2>
+  <p class="sub">The live map above is a slice of the canvas. Here is the whole app on the same demo: six views of one project. Every view keeps its state in the URL, so a refresh or a shared link opens the same thing.</p>
   <div class="tabs" role="tablist" aria-label="Boxtown views">
     <button role="tab" id="tab-map" aria-controls="panel-map" aria-selected="true" tabindex="0">Map</button>
     <button role="tab" id="tab-inspect" aria-controls="panel-inspect" aria-selected="false" tabindex="-1">Inspect</button>
@@ -161,59 +190,7 @@
       </div>
     </div>
   </div>
-</section>
-
-<section class="band" id="agents" aria-labelledby="agents-title">
-  <div class="wrap">
-    <h2 id="agents-title">For coding agents</h2>
-    <p class="sub">The <code>boxtown</code> CLI reads and writes the same project as the viewer. Writes show up in an open browser at once. The app itself calls no LLM: Codex, Claude or any agent with a shell does the thinking and writes the result back.</p>
-    <ol class="loop">
-      <li>
-        <h3>Teach the agent once</h3>
-        <div class="cmd" data-copy="boxtown skill install --agent codex --global"><pre><code><span class="p">$</span> boxtown skill install --agent codex --global</code></pre><button class="copy" type="button" aria-label="Copy command"><span>Copy</span></button></div>
-        <p>Installs the bundled <code>boxtown-context</code> skill: when to use the CLI and which commands keep the context small.</p>
-      </li>
-      <li>
-        <h3>Find the work</h3>
-        <div class="out"><div class="bar">terminal</div><pre><code><span class="p">$</span> boxtown node list --status working --compact --local ./boxtown/data --project harbor-bikes
-ID                        STATUS   TYPE       TITLE
-page-active-ride          working  page       Active ride
-component-e-bike-toggle   working  component  E-bike toggle
-assembly-filter-bar       working  assembly   Filter bar
-module-rebalancing-queue  working  module     Rebalancing queue
-assembly-ride-timer-card  working  assembly   Ride timer card
-…</code></pre></div>
-        <p>Filter by status, type, priority or text. Add <code>--json</code> for machine output.</p>
-      </li>
-      <li>
-        <h3>Read one scope, not the whole graph</h3>
-        <div class="out"><div class="bar">terminal</div><pre><code><span class="p">$</span> boxtown node export-context page-active-ride …
-# Node Context: Active ride
-
-Path: Ride &gt; Active ride
-Status: working
-Type: page
-
-## Ancestor Requirements
-### Ride
-- purpose: Unlock, ride and return.
-
-## Current Node
-- purpose: Timer, cost so far, and the nearest docks with space.
-- implementation: Wake lock on. Timer from the unlock event, not the phone clock.
-…</code></pre></div>
-        <p>The export carries the parent chain, so the agent knows where the box sits. <code>node context-pack</code> writes a whole branch to a folder.</p>
-      </li>
-      <li>
-        <h3>Write back the result</h3>
-        <div class="cmd" data-copy="boxtown node complete page-active-ride --note &quot;Timer reads the unlock event.&quot;&#10;boxtown image add page-active-ride ./desktop.png ./mobile.png"><pre><code><span class="p">$</span> boxtown node complete page-active-ride --note "Timer reads the unlock event."
-<span class="p">$</span> boxtown image add page-active-ride ./desktop.png ./mobile.png</code></pre><button class="copy" type="button" aria-label="Copy commands"><span>Copy</span></button></div>
-        <p>Status, notes and screenshots land on the box. The activity log shows which agent token wrote them.</p>
-      </li>
-    </ol>
-    <p class="more">Agents reading this page: <a href="llms.txt">llms.txt</a> has the short version. The <a href="https://www.npmjs.com/package/boxtown">npm README</a> lists every command.</p>
-  </div>
-</section>
+</div></section>
 
 <section class="wrap" id="files" aria-labelledby="files-title">
   <div class="split">
@@ -327,5 +304,6 @@ at arm's length on a handlebar mount.
   <div class="lb-stage"><img alt=""></div>
 </dialog>
 <script src="site.js"></script>
+<script type="module" src="town-ui.js"></script>
 </body>
 </html>
