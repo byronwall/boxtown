@@ -4,6 +4,10 @@ Notable changes to Boxtown (formerly Product Grid Management), newest first. Ent
 
 ## 2026-11-22
 
+### Fixed
+
+- Installing the `boxtown` package with npm 12 now adds the `boxtown` command. Before, npm 12 dropped it.
+
 ### Changed
 
 - Product Grid Management is now **Boxtown**. The app title, the CLI, and the agent skill use the new name.
