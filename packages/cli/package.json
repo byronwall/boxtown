@@ -29,7 +29,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/byronwall/prod-mgmt-grid.git",
+    "url": "git+https://github.com/byronwall/boxtown.git",
     "directory": "packages/cli"
   }
 }

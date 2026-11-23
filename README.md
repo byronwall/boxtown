@@ -275,12 +275,12 @@ The workflow uses Node 24 and npm trusted publishing. No `NPM_TOKEN` secret is n
 1. In GitHub **Settings → Actions → General**, enable **Allow GitHub Actions to create and approve pull requests**.
 2. In the npm settings for `boxtown`, add a GitHub Actions trusted publisher:
    - Organization or user: `byronwall`
-   - Repository: `prod-mgmt-grid`
+   - Repository: `boxtown`
    - Workflow filename: `release.yml`
    - Environment: leave blank
    - Allowed action: `npm publish`
 
-Keep `id-token: write` in the workflow. The GitHub repository is private, so provenance is disabled. npm provenance requires a public source repository.
+Keep `id-token: write` in the workflow. Provenance is disabled in the workflow. The repository is now public, so provenance can be turned on.
 
 To retry a release, open **Actions → Release → Run workflow** and select `main`. Check the npm version and GitHub release before retrying a failed publish.
 

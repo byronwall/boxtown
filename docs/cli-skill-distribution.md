@@ -66,7 +66,7 @@ npx skills add ./ --skill boxtown-context --agent codex --global
 Once the repo is public:
 
 ```bash
-npx skills add byronwallrus/product-grid-mgmt --skill boxtown-context --agent codex --global
+npx skills add byronwall/boxtown --skill boxtown-context --agent codex --global
 ```
 
 The npm package path is still the primary distribution route for users who install `boxtown`; the repo-root skill exists for ecosystem compatibility.
