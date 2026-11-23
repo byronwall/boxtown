@@ -14,6 +14,7 @@ Notable changes to Boxtown (formerly Product Grid Management), newest first. Ent
 
 ### Changed
 
+- The `boxtown` package page on npm links to the Boxtown home page.
 - Product Grid Management is now **Boxtown**. The app title, the CLI, and the agent skill use the new name.
 - The CLI command is `boxtown` instead of `pgm`. Install it with `npm install -g boxtown`. The old `@byronwallrus/product-grid-cli` package gets no more updates.
 - CLI environment variables start with `BOXTOWN_` instead of `PRODUCT_GRID_` or `PGM_`. For example, `BOXTOWN_SERVER` and `BOXTOWN_TOKEN`.
