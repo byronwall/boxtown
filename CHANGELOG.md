@@ -8,6 +8,7 @@ Notable changes to Boxtown (formerly Product Grid Management), newest first. Ent
 
 - The live map on the home page works from the keyboard: Tab to a box, arrows to move, Enter to open it, Shift+Enter to step inside. It also has zoom buttons for phones.
 - The home page map no longer animates on load, the story map shows which step it is on, and the agent terminal marks the commands you ran.
+- The home page copy is shorter and plainer, and its buttons use drawn icons instead of text symbols.
 
 ## 2026-11-22
 

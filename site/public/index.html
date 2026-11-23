@@ -36,7 +36,6 @@
 <main>
 <section class="hero wrap" aria-labelledby="hero-title">
   <div class="hero-text">
-    <p class="kicker">Product maps for people and coding agents</p>
     <h1 id="hero-title">Map your product as a town of boxes.</h1>
     <p class="lede">Ideas, screens and systems become nested boxes. Big concepts are big boxes, details are small, and related work sits together. You edit the map in a browser; your coding agents read and update it from the terminal.</p>
     <div class="try">
@@ -45,12 +44,12 @@
 <span class="p">$</span> boxtown viewer</code></pre>
         <button class="copy" type="button" aria-label="Copy install commands"><span>Copy</span></button>
       </div>
-      <p class="facts">Needs Node 22+. One 14 MB package with the viewer inside. No account, no database: projects are Markdown files in <code>./boxtown/data</code>.</p>
+      <p class="facts">Needs Node 22+. One 14 MB package with the viewer inside. No account and no database. Projects are Markdown files in <code>./boxtown/data</code>.</p>
     </div>
   </div>
   <div class="hero-live">
     <div class="explorer" id="explorer"></div>
-    <p class="ex-hint">A live map of the <em>Harbor Bikes</em> demo. <span class="for-mouse">Click a box. Double-click to step inside it. Drag to pan, <kbd>⌘</kbd>/<kbd>Ctrl</kbd> + scroll to zoom.</span><span class="for-touch">Tap a box. Double-tap to step inside it. Use − and + to zoom.</span> <span class="for-keys">Keyboard: <kbd>Tab</kbd>, arrows, <kbd>Enter</kbd>, <kbd>Shift</kbd>+<kbd>Enter</kbd>.</span></p>
+    <p class="ex-hint">A live map of the <em>Harbor Bikes</em> demo. <span class="for-mouse">Click a box. Double-click to step inside it. Drag to pan, <kbd>⌘</kbd>/<kbd>Ctrl</kbd> + scroll to zoom.</span><span class="for-touch">Tap a box. Double-tap to step inside it. Use the zoom buttons.</span> <span class="for-keys">Keyboard: <kbd>Tab</kbd>, arrows, <kbd>Enter</kbd>, <kbd>Shift</kbd>+<kbd>Enter</kbd>.</span></p>
     <noscript><img src="images/map.webp" width="2880" height="1800" alt="Boxtown canvas with the Harbor Bikes demo"></noscript>
   </div>
 </section>
@@ -58,18 +57,18 @@
 <section class="band" id="how" aria-labelledby="how-title">
   <div class="wrap">
     <h2 id="how-title">How a town of boxes works</h2>
-    <p class="sub">A product has districts, blocks, buildings and rooms. A list flattens them; a graph with every line drawn turns into a hairball. Scroll to build the Harbor Bikes map one idea at a time. The map stays live: click anything.</p>
+    <p class="sub">A product has districts, blocks, buildings and rooms. A list flattens them; a graph with every line drawn turns into a hairball. Scroll to build the Harbor Bikes map one idea at a time. You can click the map at any step.</p>
     <div class="story">
       <div class="story-stick"><div class="explorer" id="story-map"></div></div>
       <ol class="steps">
-        <li class="step" data-step="districts"><span class="n">Step 1 of 8</span><h3>Start with districts</h3><p>The six biggest boxes are the big ideas: <b>Find a bike</b>, <b>Ride</b>, <b>Pay</b>, <b>Account</b>, <b>Fleet ops</b> and a launch brief. This is <b>Depth 1</b>.</p></li>
-        <li class="step" data-step="blocks"><span class="n">Step 2 of 8</span><h3>Add the blocks</h3><p>At <b>Depth 2</b>, pages and modules appear next to the area they belong to. They are smaller, because they sit one level down.</p></li>
-        <li class="step" data-step="rooms"><span class="n">Step 3 of 8</span><h3>Down to the rooms</h3><p>At full depth, assemblies and components fill in as the smallest boxes. Size shows depth at a glance. You never count indents.</p></li>
-        <li class="step" data-step="neighbors"><span class="n">Step 4 of 8</span><h3>Neighbors are related</h3><p>Children cluster around their parent. Everything in <b>Ride</b> sits together: Unlock, Active ride, the timer card, the end button. No lines needed. Hover or tap any box to light up its branch.</p></li>
-        <li class="step" data-step="streets"><span class="n">Step 5 of 8</span><h3>Streets when you ask</h3><p>Lines are off by default. Turn on <b>Edges</b> to trace parents and the cross-links: the <b>End ride button</b> depends on the <b>Dock sensor feed</b>, and so does the rebalancing queue.</p></li>
-        <li class="step" data-step="inside"><span class="n">Step 6 of 8</span><h3>Step inside a district</h3><p>Double-click a box to isolate it. The canvas packs just that branch, so a big project stays readable one area at a time.</p></li>
-        <li class="step" data-step="spec"><span class="n">Step 7 of 8</span><h3>Every building has a spec</h3><p>Click a box to open it. Purpose, implementation notes, Markdown context, images and links live on the box, so the map is also the spec.</p></li>
-        <li class="step" data-step="status"><span class="n">Step 8 of 8</span><h3>See the state of the town</h3><p>Switch <b>Color</b> to <b>Status</b>. Done work turns green, work in progress blue, and the blocked <b>End ride button</b> red.</p></li>
+        <li class="step" data-step="districts"><h3>Start with districts</h3><p>The six biggest boxes are the big ideas: <b>Find a bike</b>, <b>Ride</b>, <b>Pay</b>, <b>Account</b>, <b>Fleet ops</b> and a launch brief. This is <b>Depth 1</b>.</p></li>
+        <li class="step" data-step="blocks"><h3>Add the blocks</h3><p>At <b>Depth 2</b>, pages and modules appear next to the area they belong to. They are smaller, because they sit one level down.</p></li>
+        <li class="step" data-step="rooms"><h3>Down to the rooms</h3><p>At full depth, assemblies and components fill in as the smallest boxes. Size shows depth at a glance.</p></li>
+        <li class="step" data-step="neighbors"><h3>Children sit near their parent</h3><p>Everything in <b>Ride</b> sits together: Unlock, Active ride, the timer card and the end button. Hover or tap any box to light up its branch.</p></li>
+        <li class="step" data-step="streets"><h3>Edges when you ask</h3><p>Lines are off by default. Turn on <b>Edges</b> to trace parents and the cross-links: the <b>End ride button</b> depends on the <b>Dock sensor feed</b>, and so does the rebalancing queue.</p></li>
+        <li class="step" data-step="inside"><h3>Step inside a district</h3><p>Double-click a box to isolate it. The canvas packs just that branch, so a big project stays readable one area at a time.</p></li>
+        <li class="step" data-step="spec"><h3>Each box holds its spec</h3><p>Click a box to open it. Purpose, implementation notes, Markdown context, images and links live on the box.</p></li>
+        <li class="step" data-step="status"><h3>Color by status</h3><p>Switch <b>Color</b> to <b>Status</b>. Done work turns green, work in progress blue, and the blocked <b>End ride button</b> red.</p></li>
       </ol>
     </div>
   </div>
@@ -79,7 +78,7 @@
 
 <section class="wrap" id="agents" aria-labelledby="agents-title">
   <h2 id="agents-title">Hand the map to an agent</h2>
-  <p class="sub">The <code>boxtown</code> CLI reads and writes the same project as the viewer, and writes show up in an open browser at once. Boxtown calls no LLM itself: Codex, Claude or any agent with a shell does the work and writes the result back. Run the commands below. The output is real, recorded from this demo.</p>
+  <p class="sub">The <code>boxtown</code> CLI reads and writes the same project as the viewer, and writes show up in an open browser at once. Boxtown calls no LLM itself. Codex, Claude or any agent with a shell does the work and writes the result back. Run the commands below. The output is real, recorded from this demo.</p>
   <div class="agent-play">
     <div class="terminal" id="terminal">
       <div class="term-bar"><span>agent shell</span><button type="button" data-act="reset">Reset</button></div>
@@ -104,8 +103,8 @@
 </section>
 
 <section class="band" id="tour" aria-labelledby="tour-title"><div class="wrap">
-  <h2 id="tour-title">The real app</h2>
-  <p class="sub">The live map above is a slice of the canvas. Here is the whole app on the same demo: six views of one project. Every view keeps its state in the URL, so a refresh or a shared link opens the same thing.</p>
+  <h2 id="tour-title">Screens from the app</h2>
+  <p class="sub">The live map above is a slice of the canvas. These are the six views of the full app, on the same demo. Every view keeps its state in the URL, so a refresh or a shared link opens the same thing.</p>
   <div class="tabs" role="tablist" aria-label="Boxtown views">
     <button role="tab" id="tab-map" aria-controls="panel-map" aria-selected="true" tabindex="0">Map</button>
     <button role="tab" id="tab-inspect" aria-controls="panel-inspect" aria-selected="false" tabindex="-1">Inspect</button>
@@ -197,7 +196,7 @@
     <div class="prose">
       <h2 id="files-title">Your map is a folder</h2>
       <p>Each project is a folder of plain files. One Markdown file per box: front matter for the fields, the body for the context. Keep it in the repo next to the code it describes.</p>
-      <p>The layout is built for <code>git merge</code>. A child stores its parent, so a move changes one line. History is one write-once file per entry. Two branches that each add or edit boxes merge with no conflict.</p>
+      <p>A child stores its parent, so a move changes one line. History is one write-once file per entry. Two branches that each add or edit boxes merge in <code>git</code> with no conflict.</p>
 <pre class="tree"><code>boxtown/data/projects/harbor-bikes/
 ├── project.json        <span class="c">name, node types, metadata fields</span>
 ├── nodes/
@@ -275,8 +274,8 @@ at arm's length on a handlebar mount.
 <section class="band" id="built" aria-labelledby="built-title">
   <div class="wrap"><div class="prose">
     <h2 id="built-title">How I built it</h2>
-    <p>I started this in April 2026 as Product Grid Management, a place to keep the structure of an app next to the notes and screenshots for each piece. The first versions called LLM providers from inside the app. I took that out. Agents in a terminal were better at the thinking, and the app got simpler once it only had to hold the result.</p>
-    <p>The stack is SolidStart, SolidJS and Panda CSS. The CLI ships a production build of the app, so <code>boxtown viewer</code> is the same app with no server to set up. Codex and Claude did much of the work in pull requests that I reviewed; Boxtown held the issues, and the agents used the CLI to read them and mark them done. In November 2026 I renamed it Boxtown, for the boxes and how they nest.</p>
+    <p>I started this in April 2026 as Product Grid Management, a place to keep the structure of an app next to the notes and screenshots for each piece. The first versions called LLM providers from inside the app. I took that out. Codex and Claude now write content through the CLI, and the app only holds the result.</p>
+    <p>The stack is SolidStart, SolidJS and Panda CSS. The CLI ships a production build of the app, so <code>boxtown viewer</code> is the same app with no server to set up. Codex and Claude wrote many of the pull requests. Boxtown held the issues, and the agents used the CLI to read them and mark them done. In November 2026 I renamed it Boxtown, for the boxes and how they nest.</p>
     <p class="more"><a href="https://byroni.us/blog/product-grid-local-viewer-and-agent-workflow">Read the October update</a> · <a href="https://github.com/byronwall/boxtown/blob/main/CHANGELOG.md">Changelog</a></p>
   </div></div>
 </section>
@@ -295,13 +294,13 @@ at arm's length on a handlebar mount.
   <div class="lb-bar">
     <span id="lb-title"></span>
     <span class="lb-actions">
-      <button type="button" data-act="prev" aria-label="Previous screenshot">←</button>
-      <button type="button" data-act="next" aria-label="Next screenshot">→</button>
+      <button type="button" data-act="prev" aria-label="Previous screenshot"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" class="ic"><path d="M10 3.5L5.5 8l4.5 4.5"/></svg></button>
+      <button type="button" data-act="next" aria-label="Next screenshot"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" class="ic"><path d="M6 3.5L10.5 8 6 12.5"/></svg></button>
       <button type="button" data-act="actual">Actual size</button>
       <button type="button" data-act="close" class="lb-close">Close</button>
     </span>
   </div>
-  <div class="lb-stage"><img alt=""></div>
+  <div class="lb-stage"></div>
 </dialog>
 <script src="site.js"></script>
 <script type="module" src="town-ui.js"></script>

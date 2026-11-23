@@ -29,7 +29,7 @@
     --canvas-grid: #1e241f;
     --ink: #e6ebe6;
     --ink-muted: #a3aca5;
-    --ink-subtle: #7b847d;
+    --ink-subtle: #8f9891;
     --box-mix: 44%;
     --box-base: #1a1f1b;
     --box-line: #ffffff26;
@@ -85,7 +85,7 @@ svg.town.panning { cursor: grabbing; }
 .box .body {
   fill: color-mix(in srgb, var(--f) var(--box-mix), var(--box-base));
   stroke: color-mix(in srgb, var(--f) 55%, var(--box-line)); stroke-width: 1.2;
-  transition: fill 260ms ease, width 520ms cubic-bezier(0.22, 1, 0.36, 1), height 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: fill 260ms ease;
 }
 .box-area .body, .box-module .body { stroke-width: 2.2; stroke: color-mix(in srgb, var(--f) 50%, var(--box-line-strong)); }
 .box:hover .body { stroke: var(--box-line-hover); stroke-width: 2; }
@@ -150,7 +150,6 @@ svg.town.no-anim .box, svg.town.no-anim .box .body { transition: none; }
 .steps { list-style: none; margin: 0; padding: 14vh 0 22vh; }
 .step { min-height: 42vh; display: flex; flex-direction: column; justify-content: center; opacity: 0.38; transition: opacity 240ms; }
 .step.is-active { opacity: 1; }
-.step .n { font: 700 11px var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
 .step h3 { font-size: 22px; margin: 4px 0 10px; }
 .step p { color: var(--muted); margin: 0; max-width: 42ch; }
 .step b { color: var(--text); font-weight: 600; }
@@ -174,7 +173,10 @@ svg.town.no-anim .box, svg.town.no-anim .box .body { transition: none; }
 .terminal[aria-busy="true"] .term-runs button { cursor: progress; }
 .term-runs button:disabled { opacity: 0.55; }
 .term-runs button.ran { color: #8fa093; border-color: #5cc48c59; }
-.term-runs button.ran .k::before { content: "✓ "; }
+.term-runs button.ran .k::before {
+  content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 4px; vertical-align: -1px; background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3.2 3L13 4.5' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
 .term-cmd { color: #f1f5f1; white-space: pre-wrap; word-break: break-word; }
 .term-cmd .p { color: #5cc48c; }
 .term-out { margin: 4px 0 14px; color: #b9c5bb; white-space: pre; overflow-x: auto; font: inherit; }
