@@ -1,0 +1,14 @@
+{
+  "name": "boxtown-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "node scripts/seed-demo.mjs",
+    "capture": "node scripts/capture.mjs",
+    "check": "node scripts/check-site.mjs",
+    "serve": "pnpm dlx http-server@14.1.1 public -p 4173 -c-1"
+  },
+  "devDependencies": {
+    "playwright": "1.58.0"
+  }
+}

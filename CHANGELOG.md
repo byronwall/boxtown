@@ -4,6 +4,10 @@ Notable changes to Boxtown (formerly Product Grid Management), newest first. Ent
 
 ## 2026-11-22
 
+### Added
+
+- Boxtown has a home page at [byronwall.github.io/boxtown](https://byronwall.github.io/boxtown/). It has a live demo map you can click, isolate and recolor, a scroll story that builds the map step by step, an agent terminal that updates the map, a tour of the real app, and install steps.
+
 ### Fixed
 
 - Installing the `boxtown` package with npm 12 now adds the `boxtown` command. Before, npm 12 dropped it.

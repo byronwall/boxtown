@@ -50,6 +50,7 @@ Run inside `app/`:
 - Router action URL helper: `app/src/lib/router/action-url.ts`
 - Theme + recipes: `app/src/theme/`
 - Panda config: `app/panda.config.ts`
+- Landing page: `site/public/` is a static GitHub Pages site. Reshoot its screenshots with `pnpm --dir site capture`; see `site/README.md`.
 
 ## UI Conventions
 
