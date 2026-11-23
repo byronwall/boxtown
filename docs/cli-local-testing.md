@@ -21,39 +21,39 @@ From the repo root:
 npm install -g ./packages/cli
 ```
 
-This installs a global `pgm` command from the local package folder. No npm registry publish is required.
+This installs a global `boxtown` command from the local package folder. No npm registry publish is required.
 
 ## 3. Query The Dev Server
 
 From any terminal:
 
 ```bash
-pgm project list
-pgm project list --json
-pgm project create "New Product Site" --link --json
-pgm project link <project-id>
-pgm project current
-pgm project export-markdown --output ./project-context.md
-pgm node list
-pgm node list --status blocked
-pgm node view <node-id>
-pgm node create --title "Checkout" --type page --json
-pgm node update <node-id> --status working --json
-pgm node context set <node-id> --file ./context.md --json
-pgm node metadata set <node-id> purpose "Checkout entry point" --json
-pgm node move <node-id> --parent <parent-node-id> --json
-pgm node import-markdown --file ./brief.md --title "Brief" --split-headings --json
-pgm image add <node-id> ./screenshot.png --json
-pgm image list <node-id> --json
-pgm image remove <node-id> <image-id> --json
-pgm task list
-pgm task list --json
+boxtown project list
+boxtown project list --json
+boxtown project create "New Product Site" --link --json
+boxtown project link <project-id>
+boxtown project current
+boxtown project export-markdown --output ./project-context.md
+boxtown node list
+boxtown node list --status blocked
+boxtown node view <node-id>
+boxtown node create --title "Checkout" --type page --json
+boxtown node update <node-id> --status working --json
+boxtown node context set <node-id> --file ./context.md --json
+boxtown node metadata set <node-id> purpose "Checkout entry point" --json
+boxtown node move <node-id> --parent <parent-node-id> --json
+boxtown node import-markdown --file ./brief.md --title "Brief" --split-headings --json
+boxtown image add <node-id> ./screenshot.png --json
+boxtown image list <node-id> --json
+boxtown image remove <node-id> <image-id> --json
+boxtown task list
+boxtown task list --json
 ```
 
 Use explicit flags when needed:
 
 ```bash
-pgm node list --server http://localhost:3000 --project <project-id> --json
+boxtown node list --server http://localhost:3000 --project <project-id> --json
 ```
 
 ## 4. Optional Token Auth
@@ -69,18 +69,18 @@ AGENT_API_TOKENS='local-token:project:read|project:write|node:read|task:read|nod
 Then store the token:
 
 ```bash
-pgm auth login --token local-token
-pgm auth status
+boxtown auth login --token local-token
+boxtown auth status
 ```
 
 You can also avoid local config and pass env vars:
 
 ```bash
-PRODUCT_GRID_TOKEN=local-token PRODUCT_GRID_PROJECT=<project-id> pgm node list
+BOXTOWN_TOKEN=local-token BOXTOWN_PROJECT=<project-id> boxtown node list
 ```
 
 ## 5. Uninstall The Local CLI
 
 ```bash
-npm uninstall -g @byronwallrus/product-grid-cli
+npm uninstall -g boxtown
 ```

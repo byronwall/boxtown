@@ -1,6 +1,6 @@
-# Product Grid Management
+# Boxtown
 
-Product Grid Management is a SolidStart application for mapping product ideas, UI architecture, system relationships, and loose planning context as a spatial graph. It combines a project registry, an interactive map canvas, structured node metadata, markdown context notes, image attachments, and a CLI for reading and editing project data.
+Boxtown is a SolidStart application for mapping product ideas, UI architecture, system relationships, and loose planning context as a spatial graph. It combines a project registry, an interactive map canvas, structured node metadata, markdown context notes, image attachments, and a CLI for reading and editing project data.
 
 ## Screenshots
 
@@ -170,15 +170,15 @@ The current app supports several complementary working modes:
 - Provides `/api/v1` endpoints for agent-oriented project, schema, node, import, export, metadata, context, image, and move operations.
 - Supports token-based API scopes for read and write access.
 - Allows local development read access when token auth is not configured outside production.
-- Ships a `pgm` CLI under `packages/cli/`, published as [`@byronwallrus/product-grid-cli`](https://www.npmjs.com/package/@byronwallrus/product-grid-cli).
-- Installs the published CLI with `npm install -g @byronwallrus/product-grid-cli`.
+- Ships a `boxtown` CLI under `packages/cli/`, published as [`boxtown`](https://www.npmjs.com/package/boxtown).
+- Installs the published CLI with `npm install -g boxtown`.
 - Lists, creates, links, views, and exports projects from the CLI.
 - Lists, searches, filters, creates, updates, moves, and imports nodes from the CLI.
 - Exposes compact project schema early so agents can discover available statuses, node types, and metadata fields.
 - Sets node context and metadata from CLI commands.
 - Adds, lists, and removes node images from the CLI.
 - Exports project context as LLM-ready markdown.
-- Includes a bundled `product-grid-context` Codex skill installer through `pgm skill`.
+- Includes a bundled `boxtown-context` Codex skill installer through `boxtown skill`.
 - Shares typed API contracts through `packages/api-contract/`.
 
 ### Live and Debug Tooling
@@ -217,11 +217,11 @@ pnpm prepare
 pnpm dev
 ```
 
-The app detects the repo's `pgm/data` folder, which contains a copy of the cloud Project Mgmt Grid.
+The app detects the repo's `boxtown/data` folder, which contains a copy of the cloud Project Mgmt Grid.
 Use `APP_DATA_DIR` to select another data folder. The app needs no LLM API key.
 
-With the CLI installed, run `pgm viewer` from the repo root to open the same data.
-The viewer defaults to `./pgm/data`; use `--data-dir <folder>` to select another folder.
+With the CLI installed, run `boxtown viewer` from the repo root to open the same data.
+The viewer defaults to `./boxtown/data`; use `--data-dir <folder>` to select another folder.
 
 ## Common Commands
 
@@ -249,7 +249,7 @@ pnpm start
 - Markdown renderer: `app/src/components/markdown-renderer/`
 - Shared UI wrappers: `app/src/components/ui/`
 - Theme and recipes: `app/src/theme/`
-- Local project data: `pgm/data/`
+- Local project data: `boxtown/data/`
 - Design brief: `docs/design-brief-industrial-ui.md`
 
 ## Notes
@@ -273,7 +273,7 @@ When a changeset reaches `main`, the Release workflow opens or updates a **Versi
 The workflow uses Node 24 and npm trusted publishing. No `NPM_TOKEN` secret is needed. Complete this setup before merging the first Version Packages PR:
 
 1. In GitHub **Settings → Actions → General**, enable **Allow GitHub Actions to create and approve pull requests**.
-2. In the npm settings for `@byronwallrus/product-grid-cli`, add a GitHub Actions trusted publisher:
+2. In the npm settings for `boxtown`, add a GitHub Actions trusted publisher:
    - Organization or user: `byronwall`
    - Repository: `prod-mgmt-grid`
    - Workflow filename: `release.yml`

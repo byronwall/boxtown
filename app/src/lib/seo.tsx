@@ -2,7 +2,7 @@ import { Meta, Title } from "@solidjs/meta";
 import { createRenderEffect } from "solid-js";
 import { isServer } from "solid-js/web";
 
-const SITE_NAME = "Product Grid Mgmt";
+const SITE_NAME = "Boxtown";
 const DEFAULT_DESCRIPTION =
   "Operator-grade product mapping for structuring projects, context, dependencies, reuse paths, and visual UI inventories.";
 

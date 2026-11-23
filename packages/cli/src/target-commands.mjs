@@ -3,11 +3,11 @@ import { CliError, exitCodes } from "./errors.mjs";
 import { describeNetworkError } from "./network-errors.mjs";
 import { writeJson } from "./output.mjs";
 
-// pgm target inspect: where commands would read and write, and whether it is
+// boxtown target inspect: where commands would read and write, and whether it is
 // reachable. Starts and stops nothing, and never prints the token.
 export async function dispatchTarget(parsed, io) {
   if (parsed.command[1] !== "inspect") {
-    throw new CliError("Usage: pgm target inspect [--local <folder>] [--project <id>] [--json]", exitCodes.usage);
+    throw new CliError("Usage: boxtown target inspect [--local <folder>] [--project <id>] [--json]", exitCodes.usage);
   }
 
   const target = parsed.options.local !== undefined
@@ -42,11 +42,11 @@ async function inspectRemote(parsed, io) {
     server,
     serverSource: parsed.options.server !== undefined
       ? "--server"
-      : io.env.PRODUCT_GRID_SERVER ? "PRODUCT_GRID_SERVER" : config.defaultServer !== defaultServer ? "config" : "default",
+      : io.env.BOXTOWN_SERVER ? "BOXTOWN_SERVER" : config.defaultServer !== defaultServer ? "config" : "default",
     token: token
       ? {
           present: true,
-          source: parsed.options.token !== undefined ? "--token" : io.env.PRODUCT_GRID_TOKEN ? "PRODUCT_GRID_TOKEN" : "config",
+          source: parsed.options.token !== undefined ? "--token" : io.env.BOXTOWN_TOKEN ? "BOXTOWN_TOKEN" : "config",
         }
       : { present: false },
     project: projectId
@@ -54,7 +54,7 @@ async function inspectRemote(parsed, io) {
           id: projectId,
           source: parsed.options.project !== undefined
             ? "--project"
-            : io.env.PRODUCT_GRID_PROJECT ? "PRODUCT_GRID_PROJECT" : "linked in config",
+            : io.env.BOXTOWN_PROJECT ? "BOXTOWN_PROJECT" : "linked in config",
         }
       : null,
     configPath,

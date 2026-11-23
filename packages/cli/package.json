@@ -1,10 +1,10 @@
 {
-  "name": "@byronwallrus/product-grid-cli",
+  "name": "boxtown",
   "version": "0.5.0",
-  "description": "CLI for Product Grid Management.",
+  "description": "CLI for Boxtown.",
   "type": "module",
   "bin": {
-    "pgm": "./bin/pgm.mjs"
+    "boxtown": "./bin/boxtown.mjs"
   },
   "files": [
     "bin",
@@ -18,7 +18,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "node ./bin/pgm.mjs",
+    "dev": "node ./bin/boxtown.mjs",
     "test": "pnpm --dir ../.. cli:compile && node --test test/*.test.mjs",
     "pack:check": "pnpm pack --json --pack-destination ../../tmp/cli-dist",
     "prepack": "pnpm --dir ../.. cli:prepare-package"

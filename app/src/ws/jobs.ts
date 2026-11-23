@@ -4,7 +4,7 @@ import {
   subscribeProjectSocketEvents,
 } from "./project-events";
 
-const JOBS_SOCKET_PROBE_HEADER = "x-pgm-websocket-route";
+const JOBS_SOCKET_PROBE_HEADER = "x-boxtown-websocket-route";
 const JOBS_SOCKET_PROBE_VALUE = "jobs";
 
 type JobSocketServerMessage =

@@ -12,7 +12,7 @@ const data: SpatialMapData = {
 };
 
 describe("buildNodeAgentPrompt", () => {
-  it("includes the node, inherited context and pgm commands", () => {
+  it("includes the node, inherited context and boxtown commands", () => {
     const prompt = buildNodeAgentPrompt({
       projectId: "demo",
       nodeId: "bug",
@@ -25,7 +25,7 @@ describe("buildNodeAgentPrompt", () => {
     expect(prompt).toContain("Path: Canvas > Nodes flicker");
     expect(prompt).toContain("- **Implementation:** Check transforms");
     expect(prompt).toContain("### Canvas\n\nCanvas renders a scaled SVG.");
-    expect(prompt).toContain("pgm node resolve bug --project demo --status implemented");
+    expect(prompt).toContain("boxtown node resolve bug --project demo --status implemented");
     expect(prompt).toContain("Link: https://example.test/projects/demo?node=bug");
     expect(prompt).not.toContain("Unrelated");
   });

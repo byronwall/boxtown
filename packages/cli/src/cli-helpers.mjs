@@ -6,7 +6,7 @@ import { writeJson } from "./output.mjs";
 export function requireProject(context) {
   return requireOption(
     context.projectId,
-    "A project id is required. Use --project <id>, PRODUCT_GRID_PROJECT, or pgm project link <id>.",
+    "A project id is required. Use --project <id>, BOXTOWN_PROJECT, or boxtown project link <id>.",
   );
 }
 

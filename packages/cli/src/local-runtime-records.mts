@@ -4,8 +4,8 @@ import net from "node:net";
 import path from "node:path";
 import { describeNetworkError } from "../src/network-errors.mjs";
 
-// Ownership records (`.pgm-local-runtime.json`) say which process serves a
-// local data folder. Both `pgm viewer` and `--local` commands write them, and
+// Ownership records (`.boxtown-local-runtime.json`) say which process serves a
+// local data folder. Both `boxtown viewer` and `--local` commands write them, and
 // both clear a record whose owner is gone.
 
 export type RuntimeRecord = {
@@ -21,7 +21,7 @@ export type RuntimeRecord = {
 
 type Stderr = { write: (value: string) => void };
 
-export const lockName = ".pgm-local-runtime.json";
+export const lockName = ".boxtown-local-runtime.json";
 
 export async function removeOwnedRecord(recordPath: string, runtimeId: string) {
   await withFolderGuard(path.dirname(recordPath), async () => {

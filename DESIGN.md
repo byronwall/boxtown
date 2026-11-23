@@ -1,7 +1,7 @@
 ---
 version: alpha
-name: Product Grid Industrial Drafting
-description: "A dense, calm, industrial drafting interface for Product Grid Management: an olive index surface, contained workspace shells, spatial product maps, metadata grids, inspector rails, markdown context, and image-backed architecture nodes."
+name: Boxtown Industrial Drafting
+description: "A dense, calm, industrial drafting interface for Boxtown: an olive index surface, contained workspace shells, spatial product maps, metadata grids, inspector rails, markdown context, and image-backed architecture nodes."
 colors:
   primary: "#143A29"
   primary-strong: "#0F2D20"
@@ -232,11 +232,11 @@ components:
     padding: "12px"
 ---
 
-# Product Grid Industrial Drafting Design System
+# Boxtown Industrial Drafting Design System
 
 ## Overview
 
-Product Grid Management should feel like a drafting table for software architecture: technical, calm, spatial, precise, and intentionally dense. The interface is not decorative or consumer-playful. It is a working environment for mapping product ideas, UI architecture, system relationships, planning notes, markdown context, and image attachments.
+Boxtown should feel like a drafting table for software architecture: technical, calm, spatial, precise, and intentionally dense. The interface is not decorative or consumer-playful. It is a working environment for mapping product ideas, UI architecture, system relationships, planning notes, markdown context, and image attachments.
 
 This document reconciles the broader product design direction with the existing `docs/design-language-index-surface.md` language. The index-surface doc is now treated as the baseline for page fields, app shells, token usage, modal treatment, and restrained interaction states because the current index page, drawer/dialog recipes, console log capture shell, and several spatial-map dialogs clearly follow it. The denser spatial-map workspace keeps the more technical drafting-table rules where the existing site already uses them.
 

@@ -1,7 +1,7 @@
 {
-  "name": "@byronwallrus/product-grid-api-contract",
+  "name": "@byronwallrus/boxtown-api-contract",
   "version": "0.1.0",
-  "description": "Shared API contract types for Product Grid Management.",
+  "description": "Shared API contract types for Boxtown.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"

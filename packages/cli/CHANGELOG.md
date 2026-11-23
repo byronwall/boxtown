@@ -1,4 +1,4 @@
-# @byronwallrus/product-grid-cli
+# boxtown
 
 ## 0.5.0
 

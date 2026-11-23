@@ -19,7 +19,7 @@ The first CLI should be useful before it is complete. Ship read-only project/nod
 
 ## Key Decisions
 
-- Binary name: use `pgm` locally unless npm package naming conflicts force a package name like `@byronwallrus/product-grid-cli`. The npm package name and executable name do not have to match.
+- Binary name: use `boxtown` locally unless npm package naming conflicts force a package name like `boxtown`. The npm package name and executable name do not have to match.
 - Runtime: Node `>=22.14.0` for the CLI. The app already targets Node `>=22`, and npm trusted publishing currently requires Node `22.14.0+` with npm `11.5.1+`.
 - Module format: ESM.
 - CLI framework: `commander` for command parsing. It is boring, stable, and clear enough for nested commands.
@@ -82,10 +82,10 @@ packages:
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "pnpm --filter ./app lint && pnpm --filter @byronwallrus/product-grid-cli lint",
-    "type-check": "pnpm --filter ./app type-check && pnpm --filter @byronwallrus/product-grid-cli type-check",
-    "test": "pnpm --filter ./app test && pnpm --filter @byronwallrus/product-grid-cli test",
-    "build": "pnpm --filter ./app build && pnpm --filter @byronwallrus/product-grid-cli build"
+    "lint": "pnpm --filter ./app lint && pnpm --filter boxtown lint",
+    "type-check": "pnpm --filter ./app type-check && pnpm --filter boxtown type-check",
+    "test": "pnpm --filter ./app test && pnpm --filter boxtown test",
+    "build": "pnpm --filter ./app build && pnpm --filter boxtown build"
   },
   "packageManager": "pnpm@10.0.0"
 }
@@ -97,24 +97,24 @@ The exact pnpm version can be adjusted to the developer machine, but pinning `pa
 
 Recommended package naming order:
 
-1. `@byronwallrus/product-grid-cli` for the npm package and `pgm` for the executable.
+1. `boxtown` for the npm package and `boxtown` for the executable.
 2. `@byronwallrus/product-grid-mgmt-cli` if the package should mirror the repository name more explicitly.
 3. `product-grid-cli` if an unscoped public package is preferred.
 
-Use a scoped public package if possible. It lowers collision risk and leaves room for later packages like `@byronwallrus/product-grid-api-contract` or `@byronwallrus/product-grid-mcp`.
+Use a scoped public package if possible. It lowers collision risk and leaves room for later packages like `@byronwallrus/boxtown-api-contract` or `@byronwallrus/boxtown-mcp`.
 
 Before first publish:
 
 ```bash
-npm view @byronwallrus/product-grid-cli
+npm view boxtown
 npm view @byronwallrus/product-grid-mgmt-cli
-npm view @byronwallrus/product-grid-api-contract
-npm view @byronwallrus/product-grid-mcp
+npm view @byronwallrus/boxtown-api-contract
+npm view @byronwallrus/boxtown-mcp
 npm view product-grid-cli
-npm view pgm
+npm view boxtown
 ```
 
-Treat a 404 as available. If the name exists, choose a different package name but keep the binary as `pgm` if that command name is not likely to conflict for users.
+Treat a 404 as available. If the name exists, choose a different package name but keep the binary as `boxtown` if that command name is not likely to conflict for users.
 
 ## API Contract Package
 
@@ -214,16 +214,16 @@ Production path:
 
 - Personal tokens created in the web UI.
 - Service tokens scoped to project and operation.
-- Later OAuth device flow for `pgm auth login`.
+- Later OAuth device flow for `boxtown auth login`.
 - Tokens stored hashed server-side.
 - CLI stores tokens in OS credential storage where possible, with a plaintext config fallback only for local development.
 
 CLI auth config should support:
 
 ```bash
-pgm auth login --token <token> --server https://example.com
-pgm auth status
-pgm auth logout
+boxtown auth login --token <token> --server https://example.com
+boxtown auth status
+boxtown auth logout
 ```
 
 Do not use browser cookies or Solid Router actions as CLI auth.
@@ -236,12 +236,12 @@ Example `packages/cli/package.json`:
 
 ```json
 {
-  "name": "@byronwallrus/product-grid-cli",
+  "name": "boxtown",
   "version": "0.1.0",
-  "description": "CLI for Product Grid Management.",
+  "description": "CLI for Boxtown.",
   "type": "module",
   "bin": {
-    "pgm": "./dist/index.js"
+    "boxtown": "./dist/index.js"
   },
   "files": [
     "dist",
@@ -264,7 +264,7 @@ Example `packages/cli/package.json`:
     "registry": "https://registry.npmjs.org"
   },
   "dependencies": {
-    "@byronwallrus/product-grid-api-contract": "workspace:*",
+    "@byronwallrus/boxtown-api-contract": "workspace:*",
     "commander": "^14.0.0",
     "zod": "^4.0.0"
   },
@@ -278,7 +278,7 @@ Example `packages/cli/package.json`:
 }
 ```
 
-Use the real published contract package name before publishing. If the contract package stays private, bundle its compiled code into the CLI or publish it under the same scope. The examples use `@byronwallrus/product-grid-api-contract` for consistency with the recommended CLI package name.
+Use the real published contract package name before publishing. If the contract package stays private, bundle its compiled code into the CLI or publish it under the same scope. The examples use `@byronwallrus/boxtown-api-contract` for consistency with the recommended CLI package name.
 
 ### Entrypoint
 
@@ -300,7 +300,7 @@ head -1 packages/cli/dist/index.js
 ### Command Tree
 
 ```text
-pgm
+boxtown
   auth
     login
     status
@@ -353,7 +353,7 @@ Each command module receives dependencies:
 
 ```ts
 interface CommandContext {
-  client: ProductGridClient;
+  client: BoxtownClient;
   config: ConfigStore;
   output: OutputWriter;
   env: NodeJS.ProcessEnv;
@@ -366,9 +366,9 @@ Dependency injection makes command tests straightforward and avoids brittle proc
 
 Use a config directory under the standard platform-specific location:
 
-- macOS: `~/Library/Application Support/product-grid/cli.json`
-- Linux: `$XDG_CONFIG_HOME/product-grid/cli.json` or `~/.config/product-grid/cli.json`
-- Windows: `%APPDATA%\product-grid\cli.json`
+- macOS: `~/Library/Application Support/boxtown/cli.json`
+- Linux: `$XDG_CONFIG_HOME/boxtown/cli.json` or `~/.config/boxtown/cli.json`
+- Windows: `%APPDATA%\boxtown\cli.json`
 
 Config shape:
 
@@ -387,8 +387,8 @@ Config shape:
 Token storage:
 
 - Prefer keychain storage later.
-- For the first implementation, support `PRODUCT_GRID_TOKEN` and a local credential file with strict file permissions.
-- Never print full tokens. `pgm auth status` can show the server, actor, scopes, and token suffix.
+- For the first implementation, support `BOXTOWN_TOKEN` and a local credential file with strict file permissions.
+- Never print full tokens. `boxtown auth status` can show the server, actor, scopes, and token suffix.
 
 ## API Client
 
@@ -516,7 +516,7 @@ Location: `packages/cli/tests/smoke/*.test.ts` or CI script.
 Build and pack the CLI:
 
 ```bash
-pnpm --filter @byronwallrus/product-grid-cli build
+pnpm --filter boxtown build
 npm pack --dry-run packages/cli
 ```
 
@@ -537,7 +537,7 @@ Initial setup:
 ```bash
 pnpm install
 pnpm --filter ./app prepare
-pnpm --filter @byronwallrus/product-grid-cli build
+pnpm --filter boxtown build
 ```
 
 Run the app:
@@ -549,7 +549,7 @@ pnpm --filter ./app dev
 Run the CLI from source:
 
 ```bash
-pnpm --filter @byronwallrus/product-grid-cli dev -- project list --server http://localhost:3000
+pnpm --filter boxtown dev -- project list --server http://localhost:3000
 ```
 
 Run the built CLI:
@@ -561,14 +561,14 @@ node packages/cli/dist/index.js project list --server http://localhost:3000 --js
 Link globally for manual testing:
 
 ```bash
-pnpm --filter @byronwallrus/product-grid-cli link --global
-pgm --help
+pnpm --filter boxtown link --global
+boxtown --help
 ```
 
 Unlink when done:
 
 ```bash
-pnpm --filter @byronwallrus/product-grid-cli unlink --global
+pnpm --filter boxtown unlink --global
 ```
 
 ## CI Plan
@@ -598,7 +598,7 @@ CI should use:
 - `pnpm install --frozen-lockfile`.
 - `pnpm test`.
 - `pnpm build`.
-- `pnpm --filter @byronwallrus/product-grid-cli pack:check`.
+- `pnpm --filter boxtown pack:check`.
 
 Add a matrix later only if Windows-specific CLI behavior becomes important. For the first milestone, run Linux CI and do local macOS smoke testing.
 
@@ -623,7 +623,7 @@ npm always includes `package.json`, README, license files, and files referenced 
 Verify package contents:
 
 ```bash
-pnpm --filter @byronwallrus/product-grid-cli build
+pnpm --filter boxtown build
 cd packages/cli
 npm pack --dry-run
 ```
@@ -633,9 +633,9 @@ Install the tarball locally before first publish:
 ```bash
 npm pack
 npm install -g ./byronwallrus-product-grid-cli-0.1.0.tgz
-pgm --version
-pgm --help
-npm uninstall -g @byronwallrus/product-grid-cli
+boxtown --version
+boxtown --help
+npm uninstall -g boxtown
 ```
 
 ### First Publish
@@ -688,8 +688,8 @@ jobs:
           registry-url: "https://registry.npmjs.org"
       - uses: pnpm/action-setup@v4
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @byronwallrus/product-grid-cli test
-      - run: pnpm --filter @byronwallrus/product-grid-cli build
+      - run: pnpm --filter boxtown test
+      - run: pnpm --filter boxtown build
       - run: npm publish
         working-directory: packages/cli
 ```
@@ -705,13 +705,13 @@ Manual release checklist:
 3. Update CLI changelog.
 4. Run `pnpm test`.
 5. Run `pnpm build`.
-6. Run `pnpm --filter @byronwallrus/product-grid-cli pack:check`.
+6. Run `pnpm --filter boxtown pack:check`.
 7. Install the packed tarball locally and run smoke commands.
 8. Commit changes.
 9. Tag release.
 10. Let GitHub Actions publish to npm.
 11. Install from npm on a clean machine or clean prefix.
-12. Run `pgm auth status`, `pgm project list --json`, and one read command against production.
+12. Run `boxtown auth status`, `boxtown project list --json`, and one read command against production.
 
 Rollback options:
 
@@ -719,7 +719,7 @@ Rollback options:
 - Deprecate a bad version:
 
 ```bash
-npm deprecate @byronwallrus/product-grid-cli@0.1.0 "Use 0.1.1 or later."
+npm deprecate boxtown@0.1.0 "Use 0.1.1 or later."
 ```
 
 Avoid unpublishing unless the package contains secrets or legally sensitive content.
@@ -809,14 +809,14 @@ Build the smallest complete slice end to end:
 2. `/api/v1/projects`, `/api/v1/projects/:projectId`, `/api/v1/projects/:projectId/nodes`, and `/api/v1/projects/:projectId/tasks`.
 3. Static bearer-token auth for local/prototype use.
 4. CLI commands:
-   - `pgm auth login --token`
-   - `pgm auth status`
-   - `pgm project list`
-   - `pgm project view`
-   - `pgm project link`
-   - `pgm node list`
-   - `pgm node view`
-   - `pgm task list`
+   - `boxtown auth login --token`
+   - `boxtown auth status`
+   - `boxtown project list`
+   - `boxtown project view`
+   - `boxtown project link`
+   - `boxtown node list`
+   - `boxtown node view`
+   - `boxtown task list`
 5. JSON output and exit codes.
 6. Contract tests, client tests, command tests, and `npm pack --dry-run`.
 

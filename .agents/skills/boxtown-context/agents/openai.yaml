@@ -1,0 +1,3 @@
+display_name: Boxtown Context
+short_description: Query Boxtown project, node, and task context with boxtown.
+default_prompt: Use boxtown to inspect the current Boxtown project and summarize the relevant nodes or tasks.

@@ -20,7 +20,7 @@ type ClientExceptionState = {
   error: unknown;
 };
 
-const DEV_HMR_RECOVERY_STORAGE_KEY = "pgm:dev-hmr-recovery:last-reload";
+const DEV_HMR_RECOVERY_STORAGE_KEY = "boxtown:dev-hmr-recovery:last-reload";
 const DEV_HMR_RECOVERY_COOLDOWN_MS = 5000;
 
 const getUnknownErrorMessage = (error: unknown) => {

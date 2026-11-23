@@ -100,7 +100,7 @@ If a merge leaves conflict markers, the project refuses to load. The error names
 
 Older projects stored everything in one `project.json`: the project fields plus `operationLog`, where the newest entry held a full snapshot of every node. Every edit rewrote the top of that file, so any two branches conflicted.
 
-The first time the app or `pgm` reads a version 1 project, it migrates it:
+The first time the app or `boxtown` reads a version 1 project, it migrates it:
 
 1. Parse it with the existing reader. This also migrates older legacy shapes, such as top-level `spatialMap` and `project.backfilled` entries.
 2. Copy the old file to `project.json.v1-<timestamp>.bak`. The copy appears in the backup list and is ignored by git.
@@ -110,7 +110,7 @@ The migration is lossless and deterministic. History file names depend only on e
 
 ## Archives
 
-Project archives (`.product-grid.zip`) still contain a single `project.json` record in which the newest history entry holds the full state. Old archives import unchanged.
+Project archives (`.boxtown.zip`) still contain a single `project.json` record in which the newest history entry holds the full state. Old archives import unchanged.
 
 ## History entry shape
 
@@ -127,4 +127,4 @@ interface ProjectOperationLogEntry {
 }
 ```
 
-UI actions are recorded as `human`. `/api/v1` calls, which include the `pgm` CLI, are recorded as `agent`.
+UI actions are recorded as `human`. `/api/v1` calls, which include the `boxtown` CLI, are recorded as `agent`.

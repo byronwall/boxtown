@@ -6,19 +6,19 @@ import path from "node:path";
 export const defaultServer = "http://localhost:3000";
 
 export function getConfigPath(env = process.env, platform = process.platform) {
-  if (env.PRODUCT_GRID_CONFIG) {
-    return path.resolve(env.PRODUCT_GRID_CONFIG);
+  if (env.BOXTOWN_CONFIG) {
+    return path.resolve(env.BOXTOWN_CONFIG);
   }
 
   if (platform === "darwin") {
-    return path.join(os.homedir(), "Library", "Application Support", "product-grid", "cli.json");
+    return path.join(os.homedir(), "Library", "Application Support", "boxtown", "cli.json");
   }
 
   if (platform === "win32") {
-    return path.join(env.APPDATA ?? os.homedir(), "product-grid", "cli.json");
+    return path.join(env.APPDATA ?? os.homedir(), "boxtown", "cli.json");
   }
 
-  return path.join(env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config"), "product-grid", "cli.json");
+  return path.join(env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config"), "boxtown", "cli.json");
 }
 
 export async function readConfig(configPath = getConfigPath()) {
@@ -50,16 +50,16 @@ export async function updateConfig(mutator, configPath = getConfigPath()) {
 
 export function resolveServer(options, config, env = process.env) {
   return trimTrailingSlash(
-    options.server ?? env.PRODUCT_GRID_SERVER ?? config.defaultServer ?? defaultServer,
+    options.server ?? env.BOXTOWN_SERVER ?? config.defaultServer ?? defaultServer,
   );
 }
 
 export function resolveToken(options, config, server, env = process.env) {
-  return options.token ?? env.PRODUCT_GRID_TOKEN ?? config.tokens?.[server] ?? null;
+  return options.token ?? env.BOXTOWN_TOKEN ?? config.tokens?.[server] ?? null;
 }
 
 export function resolveProjectId(options, config, env = process.env) {
-  return options.project ?? env.PRODUCT_GRID_PROJECT ?? config.currentProjectId ?? null;
+  return options.project ?? env.BOXTOWN_PROJECT ?? config.currentProjectId ?? null;
 }
 
 function createEmptyConfig() {

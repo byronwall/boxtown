@@ -14,8 +14,8 @@ export interface ProjectEventsConnection {
 
 const RECONNECT_BASE_DELAY_MS = 500;
 const RECONNECT_MAX_DELAY_MS = 5000;
-const PROJECT_EVENTS_CHANNEL_NAME = "pgm:project-events";
-const JOBS_SOCKET_PROBE_HEADER = "x-pgm-websocket-route";
+const PROJECT_EVENTS_CHANNEL_NAME = "boxtown:project-events";
+const JOBS_SOCKET_PROBE_HEADER = "x-boxtown-websocket-route";
 const JOBS_SOCKET_PROBE_VALUE = "jobs";
 
 type ProjectBroadcastMessage =

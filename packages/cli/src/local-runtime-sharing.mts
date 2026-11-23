@@ -90,7 +90,7 @@ export async function withLocalRuntime<T>(inputDir: string, io: Io, action: (run
     }
 
     await stat(runtimeEntry).catch(() => {
-      throw new Error("The packaged viewer runtime is missing. Reinstall pgm or run `pnpm pack` from the PGM checkout.");
+      throw new Error("The packaged viewer runtime is missing. Reinstall boxtown or run `pnpm pack` from the Boxtown checkout.");
     });
 
     const runtimeId = randomUUID();
@@ -198,7 +198,7 @@ async function waitForViewer(record: RuntimeRecord, stderr: Io["stderr"]) {
   const detail = lastProbe && !lastProbe.ok
     ? `It is marked ready at ${record.url}, but ${lastProbe.message}`
     : `It is still marked "${record.state}".`;
-  throw new Error(`The local viewer for ${record.dataDir} did not respond within 10 seconds. ${detail} Retry shortly, or run: pgm target inspect --local ${record.dataDir}`);
+  throw new Error(`The local viewer for ${record.dataDir} did not respond within 10 seconds. ${detail} Retry shortly, or run: boxtown target inspect --local ${record.dataDir}`);
 }
 
 // Read-only view of a local data folder and its runtime. Never creates the

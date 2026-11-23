@@ -1,9 +1,9 @@
 import { requireOption, requireProject, writeMaybeJson } from "./cli-helpers.mjs";
 import { CliError, exitCodes } from "./errors.mjs";
 
-const usage = "Usage: pgm relation <list <node-id> | add|remove <source-id> <target-id> [--relationship related|dependency|reuse]>";
+const usage = "Usage: boxtown relation <list <node-id> | add|remove <source-id> <target-id> [--relationship related|dependency|reuse]>";
 
-// Relationship links between nodes. Hierarchy uses `pgm node move` instead.
+// Relationship links between nodes. Hierarchy uses `boxtown node move` instead.
 export async function dispatchRelation(context, action) {
   const projectId = requireProject(context);
   const [source, target] = context.parsed.positionals;

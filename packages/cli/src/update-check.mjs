@@ -4,7 +4,7 @@ const registryBaseUrl = "https://registry.npmjs.org";
 const updateCheckTimeoutMs = 800;
 
 export async function notifyIfUpdateAvailable(io = {}, options = {}) {
-  if (io.env?.PGM_NO_UPDATE_CHECK === "1" || io.env?.NO_UPDATE_NOTIFIER === "1") {
+  if (io.env?.BOXTOWN_NO_UPDATE_CHECK === "1" || io.env?.NO_UPDATE_NOTIFIER === "1") {
     return;
   }
 
@@ -18,10 +18,10 @@ export async function notifyIfUpdateAvailable(io = {}, options = {}) {
     return;
   }
 
-  const command = "pgm update";
+  const command = "boxtown update";
   io.stderr?.write(
     [
-      `A fresh pgm update is ready: ${packageVersion} -> ${latestVersion}.`,
+      `A fresh boxtown update is ready: ${packageVersion} -> ${latestVersion}.`,
       `Worth grabbing when you have a minute: ${command}`,
       "",
     ].join("\n"),

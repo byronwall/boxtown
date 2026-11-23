@@ -4,7 +4,7 @@ import { CliError, apiErrorToExitCode } from "./errors.mjs";
 import { describeNetworkError } from "./network-errors.mjs";
 import { cliUserAgent } from "./version.mjs";
 
-export class ProductGridClient {
+export class BoxtownClient {
   constructor({ server, token = null, userAgent = cliUserAgent }) {
     this.server = server;
     this.token = token;

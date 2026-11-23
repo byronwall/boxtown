@@ -9,7 +9,7 @@ export default function HomeRoute() {
   return (
     <>
       <PageMeta
-        title="Product Grid Mgmt"
+        title="Boxtown"
         description="Create, import, and operate product structure maps with project-level context, node metadata, relationship links, and visual UI inventories."
       />
       <ProjectIndexPage

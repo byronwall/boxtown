@@ -9,7 +9,7 @@ export function resolveAppDataDir() {
 
   const cwd = process.cwd();
   const projectDir = path.basename(cwd) === "app" ? path.dirname(cwd) : cwd;
-  const localDataDir = path.join(projectDir, "pgm", "data");
+  const localDataDir = path.join(projectDir, "boxtown", "data");
   const candidates = [
     localDataDir,
     path.join(cwd, "data"),

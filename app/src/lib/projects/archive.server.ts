@@ -56,7 +56,7 @@ export async function exportProjectArchiveOnDisk(projectId: string) {
   }
 
   return {
-    filename: `${safePathSegment(project.id)}.product-grid.zip`,
+    filename: `${safePathSegment(project.id)}.boxtown.zip`,
     data: createZip(entries),
   };
 }

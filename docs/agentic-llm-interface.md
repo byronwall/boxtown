@@ -53,9 +53,9 @@ The durable architecture is:
 
 ```mermaid
 flowchart LR
-  Human["Human terminal"] --> CLI["pgm CLI"]
+  Human["Human terminal"] --> CLI["boxtown CLI"]
   Agent["Agentic LLM shell"] --> CLI
-  Assistant["MCP-aware assistant"] --> MCP["pgm MCP server"]
+  Assistant["MCP-aware assistant"] --> MCP["boxtown MCP server"]
   CLI --> Client["Shared API client"]
   MCP --> Client
   Client --> API["Production agent API"]
@@ -65,7 +65,7 @@ flowchart LR
 
 ## CLI Product Model
 
-Use a short binary name such as `pgm`, `grid`, or `product-grid`. The examples below use `pgm`.
+Use a short binary name such as `boxtown`, `grid`, or `product-grid`. The examples below use `boxtown`.
 
 ### Command Principles
 
@@ -82,13 +82,13 @@ Use a short binary name such as `pgm`, `grid`, or `product-grid`. The examples b
 ### Global Flags
 
 ```bash
-pgm --help
-pgm --version
-pgm --project <project-id> ...
-pgm --server https://app.example.com ...
-pgm --json ...
-pgm --jq '.nodes[] | select(.status == "blocked")' ...
-pgm --quiet ...
+boxtown --help
+boxtown --version
+boxtown --project <project-id> ...
+boxtown --server https://app.example.com ...
+boxtown --json ...
+boxtown --jq '.nodes[] | select(.status == "blocked")' ...
+boxtown --quiet ...
 ```
 
 The optional `--jq` pattern is copied from `gh`: when JSON output is available, users can filter in one step without piping through a separate tool.
@@ -96,11 +96,11 @@ The optional `--jq` pattern is copied from `gh`: when JSON output is available, 
 ### Auth Commands
 
 ```bash
-pgm auth login
-pgm auth login --server https://app.example.com
-pgm auth status
-pgm auth token
-pgm auth logout
+boxtown auth login
+boxtown auth login --server https://app.example.com
+boxtown auth status
+boxtown auth token
+boxtown auth logout
 ```
 
 Recommended auth flow:
@@ -114,7 +114,7 @@ Recommended auth flow:
 For early prototypes, a personal access token is acceptable:
 
 ```bash
-pgm auth login --token <token>
+boxtown auth login --token <token>
 ```
 
 Do not make long-lived admin cookies the CLI auth mechanism. Cookies are too easy to over-scope and too tied to browser session behavior.
@@ -122,15 +122,15 @@ Do not make long-lived admin cookies the CLI auth mechanism. Cookies are too eas
 ### Project Commands
 
 ```bash
-pgm project list
-pgm project create "Product Site"
-pgm project create "Product Site" --link --json
-pgm project view <project-id>
-pgm project link <project-id>
-pgm project unlink
-pgm project current
-pgm project export-markdown --output project-context.md
-pgm project export <project-id> --output project.zip
+boxtown project list
+boxtown project create "Product Site"
+boxtown project create "Product Site" --link --json
+boxtown project view <project-id>
+boxtown project link <project-id>
+boxtown project unlink
+boxtown project current
+boxtown project export-markdown --output project-context.md
+boxtown project export <project-id> --output project.zip
 ```
 
 Expected behavior:
@@ -145,24 +145,24 @@ Expected behavior:
 Example agent call:
 
 ```bash
-pgm project list --json
+boxtown project list --json
 ```
 
 ### Node Commands
 
 ```bash
-pgm node list
-pgm node view <node-id>
-pgm node search "checkout flow"
-pgm node create --title "Checkout review" --type page --parent <parent-node-id>
-pgm node update <node-id> --title "Checkout review" --status needs-review
-pgm node update <node-id> --type feature
-pgm node context get <node-id>
-pgm node context set <node-id> --file ./context.md
-pgm node metadata set <node-id> owner "Design"
-pgm node metadata unset <node-id> owner
-pgm node move <node-id> --parent <parent-node-id>
-pgm node delete <node-id> --confirm
+boxtown node list
+boxtown node view <node-id>
+boxtown node search "checkout flow"
+boxtown node create --title "Checkout review" --type page --parent <parent-node-id>
+boxtown node update <node-id> --title "Checkout review" --status needs-review
+boxtown node update <node-id> --type feature
+boxtown node context get <node-id>
+boxtown node context set <node-id> --file ./context.md
+boxtown node metadata set <node-id> owner "Design"
+boxtown node metadata unset <node-id> owner
+boxtown node move <node-id> --parent <parent-node-id>
+boxtown node delete <node-id> --confirm
 ```
 
 The current CLI/API supports create, title/status/type update, context set/get, metadata set/unset, and move/reparent operations through server-side project services. Delete remains a future safety-gated command.
@@ -170,11 +170,11 @@ The current CLI/API supports create, title/status/type update, context set/get, 
 Suggested read filters:
 
 ```bash
-pgm node list --status blocked
-pgm node list --type feature
-pgm node list --parent <node-id>
-pgm node list --orphans
-pgm node list --updated-since 2026-04-01
+boxtown node list --status blocked
+boxtown node list --type feature
+boxtown node list --parent <node-id>
+boxtown node list --orphans
+boxtown node list --updated-since 2026-04-01
 ```
 
 Suggested JSON projection:
@@ -198,13 +198,13 @@ Suggested JSON projection:
 Tasks can initially be represented as filtered node views. If the app later adds a first-class task model, the CLI command can keep the same shape and change the API behind it.
 
 ```bash
-pgm task list
-pgm task list --status blocked
-pgm task next
-pgm task view <node-id>
-pgm task done <node-id>
-pgm task block <node-id> --reason "Waiting on image assets"
-pgm task review <node-id>
+boxtown task list
+boxtown task list --status blocked
+boxtown task next
+boxtown task view <node-id>
+boxtown task done <node-id>
+boxtown task block <node-id> --reason "Waiting on image assets"
+boxtown task review <node-id>
 ```
 
 Initial mapping:
@@ -221,13 +221,13 @@ This gives agents a stable task interface without requiring a new data model imm
 ### Image Commands
 
 ```bash
-pgm image list <node-id>
-pgm image add <node-id> ./mockup.png
-pgm image add <node-id> ./a.png ./b.jpg
-pgm image remove <node-id> <image-id>
-pgm image generate <node-id> --prompt "Mobile checkout confirmation screen"
-pgm image generate <node-id> --size 1536x1024 --watch
-pgm image open <node-id> <image-id>
+boxtown image list <node-id>
+boxtown image add <node-id> ./mockup.png
+boxtown image add <node-id> ./a.png ./b.jpg
+boxtown image remove <node-id> <image-id>
+boxtown image generate <node-id> --prompt "Mobile checkout confirmation screen"
+boxtown image generate <node-id> --size 1536x1024 --watch
+boxtown image open <node-id> <image-id>
 ```
 
 The app already has image storage and a node image generation route. The CLI supports multipart upload, list, and remove for node images; generation remains a future run-backed command.
@@ -239,18 +239,18 @@ For agent workflows, `image add` is more important than `image open`. Agents can
 Use `run` for long-running operations that produce events.
 
 ```bash
-pgm run list
-pgm run view <run-id>
-pgm run watch <run-id>
-pgm run cancel <run-id>
+boxtown run list
+boxtown run view <run-id>
+boxtown run watch <run-id>
+boxtown run cancel <run-id>
 ```
 
 Domain-specific shortcuts can start runs:
 
 ```bash
-pgm node add-from-brief --parent <node-id> --file ./brief.md --watch
-pgm image generate <node-id> --watch
-pgm source decompose --node <node-id> --file ./prd.md --watch
+boxtown node add-from-brief --parent <node-id> --file ./brief.md --watch
+boxtown image generate <node-id> --watch
+boxtown source decompose --node <node-id> --file ./prd.md --watch
 ```
 
 Long-running commands should print:
@@ -265,12 +265,12 @@ Long-running commands should print:
 Agents often need compact context, not entire project dumps. Add query commands that return purpose-built views.
 
 ```bash
-pgm query project-summary
-pgm query node-context <node-id> --depth 2
-pgm query related <node-id>
-pgm query blockers
-pgm query open-work
-pgm query stale --days 14
+boxtown query project-summary
+boxtown query node-context <node-id> --depth 2
+boxtown query related <node-id>
+boxtown query blockers
+boxtown query open-work
+boxtown query stale --days 14
 ```
 
 These commands should be backed by explicit API endpoints or client-side transformations over stable read endpoints. Avoid adding a generic unrestricted query language until the permission model is mature.
@@ -394,7 +394,7 @@ Every write from the CLI or MCP server should record:
 - Request ID and idempotency key.
 - Timestamp.
 
-Add `pgm audit list` later if audit review becomes a core workflow.
+Add `boxtown audit list` later if audit review becomes a core workflow.
 
 ## MCP Server Plan
 
@@ -403,24 +403,24 @@ Build MCP after the CLI and API contract are stable.
 MCP server modes:
 
 ```bash
-pgm mcp serve
+boxtown mcp serve
 ```
 
 or a separate binary:
 
 ```bash
-pgm-mcp
+boxtown-mcp
 ```
 
 Expose read-heavy resources:
 
 ```text
-product-grid://projects
-product-grid://projects/:projectId
-product-grid://projects/:projectId/nodes
-product-grid://projects/:projectId/nodes/:nodeId
-product-grid://projects/:projectId/tasks/open
-product-grid://projects/:projectId/tasks/blocked
+boxtown://projects
+boxtown://projects/:projectId
+boxtown://projects/:projectId/nodes
+boxtown://projects/:projectId/nodes/:nodeId
+boxtown://projects/:projectId/tasks/open
+boxtown://projects/:projectId/tasks/blocked
 ```
 
 Expose tools that match CLI/API operations:
@@ -440,43 +440,43 @@ task_update_status
 run_watch
 ```
 
-The MCP server should not invent different names, permission rules, or payload shapes. If the CLI command is `pgm node update`, the MCP tool should call the same client method as that command.
+The MCP server should not invent different names, permission rules, or payload shapes. If the CLI command is `boxtown node update`, the MCP tool should call the same client method as that command.
 
 ## CLI UX Examples
 
 ### Agent Gets Current Work
 
 ```bash
-pgm project link checkout-redesign
-pgm task list --status blocked --json
-pgm task next --json
+boxtown project link checkout-redesign
+boxtown task list --status blocked --json
+boxtown task next --json
 ```
 
 ### Agent Updates a Node
 
 ```bash
-pgm node update checkout-review --status working --json
-pgm node context set checkout-review --file ./notes.md --json
-pgm node update checkout-review --status needs-review --json
+boxtown node update checkout-review --status working --json
+boxtown node context set checkout-review --file ./notes.md --json
+boxtown node update checkout-review --status needs-review --json
 ```
 
 ### Agent Attaches Images
 
 ```bash
-pgm image add checkout-review ./checkout-mobile.png ./checkout-desktop.png --json
-pgm image list checkout-review --json
+boxtown image add checkout-review ./checkout-mobile.png ./checkout-desktop.png --json
+boxtown image list checkout-review --json
 ```
 
 ### Agent Starts a Generated Node Run
 
 ```bash
-pgm node add-from-brief --parent checkout-review --file ./brief.md --watch --json
+boxtown node add-from-brief --parent checkout-review --file ./brief.md --watch --json
 ```
 
 ### Human Uses Tables
 
 ```bash
-pgm node list --status blocked
+boxtown node list --status blocked
 ```
 
 Possible output:
@@ -521,7 +521,7 @@ This phase supports richer agent workflows involving generated or uploaded visua
 
 ### Phase 4: MCP Adapter
 
-- Implement `pgm mcp serve` or `pgm-mcp`.
+- Implement `boxtown mcp serve` or `boxtown-mcp`.
 - Reuse the CLI API client and auth config.
 - Expose project/node/task resources.
 - Expose tools for the same safe writes as the CLI.
@@ -586,7 +586,7 @@ MCP should still exist once the underlying contract is stable. It should be an a
 
 ## Open Decisions
 
-- Binary name: `pgm`, `grid`, or `product-grid`.
+- Binary name: `boxtown`, `grid`, or `product-grid`.
 - Auth launch path: OAuth device flow, browser loopback callback, or personal access tokens first.
 - Package location: top-level `packages/cli` versus `app/packages/cli`.
 - Whether tasks remain node-status projections or become first-class records.
@@ -595,4 +595,4 @@ MCP should still exist once the underlying contract is stable. It should be an a
 
 ## Proposed First Milestone
 
-Ship a read-only `pgm` CLI that can authenticate, link a project, list projects, inspect nodes, and produce task lists. Then add node status/context writes as the first mutation set. This is the shortest path to an agentic interface that is genuinely useful while keeping the permission and audit surface understandable.
+Ship a read-only `boxtown` CLI that can authenticate, link a project, list projects, inspect nodes, and produce task lists. Then add node status/context writes as the first mutation set. This is the shortest path to an agentic interface that is genuinely useful while keeping the permission and audit surface understandable.

@@ -1,4 +1,4 @@
-// Writes a changeset for the @byronwallrus/product-grid-cli package without the interactive prompt.
+// Writes a changeset for the boxtown package without the interactive prompt.
 // Usage: pnpm changeset:add <patch|minor|major> "What changed, for package users"
 import { existsSync, writeFileSync } from "node:fs";
 
@@ -21,5 +21,5 @@ const slug =
 let path = `.changeset/${slug}.md`;
 for (let n = 2; existsSync(path); n++) path = `.changeset/${slug}-${n}.md`;
 
-writeFileSync(path, `---\n"@byronwallrus/product-grid-cli": ${bump}\n---\n\n${summary}\n`);
+writeFileSync(path, `---\n"boxtown": ${bump}\n---\n\n${summary}\n`);
 console.log(`Wrote ${path}`);
