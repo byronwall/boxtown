@@ -17,7 +17,7 @@ for (const btn of document.querySelectorAll(".copy")) {
     }
     const label = btn.querySelector("span");
     btn.classList.add("done");
-    label.textContent = "✓ Copied";
+    label.textContent = "Copied";
     clearTimeout(btn._t);
     btn._t = setTimeout(() => {
       btn.classList.remove("done");
@@ -62,7 +62,7 @@ fromHash();
 // Lightbox: opens fitted, click zooms at the point, drag pans, arrows step, Esc closes.
 const lb = document.querySelector(".lb");
 const stage = lb.querySelector(".lb-stage");
-const img = stage.querySelector("img");
+const img = stage.appendChild(new Image()); // filled when a screenshot opens
 const title = lb.querySelector("#lb-title");
 const shots = [];
 for (const b of document.querySelectorAll(".shot")) {

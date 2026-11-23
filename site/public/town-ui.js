@@ -2,6 +2,13 @@
 import { STATUS, TownMap } from "./town-map.js";
 
 const town = await fetch("demo/town.json").then((r) => r.json());
+// Drawn icons, one stroke weight, instead of text glyphs.
+const ICON = {
+  close: '<path d="M4 4l8 8M12 4l-8 8"/>',
+  minus: '<path d="M3.5 8h9"/>',
+  plus: '<path d="M3.5 8h9M8 3.5v9"/>',
+};
+const icon = (name) => `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" class="ic">${ICON[name]}</svg>`;
 const byId = new Map(town.nodes.map((n) => [n.id, n]));
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
@@ -40,6 +47,8 @@ function dropTitle(src, label) {
   return /^#+\s/.test(first) && first.replace(/^#+\s+/, "").trim() === label ? rest.join("\n") : src;
 }
 
+const LINK_WORDS = { dependency: ["Depends on", "Needed by"], reuse: ["Reuses", "Reused by"], related: ["Related to", "Related to"] };
+
 function inspect(aside, map, id) {
   aside.hidden = !id;
   if (!id) return inset(aside, map);
@@ -51,7 +60,7 @@ function inspect(aside, map, id) {
   const path = [];
   for (let p = n.parent; p; p = byId.get(p).parent) path.unshift(chip(p));
   aside.innerHTML = `
-    <div class="in-head"><h3>${esc(n.label)}</h3><button type="button" class="in-close" aria-label="Close details">×</button></div>
+    <div class="in-head"><h3>${esc(n.label)}</h3><button type="button" class="in-close" aria-label="Close details">${icon("close")}</button></div>
     <p class="in-meta"><span class="dot" style="--f:${STATUS[map.status[id] ?? n.status][1]}"></span>${st} · ${n.type}${n.priority ? ` · ${n.priority[0].toUpperCase()}${n.priority.slice(1)} priority` : ""}</p>
     ${path.length ? `<p class="in-path">In ${path.join(" › ")}</p>` : ""}
     ${n.purpose ? `<h4>Purpose</h4><p>${esc(n.purpose)}</p>` : ""}
@@ -59,7 +68,7 @@ function inspect(aside, map, id) {
     ${n.context ? `<h4>Context</h4><div class="in-md">${md(dropTitle(n.context, n.label))}</div>` : ""}
     ${n.image ? `<h4>Image</h4><img src="${n.image}" alt="Sketch attached to ${esc(n.label)}" width="240" height="420" loading="lazy">` : ""}
     ${kids.length ? `<h4>Inside (${kids.length})</h4><p class="in-chips">${kids.map(chip).join("")}</p>` : ""}
-    ${links.length ? `<h4>Links</h4><ul class="in-links">${links.map((l) => `<li>${l.from === id ? "→" : "←"} ${chip(l.from === id ? l.to : l.from)} <span>${l.rel}</span></li>`).join("")}</ul>` : ""}`;
+    ${links.length ? `<h4>Links</h4><ul class="in-links">${links.map((l) => `<li><span>${LINK_WORDS[l.rel][l.from === id ? 0 : 1]}</span> ${chip(l.from === id ? l.to : l.from)}</li>`).join("")}</ul>` : ""}`;
   aside.scrollTop = 0;
   inset(aside, map);
 }
@@ -78,11 +87,11 @@ function chrome(root, { inspector = true, toolbar = true } = {}) {
       <span class="bar-label">Color</span>
       <div class="seg" data-key="color" role="group" aria-label="Color by"><button type="button" data-v="type">Type</button><button type="button" data-v="status">Status</button></div>
       <button type="button" class="tog" data-key="edges">Edges</button>
-      <div class="cam" role="group" aria-label="Camera"><button type="button" class="tog" data-act="out" aria-label="Zoom out">−</button><button type="button" class="tog" data-act="in" aria-label="Zoom in">+</button><button type="button" class="tog" data-act="fit">Fit</button></div>
+      <div class="cam" role="group" aria-label="Camera"><button type="button" class="tog" data-act="out" aria-label="Zoom out">${icon("minus")}</button><button type="button" class="tog" data-act="in" aria-label="Zoom in">${icon("plus")}</button><button type="button" class="tog" data-act="fit">Fit</button></div>
     </div>` : ""}
     <div class="ex-stage">
       <div class="ex-map"></div>
-      <div class="iso-chip" hidden>Isolated: <b></b><button type="button" aria-label="Show the whole map">×</button></div>
+      <div class="iso-chip" hidden>Isolated: <b></b><button type="button" aria-label="Show the whole map">${icon("close")}</button></div>
       ${inspector ? '<aside class="inspector" hidden aria-live="polite"></aside>' : ""}
     </div>
     <div class="legend">${legendHtml}<b class="lg-caption" aria-live="polite"></b></div>`,

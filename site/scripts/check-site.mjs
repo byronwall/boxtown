@@ -89,7 +89,7 @@ const w0 = (await copy.boundingBox()).width;
 await copy.click();
 await page.waitForTimeout(150);
 const w1 = (await copy.boundingBox()).width;
-if ((await copy.textContent()).trim() !== "✓ Copied") fail("copy label did not change");
+if ((await copy.textContent()).trim() !== "Copied") fail("copy label did not change");
 if (w0 !== w1) fail(`copy button width changed ${w0} -> ${w1}`);
 const clip = await page.evaluate(() => navigator.clipboard.readText());
 if (!clip.includes("npm install -g boxtown")) fail("clipboard does not hold the install command");
