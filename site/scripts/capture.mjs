@@ -69,18 +69,24 @@ const fit = async () => {
   await page.waitForTimeout(900);
 };
 
-await shot("map", `${project}?inspector=0`, fit);
-await shot("inspect", `${project}?node=page-active-ride&inspector=1`);
-await shot("isolate", `${project}?isolate=area-find-a-bike&node=page-station-detail&edges=1`, fit);
-await shot("tree", `${project}?view=tree&node=area-find-a-bike`);
-await shot("grid", `${project}?view=grid`);
-await shot("search", project, async () => {
-  await page.keyboard.press("Meta+k");
-  await page.getByRole("dialog").locator("input").first().waitFor();
-  await page.waitForTimeout(300);
-  await page.keyboard.type("dock", { delay: 40 });
-  await page.waitForTimeout(500);
-});
+// Each screenshot in both themes: <name>.webp and <name>-dark.webp.
+for (const colorScheme of ["light", "dark"]) {
+  await page.emulateMedia({ colorScheme });
+  const s = colorScheme === "dark" ? "-dark" : "";
+  await shot(`map${s}`, `${project}?inspector=0`, fit);
+  await shot(`inspect${s}`, `${project}?node=page-active-ride&inspector=1`);
+  await shot(`isolate${s}`, `${project}?isolate=area-find-a-bike&node=page-station-detail&edges=1`, fit);
+  await shot(`tree${s}`, `${project}?view=tree&node=area-find-a-bike`);
+  await shot(`grid${s}`, `${project}?view=grid`);
+  await shot(`search${s}`, project, async () => {
+    await page.keyboard.press("Meta+k");
+    await page.getByRole("dialog").locator("input").first().waitFor();
+    await page.waitForTimeout(300);
+    await page.keyboard.type("dock", { delay: 40 });
+    await page.waitForTimeout(500);
+  });
+}
+await page.emulateMedia({ colorScheme: "light" });
 
 // The live map on the page: layouts, node data, images and CLI output. Runs last: it changes the data.
 await exportDemo({ root, base, dataDir, page, encodeWebp });
