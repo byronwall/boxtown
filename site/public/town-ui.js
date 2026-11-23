@@ -46,7 +46,7 @@ function inspect(aside, map, id) {
   for (let p = n.parent; p; p = byId.get(p).parent) path.unshift(chip(p));
   aside.innerHTML = `
     <div class="in-head"><h3>${esc(n.label)}</h3><button type="button" class="in-close" aria-label="Close details">×</button></div>
-    <p class="in-meta"><span class="dot" style="background:${STATUS[map.status[id] ?? n.status][1]}"></span>${st} · ${n.type}${n.priority ? ` · ${n.priority} priority` : ""}</p>
+    <p class="in-meta"><span class="dot" style="--f:${STATUS[map.status[id] ?? n.status][1]}"></span>${st} · ${n.type}${n.priority ? ` · ${n.priority} priority` : ""}</p>
     ${path.length ? `<p class="in-path">${path.join(" › ")}</p>` : ""}
     ${n.purpose ? `<h4>Purpose</h4><p>${esc(n.purpose)}</p>` : ""}
     ${n.implementation ? `<h4>Implementation</h4><p>${esc(n.implementation)}</p>` : ""}
@@ -60,8 +60,8 @@ function inspect(aside, map, id) {
 
 // One explorer: toolbar, map, isolate chip, inspector, legend. Returns the map.
 const legendHtml =
-  `<span class="lg-type">${Object.entries(town.types).map(([t, c]) => `<span><i style="background:${c}"></i>${t}</span>`).join("")}</span>` +
-  `<span class="lg-status">${Object.values(STATUS).slice(0, 5).map(([l, c, s]) => `<span><i style="background:${c}">${s}</i>${l}</span>`).join("")}</span>`;
+  `<span class="lg-type">${Object.entries(town.types).map(([t, c]) => `<span><i style="--f:${c}"></i>${t}</span>`).join("")}</span>` +
+  `<span class="lg-status">${Object.values(STATUS).slice(0, 5).map(([l, c, s]) => `<span><i style="--f:${c}">${s}</i>${l}</span>`).join("")}</span>`;
 
 function chrome(root, { inspector = true, toolbar = true } = {}) {
   root.insertAdjacentHTML(

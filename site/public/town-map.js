@@ -134,7 +134,7 @@ export class TownMap {
   #paint(g, n, w, h) {
     g.rect.setAttribute("width", w);
     g.rect.setAttribute("height", h);
-    g.rect.style.fill = this.fill(n);
+    g.rect.style.setProperty("--f", this.fill(n)); // town.css mixes it for each theme
     const pad = Math.max(5, h * 0.07);
     const imgW = g.img && h >= 90 ? Math.min(w * 0.42, h * 0.62) : 0;
     if (g.img) {
@@ -159,7 +159,7 @@ export class TownMap {
     const r = Math.max(4.5, Math.min(8, h * 0.06));
     g.badge.setAttribute("transform", `translate(${pad + r} ${h - pad - r})`);
     g.badgeDot.setAttribute("r", r);
-    g.badgeDot.style.fill = st[1];
+    g.badgeDot.style.setProperty("--f", st[1]);
     g.badgeText.setAttribute("font-size", r * 1.15);
     g.badgeText.textContent = st[2];
   }
