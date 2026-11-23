@@ -1,0 +1,25 @@
+# Boxtown
+
+> Boxtown maps a product as nested boxes on a canvas: areas, pages, assemblies and components, with Markdown context, metadata and images on each box. The `boxtown` CLI reads and writes the same data, so coding agents can find work, read scoped context and report results.
+
+Install: `npm install -g boxtown` (Node 22+). Start the viewer: `boxtown viewer` (data in `./boxtown/data`).
+
+## Agent loop
+
+- Install the bundled skill: `boxtown skill install --agent codex --global`
+- Discover the schema first: `boxtown project schema --local ./boxtown/data --project <id> --json`
+- Find work: `boxtown node list --status working --compact --local ./boxtown/data --project <id>`
+- Read one scope with its parent chain: `boxtown node export-context <node-id> --local ./boxtown/data --project <id>`
+- Write back: `boxtown node complete <node-id> --note "..."` and `boxtown image add <node-id> ./shot.png`
+- Avoid `boxtown project view --json` for scoped work; it returns the whole graph.
+- `--local <folder>` works for project, node and image commands and needs `--project <id>`. Remote servers use `--server` and `--token`.
+
+## Data
+
+Each project is a folder: `project.json`, `nodes/<node-id>.md` (YAML front matter plus Markdown context), `history/`, `images/`. The layout merges cleanly with git.
+
+## Links
+
+- Site: https://byronwall.github.io/prod-mgmt-grid/
+- Full CLI reference: https://www.npmjs.com/package/boxtown
+- Source: https://github.com/byronwall/prod-mgmt-grid
