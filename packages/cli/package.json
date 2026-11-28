@@ -27,6 +27,7 @@
     "access": "public",
     "registry": "https://registry.npmjs.org"
   },
+  "homepage": "https://byronwall.github.io/boxtown/",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/byronwall/boxtown.git",
