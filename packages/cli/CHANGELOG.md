@@ -1,5 +1,18 @@
 # boxtown
 
+## 0.7.0
+
+### Minor Changes
+
+- c4d6630: The app now has a dark mode that follows your system setting.
+
+### Patch Changes
+
+- 21dfc7d: Boxtown now has a home page with a tour of the viewer and the agent workflow: https://byronwall.github.io/boxtown/
+- 0fdb94e: The Boxtown home page check now serves the page itself and runs on every pull request.
+- 8c21ef9: The Boxtown home page copy is shorter and plainer, with drawn icons for its buttons.
+- ad9b8ac: The Boxtown home page map now works from the keyboard and has zoom buttons for phones.
+
 ## 0.6.1
 
 ### Patch Changes
