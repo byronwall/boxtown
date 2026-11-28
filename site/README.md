@@ -30,12 +30,10 @@ Box positions in the live map come from the app's canvas, so an app layout chang
 
 ## Check the page
 
-Serve `site/public` under the Pages base path, then run the checks:
-
 ```bash
-mkdir -p tmp/site/serve && ln -sfn ../../../site/public tmp/site/serve/boxtown
-pnpm dlx http-server@14.1.1 tmp/site/serve -p 4173 -c-1
-node site/scripts/check-site.mjs http://localhost:4173/boxtown/ --og
+pnpm --dir site check
 ```
+
+The script serves `site/public` under `/boxtown/` on a free port, so no other server is needed. Add `--og` to rewrite `og.png` and `apple-touch-icon.png`. Pass a URL to check a running site instead. The `Site check` workflow runs it on every PR and on `main`.
 
 The checks cover sideways scroll at 1440, 1100, 800 and 390 px, failed requests and console errors, every image, link and anchor, the tab keys and `#tour/<id>` deep links, the copy button, and the lightbox.
