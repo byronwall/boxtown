@@ -1,17 +1,41 @@
 // Checks the built site under its Pages base path and writes review screenshots.
-// Serve first:  pnpm dlx http-server@14.1.1 tmp/site/serve -p 4173   (tmp/site/serve/boxtown -> site/public)
-// Then:         node site/scripts/check-site.mjs [http://localhost:4173/boxtown/] [--og]
+//   node site/scripts/check-site.mjs [url] [--og]
+// Without a URL it serves site/public itself on a free port. Pass a URL to check a running site.
 import { mkdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { readFile } from "node:fs/promises";
+import { createServer } from "node:http";
+import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const url = process.argv.find((a) => a.startsWith("http")) ?? "http://localhost:4173/boxtown/";
+const url = process.argv.find((a) => a.startsWith("http")) ?? (await serve(join(root, "site/public")));
 const shots = join(root, "tmp/site/shots");
 mkdirSync(shots, { recursive: true });
 const failures = [];
 const fail = (msg) => failures.push(msg);
+
+// A free port, so the check can never read another app's server.
+async function serve(dir) {
+  const types = {
+    ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".json": "application/json",
+    ".svg": "image/svg+xml", ".png": "image/png", ".webp": "image/webp", ".txt": "text/plain; charset=utf-8",
+  };
+  const server = createServer(async (req, res) => {
+    try {
+      const path = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
+      if (!path.startsWith("/boxtown/")) throw new Error("outside the base path");
+      const file = join(dir, path.slice("/boxtown/".length), path.endsWith("/") ? "index.html" : "");
+      const body = await readFile(file);
+      res.writeHead(200, { "content-type": types[extname(file)] ?? "application/octet-stream" }).end(body);
+    } catch {
+      res.writeHead(404).end();
+    }
+  });
+  await new Promise((done) => server.listen(0, "127.0.0.1", done));
+  server.unref();
+  return `http://127.0.0.1:${server.address().port}/boxtown/`;
+}
 
 const browser = await chromium.launch({ args: ["--use-mock-keychain", "--password-store=basic"] });
 
@@ -24,6 +48,17 @@ async function open(width, height, scheme = "light") {
   page.on("response", (r) => r.status() >= 400 && fail(`${width}px HTTP ${r.status()}: ${r.url()}`));
   await page.goto(url, { waitUntil: "networkidle" });
   return page;
+}
+
+// Stop at once when the URL does not serve this page.
+{
+  const page = await browser.newPage();
+  const res = await page.goto(url);
+  if (!res.ok() || !(await page.$("#tab-map"))) {
+    console.error(`FAIL ${url} is not the Boxtown landing page (HTTP ${res.status()}, title "${await page.title()}")`);
+    process.exit(1);
+  }
+  await page.close();
 }
 
 // Layout at each width, plus full-page shots for review.
