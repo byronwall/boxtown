@@ -1,6 +1,6 @@
 {
   "name": "boxtown",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "CLI for Boxtown.",
   "type": "module",
   "bin": {
